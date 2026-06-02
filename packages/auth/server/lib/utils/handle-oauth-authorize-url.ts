@@ -27,6 +27,11 @@ type HandleOAuthAuthorizeUrlOptions = {
    * Optional prompt to pass to the authorization endpoint.
    */
   prompt?: 'none' | 'login' | 'consent' | 'select_account';
+
+  /**
+   * Return a redirect response instead of JSON for browser-launched OIDC flows.
+   */
+  responseMode?: 'json' | 'redirect';
 };
 
 const isOidcPrompt = (value: unknown): value is HandleOAuthAuthorizeUrlOptions['prompt'] => {
@@ -38,7 +43,8 @@ const oauthCookieMaxAge = 60 * 10; // 10 minutes.
 export const handleOAuthAuthorizeUrl = async (options: HandleOAuthAuthorizeUrlOptions) => {
   const { c, clientOptions, redirectPath } = options;
 
-  let prompt = options.prompt ?? 'login';
+  let prompt = options.prompt;
+  const oidcPromptEnv = process.env.NEXT_PRIVATE_OIDC_PROMPT;
 
   if (!clientOptions.clientId || !clientOptions.clientSecret) {
     throw new AppError(AppErrorCode.NOT_SETUP);
@@ -64,11 +70,13 @@ export const handleOAuthAuthorizeUrl = async (options: HandleOAuthAuthorizeUrlOp
   );
 
   // Pass the prompt to the authorization endpoint.
-  if (process.env.NEXT_PRIVATE_OIDC_PROMPT && isOidcPrompt(process.env.NEXT_PRIVATE_OIDC_PROMPT)) {
-    prompt = process.env.NEXT_PRIVATE_OIDC_PROMPT;
+  if (oidcPromptEnv && isOidcPrompt(oidcPromptEnv)) {
+    prompt = oidcPromptEnv;
   }
 
-  url.searchParams.set('prompt', prompt);
+  if (prompt) {
+    url.searchParams.set('prompt', prompt);
+  }
 
   setCookie(c, `${clientOptions.id}_oauth_state`, state, {
     ...sessionCookieOptions,
@@ -88,6 +96,10 @@ export const handleOAuthAuthorizeUrl = async (options: HandleOAuthAuthorizeUrlOp
       sameSite: 'lax',
       maxAge: oauthCookieMaxAge,
     });
+  }
+
+  if (options.responseMode === 'redirect') {
+    return c.redirect(url.toString(), 302);
   }
 
   return c.json({

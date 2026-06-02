@@ -14,6 +14,7 @@ import { deleteCookie } from 'hono/cookie';
 import type { OAuthClientOptions } from '../../config';
 import { AuthenticationErrorCode } from '../errors/error-codes';
 import { onAuthorize } from './authorizer';
+import { getAutoProvisionRedirectPath, provisionOidcUser } from './oidc-auto-provision';
 import { getOpenIdConfiguration } from './open-id';
 
 type HandleOAuthCallbackUrlOptions = {
@@ -52,9 +53,14 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
 
   // Directly log in user if account already exists.
   if (existingAccount) {
+    const existingAccountProvisioning = await provisionOidcUser({
+      userId: existingAccount.user.id,
+      email,
+    });
+
     await onAuthorize({ userId: existingAccount.user.id }, c);
 
-    return c.redirect(redirectPath, 302);
+    return c.redirect(getAutoProvisionRedirectPath(redirectPath, existingAccountProvisioning), 302);
   }
 
   const userWithSameEmail = await prisma.user.findFirst({
@@ -109,9 +115,14 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
       }
     });
 
+    const existingEmailProvisioning = await provisionOidcUser({
+      userId: userWithSameEmail.id,
+      email,
+    });
+
     await onAuthorize({ userId: userWithSameEmail.id }, c);
 
-    return c.redirect(redirectPath, 302);
+    return c.redirect(getAutoProvisionRedirectPath(redirectPath, existingEmailProvisioning), 302);
   }
 
   // Check if signups are disabled for this provider.
@@ -163,9 +174,14 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
     console.error(err);
   });
 
+  const createdUserProvisioning = await provisionOidcUser({
+    userId: createdUser.id,
+    email,
+  });
+
   await onAuthorize({ userId: createdUser.id }, c);
 
-  return c.redirect(redirectPath, 302);
+  return c.redirect(getAutoProvisionRedirectPath(redirectPath, createdUserProvisioning), 302);
 };
 
 export const validateOauth = async (options: HandleOAuthCallbackUrlOptions) => {
