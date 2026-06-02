@@ -1,8 +1,10 @@
 import { generateDatabaseId } from '@documenso/lib/universal/id';
 import { env } from '@documenso/lib/utils/env';
 import { prisma } from '@documenso/prisma';
+import { OrganisationMemberRole, TeamMemberRole } from '@prisma/client';
 
-const VALID_ROLES = new Set(['ADMIN', 'MANAGER', 'MEMBER']);
+const VALID_ORGANISATION_ROLES = new Set(Object.values(OrganisationMemberRole));
+const VALID_TEAM_ROLES = new Set(Object.values(TeamMemberRole));
 
 type AutoProvisionResult =
   | {
@@ -36,14 +38,24 @@ const getEmailDomain = (email: string) => {
   return parts.length === 2 ? parts[1] : '';
 };
 
-const getRole = (name: string) => {
+const getOrganisationRole = (name: string) => {
   const role = getRequiredEnv(name).toUpperCase();
 
-  if (!VALID_ROLES.has(role)) {
-    throw new Error(`${name} must be one of ${Array.from(VALID_ROLES).join(', ')}`);
+  if (!VALID_ORGANISATION_ROLES.has(role as OrganisationMemberRole)) {
+    throw new Error(`${name} must be one of ${Array.from(VALID_ORGANISATION_ROLES).join(', ')}`);
   }
 
-  return role;
+  return role as OrganisationMemberRole;
+};
+
+const getTeamRole = (name: string) => {
+  const role = getRequiredEnv(name).toUpperCase();
+
+  if (!VALID_TEAM_ROLES.has(role as TeamMemberRole)) {
+    throw new Error(`${name} must be one of ${Array.from(VALID_TEAM_ROLES).join(', ')}`);
+  }
+
+  return role as TeamMemberRole;
 };
 
 const isEnabled = () => env('SELF_HOSTED_OIDC_AUTO_PROVISION_ENABLED') === 'true';
@@ -58,7 +70,7 @@ export const provisionOidcUser = async ({
   userId,
   email,
 }: {
-  userId: string;
+  userId: number;
   email: string;
 }): Promise<AutoProvisionResult> => {
   if (!isEnabled()) {
@@ -71,8 +83,8 @@ export const provisionOidcUser = async ({
 
   const organisation_url = getRequiredEnv('SELF_HOSTED_OIDC_DEFAULT_ORGANISATION_URL');
   const team_url = getRequiredEnv('SELF_HOSTED_OIDC_DEFAULT_TEAM_URL');
-  const organisation_role = getRole('SELF_HOSTED_OIDC_DEFAULT_ORGANISATION_ROLE');
-  const team_role = getRole('SELF_HOSTED_OIDC_DEFAULT_TEAM_ROLE');
+  const organisation_role = getOrganisationRole('SELF_HOSTED_OIDC_DEFAULT_ORGANISATION_ROLE');
+  const team_role = getTeamRole('SELF_HOSTED_OIDC_DEFAULT_TEAM_ROLE');
 
   const organisation = await prisma.organisation.findFirst({
     where: {
