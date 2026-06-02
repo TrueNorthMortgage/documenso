@@ -50,6 +50,18 @@ export const oauthRoute = new Hono<HonoAuthContext>()
       redirectPath,
     });
   })
+  .get('/authorize/oidc', async (c) => {
+    const redirectPathParam = c.req.query('redirectPath');
+    const redirectPath =
+      redirectPathParam?.startsWith('/') && !redirectPathParam.startsWith('//') ? redirectPathParam : undefined;
+
+    return handleOAuthAuthorizeUrl({
+      c,
+      clientOptions: OidcAuthOptions,
+      redirectPath,
+      responseMode: 'redirect',
+    });
+  })
   /**
    * Organisation OIDC authorize endpoint.
    */

@@ -25,6 +25,7 @@ import { BrandingLogo } from '~/components/general/branding-logo';
 import { DocumentAttachmentsPopover } from '~/components/general/document/document-attachments-popover';
 import { EmbeddedEditorAttachmentPopover } from '~/components/general/document/embedded-editor-attachment-popover';
 import { EnvelopeEditorSettingsDialog } from '~/components/general/envelope-editor/envelope-editor-settings-dialog';
+import { SelfHostedReturnButton } from '~/components/general/self-hosted-return-button';
 
 import { TemplateDirectLinkBadge } from '../template/template-direct-link-badge';
 import { EnvelopeItemTitleInput } from './envelope-editor-title-input';
@@ -173,6 +174,8 @@ export default function EnvelopeEditorHeader() {
         </div>
 
         <div className="flex shrink-0 items-center space-x-2">
+          <SelfHostedReturnButton size="sm" className="max-w-56 truncate" />
+
           {allowAttachments &&
             (isEmbedded ? (
               <EmbeddedEditorAttachmentPopover buttonSize="sm" />

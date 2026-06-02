@@ -22,13 +22,19 @@ import type { TurnstileInstance } from '@marsidev/react-turnstile';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
 import { KeyRoundIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaIdCardClip } from 'react-icons/fa6';
 import { FcGoogle } from 'react-icons/fc';
 import { Link, useNavigate } from 'react-router';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
+
+import {
+  getSelfHostedReturnTargetFromLocation,
+  SELF_HOSTED_AUTO_OIDC_PARAM,
+  storeSelfHostedReturnTarget,
+} from '~/utils/self-hosted-return';
 
 const CommonErrorMessages: Record<string, MessageDescriptor> = {
   [AuthenticationErrorCode.AccountDisabled]: msg`This account has been disabled. Please contact support.`,
@@ -63,6 +69,7 @@ export type SignInFormProps = {
   isOIDCSSOEnabled?: boolean;
   oidcProviderLabel?: string;
   returnTo?: string;
+  autoOidc?: boolean;
 };
 
 export const SignInForm = ({
@@ -73,6 +80,7 @@ export const SignInForm = ({
   isOIDCSSOEnabled,
   oidcProviderLabel,
   returnTo,
+  autoOidc,
 }: SignInFormProps) => {
   const { _ } = useLingui();
   const { toast } = useToast();
@@ -89,6 +97,7 @@ export const SignInForm = ({
   const turnstileSiteKey = env('NEXT_PUBLIC_TURNSTILE_SITE_KEY');
   const turnstileRef = useRef<TurnstileInstance>(null);
   const twoFactorTurnstileRef = useRef<TurnstileInstance>(null);
+  const autoOidcStarted = useRef(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const [isPasskeyLoading, setIsPasskeyLoading] = useState(false);
@@ -280,7 +289,7 @@ export const SignInForm = ({
     }
   };
 
-  const onSignInWithOIDCClick = async () => {
+  const onSignInWithOIDCClick = useCallback(async () => {
     try {
       await authClient.oidc.signIn({
         redirectPath,
@@ -292,7 +301,7 @@ export const SignInForm = ({
         variant: 'destructive',
       });
     }
-  };
+  }, [_, redirectPath, toast]);
 
   useEffect(() => {
     const hash = window.location.hash.slice(1);
@@ -306,7 +315,16 @@ export const SignInForm = ({
     }
 
     setIsEmbeddedRedirect(params.get('embedded') === 'true');
-  }, [form]);
+    storeSelfHostedReturnTarget(getSelfHostedReturnTargetFromLocation());
+
+    const shouldAutoOidc =
+      autoOidc || new URLSearchParams(window.location.search).get(SELF_HOSTED_AUTO_OIDC_PARAM) === 'true';
+
+    if (!autoOidcStarted.current && shouldAutoOidc && isOIDCSSOEnabled) {
+      autoOidcStarted.current = true;
+      void onSignInWithOIDCClick();
+    }
+  }, [autoOidc, form, isOIDCSSOEnabled, onSignInWithOIDCClick]);
 
   return (
     <Form {...form}>

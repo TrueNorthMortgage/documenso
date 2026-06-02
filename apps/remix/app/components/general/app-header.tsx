@@ -10,6 +10,7 @@ import { type HTMLAttributes, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { BrandingLogo } from '~/components/general/branding-logo';
+import { SelfHostedReturnButton } from '~/components/general/self-hosted-return-button';
 
 import { AppCommandMenu } from './app-command-menu';
 import { AppNavDesktop } from './app-nav-desktop';
@@ -65,6 +66,8 @@ export const Header = ({ className, ...props }: HeaderProps) => {
         </Link>
 
         <AppNavDesktop setIsCommandMenuOpen={setIsCommandMenuOpen} />
+
+        <SelfHostedReturnButton className="h-10 max-w-48 whitespace-nowrap rounded-lg px-3 text-sm" />
 
         <Button asChild variant="outline" className="relative hidden h-10 w-10 rounded-lg md:flex">
           <Link to="/inbox" className="relative block h-10 w-10">

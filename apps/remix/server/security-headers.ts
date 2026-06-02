@@ -92,16 +92,7 @@ const buildCspHeader = ({ nonce, kind }: { nonce: string; kind: CspPathKind }) =
     `style-src-attr 'unsafe-inline'`,
   ];
 
-  // Embeds inject customer-supplied CSS via runtime-created `<style>`
-  // elements (see apps/remix/app/utils/css-vars.ts). Nonce-stamping those
-  // would be brittle for white-label customers, so we accept
-  // `'unsafe-inline'` on the embed scope only. Frameable (auth/signing)
-  // pages do NOT load customer CSS and keep the strict nonced policy.
-  if (kind === 'embed') {
-    directives.push(`style-src-elem 'self' 'unsafe-inline'`);
-  } else {
-    directives.push(`style-src-elem 'self' 'nonce-${nonce}'`);
-  }
+  directives.push(`style-src-elem 'self' 'unsafe-inline'`);
 
   // Embed, signing, and auth routes are all reachable from inside a
   // customer's iframe and therefore need `frame-ancestors *`. Every other

@@ -17,6 +17,13 @@ import { Link, redirect, useSearchParams } from 'react-router';
 import { SignInForm } from '~/components/forms/signin';
 import { SIGNUP_ERROR_MESSAGES } from '~/components/forms/signup';
 import { appMetaTags } from '~/utils/meta';
+import {
+  getSelfHostedReturnTargetFromParams,
+  SELF_HOSTED_AUTO_OIDC_PARAM,
+  SELF_HOSTED_RETURN_LABEL_PARAM,
+  SELF_HOSTED_RETURN_URL_PARAM,
+  storeSelfHostedReturnTarget,
+} from '~/utils/self-hosted-return';
 
 import type { Route } from './+types/signin';
 
@@ -26,6 +33,7 @@ export function meta() {
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { isAuthenticated } = await getOptionalSession(request);
+  const requestUrl = new URL(request.url);
 
   // SSR env variables.
   const isGoogleSSOEnabled = IS_GOOGLE_SSO_ENABLED;
@@ -38,9 +46,24 @@ export async function loader({ request }: Route.LoaderArgs) {
     (IS_MICROSOFT_SSO_ENABLED && isSignupEnabledForProvider('microsoft')) ||
     (IS_OIDC_SSO_ENABLED && isSignupEnabledForProvider('oidc'));
 
-  let returnTo = new URL(request.url).searchParams.get('returnTo') ?? undefined;
+  let returnTo = requestUrl.searchParams.get('returnTo') ?? undefined;
 
   returnTo = isValidReturnTo(returnTo) ? normalizeReturnTo(returnTo) : undefined;
+
+  const selfHostedReturnTarget = getSelfHostedReturnTargetFromParams(requestUrl.searchParams, requestUrl.origin);
+
+  if (!returnTo && selfHostedReturnTarget) {
+    const returnUrl = new URL('/', requestUrl.origin);
+
+    returnUrl.searchParams.set(SELF_HOSTED_RETURN_URL_PARAM, selfHostedReturnTarget.url);
+    returnUrl.searchParams.set(SELF_HOSTED_RETURN_LABEL_PARAM, selfHostedReturnTarget.label);
+
+    returnTo = `${returnUrl.pathname}${returnUrl.search}`;
+  }
+
+  if (!isAuthenticated && requestUrl.searchParams.get(SELF_HOSTED_AUTO_OIDC_PARAM) === 'true' && isOIDCSSOEnabled) {
+    throw redirect(`/api/auth/oauth/authorize/oidc?redirectPath=${encodeURIComponent(returnTo || '/')}`);
+  }
 
   if (isAuthenticated) {
     throw redirect(returnTo || '/');
@@ -64,6 +87,7 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
 
   const [searchParams] = useSearchParams();
   const [isEmbeddedRedirect, setIsEmbeddedRedirect] = useState(false);
+  const autoOidc = searchParams.get(SELF_HOSTED_AUTO_OIDC_PARAM) === 'true';
 
   const errorParam = searchParams.get('error');
   const signupError = errorParam ? SIGNUP_ERROR_MESSAGES[errorParam] : undefined;
@@ -74,7 +98,8 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
     const params = new URLSearchParams(hash);
 
     setIsEmbeddedRedirect(params.get('embedded') === 'true');
-  }, []);
+    storeSelfHostedReturnTarget(getSelfHostedReturnTargetFromParams(searchParams, window.location.origin));
+  }, [searchParams]);
 
   return (
     <div className="w-screen max-w-lg px-4">
@@ -100,6 +125,7 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
           isOIDCSSOEnabled={isOIDCSSOEnabled}
           oidcProviderLabel={oidcProviderLabel}
           returnTo={returnTo}
+          autoOidc={autoOidc}
         />
 
         {!isEmbeddedRedirect && isSignupEnabled && (

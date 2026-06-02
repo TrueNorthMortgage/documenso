@@ -40,6 +40,34 @@ Signing documents digitally should be fast and easy and should be the best pract
 
 Join us in creating the next generation of open trust infrastructure.
 
+## Self-Hosted Fork Notes
+
+This fork is based on upstream Documenso `v2.11.0` at commit `191170923a459afa003c846bd8501190a14f52d5`.
+
+The first self-hosted release is `1.0.0`. Changes are intentionally limited to generic self-hosted behavior:
+
+- OIDC default-team auto-provisioning through environment configuration.
+- Browser-launchable OIDC redirects and optional `auto_oidc=true` sign-in launch.
+- Generic `return_url` and `return_label` support, restricted to same-origin `/r/*` paths.
+- A generic `scripts/bootstrap-self-hosted.mjs` script for idempotent organisation, team, admin, and API-token bootstrap.
+
+Deployment-specific values must stay outside this public fork. Configure them through environment variables:
+
+- `SELF_HOSTED_OIDC_AUTO_PROVISION_ENABLED`
+- `SELF_HOSTED_OIDC_AUTO_PROVISION_DOMAINS`
+- `SELF_HOSTED_OIDC_AUTO_PROVISION_REDIRECT_TO_TEAM`
+- `SELF_HOSTED_OIDC_DEFAULT_ORGANISATION_URL`
+- `SELF_HOSTED_OIDC_DEFAULT_TEAM_URL`
+- `SELF_HOSTED_OIDC_DEFAULT_ORGANISATION_ROLE`
+- `SELF_HOSTED_OIDC_DEFAULT_TEAM_ROLE`
+- `SELF_HOSTED_BOOTSTRAP_ADMIN_EMAIL`
+- `SELF_HOSTED_BOOTSTRAP_ADMIN_PASSWORD`
+- `SELF_HOSTED_BOOTSTRAP_ADMIN_NAME`
+- `SELF_HOSTED_BOOTSTRAP_ORGANISATION_NAME`
+- `SELF_HOSTED_BOOTSTRAP_ORGANISATION_URL`
+- `SELF_HOSTED_BOOTSTRAP_TEAMS`
+- `SELF_HOSTED_BOOTSTRAP_API_TOKENS`
+
 ## Recognition
 
 <p align="center">
