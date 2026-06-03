@@ -36,6 +36,7 @@ import { EnvelopeRedistributeDialog } from '~/components/dialogs/envelope-redist
 import { EnvelopeSaveAsTemplateDialog } from '~/components/dialogs/envelope-save-as-template-dialog';
 import { TemplateDirectLinkDialog } from '~/components/dialogs/template-direct-link-dialog';
 import { EnvelopeEditorSettingsDialog } from '~/components/general/envelope-editor/envelope-editor-settings-dialog';
+import { SourceAttributionFooter } from '~/components/general/source-attribution-footer';
 
 import { EnvelopeEditorFieldsPage } from './envelope-editor-fields-page';
 import EnvelopeEditorHeader from './envelope-editor-header';
@@ -87,7 +88,7 @@ export const EnvelopeEditor = () => {
     resetForms,
   } = useCurrentEnvelopeEditor();
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const {
     general: { minimizeLeftSidebar, allowUploadAndRecipientStep, allowAddFieldsStep, allowPreviewStep },
@@ -514,6 +515,8 @@ export const EnvelopeEditor = () => {
                   )}
                 </Link>
               </Button>
+
+              {!minimizeLeftSidebar && <SourceAttributionFooter className="mt-3 text-center text-xs" />}
             </div>
           )}
         </div>
