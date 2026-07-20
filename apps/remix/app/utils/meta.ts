@@ -1,13 +1,12 @@
-import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
 import { i18n, type MessageDescriptor } from '@lingui/core';
 
 export const appMetaTags = (title?: MessageDescriptor) => {
   const description =
-    'Join Documenso, the open signing infrastructure, and get a 10x better signing experience. Pricing starts at $30/mo. forever! Sign in now and enjoy a faster, smarter, and more beautiful document signing process. Integrates with your favorite tools, customizable, and expandable. Support our mission and become a part of our open-source community.';
+    'True North Mortgage | Secure Document Signing | Official document signing portal for True North Mortgage. Easily review, sign, and return your documents online.';
 
   return [
     {
-      title: title ? `${i18n._(title)} - Documenso` : 'Documenso',
+      title: title ? `${i18n._(title)} - True North Mortgage` : 'True North Mortgage',
     },
     {
       name: 'description',
@@ -16,7 +15,7 @@ export const appMetaTags = (title?: MessageDescriptor) => {
     {
       name: 'keywords',
       content:
-        'Documenso, open source, DocuSign alternative, document signing, open signing infrastructure, open-source community, fast signing, beautiful signing, smart templates',
+        'True North Mortgage, Documenso, document signing, secure document signing, online document signing, mortgage documents, e-signature, digital signature, electronic signature, sign documents online, mortgage application, loan documents, mortgage closing, mortgage process, mortgage approval, mortgage paperwork, mortgage forms, mortgage contracts, mortgage agreements',
     },
     {
       name: 'author',
@@ -28,15 +27,11 @@ export const appMetaTags = (title?: MessageDescriptor) => {
     },
     {
       property: 'og:title',
-      content: 'Documenso - The Open Source DocuSign Alternative',
+      content: 'True North Mortgage - Secure Document Signing',
     },
     {
       property: 'og:description',
       content: description,
-    },
-    {
-      property: 'og:image',
-      content: `${NEXT_PUBLIC_WEBAPP_URL()}/opengraph-image.jpg`,
     },
     {
       property: 'og:type',
@@ -44,19 +39,15 @@ export const appMetaTags = (title?: MessageDescriptor) => {
     },
     {
       name: 'twitter:card',
-      content: 'summary_large_image',
+      content: 'summary',
     },
     {
       name: 'twitter:site',
-      content: '@documenso',
+      content: '@TrueNorthMtg',
     },
     {
       name: 'twitter:description',
       content: description,
-    },
-    {
-      name: 'twitter:image',
-      content: `${NEXT_PUBLIC_WEBAPP_URL()}/opengraph-image.jpg`,
     },
   ];
 };
