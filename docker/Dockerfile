@@ -1,7 +1,7 @@
 ###########################
 #     BASE CONTAINER      #
 ###########################
-FROM node:22-alpine3.22 AS base
+FROM node:26.3.1-alpine3.23 AS base
 
 ENV NPM_CONFIG_AUDIT=false
 ENV NPM_CONFIG_FUND=false
@@ -132,6 +132,16 @@ COPY --from=installer --chown=nodejs:nodejs /app/packages/prisma/migrations ./pa
 
 # Generate the prisma client again
 RUN npx prisma generate --schema ./packages/prisma/schema.prisma
+
+# npm, npx, esbuild, and the Vite dev adapter are build-time tools and are not
+# needed by the server. The adapter's optional node-server copy is also removed;
+# the app uses its patched workspace copy above.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    /app/node_modules/esbuild \
+    /app/node_modules/@esbuild \
+    /app/node_modules/@hono/vite-dev-server \
+    /app/node_modules/@hono/node-server \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
 
 
 # Get the start script from docker/
