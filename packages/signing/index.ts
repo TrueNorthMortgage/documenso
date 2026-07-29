@@ -49,6 +49,7 @@ export const signPdf = async ({ pdf }: SignOptions) => {
     timestampAuthority: tsa ?? undefined,
     longTermValidation: !!tsa,
     archivalTimestamp: !!tsa,
+    estimatedSize: 16384
   });
 
   return bytes;
