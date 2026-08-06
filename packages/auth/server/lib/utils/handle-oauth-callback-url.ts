@@ -14,7 +14,12 @@ import { deleteCookie } from 'hono/cookie';
 import type { OAuthClientOptions } from '../../config';
 import { AuthenticationErrorCode } from '../errors/error-codes';
 import { onAuthorize } from './authorizer';
-import { getAutoProvisionRedirectPath, provisionOidcUser } from './oidc-auto-provision';
+import {
+  getAutoProvisionRedirectPath,
+  getOidcTeamUrlForEmail,
+  isOidcAutoProvisioningEnabled,
+  provisionOidcUser,
+} from './oidc-auto-provision';
 import { getOpenIdConfiguration } from './open-id';
 
 type HandleOAuthCallbackUrlOptions = {
@@ -143,6 +148,14 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
     return c.redirect(errorUrl.toString(), 302);
   }
 
+  if (isOidcAutoProvisioningEnabled() && !getOidcTeamUrlForEmail(email)) {
+    const errorUrl = new URL('/signin', NEXT_PUBLIC_WEBAPP_URL());
+
+    errorUrl.searchParams.set('error', AuthenticationErrorCode.SignupDisabled);
+
+    return c.redirect(errorUrl.toString(), 302);
+  }
+
   // Handle new user.
   const createdUser = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
@@ -169,7 +182,7 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
     return user;
   });
 
-  await onCreateUserHook(createdUser).catch((err) => {
+  await onCreateUserHook(createdUser, { skipPersonalOrganisation: true }).catch((err) => {
     // Todo: (RR7) Add logging.
     console.error(err);
   });

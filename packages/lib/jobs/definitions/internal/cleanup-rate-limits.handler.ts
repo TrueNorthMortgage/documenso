@@ -32,4 +32,15 @@ export const run = async ({ io }: { payload: TCleanupRateLimitsJobDefinition; io
   } else {
     io.logger.info('No expired rate limit entries to clean up');
   }
+
+  const expiredPendingPreparations = await prisma.pendingPreparation.deleteMany({
+    where: {
+      status: 'PENDING',
+      expiresAt: { lt: new Date() },
+    },
+  });
+
+  if (expiredPendingPreparations.count > 0) {
+    io.logger.info(`Cleaned up ${expiredPendingPreparations.count} expired pending preparations`);
+  }
 };
