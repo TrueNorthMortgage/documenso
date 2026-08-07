@@ -15,6 +15,9 @@ const require = createRequire(import.meta.url);
 
 const pdfjsDistPath = path.dirname(require.resolve('pdfjs-dist/package.json'));
 const cMapsDir = normalizePath(path.join(pdfjsDistPath, 'cmaps'));
+const internalWebappHost = process.env.NEXT_PRIVATE_INTERNAL_WEBAPP_URL
+  ? new URL(process.env.NEXT_PRIVATE_INTERNAL_WEBAPP_URL).hostname
+  : undefined;
 
 /**
  * Note: We load the env variables externally so we can have runtime enviroment variables
@@ -31,6 +34,7 @@ export default defineConfig({
   server: {
     port: parseInt(process.env.PORT || '3000', 10),
     strictPort: true,
+    ...(internalWebappHost ? { allowedHosts: [internalWebappHost] } : {}),
   },
   plugins: [
     viteStaticCopy({

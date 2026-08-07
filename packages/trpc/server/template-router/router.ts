@@ -32,6 +32,7 @@ import { DocumentDataType, EnvelopeType } from '@prisma/client';
 import { ZGenericSuccessResponse, ZSuccessResponseSchema } from '../schema';
 import { authenticatedProcedure, maybeAuthenticatedProcedure, router } from '../trpc';
 import { getTemplatesByIdsRoute } from './get-templates-by-ids';
+import { pendingTemplatePreparationRoute } from './pending-preparation';
 import {
   ZBulkSendTemplateMutationSchema,
   ZCreateDocumentFromDirectTemplateRequestSchema,
@@ -62,6 +63,7 @@ import {
 import { searchTemplateRoute } from './search-template';
 
 export const templateRouter = router({
+  pendingPrepare: pendingTemplatePreparationRoute,
   /**
    * @public
    */

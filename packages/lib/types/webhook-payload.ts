@@ -64,6 +64,7 @@ export const ZWebhookDocumentMetaSchema = z.object({
  */
 export const ZWebhookDocumentSchema = z.object({
   id: z.number(),
+  envelopeId: z.string(),
   externalId: z.string().nullable(),
   userId: z.number(),
   authOptions: z.any().nullable(),
@@ -137,6 +138,7 @@ export const mapEnvelopeToWebhookDocumentPayload = (
 
   return {
     id: legacyId,
+    envelopeId: envelope.id,
     externalId: envelope.externalId,
     userId: envelope.userId,
     authOptions: envelope.authOptions,

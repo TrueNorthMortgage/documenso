@@ -445,6 +445,48 @@ model Envelope {
   @@index([createdAt])
 }
 
+enum PendingPreparationStatus {
+  PENDING
+  COMMITTED
+  EXPIRED
+}
+
+model PendingPreparation {
+  id String @id
+
+  organisationId String
+  teamId Int
+  actorEmail String
+  payload Json
+  status PendingPreparationStatus @default(PENDING)
+  expiresAt DateTime
+  committedEnvelopeId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  documents PendingPreparationDocumentData[]
+
+  @@index([teamId, actorEmail, status])
+  @@index([expiresAt, status])
+}
+
+model PendingPreparationDocumentData {
+  id String @id
+
+  pendingPreparationId String
+  documentDataId String
+  order Int
+  fileMetadata Json
+
+  pendingPreparation PendingPreparation @relation(fields: [pendingPreparationId], references: [id], onDelete: Cascade)
+  documentData DocumentData @relation(fields: [documentDataId], references: [id], onDelete: Cascade)
+
+  @@unique([pendingPreparationId, order])
+  @@unique([pendingPreparationId, documentDataId])
+  @@index([documentDataId])
+}
+
 model EnvelopeItem {
   id String @id
 
@@ -500,6 +542,7 @@ model DocumentData {
   data         String
   initialData  String
   envelopeItem EnvelopeItem?
+  pendingPreparations PendingPreparationDocumentData[]
 }
 
 enum DocumentDistributionMethod {
@@ -934,6 +977,7 @@ model Team {
   apiTokens  ApiToken[]
   webhooks   Webhook[]
   teamGroups TeamGroup[]
+  pendingPreparations PendingPreparation[]
 
   organisationId String
   organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)

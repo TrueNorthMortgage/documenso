@@ -33,7 +33,7 @@ const stringList = (value: string | undefined) =>
     .filter(Boolean);
 
 const getEmailDomain = (email: string) => {
-  const parts = email.toLowerCase().split('@');
+  const parts = email.trim().toLowerCase().split('@');
 
   return parts.length === 2 ? parts[1] : '';
 };
@@ -60,11 +60,37 @@ const getTeamRole = (name: string) => {
 
 const isEnabled = () => env('SELF_HOSTED_OIDC_AUTO_PROVISION_ENABLED') === 'true';
 
-const shouldProvisionEmail = (email: string) => {
-  const domains = stringList(getRequiredEnv('SELF_HOSTED_OIDC_AUTO_PROVISION_DOMAINS'));
+const getTeamDomainMap = () => {
+  const entries = stringList(getRequiredEnv('SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP'));
+  const team_by_domain = new Map<string, string>();
 
-  return domains.includes(getEmailDomain(email));
+  for (const entry of entries) {
+    const separator_index = entry.indexOf(':');
+
+    if (separator_index <= 0 || separator_index === entry.length - 1) {
+      throw new Error('SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP must contain comma-separated <domain>:<team-url> entries');
+    }
+
+    const domain = entry.slice(0, separator_index).trim();
+    const team_url = entry.slice(separator_index + 1).trim();
+
+    if (!domain || !team_url || team_by_domain.has(domain)) {
+      throw new Error(`SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP contains an invalid or duplicate domain: ${domain}`);
+    }
+
+    team_by_domain.set(domain, team_url);
+  }
+
+  return team_by_domain;
 };
+
+export const getOidcTeamUrlForEmail = (email: string) => {
+  const domain = getEmailDomain(email);
+
+  return getTeamDomainMap().get(domain) ?? null;
+};
+
+export const isOidcAutoProvisioningEnabled = () => isEnabled();
 
 export const provisionOidcUser = async ({
   userId,
@@ -77,12 +103,13 @@ export const provisionOidcUser = async ({
     return { provisioned: false };
   }
 
-  if (!shouldProvisionEmail(email)) {
-    return { provisioned: false };
+  const team_url = getOidcTeamUrlForEmail(email);
+
+  if (!team_url) {
+    throw new Error(`OIDC auto-provision email domain is not mapped: ${getEmailDomain(email) || 'missing'}`);
   }
 
   const organisation_url = getRequiredEnv('SELF_HOSTED_OIDC_DEFAULT_ORGANISATION_URL');
-  const team_url = getRequiredEnv('SELF_HOSTED_OIDC_DEFAULT_TEAM_URL');
   const organisation_role = getOrganisationRole('SELF_HOSTED_OIDC_DEFAULT_ORGANISATION_ROLE');
   const team_role = getTeamRole('SELF_HOSTED_OIDC_DEFAULT_TEAM_ROLE');
 
