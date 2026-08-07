@@ -17,6 +17,7 @@ export const generateSampleWebhookPayload = (event: WebhookTriggerEvents, webhoo
   const now = new Date();
   const basePayload = {
     id: 10,
+    envelopeId: 'envelope_sample',
     externalId: null,
     userId: 1,
     authOptions: null,
