@@ -109,4 +109,88 @@ describe('commitPendingPreparation', () => {
       data: { status: 'PENDING' },
     });
   });
+
+  it('authorizes a committed replay before returning its envelope', async () => {
+    mocks.prisma.pendingPreparation.findUnique.mockResolvedValue({
+      ...pending,
+      status: 'COMMITTED',
+      committedEnvelopeId: 'envelope_1',
+    });
+
+    await expect(
+      commitPendingPreparation({
+        id: pending.id,
+        userId: 1,
+        userEmail: 'other@example.com',
+        requestMetadata: {} as never,
+      }),
+    ).rejects.toThrow('Pending preparation does not belong to this user');
+
+    expect(mocks.prisma.envelope.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('recovers a stale committed claim without an envelope', async () => {
+    const stalePending = {
+      ...pending,
+      status: 'COMMITTED' as const,
+      updatedAt: new Date(Date.now() - 31 * 60 * 1000),
+    };
+
+    mocks.prisma.pendingPreparation.findUnique.mockResolvedValueOnce(stalePending).mockResolvedValueOnce(pending);
+    mocks.prisma.envelope.findFirst.mockResolvedValue(null);
+    mocks.createEnvelope.mockResolvedValue({ id: 'envelope_1' } as never);
+
+    await expect(
+      commitPendingPreparation({
+        id: pending.id,
+        userId: 1,
+        userEmail: pending.actorEmail,
+        requestMetadata: {} as never,
+      }),
+    ).resolves.toEqual({ id: 'envelope_1' });
+
+    expect(mocks.prisma.pendingPreparation.updateMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        id: pending.id,
+        status: 'COMMITTED',
+        committedEnvelopeId: null,
+        updatedAt: { lt: expect.any(Date) },
+      },
+      data: { status: 'PENDING' },
+    });
+  });
+
+  it('retries template distribution when a committed envelope is still a draft', async () => {
+    const committedPending = {
+      ...pending,
+      status: 'COMMITTED' as const,
+      committedEnvelopeId: 'envelope_1',
+      payload: {
+        kind: 'template',
+        distributeDocument: true,
+      },
+    };
+    const draftEnvelope = { id: 'envelope_1', status: 'DRAFT' };
+    const sentEnvelope = { id: 'envelope_1', status: 'PENDING' };
+
+    mocks.prisma.pendingPreparation.findUnique.mockResolvedValue(committedPending);
+    mocks.prisma.envelope.findUnique.mockResolvedValue(draftEnvelope as never);
+    mocks.sendDocument.mockResolvedValue(sentEnvelope as never);
+
+    await expect(
+      commitPendingPreparation({
+        id: pending.id,
+        userId: 1,
+        userEmail: pending.actorEmail,
+        requestMetadata: {} as never,
+      }),
+    ).resolves.toEqual(sentEnvelope);
+
+    expect(mocks.sendDocument).toHaveBeenCalledWith({
+      id: { type: 'envelopeId', id: 'envelope_1' },
+      userId: 1,
+      teamId: pending.teamId,
+      requestMetadata: {},
+    });
+  });
 });

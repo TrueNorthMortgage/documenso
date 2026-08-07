@@ -36,8 +36,8 @@ export const run = async ({ io }: { payload: TCleanupRateLimitsJobDefinition; io
 
   const expiredPendingPreparations = await prisma.pendingPreparation.findMany({
     where: {
-      status: { in: ['PENDING', 'EXPIRED'] },
       expiresAt: { lt: new Date() },
+      OR: [{ status: { in: ['PENDING', 'EXPIRED'] } }, { status: 'COMMITTED', committedEnvelopeId: null }],
     },
     select: {
       id: true,

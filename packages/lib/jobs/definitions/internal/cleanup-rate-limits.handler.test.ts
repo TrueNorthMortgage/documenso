@@ -56,6 +56,19 @@ describe('cleanup-rate-limits handler', () => {
           },
         ],
       },
+      {
+        id: 'pending_3',
+        documents: [
+          {
+            documentData: {
+              id: 'data_3',
+              type: 'S3_PATH',
+              data: 'uploads/data_3.pdf',
+              envelopeItem: null,
+            },
+          },
+        ],
+      },
     ]);
   });
 
@@ -64,8 +77,8 @@ describe('cleanup-rate-limits handler', () => {
 
     expect(mocks.prisma.pendingPreparation.findMany).toHaveBeenCalledWith({
       where: {
-        status: { in: ['PENDING', 'EXPIRED'] },
         expiresAt: { lt: expect.any(Date) },
+        OR: [{ status: { in: ['PENDING', 'EXPIRED'] } }, { status: 'COMMITTED', committedEnvelopeId: null }],
       },
       select: {
         id: true,
@@ -85,7 +98,8 @@ describe('cleanup-rate-limits handler', () => {
     });
     expect(mocks.deleteFile).toHaveBeenNthCalledWith(1, { type: 'S3_PATH', data: 'uploads/data_1.pdf' });
     expect(mocks.deleteFile).toHaveBeenNthCalledWith(2, { type: 'BYTES', data: 'encoded-data' });
-    expect(mocks.prisma.documentData.delete).toHaveBeenCalledTimes(2);
-    expect(mocks.prisma.pendingPreparation.delete).toHaveBeenCalledTimes(2);
+    expect(mocks.deleteFile).toHaveBeenNthCalledWith(3, { type: 'S3_PATH', data: 'uploads/data_3.pdf' });
+    expect(mocks.prisma.documentData.delete).toHaveBeenCalledTimes(3);
+    expect(mocks.prisma.pendingPreparation.delete).toHaveBeenCalledTimes(3);
   });
 });
