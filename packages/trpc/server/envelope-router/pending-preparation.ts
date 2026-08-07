@@ -94,6 +94,7 @@ export const pendingPreparationRoute = authenticatedProcedure
             order: index + 1,
             fileMetadata: {
               name: item.title,
+              placeholders: item.placeholders,
             },
           })),
         },

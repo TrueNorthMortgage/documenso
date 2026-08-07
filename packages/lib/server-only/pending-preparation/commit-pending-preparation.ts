@@ -1,5 +1,7 @@
+import { getServerLimits } from '@documenso/ee/server-only/limits/server';
 import { prisma } from '@documenso/prisma';
 import type { Envelope } from '@prisma/client';
+import { DocumentStatus } from '@prisma/client';
 import { ZCreateEnvelopePayloadSchema } from '../../../trpc/server/envelope-router/create-envelope.types';
 import { ZCreateDocumentFromTemplateRequestSchema } from '../../../trpc/server/template-router/schema';
 import { AppError, AppErrorCode } from '../../errors/app-error';
@@ -9,6 +11,7 @@ import { sendDocument } from '../document/send-document';
 import { createEnvelope } from '../envelope/create-envelope';
 import { mapEnvelopeRecipients } from '../envelope/map-envelope-recipients';
 import { createDocumentFromTemplate } from '../template/create-document-from-template';
+import { getPendingPreparationDocumentMetadata } from './document-metadata';
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
@@ -17,6 +20,11 @@ const pendingPreparationStatus = {
   COMMITTED: 'COMMITTED',
   EXPIRED: 'EXPIRED',
 } as const;
+
+const PENDING_COMMIT_CLAIM_TIMEOUT_MS = 30 * 60 * 1000;
+
+const shouldDistributeTemplate = (payload: Record<string, unknown>) =>
+  payload.kind === 'template' && payload.distributeDocument === true;
 
 export const commitPendingPreparation = async ({
   id,
@@ -43,15 +51,34 @@ export const commitPendingPreparation = async ({
   }
 
   const now = new Date();
-  const externalId =
-    typeof pending.payload === 'object' && pending.payload !== null && 'externalId' in pending.payload
-      ? String(pending.payload.externalId || pending.id)
-      : pending.id;
+  const rawPayload =
+    typeof pending.payload === 'object' && pending.payload !== null ? (pending.payload as Record<string, unknown>) : {};
+  const externalId = String(rawPayload.externalId || pending.id);
+
+  if (normalizeEmail(pending.actorEmail) !== normalizeEmail(userEmail)) {
+    throw new AppError(AppErrorCode.UNAUTHORIZED, { message: 'Pending preparation does not belong to this user' });
+  }
+
+  const team = await prisma.team.findFirst({
+    where: buildTeamWhereQuery({ teamId: pending.teamId, userId }),
+    select: { id: true },
+  });
+
+  if (!team) {
+    throw new AppError(AppErrorCode.UNAUTHORIZED, { message: 'User is not a member of the pending team' });
+  }
 
   if (pending.status === pendingPreparationStatus.COMMITTED) {
     const existingEnvelope = pending.committedEnvelopeId
       ? await prisma.envelope.findUnique({ where: { id: pending.committedEnvelopeId } })
-      : await prisma.envelope.findFirst({ where: { externalId } });
+      : await prisma.envelope.findFirst({
+          where: {
+            externalId,
+            teamId: pending.teamId,
+            userId,
+            createdAt: { gte: pending.createdAt },
+          },
+        });
 
     if (existingEnvelope) {
       if (!pending.committedEnvelopeId) {
@@ -61,7 +88,44 @@ export const commitPendingPreparation = async ({
         });
       }
 
+      if (shouldDistributeTemplate(rawPayload) && existingEnvelope.status === DocumentStatus.DRAFT) {
+        return sendDocument({
+          id: { type: 'envelopeId', id: existingEnvelope.id },
+          userId,
+          teamId: pending.teamId,
+          requestMetadata,
+        });
+      }
+
       return existingEnvelope;
+    }
+
+    if (pending.expiresAt <= now) {
+      await prisma.pendingPreparation.updateMany({
+        where: {
+          id: pending.id,
+          status: pendingPreparationStatus.COMMITTED,
+          committedEnvelopeId: null,
+        },
+        data: { status: pendingPreparationStatus.EXPIRED },
+      });
+
+      throw new AppError(AppErrorCode.NOT_FOUND, { message: 'Pending preparation has expired' });
+    }
+
+    const staleClaimCutoff = new Date(now.getTime() - PENDING_COMMIT_CLAIM_TIMEOUT_MS);
+    const recovered = await prisma.pendingPreparation.updateMany({
+      where: {
+        id: pending.id,
+        status: pendingPreparationStatus.COMMITTED,
+        committedEnvelopeId: null,
+        updatedAt: { lt: staleClaimCutoff },
+      },
+      data: { status: pendingPreparationStatus.PENDING },
+    });
+
+    if (recovered.count === 1) {
+      return commitPendingPreparation({ id, userId, userEmail, requestMetadata });
     }
 
     throw new AppError('PENDING_PREPARATION_BUSY', {
@@ -79,19 +143,6 @@ export const commitPendingPreparation = async ({
     throw new AppError(AppErrorCode.NOT_FOUND, { message: 'Pending preparation has expired' });
   }
 
-  if (normalizeEmail(pending.actorEmail) !== normalizeEmail(userEmail)) {
-    throw new AppError(AppErrorCode.UNAUTHORIZED, { message: 'Pending preparation does not belong to this user' });
-  }
-
-  const team = await prisma.team.findFirst({
-    where: buildTeamWhereQuery({ teamId: pending.teamId, userId }),
-    select: { id: true },
-  });
-
-  if (!team) {
-    throw new AppError(AppErrorCode.UNAUTHORIZED, { message: 'User is not a member of the pending team' });
-  }
-
   const claimed = await prisma.pendingPreparation.updateMany({
     where: {
       id: pending.id,
@@ -105,82 +156,118 @@ export const commitPendingPreparation = async ({
     return commitPendingPreparation({ id, userId, userEmail, requestMetadata });
   }
 
-  const rawPayload =
-    typeof pending.payload === 'object' && pending.payload !== null ? (pending.payload as Record<string, unknown>) : {};
+  let createdEnvelope: Envelope | undefined;
 
-  if (rawPayload.kind === 'template') {
-    const payload = ZCreateDocumentFromTemplateRequestSchema.parse(rawPayload);
-    const envelope = await createDocumentFromTemplate({
-      id: {
-        type: 'templateId',
-        id: payload.templateId,
-      },
-      externalId,
+  try {
+    const { remaining } = await getServerLimits({
       userId,
       teamId: pending.teamId,
-      recipients: payload.recipients,
-      customDocumentData: payload.customDocumentData,
-      folderId: payload.folderId,
-      prefillFields: payload.prefillFields,
-      override: payload.override,
-      attachments: payload.attachments,
-      formValues: payload.formValues,
-      requestMetadata,
     });
 
-    if (payload.distributeDocument) {
-      await sendDocument({
-        id: { type: 'envelopeId', id: envelope.id },
-        userId,
-        teamId: pending.teamId,
-        requestMetadata,
+    if (remaining.documents <= 0) {
+      throw new AppError(AppErrorCode.LIMIT_EXCEEDED, {
+        message: 'You have reached your document limit for this month. Please upgrade your plan.',
+        statusCode: 400,
       });
     }
 
-    await prisma.pendingPreparation.update({
-      where: { id: pending.id },
-      data: { committedEnvelopeId: envelope.id },
+    if (rawPayload.kind === 'template') {
+      const payload = ZCreateDocumentFromTemplateRequestSchema.parse(rawPayload);
+      createdEnvelope = await createDocumentFromTemplate({
+        id: {
+          type: 'templateId',
+          id: payload.templateId,
+        },
+        externalId,
+        userId,
+        teamId: pending.teamId,
+        recipients: payload.recipients,
+        customDocumentData: payload.customDocumentData,
+        folderId: payload.folderId,
+        prefillFields: payload.prefillFields,
+        override: payload.override,
+        attachments: payload.attachments,
+        formValues: payload.formValues,
+        requestMetadata,
+      });
+
+      await prisma.pendingPreparation.update({
+        where: { id: pending.id },
+        data: { committedEnvelopeId: createdEnvelope.id },
+      });
+
+      if (payload.distributeDocument) {
+        createdEnvelope = await sendDocument({
+          id: { type: 'envelopeId', id: createdEnvelope.id },
+          userId,
+          teamId: pending.teamId,
+          requestMetadata,
+        });
+      }
+
+      return createdEnvelope;
+    }
+
+    const payload = ZCreateEnvelopePayloadSchema.parse(pending.payload);
+    const envelopeItems = pending.documents.map((document) => {
+      const metadata = getPendingPreparationDocumentMetadata(document.fileMetadata);
+
+      return {
+        title: metadata.name || payload.title,
+        documentDataId: document.documentDataId,
+        order: document.order,
+        placeholders: metadata.placeholders,
+      };
     });
 
-    return envelope;
+    createdEnvelope = await createEnvelope({
+      userId,
+      teamId: pending.teamId,
+      internalVersion: 2,
+      data: {
+        type: 'DOCUMENT',
+        title: payload.title,
+        externalId,
+        formValues: payload.formValues,
+        visibility: payload.visibility,
+        globalAccessAuth: payload.globalAccessAuth,
+        globalActionAuth: payload.globalActionAuth,
+        recipients: mapEnvelopeRecipients(payload.recipients, envelopeItems),
+        folderId: payload.folderId,
+        envelopeItems,
+      },
+      attachments: payload.attachments,
+      meta: payload.meta,
+      requestMetadata,
+    });
+
+    await prisma.pendingPreparation.update({
+      where: { id: pending.id },
+      data: { committedEnvelopeId: createdEnvelope.id },
+    });
+
+    return createdEnvelope;
+  } catch (error) {
+    if (createdEnvelope) {
+      await prisma.pendingPreparation.updateMany({
+        where: {
+          id: pending.id,
+          status: pendingPreparationStatus.COMMITTED,
+          committedEnvelopeId: null,
+        },
+        data: { committedEnvelopeId: createdEnvelope.id },
+      });
+    } else {
+      await prisma.pendingPreparation.updateMany({
+        where: {
+          id: pending.id,
+          status: pendingPreparationStatus.COMMITTED,
+          committedEnvelopeId: null,
+        },
+        data: { status: pendingPreparationStatus.PENDING },
+      });
+    }
+
+    throw error;
   }
-
-  const payload = ZCreateEnvelopePayloadSchema.parse(pending.payload);
-  const envelopeItems = pending.documents.map((document) => ({
-    title: String(
-      document.fileMetadata && typeof document.fileMetadata === 'object' && 'name' in document.fileMetadata
-        ? document.fileMetadata.name
-        : payload.title,
-    ),
-    documentDataId: document.documentDataId,
-    order: document.order,
-  }));
-
-  const envelope = await createEnvelope({
-    userId,
-    teamId: pending.teamId,
-    internalVersion: 2,
-    data: {
-      type: 'DOCUMENT',
-      title: payload.title,
-      externalId,
-      formValues: payload.formValues,
-      visibility: payload.visibility,
-      globalAccessAuth: payload.globalAccessAuth,
-      globalActionAuth: payload.globalActionAuth,
-      recipients: mapEnvelopeRecipients(payload.recipients, envelopeItems),
-      folderId: payload.folderId,
-      envelopeItems,
-    },
-    attachments: payload.attachments,
-    meta: payload.meta,
-    requestMetadata,
-  });
-
-  await prisma.pendingPreparation.update({
-    where: { id: pending.id },
-    data: { committedEnvelopeId: envelope.id },
-  });
-
-  return envelope;
 };

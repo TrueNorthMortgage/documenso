@@ -54,10 +54,9 @@ The first self-hosted release is `1.0.0`. Changes are intentionally limited to g
 Deployment-specific values must stay outside this public fork. Configure them through environment variables:
 
 - `SELF_HOSTED_OIDC_AUTO_PROVISION_ENABLED`
-- `SELF_HOSTED_OIDC_AUTO_PROVISION_DOMAINS`
+- `SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP` (comma-separated `<email-domain>:<team-url>` entries)
 - `SELF_HOSTED_OIDC_AUTO_PROVISION_REDIRECT_TO_TEAM`
 - `SELF_HOSTED_OIDC_DEFAULT_ORGANISATION_URL`
-- `SELF_HOSTED_OIDC_DEFAULT_TEAM_URL`
 - `SELF_HOSTED_OIDC_DEFAULT_ORGANISATION_ROLE`
 - `SELF_HOSTED_OIDC_DEFAULT_TEAM_ROLE`
 - `SELF_HOSTED_BOOTSTRAP_ADMIN_EMAIL`
