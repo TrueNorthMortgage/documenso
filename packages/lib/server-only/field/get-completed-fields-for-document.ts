@@ -1,20 +1,26 @@
 import { prisma } from '@documenso/prisma';
 import { SigningStatus } from '@prisma/client';
 
+import { getConditionalFieldVisibility } from '../../universal/conditional-field-visibility';
+import { mapDocumentIdToSecondaryId } from '../../utils/envelope';
+
 export type GetCompletedFieldsForDocumentOptions = {
   documentId: number;
 };
 
 export const getCompletedFieldsForDocument = async ({ documentId }: GetCompletedFieldsForDocumentOptions) => {
-  return await prisma.field.findMany({
+  const fields = await prisma.field.findMany({
     where: {
-      documentId,
+      envelope: {
+        secondaryId: mapDocumentIdToSecondaryId(documentId),
+      },
       recipient: {
         signingStatus: SigningStatus.SIGNED,
       },
       inserted: true,
     },
     include: {
+      conditionalChildRule: true,
       signature: true,
       recipient: {
         select: {
@@ -24,4 +30,8 @@ export const getCompletedFieldsForDocument = async ({ documentId }: GetCompleted
       },
     },
   });
+
+  const visibility = getConditionalFieldVisibility(fields);
+
+  return fields.filter((field) => visibility.get(field.id) ?? true);
 };

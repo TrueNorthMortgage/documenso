@@ -3,6 +3,7 @@ import { validateDropdownField } from '@documenso/lib/advanced-fields-validation
 import { validateNumberField } from '@documenso/lib/advanced-fields-validation/validate-number';
 import { validateRadioField } from '@documenso/lib/advanced-fields-validation/validate-radio';
 import { validateTextField } from '@documenso/lib/advanced-fields-validation/validate-text';
+import { assertConditionalFieldIsVisible } from '@documenso/lib/server-only/field/assert-conditional-field-visible';
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import { prisma } from '@documenso/prisma';
 import { DocumentStatus, FieldType, RecipientRole, SigningStatus } from '@prisma/client';
@@ -118,6 +119,11 @@ export const signFieldWithToken = async ({
   if (field.inserted) {
     throw new Error(`Field ${fieldId} has already been inserted`);
   }
+
+  await assertConditionalFieldIsVisible({
+    fieldId: field.id,
+    envelopeItemId: field.envelopeItemId,
+  });
 
   // Unreachable code based on the above query but we need to satisfy TypeScript
   if (field.recipientId === null) {

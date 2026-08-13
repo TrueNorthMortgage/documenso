@@ -1,6 +1,8 @@
 import { prisma } from '@documenso/prisma';
 import { EnvelopeType, FieldType, RecipientRole, SigningStatus } from '@prisma/client';
 
+import { getConditionalFieldVisibility } from '../../universal/conditional-field-visibility';
+
 export type GetFieldsForTokenOptions = {
   token: string;
 };
@@ -20,7 +22,7 @@ export const getFieldsForToken = async ({ token }: GetFieldsForTokenOptions) => 
   }
 
   if (recipient.role === RecipientRole.ASSISTANT) {
-    return await prisma.field.findMany({
+    const fields = await prisma.field.findMany({
       where: {
         OR: [
           {
@@ -47,17 +49,27 @@ export const getFieldsForToken = async ({ token }: GetFieldsForTokenOptions) => 
         ],
       },
       include: {
+        conditionalChildRule: true,
         signature: true,
       },
     });
+
+    const visibility = getConditionalFieldVisibility(fields);
+
+    return fields.filter((field) => visibility.get(field.id) ?? true);
   }
 
-  return await prisma.field.findMany({
+  const fields = await prisma.field.findMany({
     where: {
       recipientId: recipient.id,
     },
     include: {
+      conditionalChildRule: true,
       signature: true,
     },
   });
+
+  const visibility = getConditionalFieldVisibility(fields);
+
+  return fields.filter((field) => visibility.get(field.id) ?? true);
 };

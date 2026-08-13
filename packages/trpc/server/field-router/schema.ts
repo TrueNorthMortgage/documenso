@@ -1,4 +1,5 @@
 import { ZRecipientActionAuthSchema } from '@documenso/lib/types/document-auth';
+import { ZConditionalFieldRuleOperatorSchema } from '@documenso/lib/types/conditional-field';
 import {
   ZFieldHeightSchema,
   ZFieldPageNumberSchema,
@@ -103,6 +104,27 @@ export const ZUpdateTemplateFieldResponseSchema = ZFieldSchema;
 
 export const ZDeleteTemplateFieldRequestSchema = z.object({
   fieldId: z.number(),
+});
+
+export const ZCreateConditionalFieldRuleRequestSchema = z.object({
+  childFieldId: z.number(),
+  parentFieldId: z.number(),
+  operator: ZConditionalFieldRuleOperatorSchema,
+  value: z.string().nullable().optional(),
+});
+
+export const ZCreateConditionalFieldRuleResponseSchema = z.object({
+  id: z.number(),
+  childFieldId: z.number(),
+  parentFieldId: z.number(),
+  operator: ZConditionalFieldRuleOperatorSchema,
+  value: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const ZDeleteConditionalFieldRuleRequestSchema = z.object({
+  childFieldId: z.number(),
 });
 
 export const ZSetDocumentFieldsRequestSchema = z.object({

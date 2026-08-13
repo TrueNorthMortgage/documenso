@@ -1,6 +1,7 @@
 import { isBase64Image } from '@documenso/lib/constants/signatures';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { validateFieldAuth } from '@documenso/lib/server-only/document/validate-field-auth';
+import { assertConditionalFieldIsVisible } from '@documenso/lib/server-only/field/assert-conditional-field-visible';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { extractFieldInsertionValues } from '@documenso/lib/utils/envelope-signing';
@@ -119,6 +120,11 @@ export const signEnvelopeFieldRoute = procedure
         message: `Field ${fieldId} is read only`,
       });
     }
+
+    await assertConditionalFieldIsVisible({
+      fieldId: field.id,
+      envelopeItemId: field.envelopeItemId,
+    });
 
     // Unreachable code based on the above query but we need to satisfy TypeScript
     if (field.recipientId === null) {

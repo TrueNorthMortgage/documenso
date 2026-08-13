@@ -1,3 +1,7 @@
+import {
+  createConditionalFieldRule,
+  deleteConditionalFieldRule,
+} from '@documenso/lib/server-only/field/conditional-field-rule';
 import { createEnvelopeFields } from '@documenso/lib/server-only/field/create-envelope-fields';
 import { deleteDocumentField } from '@documenso/lib/server-only/field/delete-document-field';
 import { deleteTemplateField } from '@documenso/lib/server-only/field/delete-template-field';
@@ -12,6 +16,8 @@ import { EnvelopeType } from '@prisma/client';
 import { ZGenericSuccessResponse, ZSuccessResponseSchema } from '../schema';
 import { authenticatedProcedure, procedure, router } from '../trpc';
 import {
+  ZCreateConditionalFieldRuleRequestSchema,
+  ZCreateConditionalFieldRuleResponseSchema,
   ZCreateDocumentFieldRequestSchema,
   ZCreateDocumentFieldResponseSchema,
   ZCreateDocumentFieldsRequestSchema,
@@ -20,6 +26,7 @@ import {
   ZCreateTemplateFieldResponseSchema,
   ZCreateTemplateFieldsRequestSchema,
   ZCreateTemplateFieldsResponseSchema,
+  ZDeleteConditionalFieldRuleRequestSchema,
   ZDeleteDocumentFieldRequestSchema,
   ZDeleteTemplateFieldRequestSchema,
   ZGetFieldRequestSchema,
@@ -41,6 +48,48 @@ import {
 } from './schema';
 
 export const fieldRouter = router({
+  createConditionalFieldRule: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: 'POST',
+        path: '/field/conditional-rule/create',
+        summary: 'Create a conditional field rule',
+        description: 'Show a child field when a parent field matches a configured value.',
+        tags: ['Document Fields'],
+      },
+    })
+    .input(ZCreateConditionalFieldRuleRequestSchema)
+    .output(ZCreateConditionalFieldRuleResponseSchema)
+    .mutation(async ({ input, ctx }) => {
+      return await createConditionalFieldRule({
+        userId: ctx.user.id,
+        teamId: ctx.teamId,
+        ...input,
+      });
+    }),
+
+  deleteConditionalFieldRule: authenticatedProcedure
+    .meta({
+      openapi: {
+        method: 'POST',
+        path: '/field/conditional-rule/delete',
+        summary: 'Delete a conditional field rule',
+        description: 'Remove the conditional visibility rule from a child field.',
+        tags: ['Document Fields'],
+      },
+    })
+    .input(ZDeleteConditionalFieldRuleRequestSchema)
+    .output(ZSuccessResponseSchema)
+    .mutation(async ({ input, ctx }) => {
+      await deleteConditionalFieldRule({
+        userId: ctx.user.id,
+        teamId: ctx.teamId,
+        ...input,
+      });
+
+      return ZGenericSuccessResponse;
+    }),
+
   /**
    * @public
    */

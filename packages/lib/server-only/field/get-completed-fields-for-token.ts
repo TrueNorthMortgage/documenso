@@ -1,13 +1,15 @@
 import { prisma } from '@documenso/prisma';
 import { EnvelopeType, SigningStatus } from '@prisma/client';
 
+import { getConditionalFieldVisibility } from '../../universal/conditional-field-visibility';
+
 export type GetCompletedFieldsForTokenOptions = {
   token: string;
 };
 
 // Note: You many need to filter this on a per envelope item ID basis.
 export const getCompletedFieldsForToken = async ({ token }: GetCompletedFieldsForTokenOptions) => {
-  return await prisma.field.findMany({
+  const fields = await prisma.field.findMany({
     where: {
       envelope: {
         type: EnvelopeType.DOCUMENT,
@@ -23,6 +25,7 @@ export const getCompletedFieldsForToken = async ({ token }: GetCompletedFieldsFo
       inserted: true,
     },
     include: {
+      conditionalChildRule: true,
       signature: true,
       recipient: {
         select: {
@@ -33,4 +36,8 @@ export const getCompletedFieldsForToken = async ({ token }: GetCompletedFieldsFo
       },
     },
   });
+
+  const visibility = getConditionalFieldVisibility(fields);
+
+  return fields.filter((field) => visibility.get(field.id) ?? true);
 };

@@ -59,7 +59,12 @@ export const getEditorEnvelopeById = async ({ id, userId, teamId, type }: GetEdi
           id: 'asc',
         },
       },
-      fields: true,
+      fields: {
+        include: {
+          conditionalChildRule: true,
+          conditionalParentRules: true,
+        },
+      },
       team: {
         select: {
           id: true,

@@ -26,6 +26,7 @@ import { DocumentAccessAuth, ZRecipientAuthOptionsSchema } from '../../types/doc
 import { extractDerivedDocumentEmailSettings } from '../../types/document-email';
 import { ZFieldMetaSchema } from '../../types/field-meta';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
+import { getConditionalFieldVisibility } from '../../universal/conditional-field-visibility';
 import type { ApiRequestMetadata } from '../../universal/extract-request-metadata';
 import { getFileServerSide } from '../../universal/upload/get-file.server';
 import { putPdfFileServerSide } from '../../universal/upload/put-file.server';
@@ -98,7 +99,11 @@ export const createDocumentFromDirectTemplate = async ({
     include: {
       recipients: {
         include: {
-          fields: true,
+          fields: {
+            include: {
+              conditionalChildRule: true,
+            },
+          },
         },
       },
       directLink: true,
@@ -185,7 +190,18 @@ export const createDocumentFromDirectTemplate = async ({
 
   // Associate, validate and map to a query every direct template recipient field with the provided fields.
   // Only process fields that are either required or have been signed by the user
+  const directTemplateFieldsWithValues = directTemplateRecipient.fields.map((templateField) => {
+    const signedFieldValue = signedFieldValues.find((value) => value.fieldId === templateField.id);
+
+    return signedFieldValue ? { ...templateField, customText: signedFieldValue.value ?? '' } : templateField;
+  });
+  const directTemplateFieldVisibility = getConditionalFieldVisibility(directTemplateFieldsWithValues);
+
   const fieldsToProcess = directTemplateRecipient.fields.filter((templateField) => {
+    if (!(directTemplateFieldVisibility.get(templateField.id) ?? true)) {
+      return false;
+    }
+
     const signedFieldValue = signedFieldValues.find((value) => value.fieldId === templateField.id);
 
     // Custom logic for V2 to include all fields, since v1 excludes read only
@@ -372,7 +388,10 @@ export const createDocumentFromDirectTemplate = async ({
       },
     });
 
-    let nonDirectRecipientFieldsToCreate: Omit<Field, 'id' | 'secondaryId' | 'templateId'>[] = [];
+    type NonDirectRecipientFieldToCreate = Omit<Field, 'id' | 'secondaryId' | 'templateId'> & {
+      sourceFieldId: number;
+    };
+    let nonDirectRecipientFieldsToCreate: NonDirectRecipientFieldToCreate[] = [];
 
     Object.values(nonDirectTemplateRecipients).forEach((templateRecipient) => {
       const recipient = createdEnvelope.recipients.find((recipient) => recipient.email === templateRecipient.email);
@@ -383,6 +402,7 @@ export const createDocumentFromDirectTemplate = async ({
 
       nonDirectRecipientFieldsToCreate = nonDirectRecipientFieldsToCreate.concat(
         templateRecipient.fields.map((field) => ({
+          sourceFieldId: field.id,
           envelopeId: createdEnvelope.id,
           envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[field.envelopeItemId],
           recipientId: recipient.id,
@@ -400,12 +420,22 @@ export const createDocumentFromDirectTemplate = async ({
       );
     });
 
-    await tx.field.createMany({
-      data: nonDirectRecipientFieldsToCreate.map((field) => ({
-        ...field,
-        fieldMeta: field.fieldMeta ? ZFieldMetaSchema.parse(field.fieldMeta) : undefined,
-      })),
-    });
+    const createdNonDirectRecipientFields = await Promise.all(
+      nonDirectRecipientFieldsToCreate.map(({ sourceFieldId: _sourceFieldId, ...field }) =>
+        tx.field.create({
+          data: {
+            ...field,
+            fieldMeta: field.fieldMeta ? ZFieldMetaSchema.parse(field.fieldMeta) : undefined,
+          },
+        }),
+      ),
+    );
+    const createdFieldBySourceId = new Map(
+      nonDirectRecipientFieldsToCreate.map((field, index) => [
+        field.sourceFieldId,
+        createdNonDirectRecipientFields[index].id,
+      ]),
+    );
 
     // Create the direct recipient and their non signature fields.
     const createdDirectRecipient = await tx.recipient.create({
@@ -423,37 +453,36 @@ export const createDocumentFromDirectTemplate = async ({
         sendStatus: SendStatus.SENT,
         signedAt: initialRequestTime,
         signingOrder: directTemplateRecipient.signingOrder,
-        fields: {
-          createMany: {
-            data: directTemplateNonSignatureFields.map(({ templateField, customText }) => {
-              let inserted = true;
-
-              // Custom logic for V2 to only insert if values exist.
-              if (directTemplateEnvelope.internalVersion === 2) {
-                inserted = customText !== '';
-              }
-
-              return {
-                envelopeId: createdEnvelope.id,
-                envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[templateField.envelopeItemId],
-                type: templateField.type,
-                page: templateField.page,
-                positionX: templateField.positionX,
-                positionY: templateField.positionY,
-                width: templateField.width,
-                height: templateField.height,
-                customText: customText ?? '',
-                inserted,
-                fieldMeta: templateField.fieldMeta || Prisma.JsonNull,
-              };
-            }),
-          },
-        },
-      },
-      include: {
-        fields: true,
       },
     });
+
+    const createdDirectRecipientNonSignatureFields = await Promise.all(
+      directTemplateNonSignatureFields.map(({ templateField, customText }) => {
+        let inserted = true;
+
+        // Custom logic for V2 to only insert if values exist.
+        if (directTemplateEnvelope.internalVersion === 2) {
+          inserted = customText !== '';
+        }
+
+        return tx.field.create({
+          data: {
+            envelopeId: createdEnvelope.id,
+            envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[templateField.envelopeItemId],
+            recipientId: createdDirectRecipient.id,
+            type: templateField.type,
+            page: templateField.page,
+            positionX: templateField.positionX,
+            positionY: templateField.positionY,
+            width: templateField.width,
+            height: templateField.height,
+            customText: customText ?? '',
+            inserted,
+            fieldMeta: templateField.fieldMeta || Prisma.JsonNull,
+          },
+        });
+      }),
+    );
 
     // Create any direct recipient signature fields.
     // Note: It's done like this because we can't nest things in createMany.
@@ -497,13 +526,53 @@ export const createDocumentFromDirectTemplate = async ({
       }),
     );
 
-    const createdDirectRecipientFields: CreatedDirectRecipientField[] = [
-      ...createdDirectRecipient.fields.map((field) => ({
+    const createdDirectRecipientFieldsWithActions: CreatedDirectRecipientField[] = [
+      ...createdDirectRecipientNonSignatureFields.map((field) => ({
         field,
         derivedRecipientActionAuth: undefined,
       })),
       ...createdDirectRecipientSignatureFields,
     ];
+
+    const createdDirectFieldBySourceId = new Map<number, number>();
+
+    directTemplateNonSignatureFields.forEach(({ templateField }, index) => {
+      createdDirectFieldBySourceId.set(templateField.id, createdDirectRecipientNonSignatureFields[index].id);
+    });
+
+    directTemplateSignatureFields.forEach(({ templateField }, index) => {
+      createdDirectFieldBySourceId.set(templateField.id, createdDirectRecipientSignatureFields[index].field.id);
+    });
+
+    const conditionalRules = [...directTemplateEnvelope.recipients.flatMap((recipient) => recipient.fields)].flatMap(
+      (sourceField) => {
+        const rule = sourceField.conditionalChildRule;
+        const childFieldId =
+          createdFieldBySourceId.get(sourceField.id) ?? createdDirectFieldBySourceId.get(sourceField.id);
+        const parentFieldId = rule
+          ? (createdFieldBySourceId.get(rule.parentFieldId) ?? createdDirectFieldBySourceId.get(rule.parentFieldId))
+          : undefined;
+
+        if (!rule || !childFieldId || !parentFieldId) {
+          return [];
+        }
+
+        return [
+          {
+            childFieldId,
+            parentFieldId,
+            operator: rule.operator,
+            value: rule.value,
+          },
+        ];
+      },
+    );
+
+    if (conditionalRules.length > 0) {
+      await tx.conditionalFieldRule.createMany({ data: conditionalRules });
+    }
+
+    const createdDirectRecipientFields: CreatedDirectRecipientField[] = createdDirectRecipientFieldsWithActions;
 
     /**
      * Create the following audit logs.
