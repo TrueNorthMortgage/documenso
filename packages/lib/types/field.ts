@@ -42,11 +42,13 @@ export const ZFieldSchema = FieldSchema.pick({
   height: true,
   customText: true,
   inserted: true,
+  templateSourceItemId: true,
   fieldMeta: true,
 }).extend({
   // Backwards compatibility.
   documentId: z.number().nullish(),
   templateId: z.number().nullish(),
+  templateSourceItemId: z.string().nullable().default(null),
 });
 
 export const ZEnvelopeFieldSchema = ZFieldSchema.omit({
