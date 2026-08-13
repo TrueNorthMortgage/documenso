@@ -157,7 +157,6 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
 
   useEffect(() => {
     setPage(1);
-    setLoadedTemplates([]);
     setLoadedPageKey('');
     setSelectedTemplateId(undefined);
     setSelectedTemplateItemId(undefined);
@@ -167,6 +166,8 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
   useEffect(() => {
     if (
       !open ||
+      teamTemplatesQuery.isFetching ||
+      organisationTemplatesQuery.isFetching ||
       !teamTemplatesQuery.isSuccess ||
       !organisationTemplatesQuery.isSuccess ||
       teamTemplatesQuery.data.currentPage !== page ||
@@ -298,13 +299,18 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={_(msg`Search templates`)}
-          />
+          <div className="relative">
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={_(msg`Search templates`)}
+            />
+            {isFetchingPage && templates.length > 0 && (
+              <LoaderIcon className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+            )}
+          </div>
 
-          {isLoading ? (
+          {isLoading && templates.length === 0 ? (
             <p className="text-muted-foreground text-sm">
               <Trans>Loading templates...</Trans>
             </p>
