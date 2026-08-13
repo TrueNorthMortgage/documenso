@@ -1,7 +1,8 @@
 import { FieldSchema } from '@documenso/prisma/generated/zod/modelSchema/FieldSchema';
-import { FieldType, Prisma } from '@prisma/client';
+import { type ConditionalFieldRule, type Field, FieldType, Prisma } from '@prisma/client';
 import { z } from 'zod';
 
+import { ZConditionalFieldRuleSchema } from './conditional-field';
 import {
   FIELD_SIGNATURE_META_DEFAULT_VALUES,
   ZCheckboxFieldMeta,
@@ -45,6 +46,8 @@ export const ZFieldSchema = FieldSchema.pick({
   templateSourceItemId: true,
   fieldMeta: true,
 }).extend({
+  conditionalChildRule: ZConditionalFieldRuleSchema.nullable().optional(),
+  conditionalParentRules: ZConditionalFieldRuleSchema.array().optional(),
   // Backwards compatibility.
   documentId: z.number().nullish(),
   templateId: z.number().nullish(),
@@ -55,6 +58,11 @@ export const ZEnvelopeFieldSchema = ZFieldSchema.omit({
   documentId: true,
   templateId: true,
 });
+
+export type TFieldWithConditionalRules = Field & {
+  conditionalChildRule?: ConditionalFieldRule | null;
+  conditionalParentRules?: ConditionalFieldRule[];
+};
 
 export const ZFieldPageNumberSchema = z.number().min(1).describe('The page number the field will be on.');
 
