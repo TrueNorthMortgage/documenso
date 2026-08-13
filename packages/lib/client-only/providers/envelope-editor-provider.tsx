@@ -583,6 +583,7 @@ const mapLocalFieldsToFields = ({
       secondaryId: foundField?.secondaryId || '',
       inserted: foundField?.inserted || false,
       customText: foundField?.customText || '',
+      templateSourceItemId: field.templateSourceItemId ?? foundField?.templateSourceItemId ?? null,
       fieldMeta: field.fieldMeta || null,
     };
   });

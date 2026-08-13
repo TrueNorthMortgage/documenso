@@ -13,6 +13,7 @@ export type FindTemplatesOptions = {
   page?: number;
   perPage?: number;
   folderId?: string;
+  query?: string;
 };
 
 export const findTemplates = async ({
@@ -22,6 +23,7 @@ export const findTemplates = async ({
   page = 1,
   perPage = 10,
   folderId,
+  query,
 }: FindTemplatesOptions) => {
   const { teamRole } = await getMemberRoles({
     teamId,
@@ -47,6 +49,14 @@ export const findTemplates = async ({
         ],
       },
       folderId ? { folderId } : { folderId: null },
+      query?.trim()
+        ? {
+            title: {
+              contains: query.trim(),
+              mode: 'insensitive',
+            },
+          }
+        : {},
     ],
   };
 

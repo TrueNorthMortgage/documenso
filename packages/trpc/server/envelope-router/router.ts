@@ -1,4 +1,5 @@
 import { router } from '../trpc';
+import { applyTemplateToEnvelopeItemRoute } from './apply-template-to-envelope-item';
 import { createAttachmentRoute } from './attachment/create-attachment';
 import { deleteAttachmentRoute } from './attachment/delete-attachment';
 import { findAttachmentsRoute } from './attachment/find-attachments';
@@ -30,6 +31,7 @@ import { getEnvelopeItemsByTokenRoute } from './get-envelope-items-by-token';
 import { getEnvelopesByIdsRoute } from './get-envelopes-by-ids';
 import { pendingPreparationRoute } from './pending-preparation';
 import { redistributeEnvelopeRoute } from './redistribute-envelope';
+import { removeTemplateFromEnvelopeItemRoute } from './remove-template-from-envelope-item';
 import { replaceEnvelopeItemPdfRoute } from './replace-envelope-item-pdf';
 import { saveAsTemplateRoute } from './save-as-template';
 import { setEnvelopeFieldsRoute } from './set-envelope-fields';
@@ -76,6 +78,10 @@ export const envelopeRouter = router({
     delete: deleteEnvelopeFieldRoute,
     set: setEnvelopeFieldsRoute,
     sign: signEnvelopeFieldRoute,
+  },
+  template: {
+    apply: applyTemplateToEnvelopeItemRoute,
+    remove: removeTemplateFromEnvelopeItemRoute,
   },
   find: findEnvelopesRoute,
   auditLog: {

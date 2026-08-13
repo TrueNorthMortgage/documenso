@@ -689,6 +689,7 @@ model Field {
   height         Decimal      @default(-1)
   customText     String
   inserted       Boolean
+  templateSourceItemId String?
   envelopeItem   EnvelopeItem @relation(fields: [envelopeItemId], references: [id], onDelete: Cascade)
   envelope       Envelope     @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
   recipient      Recipient    @relation(fields: [recipientId], references: [id], onDelete: Cascade)
@@ -698,6 +699,7 @@ model Field {
   @@index([envelopeId])
   @@index([envelopeItemId])
   @@index([recipientId])
+  @@index([templateSourceItemId])
 }
 
 model Signature {

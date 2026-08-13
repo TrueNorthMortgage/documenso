@@ -11,6 +11,7 @@ export type FindOrganisationTemplatesOptions = {
   teamId: number;
   page?: number;
   perPage?: number;
+  query?: string;
 };
 
 export const findOrganisationTemplates = async ({
@@ -18,6 +19,7 @@ export const findOrganisationTemplates = async ({
   teamId,
   page = 1,
   perPage = 10,
+  query,
 }: FindOrganisationTemplatesOptions) => {
   const [team, { teamRole }] = await Promise.all([
     getTeamById({ teamId, userId }),
@@ -39,6 +41,14 @@ export const findOrganisationTemplates = async ({
     team: {
       organisationId: team.organisationId,
     },
+    ...(query?.trim()
+      ? {
+          title: {
+            contains: query.trim(),
+            mode: 'insensitive' as const,
+          },
+        }
+      : {}),
   };
 
   const templateInclude = {

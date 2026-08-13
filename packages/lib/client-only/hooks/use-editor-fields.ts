@@ -23,6 +23,7 @@ export const ZLocalFieldSchema = z.object({
   positionY: z.number().min(0),
   width: z.number().min(0),
   height: z.number().min(0),
+  templateSourceItemId: z.string().nullable().optional(),
   fieldMeta: ZFieldMetaSchema,
 });
 
@@ -37,6 +38,10 @@ export type TEditorFieldsFormSchema = z.infer<typeof ZEditorFieldsFormSchema>;
 type EditorFieldsProps = {
   envelope: TEditorEnvelope;
   handleFieldsUpdate: (fields: TLocalField[]) => unknown;
+};
+
+type TEditorField = Omit<Field, 'templateSourceItemId'> & {
+  templateSourceItemId?: string | null;
 };
 
 type UseEditorFieldsResponse = {
@@ -69,7 +74,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
   const [selectedFieldFormId, setSelectedFieldFormId] = useState<string | null>(null);
   const [selectedRecipientId, setSelectedRecipientId] = useState<number | null>(null);
 
-  const generateDefaultValues = (fields?: Field[]) => {
+  const generateDefaultValues = (fields?: TEditorField[]) => {
     const formFields = (fields || envelope.fields).map(
       (field): TLocalField => ({
         id: field.id,
@@ -81,6 +86,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         positionY: Number(field.positionY),
         width: Number(field.width),
         height: Number(field.height),
+        templateSourceItemId: field.templateSourceItemId ?? null,
         recipientId: field.recipientId,
         fieldMeta: field.fieldMeta ? ZFieldMetaSchema.parse(field.fieldMeta) : undefined,
       }),
@@ -280,7 +286,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
     setSelectedRecipientId(foundRecipient?.id ?? null);
   };
 
-  const resetForm = (fields?: Field[]) => {
+  const resetForm = (fields?: TEditorField[]) => {
     form.reset(generateDefaultValues(fields));
   };
 
