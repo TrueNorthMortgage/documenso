@@ -1,4 +1,5 @@
 import { ZFieldMetaSchema } from '@documenso/lib/types/field-meta';
+import { ZConditionalFieldRuleSchema } from '@documenso/lib/types/conditional-field';
 import { FieldType } from '@prisma/client';
 import { z } from 'zod';
 
@@ -7,6 +8,7 @@ export const ZAddTemplateFieldsFormSchema = z.object({
     z.object({
       formId: z.string().min(1),
       nativeId: z.number().optional(),
+      envelopeItemId: z.string().optional(),
       type: z.nativeEnum(FieldType),
       signerEmail: z.string().min(1),
       recipientId: z.number().min(1),
@@ -17,6 +19,8 @@ export const ZAddTemplateFieldsFormSchema = z.object({
       pageWidth: z.number().min(0),
       pageHeight: z.number().min(0),
       fieldMeta: ZFieldMetaSchema,
+      conditionalChildRule: ZConditionalFieldRuleSchema.nullable().optional(),
+      conditionalParentRules: ZConditionalFieldRuleSchema.array().optional(),
     }),
   ),
 });

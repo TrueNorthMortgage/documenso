@@ -58,12 +58,60 @@ export const upsertFieldRect = (field: FieldToRender, options: RenderFieldElemen
     fill: DEFAULT_RECT_BACKGROUND,
     stroke: color ? getRecipientColorStyles(color).baseRing : '#e5e7eb',
     strokeWidth: 2,
+    dash: mode === 'edit' && field.conditionalChildRule ? [4, 3] : [],
     cornerRadius: 2,
     strokeScaleEnabled: false,
     visible: mode !== 'export',
   } satisfies Partial<Konva.RectConfig>);
 
   return fieldRect;
+};
+
+export const createConditionalFieldIndicator = (field: FieldToRender, options: RenderFieldElementOptions) => {
+  const { fieldWidth } = calculateFieldPosition(field, options.pageWidth, options.pageHeight);
+
+  const indicator = new Konva.Group({
+    name: 'conditional-field-indicator',
+    x: Math.max(fieldWidth - 18, 2),
+    y: 2,
+    listening: false,
+  });
+
+  indicator.add(
+    new Konva.Circle({
+      x: 8,
+      y: 8,
+      radius: 8,
+      fill: '#111827',
+      stroke: '#f59e0b',
+      strokeWidth: 1,
+      listening: false,
+    }),
+    new Konva.Line({
+      points: [3, 8, 5, 5, 8, 4, 11, 5, 13, 8, 11, 11, 8, 12, 5, 11, 3, 8],
+      stroke: '#f59e0b',
+      strokeWidth: 1.25,
+      lineCap: 'round',
+      lineJoin: 'round',
+      listening: false,
+    }),
+    new Konva.Circle({
+      x: 8,
+      y: 8,
+      radius: 1.5,
+      fill: '#f59e0b',
+      listening: false,
+    }),
+    new Konva.Line({
+      points: [3, 3, 13, 13],
+      stroke: '#f59e0b',
+      strokeWidth: 1.5,
+      lineCap: 'round',
+      listening: false,
+    }),
+  );
+
+  return indicator;
 };
 
 export const createSpinner = ({ fieldWidth, fieldHeight }: { fieldWidth: number; fieldHeight: number }) => {

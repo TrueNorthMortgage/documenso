@@ -5,6 +5,7 @@ import type Konva from 'konva';
 import { match } from 'ts-pattern';
 
 import type { TFieldMetaSchema } from '../../types/field-meta';
+import { createConditionalFieldIndicator } from './field-generic-items';
 import { renderCheckboxFieldElement } from './render-checkbox-field';
 import { renderDropdownFieldElement } from './render-dropdown-field';
 import { renderGenericTextFieldElement } from './render-generic-text-field';
@@ -77,7 +78,7 @@ export const renderField = ({
   };
 
   // If the generic text field element array changes, update the `GenericTextFieldTypeMetas` type
-  return match(field.type)
+  const renderedField = match(field.type)
     .with(FieldType.INITIALS, FieldType.NAME, FieldType.EMAIL, FieldType.DATE, FieldType.TEXT, FieldType.NUMBER, () =>
       renderGenericTextFieldElement(field, options),
     )
@@ -89,4 +90,10 @@ export const renderField = ({
       throw new Error('Free signature fields are not supported');
     })
     .exhaustive();
+
+  if (mode === 'edit' && field.conditionalChildRule) {
+    renderedField.fieldGroup.add(createConditionalFieldIndicator(field, options));
+  }
+
+  return renderedField;
 };

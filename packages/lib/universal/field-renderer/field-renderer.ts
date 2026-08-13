@@ -2,6 +2,7 @@ import type { TRecipientColor } from '@documenso/ui/lib/recipient-colors';
 import type { Field, FieldType, Signature } from '@prisma/client';
 import type Konva from 'konva';
 
+import type { TConditionalFieldRule } from '../../types/conditional-field';
 import type { TFieldMetaSchema } from '../../types/field-meta';
 
 export const MIN_FIELD_HEIGHT_PX = 12;
@@ -17,6 +18,7 @@ export type FieldToRender = Pick<
   positionX: number;
   positionY: number;
   fieldMeta?: TFieldMetaSchema | null;
+  conditionalChildRule?: TConditionalFieldRule | null;
   signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature'> | null;
 };
 

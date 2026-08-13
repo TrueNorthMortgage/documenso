@@ -2,6 +2,8 @@ import { getBoundingClientRect } from '@documenso/lib/client-only/get-bounding-c
 import { useAutoSave } from '@documenso/lib/client-only/hooks/use-autosave';
 import { useDocumentElement } from '@documenso/lib/client-only/hooks/use-document-element';
 import { getPdfPagesCount, PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
+import type { TConditionalFieldRule } from '@documenso/lib/types/conditional-field';
+import type { TFieldWithConditionalRules } from '@documenso/lib/types/field';
 import { type TFieldMetaSchema as FieldMeta, ZFieldMetaSchema } from '@documenso/lib/types/field-meta';
 import type { TRecipientLite } from '@documenso/lib/types/recipient';
 import { nanoid } from '@documenso/lib/universal/id';
@@ -17,7 +19,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import type { Field } from '@prisma/client';
 import { FieldType, Prisma, RecipientRole, SendStatus } from '@prisma/client';
 import { CalendarDays, CheckSquare, ChevronDown, Contact, Disc, Hash, Mail, Type, User } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -34,6 +35,7 @@ import { RecipientSelector } from '../recipient-selector';
 import { useStep } from '../stepper';
 import { useToast } from '../use-toast';
 import { type TAddFieldsFormSchema, ZAddFieldsFormSchema } from './add-fields.types';
+import type { ConditionalFieldRuleInput } from './conditional-field-settings';
 import {
   DocumentFlowFormContainerActions,
   DocumentFlowFormContainerContent,
@@ -64,18 +66,23 @@ export type FieldFormType = {
   signerEmail: string;
   recipientId: number;
   fieldMeta?: FieldMeta;
+  conditionalChildRule?: TConditionalFieldRule | null;
+  conditionalParentRules?: TConditionalFieldRule[];
+  envelopeItemId?: string;
 };
 
 export type AddFieldsFormProps = {
   documentFlow: DocumentFlowStep;
   hideRecipients?: boolean;
   recipients: TRecipientLite[];
-  fields: Field[];
+  fields: TFieldWithConditionalRules[];
   onSubmit: (_data: TAddFieldsFormSchema) => void;
   onAutoSave: (_data: TAddFieldsFormSchema) => Promise<void>;
   canGoBack?: boolean;
   isDocumentPdfLoaded: boolean;
   teamId: number;
+  onCreateConditionalRule?: (input: ConditionalFieldRuleInput) => Promise<TConditionalFieldRule>;
+  onDeleteConditionalRule?: (childFieldId: number) => Promise<void>;
 };
 
 export const AddFieldsFormPartial = ({
@@ -88,6 +95,8 @@ export const AddFieldsFormPartial = ({
   canGoBack = false,
   isDocumentPdfLoaded,
   teamId,
+  onCreateConditionalRule,
+  onDeleteConditionalRule,
 }: AddFieldsFormProps) => {
   const { toast } = useToast();
   const { _ } = useLingui();
@@ -115,6 +124,9 @@ export const AddFieldsFormPartial = ({
         signerEmail: recipients.find((recipient) => recipient.id === field.recipientId)?.email ?? '',
         recipientId: field.recipientId,
         fieldMeta: field.fieldMeta ? ZFieldMetaSchema.parse(field.fieldMeta) : undefined,
+        conditionalChildRule: field.conditionalChildRule,
+        conditionalParentRules: field.conditionalParentRules,
+        envelopeItemId: field.envelopeItemId,
       })),
     },
     resolver: zodResolver(ZAddFieldsFormSchema),
@@ -141,6 +153,40 @@ export const AddFieldsFormPartial = ({
 
       return field;
     });
+
+    form.setValue('fields', updatedFields);
+  };
+
+  const handleConditionalRuleCreated = (rule: TConditionalFieldRule) => {
+    const updatedFields = form.getValues().fields.map((localField) => {
+      if (localField.nativeId === rule.childFieldId) {
+        return { ...localField, conditionalChildRule: rule };
+      }
+
+      if (localField.nativeId === rule.parentFieldId) {
+        return {
+          ...localField,
+          conditionalParentRules: [...(localField.conditionalParentRules ?? []), rule],
+        };
+      }
+
+      return localField;
+    });
+
+    form.setValue('fields', updatedFields);
+  };
+
+  const handleConditionalRuleDeleted = (childFieldId: number) => {
+    const deletedRule = form
+      .getValues()
+      .fields.find((localField) => localField.nativeId === childFieldId)?.conditionalChildRule;
+    const updatedFields = form.getValues().fields.map((localField) => ({
+      ...localField,
+      conditionalChildRule: localField.nativeId === childFieldId ? null : localField.conditionalChildRule,
+      conditionalParentRules: deletedRule
+        ? localField.conditionalParentRules?.filter((rule) => rule.id !== deletedRule.id)
+        : localField.conditionalParentRules,
+    }));
 
     form.setValue('fields', updatedFields);
   };
@@ -566,6 +612,12 @@ export const AddFieldsFormPartial = ({
           onAutoSave={async (fieldState) => {
             handleSavedFieldSettings(fieldState);
             await handleAutoSave();
+          }}
+          conditionalFieldSettings={{
+            onCreateRule: onCreateConditionalRule,
+            onDeleteRule: onDeleteConditionalRule,
+            onRuleCreated: handleConditionalRuleCreated,
+            onRuleDeleted: handleConditionalRuleDeleted,
           }}
         />
       ) : (
