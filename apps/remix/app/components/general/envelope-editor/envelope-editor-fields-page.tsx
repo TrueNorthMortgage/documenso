@@ -36,6 +36,7 @@ import { match } from 'ts-pattern';
 
 import { AiFeaturesEnableDialog } from '~/components/dialogs/ai-features-enable-dialog';
 import { AiFieldDetectionDialog } from '~/components/dialogs/ai-field-detection-dialog';
+import { ApplyTemplateToEnvelopeItemDialog } from '~/components/dialogs/apply-template-to-envelope-item-dialog';
 import { EnvelopeItemEditDialog } from '~/components/dialogs/envelope-item-edit-dialog';
 import { EditorFieldCheckboxForm } from '~/components/forms/editor/editor-field-checkbox-form';
 import { EditorFieldDateForm } from '~/components/forms/editor/editor-field-date-form';
@@ -76,7 +77,7 @@ export const EnvelopeEditorFieldsPage = () => {
 
   const scrollableContainerRef = useRef<HTMLDivElement>(null);
 
-  const { envelope, editorFields, navigateToStep, editorConfig } = useCurrentEnvelopeEditor();
+  const { envelope, editorFields, navigateToStep, editorConfig, syncEnvelope } = useCurrentEnvelopeEditor();
 
   const { currentEnvelopeItem } = useCurrentEnvelopeRender();
 
@@ -272,6 +273,13 @@ export const EnvelopeEditorFieldsPage = () => {
             <EnvelopeEditorFieldDragDrop
               selectedRecipientId={editorFields.selectedRecipient?.id ?? null}
               selectedEnvelopeItemId={currentEnvelopeItem?.id ?? null}
+            />
+
+            <ApplyTemplateToEnvelopeItemDialog
+              envelope={envelope}
+              envelopeItemId={currentEnvelopeItem.id}
+              onChanged={syncEnvelope}
+              disabled={envelope.status !== DocumentStatus.DRAFT}
             />
 
             {editorConfig.fields?.allowAIDetection && (

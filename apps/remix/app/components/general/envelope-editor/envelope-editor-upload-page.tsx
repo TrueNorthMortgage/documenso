@@ -20,10 +20,11 @@ import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { msg, plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { FileWarningIcon, GripVerticalIcon, Loader2Icon, PencilIcon, XIcon } from 'lucide-react';
+import { FileWarningIcon, GripVerticalIcon, LayersIcon, Loader2Icon, PencilIcon, XIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ErrorCode as DropzoneErrorCode, type FileRejection, useDropzone } from 'react-dropzone';
 
+import { ApplyTemplateToEnvelopeItemDialog } from '~/components/dialogs/apply-template-to-envelope-item-dialog';
 import { EnvelopeItemDeleteDialog } from '~/components/dialogs/envelope-item-delete-dialog';
 
 import { EnvelopeEditorRecipientForm } from './envelope-editor-recipient-form';
@@ -52,6 +53,7 @@ export const EnvelopeEditorUploadPage = () => {
     editorConfig,
     isEmbedded,
     navigateToStep,
+    syncEnvelope,
     registerExternalFlush,
     registerPendingMutation,
   } = useCurrentEnvelopeEditor();
@@ -551,6 +553,27 @@ export const EnvelopeEditorUploadPage = () => {
                                 <div className="flex h-6 w-10 items-center justify-center">
                                   <Loader2Icon className="h-4 w-4 animate-spin text-muted-foreground" />
                                 </div>
+                              )}
+
+                              {localFile.envelopeItemId && (
+                                <ApplyTemplateToEnvelopeItemDialog
+                                  envelope={envelope}
+                                  envelopeItemId={localFile.envelopeItemId}
+                                  onChanged={syncEnvelope}
+                                  disabled={localFile.isReplacing || localFile.isUploading}
+                                  trigger={
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      title={t`Apply template`}
+                                      data-testid={`envelope-item-template-button-${localFile.id}`}
+                                      disabled={localFile.isReplacing || localFile.isUploading}
+                                    >
+                                      <LayersIcon className="h-4 w-4" />
+                                    </Button>
+                                  }
+                                />
                               )}
 
                               {localFile.isError && (
