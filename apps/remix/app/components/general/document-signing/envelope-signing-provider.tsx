@@ -87,10 +87,21 @@ const prefillDateFields = (data: EnvelopeForSigningResponse): EnvelopeForSigning
     .setZone(timezone ?? DEFAULT_DOCUMENT_TIME_ZONE)
     .toFormat(dateFormat ?? DEFAULT_DOCUMENT_DATE_FORMAT);
 
-  const prefillField = <T extends { type: FieldType; inserted: boolean; customText: string; fieldMeta: unknown }>(
+  const fieldVisibility = getConditionalFieldVisibility(
+    data.envelope.recipients.flatMap((recipient) =>
+      recipient.fields.map((field) => ({
+        ...field,
+        envelopeInternalVersion: data.envelope.internalVersion,
+      })),
+    ),
+  );
+
+  const prefillField = <
+    T extends { id: number; type: FieldType; inserted: boolean; customText: string; fieldMeta: unknown },
+  >(
     field: T,
   ): T => {
-    if (field.type !== FieldType.DATE || field.inserted) {
+    if (field.type !== FieldType.DATE || field.inserted || fieldVisibility.get(field.id) === false) {
       return field;
     }
 
@@ -140,8 +151,16 @@ export const EnvelopeSigningProvider = ({
   const isDirectTemplate = envelope.type === EnvelopeType.TEMPLATE;
 
   const fieldVisibility = useMemo(
-    () => getConditionalFieldVisibility(envelopeData.envelope.recipients.flatMap((item) => item.fields)),
-    [envelopeData.envelope.recipients],
+    () =>
+      getConditionalFieldVisibility(
+        envelopeData.envelope.recipients.flatMap((item) =>
+          item.fields.map((field) => ({
+            ...field,
+            envelopeInternalVersion: envelope.internalVersion,
+          })),
+        ),
+      ),
+    [envelopeData.envelope.recipients, envelope.internalVersion],
   );
 
   const isFieldVisible = (field: Field) => fieldVisibility.get(field.id) ?? true;
@@ -149,26 +168,33 @@ export const EnvelopeSigningProvider = ({
   const { mutateAsync: signEnvelopeField } = trpc.envelope.field.sign.useMutation({
     ...DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
     onSuccess: (data) => {
+      const clearedFieldIds = new Set(data.clearedFieldIds);
+      const autoInsertedFields = new Map(data.autoInsertedFields.map((field) => [field.id, field]));
+      const updateField = (field: Field) => {
+        const updatedField =
+          field.id === data.signedField.id
+            ? { ...field, ...data.signedField }
+            : autoInsertedFields.has(field.id)
+              ? { ...field, ...autoInsertedFields.get(field.id) }
+              : field;
+
+        return clearedFieldIds.has(field.id)
+          ? { ...updatedField, customText: '', inserted: false, signature: null }
+          : updatedField;
+      };
+
       setEnvelopeData((prev) => ({
         ...prev,
         envelope: {
           ...prev.envelope,
-          recipients: prev.envelope.recipients.map((recipient) =>
-            recipient.id === data.signedField.recipientId
-              ? {
-                  ...recipient,
-                  fields: recipient.fields.map((field) =>
-                    field.id === data.signedField.id ? { ...field, ...data.signedField } : field,
-                  ),
-                }
-              : recipient,
-          ),
+          recipients: prev.envelope.recipients.map((recipient) => ({
+            ...recipient,
+            fields: recipient.fields.map(updateField),
+          })),
         },
         recipient: {
           ...prev.recipient,
-          fields: prev.recipient.fields.map((field) =>
-            field.id === data.signedField.id ? { ...field, ...data.signedField } : field,
-          ),
+          fields: prev.recipient.fields.map(updateField),
         },
       }));
     },

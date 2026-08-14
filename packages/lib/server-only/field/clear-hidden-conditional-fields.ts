@@ -15,10 +15,20 @@ export const clearHiddenConditionalFields = async ({
     },
     include: {
       conditionalChildRule: true,
+      envelope: {
+        select: {
+          internalVersion: true,
+        },
+      },
     },
   });
 
-  const hiddenFieldIds = getHiddenConditionalFieldIds(fields);
+  const hiddenFieldIds = getHiddenConditionalFieldIds(
+    fields.map((field) => ({
+      ...field,
+      envelopeInternalVersion: field.envelope.internalVersion,
+    })),
+  );
 
   if (hiddenFieldIds.length === 0) {
     return [];

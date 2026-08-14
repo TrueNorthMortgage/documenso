@@ -9,6 +9,19 @@ export type GetCompletedFieldsForDocumentOptions = {
 };
 
 export const getCompletedFieldsForDocument = async ({ documentId }: GetCompletedFieldsForDocumentOptions) => {
+  const envelope = await prisma.envelope.findFirst({
+    where: {
+      secondaryId: mapDocumentIdToSecondaryId(documentId),
+    },
+    select: {
+      internalVersion: true,
+    },
+  });
+
+  if (!envelope) {
+    return [];
+  }
+
   const fields = await prisma.field.findMany({
     where: {
       envelope: {
@@ -31,7 +44,11 @@ export const getCompletedFieldsForDocument = async ({ documentId }: GetCompleted
     },
   });
 
-  const visibility = getConditionalFieldVisibility(fields);
+  const fieldsWithVersion = fields.map((field) => ({
+    ...field,
+    envelopeInternalVersion: envelope.internalVersion,
+  }));
+  const visibility = getConditionalFieldVisibility(fieldsWithVersion);
 
-  return fields.filter((field) => visibility.get(field.id) ?? true);
+  return fieldsWithVersion.filter((field) => visibility.get(field.id) ?? true);
 };

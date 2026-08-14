@@ -193,7 +193,11 @@ export const createDocumentFromDirectTemplate = async ({
   const directTemplateFieldsWithValues = directTemplateRecipient.fields.map((templateField) => {
     const signedFieldValue = signedFieldValues.find((value) => value.fieldId === templateField.id);
 
-    return signedFieldValue ? { ...templateField, customText: signedFieldValue.value ?? '' } : templateField;
+    return {
+      ...templateField,
+      ...(signedFieldValue ? { customText: signedFieldValue.value ?? '' } : {}),
+      envelopeInternalVersion: directTemplateEnvelope.internalVersion,
+    };
   });
   const directTemplateFieldVisibility = getConditionalFieldVisibility(directTemplateFieldsWithValues);
 

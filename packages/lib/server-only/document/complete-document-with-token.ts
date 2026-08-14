@@ -173,15 +173,20 @@ export const completeDocumentWithToken = async ({
     });
   }
 
-  let fields = await prisma.field.findMany({
-    where: {
-      envelopeId: envelope.id,
-      recipientId: recipient.id,
-    },
-    include: {
-      conditionalChildRule: true,
-    },
-  });
+  let fields = (
+    await prisma.field.findMany({
+      where: {
+        envelopeId: envelope.id,
+        recipientId: recipient.id,
+      },
+      include: {
+        conditionalChildRule: true,
+      },
+    })
+  ).map((field) => ({
+    ...field,
+    envelopeInternalVersion: envelope.internalVersion,
+  }));
 
   const fieldVisibility = getConditionalFieldVisibility(fields);
   const visibleFields = () => fields.filter((field) => fieldVisibility.get(field.id) ?? true);

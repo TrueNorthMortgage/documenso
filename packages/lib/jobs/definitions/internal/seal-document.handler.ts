@@ -105,13 +105,22 @@ export const run = async ({ payload, io }: { payload: TSealDocumentJobDefinition
       });
     }
 
-    const fieldVisibility = getConditionalFieldVisibility(envelope.fields);
-    const fields = envelope.fields.filter((field) => fieldVisibility.get(field.id) ?? true);
+    const fieldsWithVersion = envelope.fields.map((field) => ({
+      ...field,
+      envelopeInternalVersion: envelope.internalVersion,
+    }));
+    const fieldVisibility = getConditionalFieldVisibility(fieldsWithVersion);
+    const fields = fieldsWithVersion.filter((field) => fieldVisibility.get(field.id) ?? true);
     let { envelopeItems } = envelope;
 
     envelopeItems = envelopeItems.map((envelopeItem) => ({
       ...envelopeItem,
-      field: envelopeItem.field.filter((field) => fieldVisibility.get(field.id) ?? true),
+      field: envelopeItem.field
+        .map((field) => ({
+          ...field,
+          envelopeInternalVersion: envelope.internalVersion,
+        }))
+        .filter((field) => fieldVisibility.get(field.id) ?? true),
     }));
 
     if (envelopeItems.length < 1) {

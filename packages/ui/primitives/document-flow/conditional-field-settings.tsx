@@ -95,7 +95,8 @@ export const ConditionalFieldSettings = ({
           candidate.nativeId !== field.nativeId &&
           candidate.recipientId === field.recipientId &&
           candidate.envelopeItemId === field.envelopeItemId &&
-          !candidate.conditionalChildRule,
+          !candidate.conditionalChildRule &&
+          !(candidate.conditionalParentRules && candidate.conditionalParentRules.length > 0),
       ),
     [field, fields],
   );

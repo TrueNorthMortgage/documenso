@@ -15,6 +15,7 @@ const field = (
   customText = '',
   parentFieldId?: number,
   fieldMeta?: FieldWithConditionalRule['fieldMeta'],
+  envelopeInternalVersion?: number,
 ): FieldWithConditionalRule => ({
   id,
   type,
@@ -22,6 +23,7 @@ const field = (
   envelopeItemId: 'item-1',
   recipientId: 1,
   fieldMeta: fieldMeta ?? null,
+  envelopeInternalVersion,
   conditionalChildRule:
     parentFieldId === undefined
       ? null
@@ -55,6 +57,7 @@ describe('getConditionalFieldVisibility', () => {
     const visibility = getConditionalFieldVisibility([
       field(1, FieldType.RADIO, '0', undefined, {
         type: 'radio',
+        direction: 'vertical',
         values: [
           { id: 1, value: 'Yes', checked: false },
           { id: 2, value: 'No', checked: false },
@@ -73,11 +76,66 @@ describe('getConditionalFieldVisibility', () => {
     const visibility = getConditionalFieldVisibility([
       field(1, FieldType.CHECKBOX, '[1]', undefined, {
         type: 'checkbox',
+        direction: 'vertical',
         values: [
           { id: 1, value: 'One', checked: false },
           { id: 2, value: 'Two', checked: false },
         ],
       }),
+      child,
+    ]);
+
+    expect(visibility.get(2)).toBe(true);
+  });
+
+  it('matches numeric radio labels in legacy envelopes', () => {
+    const child = childWithRule(2, 1);
+    child.conditionalChildRule.value = '2';
+
+    const visibility = getConditionalFieldVisibility([
+      field(
+        1,
+        FieldType.RADIO,
+        '2',
+        undefined,
+        {
+          type: 'radio',
+          direction: 'vertical',
+          values: [
+            { id: 1, value: '1', checked: false },
+            { id: 2, value: '2', checked: false },
+            { id: 3, value: '3', checked: false },
+          ],
+        },
+        1,
+      ),
+      child,
+    ]);
+
+    expect(visibility.get(2)).toBe(true);
+  });
+
+  it('matches numeric radio labels stored as indexes in V2 envelopes', () => {
+    const child = childWithRule(2, 1);
+    child.conditionalChildRule.value = '3';
+
+    const visibility = getConditionalFieldVisibility([
+      field(
+        1,
+        FieldType.RADIO,
+        '2',
+        undefined,
+        {
+          type: 'radio',
+          direction: 'vertical',
+          values: [
+            { id: 1, value: '1', checked: false },
+            { id: 2, value: '2', checked: false },
+            { id: 3, value: '3', checked: false },
+          ],
+        },
+        2,
+      ),
       child,
     ]);
 
@@ -144,6 +202,7 @@ describe('getConditionalFieldVisibility', () => {
       getHiddenConditionalFieldIds([
         field(1, FieldType.RADIO, '0', undefined, {
           type: 'radio',
+          direction: 'vertical',
           values: [
             { id: 1, value: 'Yes', checked: false },
             { id: 2, value: 'No', checked: false },

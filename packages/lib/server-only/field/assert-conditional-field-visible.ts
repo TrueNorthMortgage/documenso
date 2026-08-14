@@ -15,6 +15,11 @@ export const assertConditionalFieldIsVisible = async ({
     },
     include: {
       conditionalChildRule: true,
+      envelope: {
+        select: {
+          internalVersion: true,
+        },
+      },
     },
   });
 
@@ -26,7 +31,12 @@ export const assertConditionalFieldIsVisible = async ({
     });
   }
 
-  const visibility = getConditionalFieldVisibility(fields);
+  const visibility = getConditionalFieldVisibility(
+    fields.map((candidate) => ({
+      ...candidate,
+      envelopeInternalVersion: candidate.envelope.internalVersion,
+    })),
+  );
 
   if (!visibility.get(fieldId)) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {

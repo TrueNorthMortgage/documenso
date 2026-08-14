@@ -9,6 +9,23 @@ export type GetCompletedFieldsForTokenOptions = {
 
 // Note: You many need to filter this on a per envelope item ID basis.
 export const getCompletedFieldsForToken = async ({ token }: GetCompletedFieldsForTokenOptions) => {
+  const recipient = await prisma.recipient.findFirst({
+    where: {
+      token,
+    },
+    select: {
+      envelope: {
+        select: {
+          internalVersion: true,
+        },
+      },
+    },
+  });
+
+  if (!recipient) {
+    return [];
+  }
+
   const fields = await prisma.field.findMany({
     where: {
       envelope: {
@@ -37,7 +54,11 @@ export const getCompletedFieldsForToken = async ({ token }: GetCompletedFieldsFo
     },
   });
 
-  const visibility = getConditionalFieldVisibility(fields);
+  const fieldsWithVersion = fields.map((field) => ({
+    ...field,
+    envelopeInternalVersion: recipient.envelope.internalVersion,
+  }));
+  const visibility = getConditionalFieldVisibility(fieldsWithVersion);
 
-  return fields.filter((field) => visibility.get(field.id) ?? true);
+  return fieldsWithVersion.filter((field) => visibility.get(field.id) ?? true);
 };

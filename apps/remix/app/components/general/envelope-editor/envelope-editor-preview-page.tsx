@@ -5,6 +5,7 @@ import {
 } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import { PDF_VIEWER_ERROR_MESSAGES } from '@documenso/lib/constants/pdf-viewer-i18n';
 import { ZFieldAndMetaSchema } from '@documenso/lib/types/field-meta';
+import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import { extractFieldInsertionValues } from '@documenso/lib/utils/envelope-signing';
 import { toCheckboxCustomText } from '@documenso/lib/utils/fields';
 import { extractInitials } from '@documenso/lib/utils/recipient-formatter';
@@ -47,7 +48,7 @@ export const EnvelopeEditorPreviewPage = () => {
     }
 
     const faker = fakerInstance;
-    return fields.map((field) => {
+    const fieldsWithPlaceholders = fields.map((field) => {
       const fieldMeta = ZFieldAndMetaSchema.parse(field);
 
       const recipient = envelope.recipients.find((recipient) => recipient.id === field.recipientId);
@@ -197,6 +198,15 @@ export const EnvelopeEditorPreviewPage = () => {
           .exhaustive(),
       };
     });
+
+    const visibility = getConditionalFieldVisibility(
+      fieldsWithPlaceholders.map((field) => ({
+        ...field,
+        envelopeInternalVersion: envelope.internalVersion,
+      })),
+    );
+
+    return fieldsWithPlaceholders.filter((field) => visibility.get(field.id) ?? true);
   }, [fields, envelope, envelope.recipients, envelope.documentMeta, fakerInstance]);
 
   /**

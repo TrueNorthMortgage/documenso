@@ -5,7 +5,7 @@ import { match } from 'ts-pattern';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { DocumentAccessAuth, type TDocumentAuthMethods } from '../../types/document-auth';
 import { extractDocumentAuthMethods } from '../../utils/document-auth';
-import { extractFieldAutoInsertValues } from '../document/send-document';
+import { extractFieldAutoInsertValues } from '../field/extract-field-auto-insert-values';
 import { getTeamSettings } from '../team/get-team-settings';
 import type { EnvelopeForSigningResponse } from './get-envelope-for-recipient-signing';
 import { ZEnvelopeForSigningResponse } from './get-envelope-for-recipient-signing';

@@ -54,13 +54,17 @@ export const ZSignEnvelopeFieldRequestSchema = z.object({
   authOptions: ZRecipientActionAuthSchema.optional(),
 });
 
+const ZSignEnvelopeFieldResponseFieldSchema = ZFieldSchema.omit({
+  templateId: true,
+  documentId: true,
+}).extend({
+  signature: SignatureSchema.nullish(),
+});
+
 export const ZSignEnvelopeFieldResponseSchema = z.object({
-  signedField: ZFieldSchema.omit({
-    templateId: true,
-    documentId: true,
-  }).extend({
-    signature: SignatureSchema.nullish(),
-  }),
+  signedField: ZSignEnvelopeFieldResponseFieldSchema,
+  clearedFieldIds: z.array(z.number()),
+  autoInsertedFields: z.array(ZSignEnvelopeFieldResponseFieldSchema),
 });
 
 export type TSignEnvelopeFieldValue = z.infer<typeof ZSignEnvelopeFieldValue>;

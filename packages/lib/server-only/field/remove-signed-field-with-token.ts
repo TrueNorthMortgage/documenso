@@ -1,3 +1,4 @@
+import { clearHiddenConditionalFields } from '@documenso/lib/server-only/field/clear-hidden-conditional-fields';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import type { RequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
@@ -83,6 +84,11 @@ export const removeSignedFieldWithToken = async ({
       where: {
         fieldId: field.id,
       },
+    });
+
+    await clearHiddenConditionalFields({
+      tx,
+      envelopeItemId: field.envelopeItemId,
     });
 
     if (recipient.role !== RecipientRole.ASSISTANT) {

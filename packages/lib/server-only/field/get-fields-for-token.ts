@@ -15,6 +15,13 @@ export const getFieldsForToken = async ({ token }: GetFieldsForTokenOptions) => 
 
   const recipient = await prisma.recipient.findFirst({
     where: { token },
+    include: {
+      envelope: {
+        select: {
+          internalVersion: true,
+        },
+      },
+    },
   });
 
   if (!recipient) {
@@ -54,9 +61,13 @@ export const getFieldsForToken = async ({ token }: GetFieldsForTokenOptions) => 
       },
     });
 
-    const visibility = getConditionalFieldVisibility(fields);
+    const fieldsWithVersion = fields.map((field) => ({
+      ...field,
+      envelopeInternalVersion: recipient.envelope.internalVersion,
+    }));
+    const visibility = getConditionalFieldVisibility(fieldsWithVersion);
 
-    return fields.filter((field) => visibility.get(field.id) ?? true);
+    return fieldsWithVersion.filter((field) => visibility.get(field.id) ?? true);
   }
 
   const fields = await prisma.field.findMany({
@@ -69,7 +80,11 @@ export const getFieldsForToken = async ({ token }: GetFieldsForTokenOptions) => 
     },
   });
 
-  const visibility = getConditionalFieldVisibility(fields);
+  const fieldsWithVersion = fields.map((field) => ({
+    ...field,
+    envelopeInternalVersion: recipient.envelope.internalVersion,
+  }));
+  const visibility = getConditionalFieldVisibility(fieldsWithVersion);
 
-  return fields.filter((field) => visibility.get(field.id) ?? true);
+  return fieldsWithVersion.filter((field) => visibility.get(field.id) ?? true);
 };

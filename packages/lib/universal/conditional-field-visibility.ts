@@ -9,6 +9,7 @@ export type FieldWithConditionalRule = Pick<
   'id' | 'type' | 'customText' | 'envelopeItemId' | 'recipientId' | 'fieldMeta'
 > & {
   conditionalChildRule?: ConditionalFieldRule | null;
+  envelopeInternalVersion?: number;
 };
 
 const normalizeText = (value: string) => value.trim().toLocaleLowerCase();
@@ -49,6 +50,12 @@ const getParentValues = (field: FieldWithConditionalRule) => {
   if (field.type === FieldType.RADIO) {
     const optionValues = getOptionValues(field);
     const selectedIndex = Number(field.customText);
+
+    // Legacy V1 signing stores the selected radio value, while V2 stores its
+    // index. Keep both representations working for conditional rules.
+    if (field.envelopeInternalVersion === 1) {
+      return [field.customText];
+    }
 
     if (field.customText !== '' && Number.isInteger(selectedIndex) && optionValues[selectedIndex] !== undefined) {
       return [optionValues[selectedIndex]];

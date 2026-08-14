@@ -2,16 +2,84 @@ import { isBase64Image } from '@documenso/lib/constants/signatures';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { validateFieldAuth } from '@documenso/lib/server-only/document/validate-field-auth';
 import { assertConditionalFieldIsVisible } from '@documenso/lib/server-only/field/assert-conditional-field-visible';
+import { autoInsertConditionalFieldDefaults } from '@documenso/lib/server-only/field/auto-insert-conditional-field-defaults';
 import { clearHiddenConditionalFields } from '@documenso/lib/server-only/field/clear-hidden-conditional-fields';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
+import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { extractFieldInsertionValues } from '@documenso/lib/utils/envelope-signing';
 import { prisma } from '@documenso/prisma';
+import type { Prisma } from '@prisma/client';
 import { DocumentStatus, FieldType, RecipientRole, SigningStatus } from '@prisma/client';
 import { match } from 'ts-pattern';
 
 import { procedure } from '../trpc';
 import { ZSignEnvelopeFieldRequestSchema, ZSignEnvelopeFieldResponseSchema } from './sign-envelope-field.types';
+
+const getHiddenConditionalFieldIdsBeforeUpdate = async ({
+  tx,
+  envelopeItemId,
+}: {
+  tx: Prisma.TransactionClient;
+  envelopeItemId: string;
+}) => {
+  const fields = await tx.field.findMany({
+    where: {
+      envelopeItemId,
+    },
+    include: {
+      conditionalChildRule: true,
+      envelope: {
+        select: {
+          internalVersion: true,
+        },
+      },
+    },
+  });
+
+  const visibility = getConditionalFieldVisibility(
+    fields.map((candidate) => ({
+      ...candidate,
+      envelopeInternalVersion: candidate.envelope.internalVersion,
+    })),
+  );
+
+  return fields
+    .filter((candidate) => candidate.conditionalChildRule && visibility.get(candidate.id) === false)
+    .map((candidate) => candidate.id);
+};
+
+const createAutoInsertedFieldsAuditLog = async ({
+  tx,
+  envelopeId,
+  fields,
+}: {
+  tx: Prisma.TransactionClient;
+  envelopeId: string;
+  fields: Array<{ id: number; type: FieldType; recipientId: number | null }>;
+}) => {
+  const auditFields = fields.filter((candidate): candidate is typeof candidate & { recipientId: number } => {
+    return candidate.recipientId !== null;
+  });
+
+  if (auditFields.length === 0) {
+    return;
+  }
+
+  await tx.documentAuditLog.create({
+    data: createDocumentAuditLogData({
+      type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_FIELDS_AUTO_INSERTED,
+      envelopeId,
+      data: {
+        fields: auditFields.map((candidate) => ({
+          fieldId: candidate.id,
+          fieldType: candidate.type,
+          recipientId: candidate.recipientId,
+        })),
+      },
+    }),
+  });
+};
 
 // Note that this is an unauthenticated public procedure route.
 export const signEnvelopeFieldRoute = procedure
@@ -137,6 +205,11 @@ export const signEnvelopeFieldRoute = procedure
     // Early return for uninserting fields.
     if (!insertionValues.inserted) {
       return await prisma.$transaction(async (tx) => {
+        const previouslyHiddenFieldIds = await getHiddenConditionalFieldIdsBeforeUpdate({
+          tx,
+          envelopeItemId: field.envelopeItemId,
+        });
+
         const updatedField = await tx.field.update({
           where: {
             id: field.id,
@@ -147,9 +220,22 @@ export const signEnvelopeFieldRoute = procedure
           },
         });
 
-        await clearHiddenConditionalFields({
+        const clearedFieldIds = await clearHiddenConditionalFields({
           tx,
           envelopeItemId: field.envelopeItemId,
+        });
+
+        const autoInsertedFields = await autoInsertConditionalFieldDefaults({
+          tx,
+          envelopeItemId: field.envelopeItemId,
+          fieldIds: previouslyHiddenFieldIds,
+          documentMeta,
+        });
+
+        await createAutoInsertedFieldsAuditLog({
+          tx,
+          envelopeId: envelope.id,
+          fields: autoInsertedFields,
         });
 
         await tx.signature.deleteMany({
@@ -178,6 +264,8 @@ export const signEnvelopeFieldRoute = procedure
 
         return {
           signedField: updatedField,
+          clearedFieldIds,
+          autoInsertedFields,
         };
       });
     }
@@ -211,6 +299,11 @@ export const signEnvelopeFieldRoute = procedure
     }
 
     return await prisma.$transaction(async (tx) => {
+      const previouslyHiddenFieldIds = await getHiddenConditionalFieldIdsBeforeUpdate({
+        tx,
+        envelopeItemId: field.envelopeItemId,
+      });
+
       const updatedField = await tx.field.update({
         where: {
           id: field.id,
@@ -224,9 +317,22 @@ export const signEnvelopeFieldRoute = procedure
         },
       });
 
-      await clearHiddenConditionalFields({
+      const clearedFieldIds = await clearHiddenConditionalFields({
         tx,
         envelopeItemId: field.envelopeItemId,
+      });
+
+      const autoInsertedFields = await autoInsertConditionalFieldDefaults({
+        tx,
+        envelopeItemId: field.envelopeItemId,
+        fieldIds: previouslyHiddenFieldIds,
+        documentMeta,
+      });
+
+      await createAutoInsertedFieldsAuditLog({
+        tx,
+        envelopeId: envelope.id,
+        fields: autoInsertedFields,
       });
 
       if (field.type === FieldType.SIGNATURE) {
@@ -295,6 +401,8 @@ export const signEnvelopeFieldRoute = procedure
 
       return {
         signedField: updatedField,
+        clearedFieldIds,
+        autoInsertedFields,
       };
     });
   });

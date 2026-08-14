@@ -35,6 +35,7 @@ const getAuthorizedField = async ({ fieldId, userId, teamId }: { fieldId: number
     include: {
       envelope: true,
       conditionalChildRule: true,
+      conditionalParentRules: true,
     },
   });
 
@@ -91,6 +92,12 @@ const validateRule = ({
   if (parentField.conditionalChildRule) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
       message: 'Nested conditional fields are not supported',
+    });
+  }
+
+  if (childField.conditionalParentRules.length > 0) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'A field that controls other fields cannot be conditional',
     });
   }
 
