@@ -621,6 +621,24 @@ const assertDuplicateDeleteFieldPersistedInDatabase = async ({
   expect(envelope.fields[0].type).toBe(FieldType.SIGNATURE);
 };
 
+const runKeyboardDeleteFieldFlow = async (surface: TEnvelopeEditorSurface) => {
+  const root = surface.root;
+
+  await updateExternalId(surface, `e2e-keyboard-delete-${nanoid()}`);
+  await setupRecipientsForFieldPlacement(surface);
+  await clickEnvelopeEditorStep(root, 'addFields');
+  await expect(root.locator('.konva-container canvas').first()).toBeVisible();
+
+  await placeFieldOnPdf(root, 'Signature', { x: 150, y: 150 });
+  await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(1);
+
+  await selectFieldOnCanvas(root, { x: 150, y: 150 });
+  await expect(root.locator('button[title="Remove"]')).toBeVisible();
+
+  await root.keyboard.press('Delete');
+  await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(0);
+};
+
 // --- Test describe blocks ---
 
 test.describe('document editor', () => {
@@ -652,6 +670,11 @@ test.describe('document editor', () => {
       surface,
       ...result,
     });
+  });
+
+  test('delete a selected field with the keyboard Delete key', async ({ page }) => {
+    const surface = await openDocumentEnvelopeEditor(page);
+    await runKeyboardDeleteFieldFlow(surface);
   });
 
   test('place and configure all 10 field types', async ({ page }) => {
