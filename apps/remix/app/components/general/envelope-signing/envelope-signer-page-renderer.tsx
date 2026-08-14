@@ -412,6 +412,15 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
       return;
     }
 
+    const fieldsToRender = [...localPageFields, ...localPageOtherRecipientFields];
+    const fieldIdsToRender = new Set(fieldsToRender.map((field) => field.id.toString()));
+
+    pageLayer.current.find('.field-group').forEach((fieldGroup) => {
+      if (!fieldIdsToRender.has(fieldGroup.id())) {
+        fieldGroup.destroy();
+      }
+    });
+
     // Render current recipient fields.
     for (const field of localPageFields) {
       renderFieldOnLayer(field);

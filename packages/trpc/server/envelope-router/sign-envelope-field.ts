@@ -2,6 +2,7 @@ import { isBase64Image } from '@documenso/lib/constants/signatures';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { validateFieldAuth } from '@documenso/lib/server-only/document/validate-field-auth';
 import { assertConditionalFieldIsVisible } from '@documenso/lib/server-only/field/assert-conditional-field-visible';
+import { clearHiddenConditionalFields } from '@documenso/lib/server-only/field/clear-hidden-conditional-fields';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { extractFieldInsertionValues } from '@documenso/lib/utils/envelope-signing';
@@ -146,6 +147,11 @@ export const signEnvelopeFieldRoute = procedure
           },
         });
 
+        await clearHiddenConditionalFields({
+          tx,
+          envelopeItemId: field.envelopeItemId,
+        });
+
         await tx.signature.deleteMany({
           where: {
             fieldId: field.id,
@@ -216,6 +222,11 @@ export const signEnvelopeFieldRoute = procedure
         include: {
           signature: true,
         },
+      });
+
+      await clearHiddenConditionalFields({
+        tx,
+        envelopeItemId: field.envelopeItemId,
       });
 
       if (field.type === FieldType.SIGNATURE) {

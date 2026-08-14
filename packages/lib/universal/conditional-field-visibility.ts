@@ -4,15 +4,55 @@ import { FieldType } from '@prisma/client';
 
 import { ConditionalFieldRuleOperator } from '../types/conditional-field';
 
-export type FieldWithConditionalRule = Pick<Field, 'id' | 'type' | 'customText' | 'envelopeItemId' | 'recipientId'> & {
+export type FieldWithConditionalRule = Pick<
+  Field,
+  'id' | 'type' | 'customText' | 'envelopeItemId' | 'recipientId' | 'fieldMeta'
+> & {
   conditionalChildRule?: ConditionalFieldRule | null;
 };
 
 const normalizeText = (value: string) => value.trim().toLocaleLowerCase();
 
+const getOptionValues = (field: FieldWithConditionalRule) => {
+  if (!field.fieldMeta || typeof field.fieldMeta !== 'object' || Array.isArray(field.fieldMeta)) {
+    return [];
+  }
+
+  const values = 'values' in field.fieldMeta ? field.fieldMeta.values : undefined;
+
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values.flatMap((option) => {
+    if (!option || typeof option !== 'object' || Array.isArray(option) || !('value' in option)) {
+      return [];
+    }
+
+    return typeof option.value === 'string' ? [option.value] : [];
+  });
+};
+
 const getParentValues = (field: FieldWithConditionalRule) => {
   if (field.type === FieldType.CHECKBOX) {
-    return fromCheckboxValue(field.customText);
+    const optionValues = getOptionValues(field);
+
+    return (fromCheckboxValue(field.customText) as Array<number | string>).map((selectedValue) => {
+      if (typeof selectedValue === 'number') {
+        return optionValues[selectedValue] ?? String(selectedValue);
+      }
+
+      return selectedValue;
+    });
+  }
+
+  if (field.type === FieldType.RADIO) {
+    const optionValues = getOptionValues(field);
+    const selectedIndex = Number(field.customText);
+
+    if (field.customText !== '' && Number.isInteger(selectedIndex) && optionValues[selectedIndex] !== undefined) {
+      return [optionValues[selectedIndex]];
+    }
   }
 
   return [field.customText];
@@ -55,6 +95,12 @@ export const getConditionalFieldVisibility = (fields: FieldWithConditionalRule[]
   }
 
   return visibility;
+};
+
+export const getHiddenConditionalFieldIds = (fields: FieldWithConditionalRule[]) => {
+  const visibility = getConditionalFieldVisibility(fields);
+
+  return fields.filter((field) => field.conditionalChildRule && !visibility.get(field.id)).map((field) => field.id);
 };
 
 export const isConditionalFieldVisible = (field: FieldWithConditionalRule, visibility: Map<number, boolean>): boolean =>

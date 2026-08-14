@@ -3,14 +3,25 @@ import { FieldType } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
 import { ConditionalFieldRuleOperator } from '../types/conditional-field';
-import { type FieldWithConditionalRule, getConditionalFieldVisibility } from './conditional-field-visibility';
+import {
+  type FieldWithConditionalRule,
+  getConditionalFieldVisibility,
+  getHiddenConditionalFieldIds,
+} from './conditional-field-visibility';
 
-const field = (id: number, type: FieldType, customText = '', parentFieldId?: number): FieldWithConditionalRule => ({
+const field = (
+  id: number,
+  type: FieldType,
+  customText = '',
+  parentFieldId?: number,
+  fieldMeta?: FieldWithConditionalRule['fieldMeta'],
+): FieldWithConditionalRule => ({
   id,
   type,
   customText,
   envelopeItemId: 'item-1',
   recipientId: 1,
+  fieldMeta: fieldMeta ?? null,
   conditionalChildRule:
     parentFieldId === undefined
       ? null
@@ -42,8 +53,32 @@ const childWithRule = (
 describe('getConditionalFieldVisibility', () => {
   it('shows a child when a radio parent matches', () => {
     const visibility = getConditionalFieldVisibility([
-      field(1, FieldType.RADIO, 'Yes'),
+      field(1, FieldType.RADIO, '0', undefined, {
+        type: 'radio',
+        values: [
+          { id: 1, value: 'Yes', checked: false },
+          { id: 2, value: 'No', checked: false },
+        ],
+      }),
       field(2, FieldType.TEXT, '', 1),
+    ]);
+
+    expect(visibility.get(2)).toBe(true);
+  });
+
+  it('maps checkbox indexes to configured option values', () => {
+    const child = childWithRule(2, 1);
+    child.conditionalChildRule.value = 'Two';
+
+    const visibility = getConditionalFieldVisibility([
+      field(1, FieldType.CHECKBOX, '[1]', undefined, {
+        type: 'checkbox',
+        values: [
+          { id: 1, value: 'One', checked: false },
+          { id: 2, value: 'Two', checked: false },
+        ],
+      }),
+      child,
     ]);
 
     expect(visibility.get(2)).toBe(true);
@@ -99,5 +134,23 @@ describe('getConditionalFieldVisibility', () => {
     const visibility = getConditionalFieldVisibility([field(2, FieldType.TEXT, '', 99)]);
 
     expect(visibility.get(2)).toBe(false);
+  });
+
+  it('returns hidden child fields for cleanup', () => {
+    const hiddenChild = childWithRule(2, 1);
+    hiddenChild.conditionalChildRule.value = 'No';
+
+    expect(
+      getHiddenConditionalFieldIds([
+        field(1, FieldType.RADIO, '0', undefined, {
+          type: 'radio',
+          values: [
+            { id: 1, value: 'Yes', checked: false },
+            { id: 2, value: 'No', checked: false },
+          ],
+        }),
+        hiddenChild,
+      ]),
+    ).toEqual([2]);
   });
 });

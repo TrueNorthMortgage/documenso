@@ -4,6 +4,7 @@ import { validateNumberField } from '@documenso/lib/advanced-fields-validation/v
 import { validateRadioField } from '@documenso/lib/advanced-fields-validation/validate-radio';
 import { validateTextField } from '@documenso/lib/advanced-fields-validation/validate-text';
 import { assertConditionalFieldIsVisible } from '@documenso/lib/server-only/field/assert-conditional-field-visible';
+import { clearHiddenConditionalFields } from '@documenso/lib/server-only/field/clear-hidden-conditional-fields';
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import { prisma } from '@documenso/prisma';
 import { DocumentStatus, FieldType, RecipientRole, SigningStatus } from '@prisma/client';
@@ -248,6 +249,11 @@ export const signFieldWithToken = async ({
         customText,
         inserted: true,
       },
+    });
+
+    await clearHiddenConditionalFields({
+      tx,
+      envelopeItemId: field.envelopeItemId,
     });
 
     if (isSignatureField) {
