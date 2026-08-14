@@ -4,7 +4,9 @@ import { EnvelopeType, type Prisma } from '@prisma/client';
 
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import type { FindResultResponse } from '../../types/search-params';
+import { getFolderPaths } from '../folder/get-folder-paths';
 import { getMemberRoles } from '../team/get-member-roles';
+import { getTeamById } from '../team/get-team';
 
 export type FindTemplatesOptions = {
   userId: number;
@@ -13,6 +15,7 @@ export type FindTemplatesOptions = {
   page?: number;
   perPage?: number;
   folderId?: string;
+  includeAllFolders?: boolean;
   query?: string;
 };
 
@@ -23,15 +26,19 @@ export const findTemplates = async ({
   page = 1,
   perPage = 10,
   folderId,
+  includeAllFolders = false,
   query,
 }: FindTemplatesOptions) => {
-  const { teamRole } = await getMemberRoles({
-    teamId,
-    reference: {
-      type: 'User',
-      id: userId,
-    },
-  });
+  const [team, { teamRole }] = await Promise.all([
+    getTeamById({ teamId, userId }),
+    getMemberRoles({
+      teamId,
+      reference: {
+        type: 'User',
+        id: userId,
+      },
+    }),
+  ]);
 
   const where: Prisma.EnvelopeWhereInput = {
     type: EnvelopeType.TEMPLATE,
@@ -48,7 +55,7 @@ export const findTemplates = async ({
           { userId, teamId },
         ],
       },
-      folderId ? { folderId } : { folderId: null },
+      ...(includeAllFolders ? [] : [folderId ? { folderId } : { folderId: null }]),
       query?.trim()
         ? {
             title: {
@@ -92,8 +99,21 @@ export const findTemplates = async ({
     prisma.envelope.count({ where }),
   ]);
 
+  const folderPaths = await getFolderPaths(data.flatMap((template) => (template.folderId ? [template.folderId] : [])));
+
+  const dataWithFolderPaths = data.map((template) => ({
+    ...template,
+    templatePath: [
+      team.organisation.name,
+      template.team?.name,
+      template.folderId ? folderPaths.get(template.folderId) : null,
+    ]
+      .filter((path): path is string => Boolean(path))
+      .join(' / '),
+  }));
+
   return {
-    data,
+    data: dataWithFolderPaths,
     count,
     currentPage: Math.max(page, 1),
     perPage,

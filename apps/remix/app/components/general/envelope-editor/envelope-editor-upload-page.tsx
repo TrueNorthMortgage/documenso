@@ -567,10 +567,10 @@ export const EnvelopeEditorUploadPage = () => {
                                       variant="ghost"
                                       size="sm"
                                       title={t`Apply template`}
-                                      data-testid={`envelope-item-template-button-${localFile.id}`}
                                       disabled={localFile.isReplacing || localFile.isUploading}
                                     >
-                                      <LayersIcon className="h-4 w-4" />
+                                      <LayersIcon className="mr-2 h-4 w-4" />
+                                      <Trans>Apply Template</Trans>
                                     </Button>
                                   }
                                 />

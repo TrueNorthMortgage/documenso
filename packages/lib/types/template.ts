@@ -154,6 +154,7 @@ export const ZTemplateManySchema = TemplateSchema.pick({
     token: true,
     enabled: true,
   }).nullable(),
+  templatePath: z.string(),
   // Backwards compatibility.
   templateDocumentDataId: z.string().default(''),
 });
