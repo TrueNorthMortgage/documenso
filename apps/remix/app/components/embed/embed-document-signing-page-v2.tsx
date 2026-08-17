@@ -226,6 +226,7 @@ export const EmbedSignDocumentV2ClientPage = ({
                 created: new Date(),
                 signatureImageAsBase64: recipientSignature.signatureImageAsBase64,
                 typedSignature: recipientSignature.typedSignature,
+                typedSignatureFont: recipientSignature.typedSignatureFont,
               }
             : undefined
         }

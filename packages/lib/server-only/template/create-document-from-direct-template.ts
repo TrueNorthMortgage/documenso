@@ -253,7 +253,7 @@ export const createDocumentFromDirectTemplate = async ({
         };
       }
 
-      const { value, isBase64 } = signedFieldValue;
+      const { value, isBase64, signatureFont } = signedFieldValue;
 
       const isSignatureField =
         templateField.type === FieldType.SIGNATURE || templateField.type === FieldType.FREE_SIGNATURE;
@@ -279,6 +279,7 @@ export const createDocumentFromDirectTemplate = async ({
           ? {
               signatureImageAsBase64,
               typedSignature,
+              typedSignatureFont: typedSignature ? (signatureFont ?? null) : null,
             }
           : null,
       };
@@ -515,6 +516,7 @@ export const createDocumentFromDirectTemplate = async ({
                 recipientId: createdDirectRecipient.id,
                 signatureImageAsBase64: signature.signatureImageAsBase64,
                 typedSignature: signature.typedSignature,
+                typedSignatureFont: signature.typedSignatureFont,
               },
             },
           },

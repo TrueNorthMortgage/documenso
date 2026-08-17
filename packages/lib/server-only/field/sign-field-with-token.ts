@@ -3,6 +3,7 @@ import { validateDropdownField } from '@documenso/lib/advanced-fields-validation
 import { validateNumberField } from '@documenso/lib/advanced-fields-validation/validate-number';
 import { validateRadioField } from '@documenso/lib/advanced-fields-validation/validate-radio';
 import { validateTextField } from '@documenso/lib/advanced-fields-validation/validate-text';
+import type { SignatureFontFamily } from '@documenso/lib/constants/signatures';
 import { assertConditionalFieldIsVisible } from '@documenso/lib/server-only/field/assert-conditional-field-visible';
 import { clearHiddenConditionalFields } from '@documenso/lib/server-only/field/clear-hidden-conditional-fields';
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
@@ -34,6 +35,7 @@ export type SignFieldWithTokenOptions = {
   fieldId: number;
   value: string;
   isBase64?: boolean;
+  signatureFont?: SignatureFontFamily;
   userId?: number;
   authOptions?: TRecipientActionAuth;
   requestMetadata?: RequestMetadata;
@@ -54,6 +56,7 @@ export const signFieldWithToken = async ({
   fieldId,
   value,
   isBase64,
+  signatureFont,
   userId,
   authOptions,
   requestMetadata,
@@ -266,10 +269,12 @@ export const signFieldWithToken = async ({
           recipientId: field.recipientId,
           signatureImageAsBase64: signatureImageAsBase64,
           typedSignature: typedSignature,
+          typedSignatureFont: typedSignature ? signatureFont : null,
         },
         update: {
           signatureImageAsBase64: signatureImageAsBase64,
           typedSignature: typedSignature,
+          typedSignatureFont: typedSignature ? signatureFont : null,
         },
       });
 

@@ -282,6 +282,7 @@ export const signEnvelopeFieldRoute = procedure
 
     let signatureImageAsBase64 = null;
     let typedSignature = null;
+    let typedSignatureFont = null;
 
     if (field.type === FieldType.SIGNATURE) {
       if (fieldValue.type !== FieldType.SIGNATURE) {
@@ -295,6 +296,7 @@ export const signEnvelopeFieldRoute = procedure
 
         signatureImageAsBase64 = isBase64 ? fieldValue.value : null;
         typedSignature = !isBase64 ? fieldValue.value : null;
+        typedSignatureFont = !isBase64 ? (fieldValue.signatureFont ?? null) : null;
       }
     }
 
@@ -345,10 +347,12 @@ export const signEnvelopeFieldRoute = procedure
             recipientId: field.recipientId,
             signatureImageAsBase64: signatureImageAsBase64,
             typedSignature: typedSignature,
+            typedSignatureFont,
           },
           update: {
             signatureImageAsBase64: signatureImageAsBase64,
             typedSignature: typedSignature,
+            typedSignatureFont,
           },
         });
 

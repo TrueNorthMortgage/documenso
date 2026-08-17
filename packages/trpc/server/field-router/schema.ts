@@ -1,5 +1,6 @@
-import { ZRecipientActionAuthSchema } from '@documenso/lib/types/document-auth';
+import { SIGNATURE_FONT_FAMILY_KEYS } from '@documenso/lib/constants/signatures';
 import { ZConditionalFieldRuleOperatorSchema } from '@documenso/lib/types/conditional-field';
+import { ZRecipientActionAuthSchema } from '@documenso/lib/types/document-auth';
 import {
   ZFieldHeightSchema,
   ZFieldPageNumberSchema,
@@ -176,6 +177,7 @@ export const ZSignFieldWithTokenMutationSchema = z.object({
   fieldId: z.number(),
   value: z.string().trim().optional(),
   isBase64: z.boolean().optional(),
+  signatureFont: z.enum(SIGNATURE_FONT_FAMILY_KEYS).optional(),
   authOptions: ZRecipientActionAuthSchema.optional(),
 });
 
