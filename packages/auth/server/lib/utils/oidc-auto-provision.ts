@@ -1,7 +1,7 @@
 import { generateDatabaseId } from '@documenso/lib/universal/id';
 import { env } from '@documenso/lib/utils/env';
 import { prisma } from '@documenso/prisma';
-import { OrganisationMemberRole, TeamMemberRole } from '@prisma/client';
+import { OrganisationGroupType, OrganisationMemberRole, TeamMemberRole } from '@prisma/client';
 
 const VALID_ORGANISATION_ROLES = new Set(Object.values(OrganisationMemberRole));
 const VALID_TEAM_ROLES = new Set(Object.values(TeamMemberRole));
@@ -163,6 +163,21 @@ export const provisionOidcUser = async ({
     throw new Error(`OIDC auto-provision group not found: ${organisation_url}/${team_url}/${team_role}`);
   }
 
+  const organisation_group = await prisma.organisationGroup.findFirst({
+    where: {
+      organisationId: organisation.id,
+      type: OrganisationGroupType.INTERNAL_ORGANISATION,
+      organisationRole: organisation_role,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!organisation_group) {
+    throw new Error(`OIDC auto-provision organisation group not found: ${organisation_url}/${organisation_role}`);
+  }
+
   await prisma.$transaction(async (tx) => {
     let organisation_member = await tx.organisationMember.findFirst({
       where: {
@@ -183,6 +198,26 @@ export const provisionOidcUser = async ({
         },
         select: {
           id: true,
+        },
+      });
+    }
+
+    const existing_organisation_group_member = await tx.organisationGroupMember.findFirst({
+      where: {
+        organisationMemberId: organisation_member.id,
+        groupId: organisation_group.id,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existing_organisation_group_member) {
+      await tx.organisationGroupMember.create({
+        data: {
+          id: generateDatabaseId('group_member'),
+          organisationMemberId: organisation_member.id,
+          groupId: organisation_group.id,
         },
       });
     }

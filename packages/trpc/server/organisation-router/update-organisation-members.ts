@@ -89,7 +89,9 @@ export const updateOrganisationMemberRoute = authenticatedProcedure
 
     const currentUserOrganisationRole = currentUserOrganisationRoles[0].group.organisationRole;
     const currentMemberToUpdateOrganisationRole = getHighestOrganisationRoleInGroup(
-      organisationMemberToUpdate.organisationGroupMembers.flatMap((member) => member.group),
+      organisationMemberToUpdate.organisationGroupMembers
+        .filter(({ group }) => group.type === OrganisationGroupType.INTERNAL_ORGANISATION)
+        .map(({ group }) => group),
     );
 
     const isMemberToUpdateHigherRole = !isOrganisationRoleWithinUserHierarchy(
@@ -138,12 +140,10 @@ export const updateOrganisationMemberRoute = authenticatedProcedure
 
     // Switch member to new internal group role.
     await prisma.$transaction(async (tx) => {
-      await tx.organisationGroupMember.delete({
+      await tx.organisationGroupMember.deleteMany({
         where: {
-          organisationMemberId_groupId: {
-            organisationMemberId: organisationMemberToUpdate.id,
-            groupId: currentMemberGroup.id,
-          },
+          organisationMemberId: organisationMemberToUpdate.id,
+          groupId: currentMemberGroup.id,
         },
       });
 
