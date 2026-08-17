@@ -20,10 +20,11 @@ import { z } from 'zod';
 
 export type SignFieldNumberDialogProps = {
   fieldMeta: TNumberFieldMeta;
+  initialNumber?: string;
 };
 
 export const SignFieldNumberDialog = createCallable<SignFieldNumberDialogProps, string | null>(
-  ({ call, fieldMeta }) => {
+  ({ call, fieldMeta, initialNumber }) => {
     const { t } = useLingui();
 
     // Needs to be inside dialog for translation purposes.
@@ -90,7 +91,7 @@ export const SignFieldNumberDialog = createCallable<SignFieldNumberDialogProps, 
     const form = useForm<z.infer<typeof ZSignFieldNumberFormSchema>>({
       resolver: zodResolver(ZSignFieldNumberFormSchema),
       defaultValues: {
-        number: undefined,
+        number: initialNumber,
       },
     });
 

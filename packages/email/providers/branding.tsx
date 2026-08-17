@@ -4,26 +4,36 @@ type BrandingContextValue = {
   brandingEnabled: boolean;
   brandingUrl: string;
   brandingLogo: string;
+  brandingName: string;
   brandingCompanyDetails: string;
   brandingHidePoweredBy: boolean;
 };
 
 const BrandingContext = createContext<BrandingContextValue | undefined>(undefined);
 
+const defaultBrandingName = 'True North Mortgage';
+
 const defaultBrandingContextValue: BrandingContextValue = {
   brandingEnabled: false,
   brandingUrl: '',
   brandingLogo: '',
+  brandingName: defaultBrandingName,
   brandingCompanyDetails: '',
   brandingHidePoweredBy: false,
 };
 
-export const BrandingProvider = (props: { branding?: BrandingContextValue; children: React.ReactNode }) => {
-  return (
-    <BrandingContext.Provider value={props.branding ?? defaultBrandingContextValue}>
-      {props.children}
-    </BrandingContext.Provider>
-  );
+export type BrandingSettings = Omit<BrandingContextValue, 'brandingName'> & {
+  brandingName?: string;
+};
+
+export const BrandingProvider = (props: { branding?: BrandingSettings; children: React.ReactNode }) => {
+  const branding: BrandingContextValue = {
+    ...defaultBrandingContextValue,
+    ...props.branding,
+    brandingName: props.branding?.brandingName ?? defaultBrandingName,
+  };
+
+  return <BrandingContext.Provider value={branding}>{props.children}</BrandingContext.Provider>;
 };
 
 export const useBranding = () => {
@@ -35,5 +45,3 @@ export const useBranding = () => {
 
   return ctx;
 };
-
-export type BrandingSettings = BrandingContextValue;

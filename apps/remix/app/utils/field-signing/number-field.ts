@@ -21,18 +21,12 @@ export const handleNumberFieldClick = async (
     });
   }
 
-  if (field.inserted) {
-    return {
-      type: FieldType.NUMBER,
-      value: null,
-    };
-  }
-
   let numberToInsert = number;
 
   if (!numberToInsert) {
     numberToInsert = await SignFieldNumberDialog.call({
       fieldMeta: field.fieldMeta,
+      initialNumber: field.inserted ? field.customText : undefined,
     });
   }
 

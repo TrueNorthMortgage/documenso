@@ -21,18 +21,12 @@ export const handleTextFieldClick = async (
     });
   }
 
-  if (field.inserted) {
-    return {
-      type: FieldType.TEXT,
-      value: null,
-    };
-  }
-
   let textToInsert = text;
 
   if (!textToInsert) {
     textToInsert = await SignFieldTextDialog.call({
       fieldMeta: field.fieldMeta,
+      initialText: field.inserted ? field.customText : undefined,
     });
   }
 

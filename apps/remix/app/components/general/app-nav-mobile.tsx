@@ -1,4 +1,3 @@
-import LogoImage from '@documenso/assets/logo.png';
 import { authClient } from '@documenso/auth/client';
 import { useSession } from '@documenso/lib/client-only/providers/session';
 import { isPersonalLayout } from '@documenso/lib/utils/organisations';
@@ -11,6 +10,8 @@ import { useMemo } from 'react';
 import { Link } from 'react-router';
 
 import { useOptionalCurrentTeam } from '~/providers/team';
+
+import { AppLogo } from './app-logo';
 
 export type AppNavMobileProps = {
   isMenuOpen: boolean;
@@ -81,7 +82,7 @@ export const AppNavMobile = ({ isMenuOpen, onMenuOpenChange }: AppNavMobileProps
     <Sheet open={isMenuOpen} onOpenChange={onMenuOpenChange}>
       <SheetContent className="flex w-full max-w-[350px] flex-col">
         <Link to="/" onClick={handleMenuItemClick}>
-          <img src={LogoImage} alt="Documenso Logo" className="dark:invert" width={170} height={25} />
+          <AppLogo className="h-6 w-auto" />
         </Link>
 
         <div className="mt-8 flex w-full flex-col items-start gap-y-4">

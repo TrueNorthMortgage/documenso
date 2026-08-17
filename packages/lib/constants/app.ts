@@ -6,6 +6,16 @@ export const NEXT_PUBLIC_WEBAPP_URL = () => env('NEXT_PUBLIC_WEBAPP_URL') ?? 'ht
 
 export const NEXT_PUBLIC_SOURCE_URL = () => env('NEXT_PUBLIC_SOURCE_URL');
 
+export const BRAND_LOGO_LIGHT_URL = '/static/brand-logo-light.png';
+
+export const BRAND_LOGO_DARK_URL = '/static/brand-logo-dark.png';
+
+export const BRAND_CERTIFICATE_LOGO_URL = '/static/brand-certificate-logo.png';
+
+export const BRAND_LOGO_ICON_LIGHT_URL = '/static/brand-logo-icon-light.png';
+
+export const BRAND_LOGO_ICON_DARK_URL = '/static/brand-logo-icon-dark.png';
+
 export const NEXT_PUBLIC_SIGNING_CONTACT_INFO = () =>
   env('NEXT_PUBLIC_SIGNING_CONTACT_INFO') ?? NEXT_PUBLIC_WEBAPP_URL();
 

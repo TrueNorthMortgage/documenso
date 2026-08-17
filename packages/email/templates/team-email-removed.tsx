@@ -3,8 +3,8 @@ import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 
-import { Body, Container, Head, Hr, Html, Img, Preview, Section, Text } from '../components';
-import { useBranding } from '../providers/branding';
+import { Body, Container, Head, Hr, Html, Preview, Section, Text } from '../components';
+import { TemplateBrandLogo, TemplateBrandLogoStyles } from '../template-components/template-brand-logo';
 import { TemplateFooter } from '../template-components/template-footer';
 import TemplateImage from '../template-components/template-image';
 
@@ -24,23 +24,20 @@ export const TeamEmailRemovedTemplate = ({
   teamUrl = 'demo',
 }: TeamEmailRemovedTemplateProps) => {
   const { _ } = useLingui();
-  const branding = useBranding();
 
   const previewText = msg`Team email removed for ${teamName} on Documenso`;
 
   return (
     <Html>
-      <Head />
+      <Head>
+        <TemplateBrandLogoStyles />
+      </Head>
       <Preview>{_(previewText)}</Preview>
 
       <Body className="mx-auto my-auto font-sans">
         <Section className="bg-white text-slate-500">
           <Container className="mx-auto mt-8 mb-2 max-w-xl rounded-lg border border-slate-200 border-solid px-2 pt-2 backdrop-blur-sm">
-            {branding.brandingEnabled && branding.brandingLogo ? (
-              <Img src={branding.brandingLogo} alt="Branding Logo" className="mb-4 h-6 p-2" />
-            ) : (
-              <TemplateImage assetBaseUrl={assetBaseUrl} className="mb-4 h-6 p-2" staticAsset="logo.png" />
-            )}
+            <TemplateBrandLogo assetBaseUrl={assetBaseUrl} className="mb-4 h-6 p-2" />
 
             <Section>
               <TemplateImage className="mx-auto" assetBaseUrl={assetBaseUrl} staticAsset="mail-open-alert.png" />
