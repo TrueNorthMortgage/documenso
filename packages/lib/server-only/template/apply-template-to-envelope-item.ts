@@ -240,6 +240,30 @@ export const applyTemplateToEnvelopeItem = async ({
       }),
     );
 
+    const createdFieldBySourceId = new Map(sourceFields.map((field, index) => [field.id, fields[index].id]));
+    const conditionalRules = sourceFields.flatMap((field) => {
+      const rule = field.conditionalChildRule;
+      const childFieldId = createdFieldBySourceId.get(field.id);
+      const parentFieldId = rule ? createdFieldBySourceId.get(rule.parentFieldId) : undefined;
+
+      if (!rule || !childFieldId || !parentFieldId) {
+        return [];
+      }
+
+      return [
+        {
+          childFieldId,
+          parentFieldId,
+          operator: rule.operator,
+          value: rule.value,
+        },
+      ];
+    });
+
+    if (conditionalRules.length > 0) {
+      await tx.conditionalFieldRule.createMany({ data: conditionalRules });
+    }
+
     await tx.documentAuditLog.createMany({
       data: fields.map((field) =>
         createDocumentAuditLogData({

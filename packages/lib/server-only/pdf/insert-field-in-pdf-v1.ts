@@ -15,6 +15,7 @@ import { FieldType } from '@prisma/client';
 import { match, P } from 'ts-pattern';
 
 import { NEXT_PRIVATE_INTERNAL_WEBAPP_URL } from '../../constants/app';
+import { getSignatureFontFamily } from '../../constants/signatures';
 import {
   ZCheckboxFieldMeta,
   ZDateFieldMeta,
@@ -28,8 +29,11 @@ import {
 import { getPageSize } from './get-page-size';
 
 export const insertFieldInPDFV1 = async (pdf: PDFDocument, field: FieldWithSignature) => {
-  const [fontCaveat, fontNoto] = await Promise.all([
-    fetch(`${NEXT_PRIVATE_INTERNAL_WEBAPP_URL()}/fonts/caveat.ttf`).then(async (res) => res.arrayBuffer()),
+  const signatureFont = getSignatureFontFamily(field.signature?.typedSignatureFont);
+  const [fontSignature, fontNoto] = await Promise.all([
+    fetch(`${NEXT_PRIVATE_INTERNAL_WEBAPP_URL()}/fonts/${signatureFont.fileName}`).then(async (res) =>
+      res.arrayBuffer(),
+    ),
     fetch(`${NEXT_PRIVATE_INTERNAL_WEBAPP_URL()}/fonts/noto-sans.ttf`).then(async (res) => res.arrayBuffer()),
   ]);
 
@@ -115,12 +119,12 @@ export const insertFieldInPDFV1 = async (pdf: PDFDocument, field: FieldWithSigna
   }
 
   const font = await pdf.embedFont(
-    isSignatureField ? fontCaveat : fontNoto,
+    isSignatureField ? fontSignature : fontNoto,
     isSignatureField ? { features: { calt: false } } : undefined,
   );
 
   if (field.type === FieldType.SIGNATURE || field.type === FieldType.FREE_SIGNATURE) {
-    await pdf.embedFont(fontCaveat);
+    await pdf.embedFont(fontSignature);
   }
 
   await match(field)

@@ -25,6 +25,11 @@ import { match } from 'ts-pattern';
 
 import type { FieldFormType } from './add-fields';
 import {
+  ConditionalFieldSettings,
+  type ConditionalFieldSettingsProps,
+  getFieldDisplayName,
+} from './conditional-field-settings';
+import {
   DocumentFlowFormContainerActions,
   DocumentFlowFormContainerContent,
   DocumentFlowFormContainerFooter,
@@ -50,6 +55,7 @@ export type FieldAdvancedSettingsProps = {
   isDocumentPdfLoaded?: boolean;
   onSave?: (fieldState: FieldMeta) => void;
   onAutoSave?: (fieldState: FieldMeta) => Promise<void>;
+  conditionalFieldSettings?: Omit<ConditionalFieldSettingsProps, 'field' | 'fields'>;
 };
 
 export type FieldMetaKeys =
@@ -150,17 +156,36 @@ const getDefaultState = (fieldType: FieldType): FieldMeta => {
 };
 
 export const FieldAdvancedSettings = forwardRef<HTMLDivElement, FieldAdvancedSettingsProps>(
-  ({ title, description, field, fields, onAdvancedSettings, isDocumentPdfLoaded = true, onSave, onAutoSave }, ref) => {
+  (
+    {
+      title,
+      description,
+      field,
+      fields,
+      onAdvancedSettings,
+      isDocumentPdfLoaded = true,
+      onSave,
+      onAutoSave,
+      conditionalFieldSettings,
+    },
+    ref,
+  ) => {
     const { _ } = useLingui();
     const { toast } = useToast();
 
     const [errors, setErrors] = useState<string[]>([]);
 
-    const fieldMeta = field?.fieldMeta;
+    const selectedField =
+      fields.find(
+        (candidate) =>
+          candidate.formId === field.formId || (candidate.nativeId && candidate.nativeId === field.nativeId),
+      ) ?? field;
+
+    const fieldMeta = selectedField?.fieldMeta;
 
     const localStorageKey = `field_${field.formId}_${field.type}`;
 
-    const defaultState: FieldMeta = getDefaultState(field.type);
+    const defaultState: FieldMeta = getDefaultState(selectedField.type);
 
     const [fieldState, setFieldState] = useState(() => {
       const savedState = localStorage.getItem(localStorageKey);
@@ -242,6 +267,10 @@ export const FieldAdvancedSettings = forwardRef<HTMLDivElement, FieldAdvancedSet
       <div ref={ref} className="flex h-full flex-col">
         <DocumentFlowFormContainerHeader title={title} description={description} />
 
+        <div className="mb-4 px-4 text-muted-foreground text-xs">
+          Name: <span className="font-medium text-foreground">{getFieldDisplayName(selectedField, fields)}</span>
+        </div>
+
         <DocumentFlowFormContainerContent>
           {isDocumentPdfLoaded &&
             fields.map((localField, index) => (
@@ -321,6 +350,8 @@ export const FieldAdvancedSettings = forwardRef<HTMLDivElement, FieldAdvancedSet
               />
             ))
             .otherwise(() => null)}
+
+          <ConditionalFieldSettings {...(conditionalFieldSettings ?? {})} field={selectedField} fields={fields} />
 
           {errors.length > 0 && (
             <div className="mt-4">

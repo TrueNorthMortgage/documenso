@@ -68,7 +68,11 @@ export const getOrganisationTemplateById = async ({ id, userId, teamId }: GetOrg
           id: 'asc',
         },
       },
-      fields: true,
+      fields: {
+        include: {
+          conditionalChildRule: true,
+        },
+      },
       team: {
         select: {
           id: true,

@@ -63,6 +63,8 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     setFullName,
     signature,
     setSignature,
+    signatureFont,
+    setSignatureFont,
     selectedAssistantRecipientFields,
     selectedAssistantRecipient,
     isDirectTemplate,
@@ -362,6 +364,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
             field,
             fullName,
             signature,
+            signatureFont,
             typedSignatureEnabled: envelope.documentMeta.typedSignatureEnabled,
             uploadSignatureEnabled: envelope.documentMeta.uploadSignatureEnabled,
             drawSignatureEnabled: envelope.documentMeta.drawSignatureEnabled,
@@ -381,6 +384,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
                   });
 
                   setSignature(payload.value);
+                  setSignatureFont(payload.signatureFont ?? null);
                 } else {
                   await signField(field.id, payload);
                 }
@@ -411,6 +415,15 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
       console.error('Layer not loaded yet');
       return;
     }
+
+    const fieldsToRender = [...localPageFields, ...localPageOtherRecipientFields];
+    const fieldIdsToRender = new Set(fieldsToRender.map((field) => field.id.toString()));
+
+    pageLayer.current.find('.field-group').forEach((fieldGroup) => {
+      if (!fieldIdsToRender.has(fieldGroup.id())) {
+        fieldGroup.destroy();
+      }
+    });
 
     // Render current recipient fields.
     for (const field of localPageFields) {

@@ -105,7 +105,7 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
   const [confirmReplacement, setConfirmReplacement] = useState(false);
 
   const teamTemplatesQuery = trpc.template.findTemplates.useQuery(
-    { page, perPage: 25, query: debouncedQuery.trim() || undefined },
+    { page, perPage: 25, query: debouncedQuery.trim() || undefined, includeAllFolders: true },
     { enabled: open },
   );
   const organisationTemplatesQuery = trpc.template.findOrganisationTemplates.useQuery(
@@ -350,7 +350,14 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
                             onClick={() => setSelectedTemplateId(templateId)}
                           >
                             <CheckIcon className={`mr-2 h-4 w-4 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
-                            <span className="min-w-0 break-words">{template.title}</span>
+                            <span className="min-w-0">
+                              <span className="block break-words">{template.title}</span>
+                              {template.templatePath && (
+                                <span className="block break-words text-muted-foreground text-xs">
+                                  {template.templatePath}
+                                </span>
+                              )}
+                            </span>
                           </Button>
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-right">{documentCount}</TableCell>

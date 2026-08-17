@@ -15,8 +15,10 @@ export default function EnvelopeSignerForm() {
   const {
     fullName,
     signature,
+    signatureFont,
     setFullName,
     setSignature,
+    setSignatureFont,
     envelope,
     recipientFields,
     recipient,
@@ -118,6 +120,8 @@ export default function EnvelopeSignerForm() {
               fullName={fullName}
               value={signature ?? ''}
               onChange={(v) => setSignature(v ?? '')}
+              signatureFont={signatureFont ?? undefined}
+              onSignatureFontChange={setSignatureFont}
               typedSignatureEnabled={envelope.documentMeta.typedSignatureEnabled}
               uploadSignatureEnabled={envelope.documentMeta.uploadSignatureEnabled}
               drawSignatureEnabled={envelope.documentMeta.drawSignatureEnabled}

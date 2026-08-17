@@ -1,7 +1,9 @@
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { useCurrentEnvelopeRender } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import { PDF_VIEWER_ERROR_MESSAGES } from '@documenso/lib/constants/pdf-viewer-i18n';
+import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import type { NormalizedFieldWithContext } from '@documenso/lib/server-only/ai/envelope/detect-fields/types';
+import type { TConditionalFieldRule } from '@documenso/lib/types/conditional-field';
 import {
   FIELD_META_DEFAULT_VALUES,
   type TCheckboxFieldMeta,
@@ -18,17 +20,22 @@ import {
 } from '@documenso/lib/types/field-meta';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
 import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
+import { trpc } from '@documenso/trpc/react';
 import { AnimateGenericFadeInOut } from '@documenso/ui/components/animate/animate-generic-fade-in-out';
 import { cn } from '@documenso/ui/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@documenso/ui/primitives/alert';
 import { Button } from '@documenso/ui/primitives/button';
+import {
+  ConditionalFieldSettings,
+  getFieldDisplayName,
+} from '@documenso/ui/primitives/document-flow/conditional-field-settings';
 import { Separator } from '@documenso/ui/primitives/separator';
 import type { MessageDescriptor } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { DocumentStatus, FieldType, RecipientRole } from '@prisma/client';
-import { FileTextIcon, PencilIcon, SparklesIcon } from 'lucide-react';
+import { EyeOffIcon, FileTextIcon, PencilIcon, SparklesIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRevalidator, useSearchParams } from 'react-router';
 import { isDeepEqual } from 'remeda';
@@ -83,6 +90,13 @@ export const EnvelopeEditorFieldsPage = () => {
 
   const { _ } = useLingui();
 
+  const { mutateAsync: createConditionalRule } = trpc.field.createConditionalFieldRule.useMutation(
+    DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
+  );
+  const { mutateAsync: deleteConditionalRule } = trpc.field.deleteConditionalFieldRule.useMutation(
+    DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
+  );
+
   const [isAiFieldDialogOpen, setIsAiFieldDialogOpen] = useState(false);
   const [isAiEnableDialogOpen, setIsAiEnableDialogOpen] = useState(false);
   const { revalidate } = useRevalidator();
@@ -93,6 +107,56 @@ export const EnvelopeEditorFieldsPage = () => {
   );
 
   const selectedField = useMemo(() => structuredClone(editorFields.selectedField), [editorFields.selectedField]);
+
+  const conditionalFields = useMemo(
+    () =>
+      editorFields.localFields.map((field) => ({
+        nativeId: field.id,
+        formId: field.formId,
+        pageNumber: field.page,
+        pageX: field.positionX,
+        pageY: field.positionY,
+        pageWidth: field.width,
+        pageHeight: field.height,
+        signerEmail: envelope.recipients.find((recipient) => recipient.id === field.recipientId)?.email ?? '',
+        recipientId: field.recipientId,
+        type: field.type,
+        fieldMeta: field.fieldMeta,
+        conditionalChildRule: field.conditionalChildRule,
+        conditionalParentRules: field.conditionalParentRules,
+        envelopeItemId: field.envelopeItemId,
+      })),
+    [editorFields.localFields, envelope.recipients],
+  );
+
+  const selectedConditionalField = conditionalFields.find((field) => field.formId === selectedField?.formId);
+
+  const updateConditionalRuleState = (rule: TConditionalFieldRule) => {
+    for (const field of editorFields.localFields) {
+      if (field.id === rule.childFieldId) {
+        editorFields.updateFieldByFormId(field.formId, { conditionalChildRule: rule });
+      }
+
+      if (field.id === rule.parentFieldId) {
+        editorFields.updateFieldByFormId(field.formId, {
+          conditionalParentRules: [...(field.conditionalParentRules ?? []), rule],
+        });
+      }
+    }
+  };
+
+  const removeConditionalRuleState = (childFieldId: number) => {
+    const deletedRule = editorFields.localFields.find((field) => field.id === childFieldId)?.conditionalChildRule;
+
+    for (const field of editorFields.localFields) {
+      editorFields.updateFieldByFormId(field.formId, {
+        conditionalChildRule: field.id === childFieldId ? null : field.conditionalChildRule,
+        conditionalParentRules: deletedRule
+          ? field.conditionalParentRules?.filter((rule) => rule.id !== deletedRule.id)
+          : field.conditionalParentRules,
+      });
+    }
+  };
 
   const updateSelectedFieldMeta = (fieldMeta: TFieldMetaSchema) => {
     if (!selectedField) {
@@ -378,7 +442,26 @@ export const EnvelopeEditorFieldsPage = () => {
                 )}
 
                 <div className="px-4 [&_label]:text-foreground/70 [&_label]:text-xs">
-                  <h3 className="font-semibold text-sm">{_(FieldSettingsTypeTranslations[selectedField.type])}</h3>
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-semibold text-sm">{_(FieldSettingsTypeTranslations[selectedField.type])}</h3>
+                    {selectedConditionalField?.conditionalChildRule && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded border border-amber-500/50 px-1.5 py-0.5 text-[10px] text-amber-500"
+                        title={_(msg`This field is conditionally visible`)}
+                      >
+                        <EyeOffIcon className="h-3 w-3" aria-hidden="true" />
+                        <span>Conditional</span>
+                      </span>
+                    )}
+                  </div>
+                  {selectedConditionalField && (
+                    <p className="mt-1 text-muted-foreground text-xs">
+                      Name:{' '}
+                      <span className="font-medium text-foreground">
+                        {getFieldDisplayName(selectedConditionalField, conditionalFields)}
+                      </span>
+                    </p>
+                  )}
 
                   {match(selectedField.type)
                     .with(FieldType.SIGNATURE, () => (
@@ -442,6 +525,23 @@ export const EnvelopeEditorFieldsPage = () => {
                       />
                     ))
                     .otherwise(() => null)}
+
+                  {selectedConditionalField && (
+                    <ConditionalFieldSettings
+                      field={selectedConditionalField}
+                      fields={conditionalFields}
+                      className="-mx-4"
+                      onCreateRule={async (input) => {
+                        const rule = await createConditionalRule(input);
+                        updateConditionalRuleState(rule);
+                        return rule;
+                      }}
+                      onDeleteRule={async (childFieldId) => {
+                        await deleteConditionalRule({ childFieldId });
+                        removeConditionalRuleState(childFieldId);
+                      }}
+                    />
+                  )}
                 </div>
               </section>
             )}

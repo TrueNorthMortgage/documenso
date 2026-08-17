@@ -31,7 +31,7 @@ export type GenerateCertificatePdfOptions = {
   };
   recipients: Recipient[];
   fields: (Pick<Field, 'id' | 'type' | 'secondaryId' | 'recipientId'> & {
-    signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature'> | null;
+    signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'> | null;
   })[];
   language?: string;
   pageWidth: number;

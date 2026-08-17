@@ -100,7 +100,7 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
           {/* If you delete this, delete the component as well. */}
           {organisation.organisationClaim.flags.allowLegacyEnvelopes && <DocumentUploadButtonLegacy type={type} />}
 
-          <FolderCreateDialog type={type} />
+          <FolderCreateDialog type={type} parentFolderId={parentId ?? undefined} />
         </div>
       </div>
 
@@ -129,8 +129,9 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <FolderCreateDialog
             type={type}
+            parentFolderId={parentId ?? undefined}
             trigger={
-              <button>
+              <button type="button">
                 <FolderCardEmpty type={type} />
               </button>
             }

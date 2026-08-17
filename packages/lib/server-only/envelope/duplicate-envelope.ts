@@ -62,7 +62,11 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
           name: true,
           role: true,
           signingOrder: true,
-          fields: true,
+          fields: {
+            include: {
+              conditionalChildRule: true,
+            },
+          },
         },
       },
       teamId: true,
@@ -158,11 +162,13 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
     }),
   );
 
+  const duplicatedFieldIdsBySourceId = new Map<number, number>();
+
   if (includeRecipients) {
     await pMap(
       envelope.recipients,
-      async (recipient) =>
-        prisma.recipient.create({
+      async (recipient) => {
+        const duplicatedRecipient = await prisma.recipient.create({
           data: {
             envelopeId: duplicatedEnvelope.id,
             email: recipient.email,
@@ -170,29 +176,67 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
             role: recipient.role,
             signingOrder: recipient.signingOrder,
             token: nanoid(),
-            fields: includeFields
-              ? {
-                  createMany: {
-                    data: recipient.fields.map((field) => ({
-                      envelopeId: duplicatedEnvelope.id,
-                      envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[field.envelopeItemId],
-                      type: field.type,
-                      page: field.page,
-                      positionX: field.positionX,
-                      positionY: field.positionY,
-                      width: field.width,
-                      height: field.height,
-                      customText: '',
-                      inserted: false,
-                      fieldMeta: field.fieldMeta as PrismaJson.FieldMeta,
-                    })),
-                  },
-                }
-              : undefined,
           },
-        }),
+        });
+
+        if (includeFields) {
+          const duplicatedFields = await Promise.all(
+            recipient.fields.map((field) =>
+              prisma.field.create({
+                data: {
+                  envelopeId: duplicatedEnvelope.id,
+                  envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[field.envelopeItemId],
+                  recipientId: duplicatedRecipient.id,
+                  type: field.type,
+                  page: field.page,
+                  positionX: field.positionX,
+                  positionY: field.positionY,
+                  width: field.width,
+                  height: field.height,
+                  customText: '',
+                  inserted: false,
+                  fieldMeta: field.fieldMeta as PrismaJson.FieldMeta,
+                },
+              }),
+            ),
+          );
+
+          recipient.fields.forEach((field, index) => {
+            duplicatedFieldIdsBySourceId.set(field.id, duplicatedFields[index].id);
+          });
+        }
+
+        return duplicatedRecipient;
+      },
       { concurrency: 5 },
     );
+  }
+
+  if (includeFields && duplicatedFieldIdsBySourceId.size > 0) {
+    const conditionalRules = envelope.recipients.flatMap((recipient) =>
+      recipient.fields.flatMap((field) => {
+        const rule = field.conditionalChildRule;
+        const childFieldId = duplicatedFieldIdsBySourceId.get(field.id);
+        const parentFieldId = rule ? duplicatedFieldIdsBySourceId.get(rule.parentFieldId) : undefined;
+
+        if (!rule || !childFieldId || !parentFieldId) {
+          return [];
+        }
+
+        return [
+          {
+            childFieldId,
+            parentFieldId,
+            operator: rule.operator,
+            value: rule.value,
+          },
+        ];
+      }),
+    );
+
+    if (conditionalRules.length > 0) {
+      await prisma.conditionalFieldRule.createMany({ data: conditionalRules });
+    }
   }
 
   if (duplicatedEnvelope.type === EnvelopeType.DOCUMENT) {

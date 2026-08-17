@@ -1,4 +1,4 @@
-import { isBase64Image } from '@documenso/lib/constants/signatures';
+import { isBase64Image, type SignatureFontFamily } from '@documenso/lib/constants/signatures';
 import { createContext, useContext, useState } from 'react';
 
 export type DocumentSigningContextValue = {
@@ -8,6 +8,8 @@ export type DocumentSigningContextValue = {
   setEmail: (_value: string) => void;
   signature: string | null;
   setSignature: (_value: string | null) => void;
+  signatureFont: SignatureFontFamily | null;
+  setSignatureFont: (_value: SignatureFontFamily | null) => void;
 };
 
 const DocumentSigningContext = createContext<DocumentSigningContextValue | null>(null);
@@ -30,6 +32,7 @@ export interface DocumentSigningProviderProps {
   fullName?: string | null;
   email?: string | null;
   signature?: string | null;
+  signatureFont?: SignatureFontFamily | null;
   typedSignatureEnabled?: boolean;
   uploadSignatureEnabled?: boolean;
   drawSignatureEnabled?: boolean;
@@ -40,6 +43,7 @@ export const DocumentSigningProvider = ({
   fullName: initialFullName,
   email: initialEmail,
   signature: initialSignature,
+  signatureFont: initialSignatureFont = null,
   typedSignatureEnabled = true,
   uploadSignatureEnabled = true,
   drawSignatureEnabled = true,
@@ -47,6 +51,7 @@ export const DocumentSigningProvider = ({
 }: DocumentSigningProviderProps) => {
   const [fullName, setFullName] = useState(initialFullName || '');
   const [email, setEmail] = useState(initialEmail || '');
+  const [signatureFont, setSignatureFont] = useState<SignatureFontFamily | null>(initialSignatureFont);
 
   // Ensure the user signature doesn't show up if it's not allowed.
   const [signature, setSignature] = useState(
@@ -75,6 +80,8 @@ export const DocumentSigningProvider = ({
         setEmail,
         signature,
         setSignature,
+        signatureFont,
+        setSignatureFont,
       }}
     >
       {children}

@@ -1,6 +1,7 @@
 import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
 import { APP_I18N_OPTIONS, ZSupportedLanguageCodeSchema } from '@documenso/lib/constants/i18n';
 import { RECIPIENT_ROLE_SIGNING_REASONS, RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-roles';
+import { getSignatureFontFamily } from '@documenso/lib/constants/signatures';
 import { unsafeGetEntireEnvelope } from '@documenso/lib/server-only/admin/get-entire-document';
 import { decryptSecondaryData } from '@documenso/lib/server-only/crypto/decrypt';
 import { getDocumentCertificateAuditLogs } from '@documenso/lib/server-only/document/get-document-certificate-audit-logs';
@@ -257,7 +258,12 @@ export default function SigningCertificate({ loaderData }: Route.ComponentProps)
                             )}
 
                             {signature.signature?.typedSignature && (
-                              <p className="text-center font-signature text-sm">
+                              <p
+                                className="text-center text-sm"
+                                style={{
+                                  fontFamily: getSignatureFontFamily(signature.signature?.typedSignatureFont).cssFamily,
+                                }}
+                              >
                                 {signature.signature?.typedSignature}
                               </p>
                             )}

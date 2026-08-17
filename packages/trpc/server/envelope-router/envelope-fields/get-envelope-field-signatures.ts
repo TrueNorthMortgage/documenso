@@ -58,6 +58,7 @@ export const getEnvelopeFieldSignaturesRoute = authenticatedProcedure
       fieldId: field.id,
       signatureImageAsBase64: field.signature?.signatureImageAsBase64 ?? null,
       typedSignature: field.signature?.typedSignature ?? null,
+      typedSignatureFont: field.signature?.typedSignatureFont ?? null,
     }));
 
     return signatures;

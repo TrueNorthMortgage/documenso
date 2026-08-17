@@ -1,6 +1,7 @@
 import Konva from 'konva';
 
 import { DEFAULT_SIGNATURE_TEXT_FONT_SIZE } from '../../constants/pdf';
+import { getSignatureFontFamily } from '../../constants/signatures';
 import { AppError } from '../../errors/app-error';
 import type { TSignatureFieldMeta } from '../../types/field-meta';
 import { resolveFieldOverflowMode } from '../../types/field-meta';
@@ -132,6 +133,7 @@ const createFieldSignature = (field: FieldToRender, options: RenderFieldElementO
   let textToRender: string = fieldTypeName;
 
   const signature = field.signature;
+  const signatureFontFamily = getSignatureFontFamily(signature?.typedSignatureFont).cssFamily;
 
   // Handle edit mode.
   if (mode === 'edit') {
@@ -184,7 +186,7 @@ const createFieldSignature = (field: FieldToRender, options: RenderFieldElementO
     isLabel,
     textToRender,
     fontSize,
-    fontFamily: 'Caveat, sans-serif',
+    fontFamily: signatureFontFamily,
     lineHeight: 1,
     letterSpacing: 0,
     textAlign: 'center',
@@ -206,7 +208,7 @@ const createFieldSignature = (field: FieldToRender, options: RenderFieldElementO
     wrap: overflowLayout.wrap,
     text: textToRender,
     fontSize,
-    fontFamily: 'Caveat, sans-serif',
+    fontFamily: signatureFontFamily,
     align: overflowLayout.textAlign,
     width: overflowLayout.width,
     height: overflowLayout.height,
@@ -277,7 +279,7 @@ export const renderSignatureFieldElement = (field: FieldToRender, options: Rende
         isLabel,
         textToRender: fieldSignature.text(),
         fontSize: fieldSignature.fontSize(),
-        fontFamily: 'Caveat, sans-serif',
+        fontFamily: getSignatureFontFamily(field.signature?.typedSignatureFont).cssFamily,
         lineHeight: 1,
         letterSpacing: 0,
         textAlign: 'center',

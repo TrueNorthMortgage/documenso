@@ -3,6 +3,7 @@ import { EnvelopeType, type Prisma, TemplateType } from '@prisma/client';
 
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import type { FindResultResponse } from '../../types/search-params';
+import { getFolderPaths } from '../folder/get-folder-paths';
 import { getMemberRoles } from '../team/get-member-roles';
 import { getTeamById } from '../team/get-team';
 
@@ -83,8 +84,21 @@ export const findOrganisationTemplates = async ({
     prisma.envelope.count({ where }),
   ]);
 
+  const folderPaths = await getFolderPaths(data.flatMap((template) => (template.folderId ? [template.folderId] : [])));
+
+  const dataWithFolderPaths = data.map((template) => ({
+    ...template,
+    templatePath: [
+      team.organisation.name,
+      template.team?.name,
+      template.folderId ? folderPaths.get(template.folderId) : null,
+    ]
+      .filter((path): path is string => Boolean(path))
+      .join(' / '),
+  }));
+
   return {
-    data,
+    data: dataWithFolderPaths,
     count,
     currentPage: Math.max(page, 1),
     perPage,

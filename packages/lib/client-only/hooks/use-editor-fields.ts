@@ -1,4 +1,5 @@
 import { getPdfPagesCount } from '@documenso/lib/constants/pdf-viewer';
+import { type TConditionalFieldRule, ZConditionalFieldRuleSchema } from '@documenso/lib/types/conditional-field';
 import type { TEditorEnvelope } from '@documenso/lib/types/envelope-editor';
 import { ZFieldMetaSchema } from '@documenso/lib/types/field-meta';
 import { nanoid } from '@documenso/lib/universal/id';
@@ -24,6 +25,8 @@ export const ZLocalFieldSchema = z.object({
   width: z.number().min(0),
   height: z.number().min(0),
   templateSourceItemId: z.string().nullable().optional(),
+  conditionalChildRule: ZConditionalFieldRuleSchema.nullable().optional(),
+  conditionalParentRules: ZConditionalFieldRuleSchema.array().optional(),
   fieldMeta: ZFieldMetaSchema,
 });
 
@@ -42,6 +45,8 @@ type EditorFieldsProps = {
 
 type TEditorField = Omit<Field, 'templateSourceItemId'> & {
   templateSourceItemId?: string | null;
+  conditionalChildRule?: TConditionalFieldRule | null;
+  conditionalParentRules?: TConditionalFieldRule[];
 };
 
 type UseEditorFieldsResponse = {
@@ -67,7 +72,7 @@ type UseEditorFieldsResponse = {
   selectedRecipient: TEditorEnvelope['recipients'][number] | null;
   setSelectedRecipient: (recipientId: number | null) => void;
 
-  resetForm: (fields?: Field[]) => void;
+  resetForm: (fields?: TEditorField[]) => void;
 };
 
 export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsProps): UseEditorFieldsResponse => {
@@ -87,6 +92,8 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         width: Number(field.width),
         height: Number(field.height),
         templateSourceItemId: field.templateSourceItemId ?? null,
+        conditionalChildRule: field.conditionalChildRule,
+        conditionalParentRules: field.conditionalParentRules,
         recipientId: field.recipientId,
         fieldMeta: field.fieldMeta ? ZFieldMetaSchema.parse(field.fieldMeta) : undefined,
       }),

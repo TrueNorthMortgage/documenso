@@ -1,4 +1,5 @@
 import { convertToLocalSystemFormat, DEFAULT_DOCUMENT_DATE_FORMAT } from '@documenso/lib/constants/date-formats';
+import { getSignatureFontFamily } from '@documenso/lib/constants/signatures';
 import type { TFieldMetaSchema } from '@documenso/lib/types/field-meta';
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import { useLingui } from '@lingui/react';
@@ -180,6 +181,11 @@ export const FieldContent = ({ field, documentMeta }: FieldIconProps) => {
             'font-signature text-[clamp(0.07rem,25cqw,1.125rem)]': isSignatureField,
           },
         )}
+        style={
+          isSignatureField
+            ? { fontFamily: getSignatureFontFamily(field.signature?.typedSignatureFont).cssFamily }
+            : undefined
+        }
       >
         {textToDisplay || labelToDisplay}
       </p>

@@ -1,4 +1,5 @@
 import { getMultipleEnvelopeWhereInput } from '@documenso/lib/server-only/envelope/get-envelopes-by-ids';
+import { getFolderPaths } from '@documenso/lib/server-only/folder/get-folder-paths';
 import { mapSecondaryIdToTemplateId } from '@documenso/lib/utils/envelope';
 import { mapFieldToLegacyField } from '@documenso/lib/utils/fields';
 import { mapRecipientToLegacyRecipient } from '@documenso/lib/utils/recipients';
@@ -26,7 +27,7 @@ export const getTemplatesByIdsRoute = authenticatedProcedure
       },
     });
 
-    const { envelopeWhereInput } = await getMultipleEnvelopeWhereInput({
+    const { envelopeWhereInput, team } = await getMultipleEnvelopeWhereInput({
       ids: {
         type: 'templateId',
         ids: templateIds,
@@ -72,6 +73,10 @@ export const getTemplatesByIdsRoute = authenticatedProcedure
       },
     });
 
+    const folderPaths = await getFolderPaths(
+      envelopes.flatMap((template) => (template.folderId ? [template.folderId] : [])),
+    );
+
     const templates = envelopes.map((envelope) => {
       const legacyTemplateId = mapSecondaryIdToTemplateId(envelope.secondaryId);
 
@@ -92,6 +97,13 @@ export const getTemplatesByIdsRoute = authenticatedProcedure
         publicTitle: envelope.publicTitle,
         publicDescription: envelope.publicDescription,
         folderId: envelope.folderId,
+        templatePath: [
+          team.organisation.name,
+          envelope.team?.name,
+          envelope.folderId ? folderPaths.get(envelope.folderId) : null,
+        ]
+          .filter((path): path is string => Boolean(path))
+          .join(' / '),
         useLegacyFieldInsertion: envelope.useLegacyFieldInsertion,
         team: envelope.team
           ? {

@@ -33,7 +33,11 @@ export const getTemplateById = async ({ id, userId, teamId }: GetTemplateByIdOpt
         },
       },
       recipients: true,
-      fields: true,
+      fields: {
+        include: {
+          conditionalChildRule: true,
+        },
+      },
       user: {
         select: {
           id: true,

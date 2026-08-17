@@ -1,3 +1,5 @@
+import { SIGNATURE_FONT_FAMILY_KEYS } from '@documenso/lib/constants/signatures';
+import { ZConditionalFieldRuleOperatorSchema } from '@documenso/lib/types/conditional-field';
 import { ZRecipientActionAuthSchema } from '@documenso/lib/types/document-auth';
 import {
   ZFieldHeightSchema,
@@ -105,6 +107,27 @@ export const ZDeleteTemplateFieldRequestSchema = z.object({
   fieldId: z.number(),
 });
 
+export const ZCreateConditionalFieldRuleRequestSchema = z.object({
+  childFieldId: z.number(),
+  parentFieldId: z.number(),
+  operator: ZConditionalFieldRuleOperatorSchema,
+  value: z.string().nullable().optional(),
+});
+
+export const ZCreateConditionalFieldRuleResponseSchema = z.object({
+  id: z.number(),
+  childFieldId: z.number(),
+  parentFieldId: z.number(),
+  operator: ZConditionalFieldRuleOperatorSchema,
+  value: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+export const ZDeleteConditionalFieldRuleRequestSchema = z.object({
+  childFieldId: z.number(),
+});
+
 export const ZSetDocumentFieldsRequestSchema = z.object({
   documentId: z.number(),
   fields: z.array(
@@ -154,6 +177,7 @@ export const ZSignFieldWithTokenMutationSchema = z.object({
   fieldId: z.number(),
   value: z.string().trim().optional(),
   isBase64: z.boolean().optional(),
+  signatureFont: z.enum(SIGNATURE_FONT_FAMILY_KEYS).optional(),
   authOptions: ZRecipientActionAuthSchema.optional(),
 });
 

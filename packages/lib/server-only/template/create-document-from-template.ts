@@ -1,6 +1,6 @@
 import { nanoid, prefixedId } from '@documenso/lib/universal/id';
 import { prisma } from '@documenso/prisma';
-import type { DocumentDistributionMethod, DocumentSigningOrder } from '@prisma/client';
+import type { ConditionalFieldRule, DocumentDistributionMethod, DocumentSigningOrder } from '@prisma/client';
 import {
   DocumentSource,
   EnvelopeType,
@@ -56,7 +56,7 @@ import { getOrganisationTemplateWhereInput } from './get-organisation-template-b
 
 type FinalRecipient = Pick<Recipient, 'name' | 'email' | 'role' | 'authOptions' | 'signingOrder' | 'token'> & {
   templateRecipientId: number;
-  fields: Field[];
+  fields: Array<Field & { conditionalChildRule: ConditionalFieldRule | null }>;
 };
 
 export type CreateDocumentFromTemplateOptions = {
@@ -304,7 +304,11 @@ export const createDocumentFromTemplate = async ({
   const templateInclude = {
     recipients: {
       include: {
-        fields: true,
+        fields: {
+          include: {
+            conditionalChildRule: true,
+          },
+        },
       },
     },
     envelopeItems: {
@@ -588,7 +592,8 @@ export const createDocumentFromTemplate = async ({
       },
     });
 
-    let fieldsToCreate: Omit<Field, 'id' | 'secondaryId'>[] = [];
+    type FieldToCreate = Omit<Field, 'id' | 'secondaryId'> & { sourceFieldId: number };
+    let fieldsToCreate: FieldToCreate[] = [];
 
     // Get all template field IDs first so we can validate later
     const allTemplateFieldIds = finalRecipients.flatMap((recipient) => recipient.fields.map((field) => field.id));
@@ -641,6 +646,7 @@ export const createDocumentFromTemplate = async ({
           const prefillField = prefillFields?.find((value) => value.id === field.id);
 
           const payload = {
+            sourceFieldId: field.id,
             envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[field.envelopeItemId],
             envelopeId: envelope.id,
             recipientId: recipient.id,
@@ -667,7 +673,7 @@ export const createDocumentFromTemplate = async ({
 
                 const date = new Date(selector.value);
 
-                if (isNaN(date.getTime())) {
+                if (Number.isNaN(date.getTime())) {
                   throw new AppError(AppErrorCode.INVALID_BODY, {
                     message: `Invalid date value for field ${field.id}: ${selector.value}`,
                   });
@@ -689,12 +695,45 @@ export const createDocumentFromTemplate = async ({
       );
     });
 
-    await tx.field.createMany({
-      data: fieldsToCreate.map((field) => ({
-        ...field,
-        fieldMeta: field.fieldMeta ? ZFieldMetaSchema.parse(field.fieldMeta) : undefined,
-      })),
+    const createdFields = await Promise.all(
+      fieldsToCreate.map(({ sourceFieldId: _sourceFieldId, ...field }) =>
+        tx.field.create({
+          data: {
+            ...field,
+            fieldMeta: field.fieldMeta ? ZFieldMetaSchema.parse(field.fieldMeta) : undefined,
+          },
+        }),
+      ),
+    );
+
+    const sourceFieldsById = new Map(
+      finalRecipients.flatMap((recipient) => recipient.fields).map((field) => [field.id, field]),
+    );
+    const createdFieldBySourceId = new Map(
+      fieldsToCreate.map((field, index) => [field.sourceFieldId, createdFields[index].id]),
+    );
+    const conditionalRules = fieldsToCreate.flatMap((field) => {
+      const rule = sourceFieldsById.get(field.sourceFieldId)?.conditionalChildRule;
+      const childFieldId = createdFieldBySourceId.get(field.sourceFieldId);
+      const parentFieldId = rule ? createdFieldBySourceId.get(rule.parentFieldId) : undefined;
+
+      if (!rule || !childFieldId || !parentFieldId) {
+        return [];
+      }
+
+      return [
+        {
+          childFieldId,
+          parentFieldId,
+          operator: rule.operator,
+          value: rule.value,
+        },
+      ];
     });
+
+    if (conditionalRules.length > 0) {
+      await tx.conditionalFieldRule.createMany({ data: conditionalRules });
+    }
 
     await tx.documentAuditLog.create({
       data: createDocumentAuditLogData({

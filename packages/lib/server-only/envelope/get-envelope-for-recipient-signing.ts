@@ -69,6 +69,7 @@ export const ZEnvelopeForSigningResponse = z.object({
           signature: SignatureSchema.pick({
             signatureImageAsBase64: true,
             typedSignature: true,
+            typedSignatureFont: true,
           }).nullish(),
         }).array(),
       })
@@ -126,6 +127,7 @@ export const ZEnvelopeForSigningResponse = z.object({
   recipientSignature: SignatureSchema.pick({
     signatureImageAsBase64: true,
     typedSignature: true,
+    typedSignatureFont: true,
   }).nullable(),
 
   isCompleted: z.boolean(),
@@ -190,6 +192,7 @@ export const getEnvelopeForRecipientSigning = async ({
           fields: {
             include: {
               signature: true,
+              conditionalChildRule: true,
             },
           },
         },
@@ -256,6 +259,7 @@ export const getEnvelopeForRecipientSigning = async ({
       recipientId: true,
       signatureImageAsBase64: true,
       typedSignature: true,
+      typedSignatureFont: true,
     },
   });
 

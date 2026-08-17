@@ -21,9 +21,14 @@ export const getFolderById = async ({ userId, teamId, folderId, type }: GetFolde
       id: folderId,
       team: buildTeamWhereQuery({ teamId, userId }),
       type,
-      visibility: {
-        in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole],
-      },
+      OR: [
+        {
+          visibility: {
+            in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole],
+          },
+        },
+        { userId },
+      ],
     },
   });
 

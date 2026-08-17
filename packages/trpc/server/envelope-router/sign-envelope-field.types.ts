@@ -1,3 +1,4 @@
+import { SIGNATURE_FONT_FAMILY_KEYS } from '@documenso/lib/constants/signatures';
 import { ZRecipientActionAuthSchema } from '@documenso/lib/types/document-auth';
 import { ZFieldSchema } from '@documenso/lib/types/field';
 import { FieldType } from '@documenso/prisma/client';
@@ -44,6 +45,7 @@ export const ZSignEnvelopeFieldValue = z.discriminatedUnion('type', [
   z.object({
     type: z.literal(FieldType.SIGNATURE),
     value: z.string().nullable(),
+    signatureFont: z.enum(SIGNATURE_FONT_FAMILY_KEYS).optional(),
   }),
 ]);
 
@@ -54,13 +56,17 @@ export const ZSignEnvelopeFieldRequestSchema = z.object({
   authOptions: ZRecipientActionAuthSchema.optional(),
 });
 
+const ZSignEnvelopeFieldResponseFieldSchema = ZFieldSchema.omit({
+  templateId: true,
+  documentId: true,
+}).extend({
+  signature: SignatureSchema.nullish(),
+});
+
 export const ZSignEnvelopeFieldResponseSchema = z.object({
-  signedField: ZFieldSchema.omit({
-    templateId: true,
-    documentId: true,
-  }).extend({
-    signature: SignatureSchema.nullish(),
-  }),
+  signedField: ZSignEnvelopeFieldResponseFieldSchema,
+  clearedFieldIds: z.array(z.number()),
+  autoInsertedFields: z.array(ZSignEnvelopeFieldResponseFieldSchema),
 });
 
 export type TSignEnvelopeFieldValue = z.infer<typeof ZSignEnvelopeFieldValue>;

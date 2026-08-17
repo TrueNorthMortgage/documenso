@@ -1,6 +1,7 @@
 import { DEFAULT_DOCUMENT_DATE_FORMAT } from '@documenso/lib/constants/date-formats';
 import { DEFAULT_DOCUMENT_TIME_ZONE } from '@documenso/lib/constants/time-zones';
 import { DOCUMENT_AUDIT_LOG_TYPE, RECIPIENT_DIFF_TYPE } from '@documenso/lib/types/document-audit-logs';
+import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import type { RequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import { fieldsContainUnsignedRequiredField } from '@documenso/lib/utils/advanced-fields-helpers';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
@@ -172,15 +173,26 @@ export const completeDocumentWithToken = async ({
     });
   }
 
-  let fields = await prisma.field.findMany({
-    where: {
-      envelopeId: envelope.id,
-      recipientId: recipient.id,
-    },
-  });
+  let fields = (
+    await prisma.field.findMany({
+      where: {
+        envelopeId: envelope.id,
+        recipientId: recipient.id,
+      },
+      include: {
+        conditionalChildRule: true,
+      },
+    })
+  ).map((field) => ({
+    ...field,
+    envelopeInternalVersion: envelope.internalVersion,
+  }));
+
+  const fieldVisibility = getConditionalFieldVisibility(fields);
+  const visibleFields = () => fields.filter((field) => fieldVisibility.get(field.id) ?? true);
 
   // This should be scoped to the current recipient.
-  const uninsertedDateFields = fields.filter((field) => field.type === FieldType.DATE && !field.inserted);
+  const uninsertedDateFields = visibleFields().filter((field) => field.type === FieldType.DATE && !field.inserted);
 
   let recipientName = recipient.name;
   let recipientEmail = recipient.email;
@@ -189,7 +201,7 @@ export const completeDocumentWithToken = async ({
   if (!recipientName) {
     recipientName = (
       recipientOverride?.name ||
-      fields.find((field) => field.type === FieldType.NAME)?.customText ||
+      visibleFields().find((field) => field.type === FieldType.NAME)?.customText ||
       ''
     ).trim();
   }
@@ -198,7 +210,7 @@ export const completeDocumentWithToken = async ({
   if (!recipient.email) {
     recipientEmail = (
       recipientOverride?.email ||
-      fields.find((field) => field.type === FieldType.EMAIL)?.customText ||
+      visibleFields().find((field) => field.type === FieldType.EMAIL)?.customText ||
       ''
     )
       .trim()
@@ -272,7 +284,7 @@ export const completeDocumentWithToken = async ({
     });
   }
 
-  if (fieldsContainUnsignedRequiredField(fields)) {
+  if (fieldsContainUnsignedRequiredField(visibleFields())) {
     throw new Error(`Recipient ${recipient.id} has unsigned fields`);
   }
 

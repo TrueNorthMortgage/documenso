@@ -15,6 +15,7 @@ import { AddSignersFormPartial } from '@documenso/ui/primitives/document-flow/ad
 import type { TAddSignersFormSchema } from '@documenso/ui/primitives/document-flow/add-signers.types';
 import { AddSubjectFormPartial } from '@documenso/ui/primitives/document-flow/add-subject';
 import type { TAddSubjectFormSchema } from '@documenso/ui/primitives/document-flow/add-subject.types';
+import type { ConditionalFieldRuleInput } from '@documenso/ui/primitives/document-flow/conditional-field-settings';
 import { DocumentFlowFormContainer } from '@documenso/ui/primitives/document-flow/document-flow-root';
 import type { DocumentFlowStep } from '@documenso/ui/primitives/document-flow/types';
 import { Stepper } from '@documenso/ui/primitives/stepper';
@@ -86,6 +87,13 @@ export const DocumentEditForm = ({ className, initialDocument, documentRootPath 
       );
     },
   });
+
+  const { mutateAsync: createConditionalRule } = trpc.field.createConditionalFieldRule.useMutation(
+    DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
+  );
+  const { mutateAsync: deleteConditionalRule } = trpc.field.deleteConditionalFieldRule.useMutation(
+    DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
+  );
 
   const { mutateAsync: setRecipients } = trpc.recipient.setDocumentRecipients.useMutation({
     ...DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
@@ -480,6 +488,10 @@ export const DocumentEditForm = ({ className, initialDocument, documentRootPath 
               onAutoSave={onAddFieldsFormAutoSave}
               isDocumentPdfLoaded={isDocumentPdfLoaded}
               teamId={team.id}
+              onCreateConditionalRule={(input: ConditionalFieldRuleInput) => createConditionalRule(input)}
+              onDeleteConditionalRule={async (childFieldId) => {
+                await deleteConditionalRule({ childFieldId });
+              }}
             />
 
             <AddSubjectFormPartial

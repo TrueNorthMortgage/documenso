@@ -9,6 +9,7 @@ export const ZGetEnvelopeFieldSignaturesResponseSchema = z
     fieldId: z.number(),
     signatureImageAsBase64: z.string().nullable(),
     typedSignature: z.string().nullable(),
+    typedSignatureFont: z.string().nullable(),
   })
   .array();
 

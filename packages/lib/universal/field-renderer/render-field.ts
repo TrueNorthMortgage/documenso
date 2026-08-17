@@ -4,7 +4,9 @@ import { type Field, FieldType } from '@prisma/client';
 import type Konva from 'konva';
 import { match } from 'ts-pattern';
 
+import type { TConditionalFieldRule } from '../../types/conditional-field';
 import type { TFieldMetaSchema } from '../../types/field-meta';
+import { createConditionalFieldIndicator } from './field-generic-items';
 import { renderCheckboxFieldElement } from './render-checkbox-field';
 import { renderDropdownFieldElement } from './render-dropdown-field';
 import { renderGenericTextFieldElement } from './render-generic-text-field';
@@ -35,7 +37,8 @@ export type FieldToRender = Pick<
   positionX: number;
   positionY: number;
   fieldMeta?: TFieldMetaSchema | null;
-  signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature'> | null;
+  conditionalChildRule?: TConditionalFieldRule | null;
+  signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'> | null;
 };
 
 type RenderFieldOptions = {
@@ -77,7 +80,7 @@ export const renderField = ({
   };
 
   // If the generic text field element array changes, update the `GenericTextFieldTypeMetas` type
-  return match(field.type)
+  const renderedField = match(field.type)
     .with(FieldType.INITIALS, FieldType.NAME, FieldType.EMAIL, FieldType.DATE, FieldType.TEXT, FieldType.NUMBER, () =>
       renderGenericTextFieldElement(field, options),
     )
@@ -89,4 +92,10 @@ export const renderField = ({
       throw new Error('Free signature fields are not supported');
     })
     .exhaustive();
+
+  if (mode === 'edit' && field.conditionalChildRule) {
+    renderedField.fieldGroup.add(createConditionalFieldIndicator(field, options));
+  }
+
+  return renderedField;
 };

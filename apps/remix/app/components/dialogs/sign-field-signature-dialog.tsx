@@ -1,3 +1,8 @@
+import {
+  DEFAULT_SIGNATURE_FONT_FAMILY,
+  isBase64Image,
+  type SignatureFontFamily,
+} from '@documenso/lib/constants/signatures';
 import { Button } from '@documenso/ui/primitives/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@documenso/ui/primitives/dialog';
 import { SignaturePad } from '@documenso/ui/primitives/signature-pad';
@@ -15,43 +20,69 @@ export type SignFieldSignatureDialogProps = {
   drawSignatureEnabled?: boolean;
 };
 
-export const SignFieldSignatureDialog = createCallable<SignFieldSignatureDialogProps, string | null>(
-  ({ call, fullName, typedSignatureEnabled, uploadSignatureEnabled, drawSignatureEnabled, initialSignature }) => {
-    const [localSignature, setLocalSignature] = useState(initialSignature);
+export type SignFieldSignatureDialogResult = {
+  value: string;
+  signatureFont?: SignatureFontFamily;
+};
 
-    return (
-      <Dialog open={true} onOpenChange={(value) => (!value ? call.end(null) : null)}>
-        <DialogContent position="center">
-          <div>
-            <DialogHeader>
-              <DialogTitle>
-                <Trans>Sign Signature Field</Trans>
-              </DialogTitle>
-            </DialogHeader>
+export const SignFieldSignatureDialog = createCallable<
+  SignFieldSignatureDialogProps,
+  SignFieldSignatureDialogResult | null
+>(({ call, fullName, typedSignatureEnabled, uploadSignatureEnabled, drawSignatureEnabled, initialSignature }) => {
+  const [localSignature, setLocalSignature] = useState(initialSignature);
+  const [signatureFont, setSignatureFont] = useState<SignatureFontFamily>(DEFAULT_SIGNATURE_FONT_FAMILY);
 
-            <SignaturePad
-              fullName={fullName}
-              value={localSignature ?? ''}
-              onChange={({ value }) => setLocalSignature(value)}
-              typedSignatureEnabled={typedSignatureEnabled}
-              uploadSignatureEnabled={uploadSignatureEnabled}
-              drawSignatureEnabled={drawSignatureEnabled}
-            />
-          </div>
+  return (
+    <Dialog open={true} onOpenChange={(value) => (!value ? call.end(null) : null)}>
+      <DialogContent position="center">
+        <div>
+          <DialogHeader>
+            <DialogTitle>
+              <Trans>Sign Signature Field</Trans>
+            </DialogTitle>
+          </DialogHeader>
 
-          <DocumentSigningDisclosure />
+          <SignaturePad
+            fullName={fullName}
+            value={localSignature ?? ''}
+            onChange={({ value, signatureFont }) => {
+              setLocalSignature(value);
 
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => call.end(null)}>
-              <Trans>Cancel</Trans>
-            </Button>
+              if (signatureFont) {
+                setSignatureFont(signatureFont);
+              }
+            }}
+            typedSignatureEnabled={typedSignatureEnabled}
+            uploadSignatureEnabled={uploadSignatureEnabled}
+            drawSignatureEnabled={drawSignatureEnabled}
+          />
+        </div>
 
-            <Button type="button" disabled={!localSignature} onClick={() => call.end(localSignature || null)}>
-              <Trans>Sign</Trans>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  },
-);
+        <DocumentSigningDisclosure />
+
+        <DialogFooter>
+          <Button type="button" variant="secondary" onClick={() => call.end(null)}>
+            <Trans>Cancel</Trans>
+          </Button>
+
+          <Button
+            type="button"
+            disabled={!localSignature}
+            onClick={() =>
+              call.end(
+                localSignature
+                  ? {
+                      value: localSignature,
+                      signatureFont: isBase64Image(localSignature) ? undefined : signatureFont,
+                    }
+                  : null,
+              )
+            }
+          >
+            <Trans>Sign</Trans>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+});

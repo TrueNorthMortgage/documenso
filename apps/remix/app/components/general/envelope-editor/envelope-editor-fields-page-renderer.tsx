@@ -21,7 +21,7 @@ import Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Transformer } from 'konva/lib/shapes/Transformer';
 import { CopyPlusIcon, SquareStackIcon, TrashIcon, UserCircleIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { fieldButtonList } from './envelope-editor-fields-drag-drop';
 import { EnvelopeRecipientSelectorCommand } from './envelope-recipient-selector';
@@ -450,13 +450,42 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     }
   };
 
-  const deletedSelectedFields = () => {
+  const deletedSelectedFields = useCallback(() => {
     const fieldFormids = selectedKonvaFieldGroups.map((field) => field.id()).filter((field) => field !== undefined);
 
     editorFields.removeFieldsByFormId(fieldFormids);
 
     setSelectedFields([]);
-  };
+  }, [editorFields, selectedKonvaFieldGroups]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        (event.key !== 'Delete' && event.key !== 'Backspace') ||
+        selectedKonvaFieldGroups.length === 0 ||
+        isFieldChanging
+      ) {
+        return;
+      }
+
+      const target = event.target;
+
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      deletedSelectedFields();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [deletedSelectedFields, isFieldChanging, selectedKonvaFieldGroups.length]);
 
   const changeSelectedFieldsRecipients = (recipientId: number) => {
     const fields = selectedKonvaFieldGroups

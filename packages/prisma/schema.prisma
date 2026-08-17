@@ -674,6 +674,11 @@ enum FieldType {
   DROPDOWN
 }
 
+enum ConditionalFieldRuleOperator {
+  EQUALS
+  ANY_TEXT
+}
+
 /// @zod.import(["import { ZFieldMetaNotOptionalSchema } from '@documenso/lib/types/field-meta';"])
 model Field {
   id             Int          @id @default(autoincrement())
@@ -695,11 +700,28 @@ model Field {
   recipient      Recipient    @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   signature      Signature?
   fieldMeta      Json? /// [FieldMeta] @zod.custom.use(ZFieldMetaNotOptionalSchema)
+  conditionalChildRule  ConditionalFieldRule? @relation("ConditionalFieldRuleChild")
+  conditionalParentRules ConditionalFieldRule[] @relation("ConditionalFieldRuleParent")
 
   @@index([envelopeId])
   @@index([envelopeItemId])
   @@index([recipientId])
   @@index([templateSourceItemId])
+}
+
+model ConditionalFieldRule {
+  id          Int                         @id @default(autoincrement())
+  childFieldId Int                        @unique
+  parentFieldId Int
+  operator    ConditionalFieldRuleOperator
+  value       String?
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+
+  childField  Field @relation("ConditionalFieldRuleChild", fields: [childFieldId], references: [id], onDelete: Cascade)
+  parentField Field @relation("ConditionalFieldRuleParent", fields: [parentFieldId], references: [id], onDelete: Cascade)
+
+  @@index([parentFieldId])
 }
 
 model Signature {
@@ -709,6 +731,7 @@ model Signature {
   fieldId                Int      @unique
   signatureImageAsBase64 String?
   typedSignature         String?
+  typedSignatureFont     String?
 
   recipient Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   field     Field     @relation(fields: [fieldId], references: [id], onDelete: Cascade)

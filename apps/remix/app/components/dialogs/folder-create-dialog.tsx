@@ -39,7 +39,7 @@ export const FolderCreateDialog = ({ type, trigger, parentFolderId, ...props }: 
   const { toast } = useToast();
   const { folderId } = useParams();
 
-  const parentId = parentFolderId ?? folderId;
+  const parentId = parentFolderId !== undefined ? parentFolderId : folderId;
 
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
 
@@ -56,7 +56,7 @@ export const FolderCreateDialog = ({ type, trigger, parentFolderId, ...props }: 
     try {
       await createFolder({
         name: data.name,
-        parentId,
+        parentId: parentId ?? undefined,
         type,
       });
 
@@ -68,7 +68,7 @@ export const FolderCreateDialog = ({ type, trigger, parentFolderId, ...props }: 
     } catch (err) {
       toast({
         title: t`Failed to create folder`,
-        description: t`An unknown error occurred while creating the folder.`,
+        description: err instanceof Error ? err.message : t`An unknown error occurred while creating the folder.`,
         variant: 'destructive',
       });
     }

@@ -1,9 +1,10 @@
 import { DEFAULT_DOCUMENT_DATE_FORMAT } from '@documenso/lib/constants/date-formats';
-import { isBase64Image } from '@documenso/lib/constants/signatures';
+import { isBase64Image, isSignatureFontFamily, type SignatureFontFamily } from '@documenso/lib/constants/signatures';
 import { DEFAULT_DOCUMENT_TIME_ZONE } from '@documenso/lib/constants/time-zones';
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import type { EnvelopeForSigningResponse } from '@documenso/lib/server-only/envelope/get-envelope-for-recipient-signing';
 import type { TRecipientActionAuth } from '@documenso/lib/types/document-auth';
+import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import { isFieldUnsignedAndRequired, isRequiredField } from '@documenso/lib/utils/advanced-fields-helpers';
 import { extractFieldInsertionValues } from '@documenso/lib/utils/envelope-signing';
 import { trpc } from '@documenso/trpc/react';
@@ -22,6 +23,8 @@ export type EnvelopeSigningContextValue = {
   setEmail: (_value: string) => void;
   signature: string | null;
   setSignature: (_value: string | null) => void;
+  signatureFont: SignatureFontFamily | null;
+  setSignatureFont: (_value: SignatureFontFamily | null) => void;
 
   showPendingFieldTooltip: boolean;
   setShowPendingFieldTooltip: (_value: boolean) => void;
@@ -86,10 +89,21 @@ const prefillDateFields = (data: EnvelopeForSigningResponse): EnvelopeForSigning
     .setZone(timezone ?? DEFAULT_DOCUMENT_TIME_ZONE)
     .toFormat(dateFormat ?? DEFAULT_DOCUMENT_DATE_FORMAT);
 
-  const prefillField = <T extends { type: FieldType; inserted: boolean; customText: string; fieldMeta: unknown }>(
+  const fieldVisibility = getConditionalFieldVisibility(
+    data.envelope.recipients.flatMap((recipient) =>
+      recipient.fields.map((field) => ({
+        ...field,
+        envelopeInternalVersion: data.envelope.internalVersion,
+      })),
+    ),
+  );
+
+  const prefillField = <
+    T extends { id: number; type: FieldType; inserted: boolean; customText: string; fieldMeta: unknown },
+  >(
     field: T,
   ): T => {
-    if (field.type !== FieldType.DATE || field.inserted) {
+    if (field.type !== FieldType.DATE || field.inserted || fieldVisibility.get(field.id) === false) {
       return field;
     }
 
@@ -133,32 +147,60 @@ export const EnvelopeSigningProvider = ({
 
   const [fullName, setFullName] = useState(initialFullName || '');
   const [email, setEmail] = useState(initialEmail || '');
+  const [signatureFont, setSignatureFont] = useState<SignatureFontFamily | null>(() => {
+    const font = envelopeData.recipientSignature?.typedSignatureFont;
+    return isSignatureFontFamily(font) ? font : null;
+  });
 
   const [showPendingFieldTooltip, setShowPendingFieldTooltip] = useState(false);
 
   const isDirectTemplate = envelope.type === EnvelopeType.TEMPLATE;
 
+  const fieldVisibility = useMemo(
+    () =>
+      getConditionalFieldVisibility(
+        envelopeData.envelope.recipients.flatMap((item) =>
+          item.fields.map((field) => ({
+            ...field,
+            envelopeInternalVersion: envelope.internalVersion,
+          })),
+        ),
+      ),
+    [envelopeData.envelope.recipients, envelope.internalVersion],
+  );
+
+  const isFieldVisible = (field: Field) => fieldVisibility.get(field.id) ?? true;
+
   const { mutateAsync: signEnvelopeField } = trpc.envelope.field.sign.useMutation({
     ...DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
     onSuccess: (data) => {
+      const clearedFieldIds = new Set(data.clearedFieldIds);
+      const autoInsertedFields = new Map(data.autoInsertedFields.map((field) => [field.id, field]));
+      const updateField = (field: Field) => {
+        const updatedField =
+          field.id === data.signedField.id
+            ? { ...field, ...data.signedField }
+            : autoInsertedFields.has(field.id)
+              ? { ...field, ...autoInsertedFields.get(field.id) }
+              : field;
+
+        return clearedFieldIds.has(field.id)
+          ? { ...updatedField, customText: '', inserted: false, signature: null }
+          : updatedField;
+      };
+
       setEnvelopeData((prev) => ({
         ...prev,
         envelope: {
           ...prev.envelope,
-          recipients: prev.envelope.recipients.map((recipient) =>
-            recipient.id === data.signedField.recipientId
-              ? {
-                  ...recipient,
-                  fields: recipient.fields.map((field) =>
-                    field.id === data.signedField.id ? data.signedField : field,
-                  ),
-                }
-              : recipient,
-          ),
+          recipients: prev.envelope.recipients.map((recipient) => ({
+            ...recipient,
+            fields: recipient.fields.map(updateField),
+          })),
         },
         recipient: {
           ...prev.recipient,
-          fields: prev.recipient.fields.map((field) => (field.id === data.signedField.id ? data.signedField : field)),
+          fields: prev.recipient.fields.map(updateField),
         },
       }));
     },
@@ -199,7 +241,7 @@ export const EnvelopeSigningProvider = ({
    */
   const recipientFieldsRemaining = useMemo(() => {
     const requiredFields = envelopeData.recipient.fields
-      .filter((field) => isFieldUnsignedAndRequired(field))
+      .filter((field) => isFieldVisible(field) && isFieldUnsignedAndRequired(field))
       .map((field) => {
         const envelopeItem = envelope.envelopeItems.find((item) => item.id === field.envelopeItemId);
 
@@ -219,21 +261,21 @@ export const EnvelopeSigningProvider = ({
       [prop('page'), 'asc'],
       [prop('positionY'), 'asc'],
     );
-  }, [envelopeData.recipient.fields]);
+  }, [envelopeData.recipient.fields, fieldVisibility]);
 
   /**
    * All the required fields for the actual recipient.
    */
   const requiredRecipientFields = useMemo(() => {
-    return envelopeData.recipient.fields.filter((field) => isRequiredField(field));
-  }, [envelopeData.recipient.fields]);
+    return envelopeData.recipient.fields.filter((field) => isFieldVisible(field) && isRequiredField(field));
+  }, [envelopeData.recipient.fields, fieldVisibility]);
 
   /**
    * All the fields for the actual recipient.
    */
   const recipientFields = useMemo(() => {
-    return envelopeData.recipient.fields;
-  }, [envelopeData.recipient.fields]);
+    return envelopeData.recipient.fields.filter(isFieldVisible);
+  }, [envelopeData.recipient.fields, fieldVisibility]);
 
   /**
    * Assistant recipients are those that have a signing order after the assistant.
@@ -253,7 +295,7 @@ export const EnvelopeSigningProvider = ({
     recipient.role === RecipientRole.ASSISTANT
       ? assistantRecipients
           .filter((r) => r.signingStatus !== SigningStatus.SIGNED)
-          .flatMap((r) => r.fields.filter((field) => field.type !== FieldType.SIGNATURE))
+          .flatMap((r) => r.fields.filter((field) => field.type !== FieldType.SIGNATURE && isFieldVisible(field)))
       : [];
 
   /**
@@ -287,7 +329,7 @@ export const EnvelopeSigningProvider = ({
         },
       })),
     )
-    .filter((field) => field.inserted);
+    .filter((field) => field.inserted && isFieldVisible(field));
 
   const nextRecipient = useMemo(() => {
     if (!envelope.documentMeta.signingOrder || envelope.documentMeta.signingOrder !== 'SEQUENTIAL') {
@@ -365,6 +407,7 @@ export const EnvelopeSigningProvider = ({
         ? {
             signatureImageAsBase64: isBase64 ? fieldValue.value : null,
             typedSignature: isBase64 ? null : fieldValue.value,
+            typedSignatureFont: isBase64 ? null : (fieldValue.signatureFont ?? null),
             recipientId: recipient.id,
             created: new Date(),
             // Dummy IDs.
@@ -406,6 +449,8 @@ export const EnvelopeSigningProvider = ({
         setEmail,
         signature,
         setSignature,
+        signatureFont,
+        setSignatureFont,
         envelopeData,
         envelope,
 

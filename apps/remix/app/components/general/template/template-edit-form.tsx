@@ -7,6 +7,7 @@ import { getDocumentDataUrlForPdfViewer } from '@documenso/lib/utils/envelope-do
 import { trpc } from '@documenso/trpc/react';
 import { cn } from '@documenso/ui/lib/utils';
 import { Card, CardContent } from '@documenso/ui/primitives/card';
+import type { ConditionalFieldRuleInput } from '@documenso/ui/primitives/document-flow/conditional-field-settings';
 import { DocumentFlowFormContainer } from '@documenso/ui/primitives/document-flow/document-flow-root';
 import type { DocumentFlowStep } from '@documenso/ui/primitives/document-flow/types';
 import { Stepper } from '@documenso/ui/primitives/stepper';
@@ -103,6 +104,13 @@ export const TemplateEditForm = ({ initialTemplate, className, templateRootPath 
       );
     },
   });
+
+  const { mutateAsync: createConditionalRule } = trpc.field.createConditionalFieldRule.useMutation(
+    DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
+  );
+  const { mutateAsync: deleteConditionalRule } = trpc.field.deleteConditionalFieldRule.useMutation(
+    DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
+  );
 
   const { mutateAsync: setRecipients } = trpc.recipient.setTemplateRecipients.useMutation({
     ...DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
@@ -349,6 +357,10 @@ export const TemplateEditForm = ({ initialTemplate, className, templateRootPath 
               onSubmit={onAddFieldsFormSubmit}
               onAutoSave={onAddFieldsFormAutoSave}
               teamId={team?.id}
+              onCreateConditionalRule={(input: ConditionalFieldRuleInput) => createConditionalRule(input)}
+              onDeleteConditionalRule={async (childFieldId) => {
+                await deleteConditionalRule({ childFieldId });
+              }}
             />
           </Stepper>
         </DocumentFlowFormContainer>

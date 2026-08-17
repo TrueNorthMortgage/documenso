@@ -1,3 +1,8 @@
+import {
+  DEFAULT_SIGNATURE_FONT_FAMILY,
+  isBase64Image,
+  type SignatureFontFamily,
+} from '@documenso/lib/constants/signatures';
 import { parseMessageDescriptor } from '@documenso/lib/utils/i18n';
 import { Dialog, DialogClose, DialogContent, DialogFooter } from '@documenso/ui/primitives/dialog';
 
@@ -16,6 +21,8 @@ export type SignaturePadDialogProps = Omit<HTMLAttributes<HTMLCanvasElement>, 'o
   disabled?: boolean;
   fullName?: string;
   value?: string;
+  signatureFont?: SignatureFontFamily;
+  onSignatureFontChange?: (_value: SignatureFontFamily | null) => void;
   onChange: (_value: string) => void;
   dialogConfirmText?: MessageDescriptor | string;
   disableAnimation?: boolean;
@@ -28,6 +35,8 @@ export const SignaturePadDialog = ({
   className,
   fullName,
   value,
+  signatureFont = DEFAULT_SIGNATURE_FONT_FAMILY,
+  onSignatureFontChange,
   onChange,
   disabled = false,
   disableAnimation = false,
@@ -40,6 +49,7 @@ export const SignaturePadDialog = ({
 
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [signature, setSignature] = useState<string>(value ?? '');
+  const [selectedSignatureFont, setSelectedSignatureFont] = useState<SignatureFontFamily>(signatureFont);
 
   return (
     <div
@@ -53,7 +63,7 @@ export const SignaturePadDialog = ({
     >
       {value && (
         <div className="inset-0 h-full w-full">
-          <SignatureRender value={value} />
+          <SignatureRender value={value} signatureFont={selectedSignatureFont} />
         </div>
       )}
 
@@ -117,7 +127,14 @@ export const SignaturePadDialog = ({
             value={value}
             className={className}
             disabled={disabled}
-            onChange={({ value }) => setSignature(value)}
+            signatureFont={selectedSignatureFont}
+            onChange={({ value, signatureFont }) => {
+              setSignature(value);
+
+              if (signatureFont) {
+                setSelectedSignatureFont(signatureFont);
+              }
+            }}
             typedSignatureEnabled={typedSignatureEnabled}
             uploadSignatureEnabled={uploadSignatureEnabled}
             drawSignatureEnabled={drawSignatureEnabled}
@@ -135,6 +152,7 @@ export const SignaturePadDialog = ({
               disabled={!signature}
               onClick={() => {
                 onChange(signature);
+                onSignatureFontChange?.(isBase64Image(signature) ? null : selectedSignatureFont);
                 setShowSignatureModal(false);
               }}
             >

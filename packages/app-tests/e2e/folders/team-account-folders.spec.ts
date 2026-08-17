@@ -358,6 +358,31 @@ test('[TEAMS]: can create a template subfolder inside a template folder', async 
   await expect(page.getByText('Team Contract Templates')).toBeVisible();
 });
 
+test('[TEAMS]: a folder owner can create a subfolder despite restricted folder visibility', async ({ page }) => {
+  const { team } = await seedTeamDocuments();
+  const teamMember = await seedTeamMember({ teamId: team.id, role: TeamMemberRole.MEMBER });
+
+  const folder = await seedBlankFolder(teamMember, team.id, {
+    createFolderOptions: {
+      name: 'Member-owned templates',
+      type: FolderType.TEMPLATE,
+      visibility: DocumentVisibility.MANAGER_AND_ABOVE,
+    },
+  });
+
+  await apiSignin({
+    page,
+    email: teamMember.email,
+    redirectPath: `/t/${team.url}/templates/f/${folder.id}`,
+  });
+
+  await page.getByTestId('folder-create-button').click();
+  await page.getByLabel('Folder name').fill('Member-owned subfolder');
+  await page.getByRole('button', { name: 'Create' }).click();
+
+  await expect(page.getByText('Member-owned subfolder')).toBeVisible();
+});
+
 test('[TEAMS]: can create a template inside a template folder', async ({ page }) => {
   const { team, teamOwner } = await seedTeamDocuments();
 

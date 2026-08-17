@@ -24,6 +24,7 @@ import { getTeamSettings } from '../../../server-only/team/get-team-settings';
 import { triggerWebhook } from '../../../server-only/webhooks/trigger/trigger-webhook';
 import { DOCUMENT_AUDIT_LOG_TYPE, type TDocumentAuditLog } from '../../../types/document-audit-logs';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../../types/webhook-payload';
+import { getConditionalFieldVisibility } from '../../../universal/conditional-field-visibility';
 import { prefixedId } from '../../../universal/id';
 import { getFileServerSide } from '../../../universal/upload/get-file.server';
 import { putPdfFileServerSide } from '../../../universal/upload/put-file.server';
@@ -55,6 +56,7 @@ export const run = async ({ payload, io }: { payload: TSealDocumentJobDefinition
         fields: {
           include: {
             signature: true,
+            conditionalChildRule: true,
           },
         },
         envelopeItems: {
@@ -63,6 +65,7 @@ export const run = async ({ payload, io }: { payload: TSealDocumentJobDefinition
             field: {
               include: {
                 signature: true,
+                conditionalChildRule: true,
               },
             },
           },
@@ -102,9 +105,23 @@ export const run = async ({ payload, io }: { payload: TSealDocumentJobDefinition
       });
     }
 
+    const fieldsWithVersion = envelope.fields.map((field) => ({
+      ...field,
+      envelopeInternalVersion: envelope.internalVersion,
+    }));
+    const fieldVisibility = getConditionalFieldVisibility(fieldsWithVersion);
+    const fields = fieldsWithVersion.filter((field) => fieldVisibility.get(field.id) ?? true);
     let { envelopeItems } = envelope;
 
-    const fields = envelope.fields;
+    envelopeItems = envelopeItems.map((envelopeItem) => ({
+      ...envelopeItem,
+      field: envelopeItem.field
+        .map((field) => ({
+          ...field,
+          envelopeInternalVersion: envelope.internalVersion,
+        }))
+        .filter((field) => fieldVisibility.get(field.id) ?? true),
+    }));
 
     if (envelopeItems.length < 1) {
       throw new Error(`Document ${envelope.id} has no envelope items`);
