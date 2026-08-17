@@ -4,6 +4,7 @@ import { type Field, FieldType } from '@prisma/client';
 import type Konva from 'konva';
 import { match } from 'ts-pattern';
 
+import type { TConditionalFieldRule } from '../../types/conditional-field';
 import type { TFieldMetaSchema } from '../../types/field-meta';
 import { createConditionalFieldIndicator } from './field-generic-items';
 import { renderCheckboxFieldElement } from './render-checkbox-field';
@@ -36,6 +37,7 @@ export type FieldToRender = Pick<
   positionX: number;
   positionY: number;
   fieldMeta?: TFieldMetaSchema | null;
+  conditionalChildRule?: TConditionalFieldRule | null;
   signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'> | null;
 };
 

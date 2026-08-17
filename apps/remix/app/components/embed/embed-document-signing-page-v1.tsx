@@ -266,6 +266,7 @@ export const EmbedSignDocumentV1ClientPage = ({
           created: new Date(),
           signatureImageAsBase64: signature?.startsWith('data:') ? signature : null,
           typedSignature: signature?.startsWith('data:') ? null : signature,
+          typedSignatureFont: null,
         }}
       />
     );

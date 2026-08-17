@@ -19,6 +19,7 @@ export type EnvelopeRenderFieldSignature = {
   fieldId: number;
   signatureImageAsBase64: string | null;
   typedSignature: string | null;
+  typedSignatureFont: string | null;
 };
 
 export type PageRenderData = {

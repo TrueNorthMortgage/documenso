@@ -56,7 +56,7 @@ export const FolderCreateDialog = ({ type, trigger, parentFolderId, ...props }: 
     try {
       await createFolder({
         name: data.name,
-        parentId,
+        parentId: parentId ?? undefined,
         type,
       });
 

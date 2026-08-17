@@ -131,7 +131,7 @@ export const DocumentSigningSignatureField = ({
   ) => {
     try {
       const value = signature || providedSignature;
-      const selectedSignatureFont = signatureFont ?? providedSignatureFont;
+      const selectedSignatureFont = signatureFont ?? providedSignatureFont ?? DEFAULT_SIGNATURE_FONT_FAMILY;
 
       if (!value) {
         setShowSignatureModal(true);
