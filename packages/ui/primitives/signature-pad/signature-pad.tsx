@@ -1,5 +1,9 @@
 import { DocumentSignatureType } from '@documenso/lib/constants/document';
-import { isBase64Image } from '@documenso/lib/constants/signatures';
+import {
+  DEFAULT_SIGNATURE_FONT_FAMILY,
+  isBase64Image,
+  type SignatureFontFamily,
+} from '@documenso/lib/constants/signatures';
 
 import { Trans } from '@lingui/react/macro';
 import { KeyboardIcon, UploadCloudIcon } from 'lucide-react';
@@ -17,11 +21,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './signature-tabs';
 export type SignaturePadValue = {
   type: DocumentSignatureType;
   value: string;
+  signatureFont?: SignatureFontFamily;
 };
 
 export type SignaturePadProps = Omit<HTMLAttributes<HTMLCanvasElement>, 'onChange'> & {
   fullName?: string;
   value?: string;
+  signatureFont?: SignatureFontFamily;
   onChange?: (_value: SignaturePadValue) => void;
 
   disabled?: boolean;
@@ -36,6 +42,7 @@ export type SignaturePadProps = Omit<HTMLAttributes<HTMLCanvasElement>, 'onChang
 export const SignaturePad = ({
   fullName,
   value = '',
+  signatureFont = DEFAULT_SIGNATURE_FONT_FAMILY,
   onChange,
   disabled = false,
   typedSignatureEnabled = true,
@@ -45,6 +52,7 @@ export const SignaturePad = ({
   const [imageSignature, setImageSignature] = useState(isBase64Image(value) ? value : '');
   const [drawSignature, setDrawSignature] = useState(isBase64Image(value) ? value : '');
   const [typedSignature, setTypedSignature] = useState(isBase64Image(value) ? '' : value);
+  const [typedSignatureFont, setTypedSignatureFont] = useState<SignatureFontFamily>(signatureFont);
 
   /**
    * This is cooked.
@@ -108,6 +116,17 @@ export const SignaturePad = ({
     onChange?.({
       type: DocumentSignatureType.TYPE,
       value,
+      signatureFont: typedSignatureFont,
+    });
+  };
+
+  const onTypedSignatureFontChange = (value: SignatureFontFamily) => {
+    setTypedSignatureFont(value);
+
+    onChange?.({
+      type: DocumentSignatureType.TYPE,
+      value: typedSignature,
+      signatureFont: value,
     });
   };
 
@@ -178,7 +197,13 @@ export const SignaturePad = ({
         value="text"
         className="relative flex aspect-signature-pad items-center justify-center rounded-md border border-border bg-neutral-50 text-center dark:bg-background"
       >
-        <SignaturePadType value={typedSignature} defaultValue={fullName} onChange={onTypedSignatureChange} />
+        <SignaturePadType
+          value={typedSignature}
+          defaultValue={fullName}
+          fontFamily={typedSignatureFont}
+          onChange={onTypedSignatureChange}
+          onFontFamilyChange={onTypedSignatureFontChange}
+        />
       </TabsContent>
 
       <TabsContent

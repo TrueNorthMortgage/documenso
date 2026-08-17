@@ -1,3 +1,9 @@
+import {
+  DEFAULT_SIGNATURE_FONT_FAMILY,
+  getSignatureFontFamily,
+  isBase64Image,
+  type SignatureFontFamily,
+} from '@documenso/lib/constants/signatures';
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import type { TRecipientActionAuth } from '@documenso/lib/types/document-auth';
@@ -58,6 +64,8 @@ export const DocumentSigningSignatureField = ({
     fullName,
     signature: providedSignature,
     setSignature: setProvidedSignature,
+    signatureFont: providedSignatureFont,
+    setSignatureFont: setProvidedSignatureFont,
   } = useRequiredDocumentSigningContext();
 
   const { executeActionAuthProcedure } = useRequiredDocumentSigningAuthContext();
@@ -74,6 +82,9 @@ export const DocumentSigningSignatureField = ({
 
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [localSignature, setLocalSignature] = useState<string | null>(null);
+  const [localSignatureFont, setLocalSignatureFont] = useState<SignatureFontFamily>(
+    providedSignatureFont ?? DEFAULT_SIGNATURE_FONT_FAMILY,
+  );
 
   const state = useMemo<SignatureFieldState>(() => {
     if (!field.inserted) {
@@ -101,20 +112,26 @@ export const DocumentSigningSignatureField = ({
   const onDialogSignClick = () => {
     setShowSignatureModal(false);
     setProvidedSignature(localSignature);
+    setProvidedSignatureFont(localSignature && !isBase64Image(localSignature) ? localSignatureFont : null);
 
     if (!localSignature) {
       return;
     }
 
     void executeActionAuthProcedure({
-      onReauthFormSubmit: async (authOptions) => await onSign(authOptions, localSignature),
+      onReauthFormSubmit: async (authOptions) => await onSign(authOptions, localSignature, localSignatureFont),
       actionTarget: field.type,
     });
   };
 
-  const onSign = async (authOptions?: TRecipientActionAuth, signature?: string) => {
+  const onSign = async (
+    authOptions?: TRecipientActionAuth,
+    signature?: string,
+    signatureFont?: SignatureFontFamily,
+  ) => {
     try {
       const value = signature || providedSignature;
+      const selectedSignatureFont = signatureFont ?? providedSignatureFont;
 
       if (!value) {
         setShowSignatureModal(true);
@@ -138,6 +155,7 @@ export const DocumentSigningSignatureField = ({
         fieldId: field.id,
         value,
         isBase64: !isTypedSignature,
+        signatureFont: isTypedSignature ? selectedSignatureFont : undefined,
         authOptions,
       };
 
@@ -256,7 +274,10 @@ export const DocumentSigningSignatureField = ({
           <p
             ref={signatureRef}
             className="w-full overflow-hidden break-all text-center font-signature text-muted-foreground leading-tight duration-200"
-            style={{ fontSize: `${fontSize}rem` }}
+            style={{
+              fontFamily: getSignatureFontFamily(signature?.typedSignatureFont).cssFamily,
+              fontSize: `${fontSize}rem`,
+            }}
           >
             {signature?.typedSignature}
           </p>
@@ -275,7 +296,13 @@ export const DocumentSigningSignatureField = ({
             className="mt-2"
             fullName={fullName}
             value={localSignature ?? ''}
-            onChange={({ value }) => setLocalSignature(value)}
+            onChange={({ value, signatureFont }) => {
+              setLocalSignature(value);
+
+              if (signatureFont) {
+                setLocalSignatureFont(signatureFont);
+              }
+            }}
             typedSignatureEnabled={typedSignatureEnabled}
             uploadSignatureEnabled={uploadSignatureEnabled}
             drawSignatureEnabled={drawSignatureEnabled}

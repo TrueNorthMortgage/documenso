@@ -57,7 +57,8 @@ export const DocumentSigningForm = ({
 
   const assistantSignersId = useId();
 
-  const { fullName, signature, setFullName, setSignature } = useRequiredDocumentSigningContext();
+  const { fullName, signature, signatureFont, setFullName, setSignature, setSignatureFont } =
+    useRequiredDocumentSigningContext();
 
   const [validateUninsertedFields, setValidateUninsertedFields] = useState(false);
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
@@ -251,6 +252,8 @@ export const DocumentSigningForm = ({
                         fullName={fullName}
                         value={signature ?? ''}
                         onChange={(v) => setSignature(v ?? '')}
+                        signatureFont={signatureFont ?? undefined}
+                        onSignatureFontChange={setSignatureFont}
                         typedSignatureEnabled={document.documentMeta?.typedSignatureEnabled}
                         uploadSignatureEnabled={document.documentMeta?.uploadSignatureEnabled}
                         drawSignatureEnabled={document.documentMeta?.drawSignatureEnabled}

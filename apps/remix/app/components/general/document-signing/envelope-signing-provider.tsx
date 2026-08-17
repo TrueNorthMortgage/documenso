@@ -1,5 +1,5 @@
 import { DEFAULT_DOCUMENT_DATE_FORMAT } from '@documenso/lib/constants/date-formats';
-import { isBase64Image } from '@documenso/lib/constants/signatures';
+import { isBase64Image, isSignatureFontFamily, type SignatureFontFamily } from '@documenso/lib/constants/signatures';
 import { DEFAULT_DOCUMENT_TIME_ZONE } from '@documenso/lib/constants/time-zones';
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import type { EnvelopeForSigningResponse } from '@documenso/lib/server-only/envelope/get-envelope-for-recipient-signing';
@@ -23,6 +23,8 @@ export type EnvelopeSigningContextValue = {
   setEmail: (_value: string) => void;
   signature: string | null;
   setSignature: (_value: string | null) => void;
+  signatureFont: SignatureFontFamily | null;
+  setSignatureFont: (_value: SignatureFontFamily | null) => void;
 
   showPendingFieldTooltip: boolean;
   setShowPendingFieldTooltip: (_value: boolean) => void;
@@ -145,6 +147,10 @@ export const EnvelopeSigningProvider = ({
 
   const [fullName, setFullName] = useState(initialFullName || '');
   const [email, setEmail] = useState(initialEmail || '');
+  const [signatureFont, setSignatureFont] = useState<SignatureFontFamily | null>(() => {
+    const font = envelopeData.recipientSignature?.typedSignatureFont;
+    return isSignatureFontFamily(font) ? font : null;
+  });
 
   const [showPendingFieldTooltip, setShowPendingFieldTooltip] = useState(false);
 
@@ -401,6 +407,7 @@ export const EnvelopeSigningProvider = ({
         ? {
             signatureImageAsBase64: isBase64 ? fieldValue.value : null,
             typedSignature: isBase64 ? null : fieldValue.value,
+            typedSignatureFont: isBase64 ? null : (fieldValue.signatureFont ?? null),
             recipientId: recipient.id,
             created: new Date(),
             // Dummy IDs.
@@ -442,6 +449,8 @@ export const EnvelopeSigningProvider = ({
         setEmail,
         signature,
         setSignature,
+        signatureFont,
+        setSignatureFont,
         envelopeData,
         envelope,
 
