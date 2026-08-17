@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { SIGNATURE_FONT_FAMILIES } from '@documenso/lib/constants/signatures';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import type { Recipient } from '@prisma/client';
 import { FieldType } from '@prisma/client';
@@ -14,11 +15,13 @@ import { match } from 'ts-pattern';
 export const ensureFontLibrary = () => {
   const fontPath = path.join(process.cwd(), 'public/fonts');
 
-  if (!FontLibrary.has('Caveat')) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    FontLibrary.use({
-      ['Caveat']: [path.join(fontPath, 'caveat.ttf')],
-    });
+  for (const font of Object.values(SIGNATURE_FONT_FAMILIES)) {
+    if (!FontLibrary.has(font.cssFamily)) {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      FontLibrary.use({
+        [font.cssFamily]: [path.join(fontPath, font.fileName)],
+      });
+    }
   }
 
   if (!FontLibrary.has('Inter')) {

@@ -15,6 +15,7 @@ import { renderSVG } from 'uqr';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../constants/app';
 import { APP_I18N_OPTIONS } from '../../constants/i18n';
 import { RECIPIENT_ROLE_SIGNING_REASONS, RECIPIENT_ROLES_DESCRIPTION } from '../../constants/recipient-roles';
+import { getSignatureFontFamily } from '../../constants/signatures';
 import type { TDocumentAuditLogBaseSchema } from '../../types/document-audit-logs';
 import { svgToPng } from '../../utils/images/svg-to-png';
 import { ensureFontLibrary } from './helpers';
@@ -31,7 +32,7 @@ export type CertificateRecipient = {
   rejectionReason: string | null;
   signingStatus: SigningStatus;
   signatureField?: Pick<Field, 'id' | 'secondaryId' | 'recipientId'> & {
-    signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature'> | null;
+    signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'> | null;
   };
   authLevel: string;
   logs: {
@@ -302,7 +303,7 @@ const renderColumnTwo = (options: RenderColumnOptions) => {
         x: 2,
         text: recipient.signatureField?.signature?.typedSignature,
         padding: 4,
-        fontFamily: 'Caveat',
+        fontFamily: getSignatureFontFamily(recipient.signatureField?.signature?.typedSignatureFont).cssFamily,
         fontSize: 16,
         align: 'center',
         verticalAlign: 'middle',

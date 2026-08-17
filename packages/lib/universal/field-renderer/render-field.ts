@@ -36,7 +36,7 @@ export type FieldToRender = Pick<
   positionX: number;
   positionY: number;
   fieldMeta?: TFieldMetaSchema | null;
-  signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature'> | null;
+  signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'> | null;
 };
 
 type RenderFieldOptions = {

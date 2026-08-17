@@ -1,3 +1,4 @@
+import { getSignatureFontFamily } from '@documenso/lib/constants/signatures';
 import type { Signature } from '@prisma/client';
 import { animate, motion, useMotionTemplate, useMotionValue, useTransform } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -9,7 +10,7 @@ import { Card, CardContent } from '../primitives/card';
 export type SigningCardProps = {
   className?: string;
   name: string;
-  signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature'>;
+  signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'>;
   signingCelebrationImage?: string;
 };
 
@@ -136,7 +137,7 @@ export const SigningCard3D = ({ className, name, signature, signingCelebrationIm
 
 type SigningCardContentProps = {
   name: string;
-  signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature'>;
+  signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'>;
   className?: string;
 };
 
@@ -161,6 +162,7 @@ const SigningCardContent = ({ className, name, signature }: SigningCardContentPr
             <span
               className="break-all font-semibold text-muted-foreground/60 duration-300 group-hover:text-primary/80"
               style={{
+                fontFamily: getSignatureFontFamily(signature.typedSignatureFont).cssFamily,
                 fontSize: `max(min(4rem, ${(100 / signature.typedSignature.length / 2).toFixed(4)}cqw), 1.875rem)`,
               }}
             >
