@@ -16,9 +16,8 @@ import { match } from 'ts-pattern';
 
 import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-dialog';
 import { useEmbedSigningContext } from '~/components/embed/embed-signing-context';
-import { BrandingLogo } from '~/components/general/branding-logo';
+import { AppLogo } from '~/components/general/app-logo';
 
-import { BrandingLogoIcon } from '../branding-logo-icon';
 import { DocumentSigningRejectDialog } from '../document-signing/document-signing-reject-dialog';
 import { useRequiredEnvelopeSigningContext } from '../document-signing/envelope-signing-provider';
 import { EnvelopeSignerCompleteDialog } from './envelope-signing-complete-dialog';
@@ -42,8 +41,8 @@ export const EnvelopeSignerHeader = () => {
               />
             ) : (
               <>
-                <BrandingLogo className="hidden h-6 w-auto md:block" />
-                <BrandingLogoIcon className="h-6 w-auto md:hidden" />
+                <AppLogo className="hidden h-6 w-auto md:block" />
+                <AppLogo variant="icon" className="h-6 w-auto md:hidden" />
               </>
             )}
           </Link>

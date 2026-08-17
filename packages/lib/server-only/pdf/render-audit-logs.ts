@@ -12,6 +12,7 @@ import { Image as SkiaImage } from 'skia-canvas';
 import { match, P } from 'ts-pattern';
 import { UAParser } from 'ua-parser-js';
 
+import { BRAND_CERTIFICATE_LOGO_URL } from '../../constants/app';
 import { DOCUMENT_STATUS } from '../../constants/document';
 import { APP_I18N_OPTIONS } from '../../constants/i18n';
 import { RECIPIENT_ROLES_DESCRIPTION } from '../../constants/recipient-roles';
@@ -438,9 +439,9 @@ const renderRow = (options: RenderRowOptions) => {
 const renderBranding = () => {
   const branding = new Konva.Group();
 
-  const brandingHeight = 16;
+  const brandingHeight = 8;
 
-  const logoPath = path.join(process.cwd(), 'public/static/logo.png');
+  const logoPath = path.join(process.cwd(), 'public', BRAND_CERTIFICATE_LOGO_URL.replace(/^\/+/, ''));
   const logo = fs.readFileSync(logoPath);
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions

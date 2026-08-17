@@ -12,7 +12,7 @@ import { Image as SkiaImage } from 'skia-canvas';
 import { UAParser } from 'ua-parser-js';
 import { renderSVG } from 'uqr';
 
-import { NEXT_PUBLIC_WEBAPP_URL } from '../../constants/app';
+import { BRAND_CERTIFICATE_LOGO_URL, NEXT_PUBLIC_WEBAPP_URL } from '../../constants/app';
 import { APP_I18N_OPTIONS } from '../../constants/i18n';
 import { RECIPIENT_ROLE_SIGNING_REASONS, RECIPIENT_ROLES_DESCRIPTION } from '../../constants/recipient-roles';
 import { getSignatureFontFamily } from '../../constants/signatures';
@@ -566,7 +566,7 @@ const renderRow = (options: RenderRowOptions) => {
 const renderBranding = async ({ qrToken, i18n }: { qrToken: string | null; i18n: I18n }) => {
   const branding = new Konva.Group();
 
-  const brandingHeight = 12;
+  const brandingHeight = 6;
 
   const text = new Konva.Text({
     x: 0,
@@ -578,13 +578,13 @@ const renderBranding = async ({ qrToken, i18n }: { qrToken: string | null; i18n:
     height: brandingHeight,
   });
 
-  const logoPath = path.join(process.cwd(), 'public/static/logo.png');
+  const logoPath = path.join(process.cwd(), 'public', BRAND_CERTIFICATE_LOGO_URL.replace(/^\/+/, ''));
   const logo = fs.readFileSync(logoPath);
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const img = new SkiaImage(logo) as unknown as HTMLImageElement;
 
-  const documensoImage = new Konva.Image({
+  const brandingImage = new Konva.Image({
     image: img,
     height: brandingHeight,
     width: brandingHeight * (img.width / img.height),
@@ -597,7 +597,7 @@ const renderBranding = async ({ qrToken, i18n }: { qrToken: string | null; i18n:
     y: qrSize + 16,
   });
   logoGroup.add(text);
-  logoGroup.add(documensoImage);
+  logoGroup.add(brandingImage);
 
   branding.add(logoGroup);
 

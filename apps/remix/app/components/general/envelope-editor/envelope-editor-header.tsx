@@ -21,7 +21,7 @@ import { match } from 'ts-pattern';
 import { EnvelopeDistributeDialog } from '~/components/dialogs/envelope-distribute-dialog';
 import { EnvelopeRedistributeDialog } from '~/components/dialogs/envelope-redistribute-dialog';
 import { TemplateUseDialog } from '~/components/dialogs/template-use-dialog';
-import { BrandingLogo } from '~/components/general/branding-logo';
+import { AppLogo } from '~/components/general/app-logo';
 import { DocumentAttachmentsPopover } from '~/components/general/document/document-attachments-popover';
 import { EmbeddedEditorAttachmentPopover } from '~/components/general/document/embedded-editor-attachment-popover';
 import { EnvelopeEditorSettingsDialog } from '~/components/general/envelope-editor/envelope-editor-settings-dialog';
@@ -76,7 +76,7 @@ export default function EnvelopeEditorHeader() {
             <img src={`/api/branding/logo/team/${envelope.teamId}`} alt="Logo" className="h-6 w-auto" />
           ) : (
             <Link to="/">
-              <BrandingLogo className="h-6 w-auto" />
+              <AppLogo className="h-6 w-auto" />
             </Link>
           )}
           <Separator orientation="vertical" className="h-6 shrink-0" />
