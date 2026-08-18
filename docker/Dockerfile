@@ -1,7 +1,7 @@
 ###########################
 #     BASE CONTAINER      #
 ###########################
-FROM node:22-alpine3.22 AS base
+FROM node:22.23.0-alpine3.23 AS base
 
 ENV NPM_CONFIG_AUDIT=false
 ENV NPM_CONFIG_FUND=false
