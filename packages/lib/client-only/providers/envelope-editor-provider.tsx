@@ -223,7 +223,16 @@ export const EnvelopeEditorProvider = ({
           fields: localFields,
         });
 
-        fields = response.data;
+        fields = response.data.map((field) => {
+          const localField = localFields.find((candidate) => candidate.formId === field.formId);
+
+          return {
+            ...field,
+            conditionalChildRule: localField?.conditionalChildRule ?? null,
+            conditionalParentRules: localField?.conditionalParentRules ?? [],
+            fieldGroup: field.fieldGroup ?? localField?.fieldGroup ?? null,
+          };
+        });
       } else {
         fields = mapLocalFieldsToFields({ envelope, localFields });
       }

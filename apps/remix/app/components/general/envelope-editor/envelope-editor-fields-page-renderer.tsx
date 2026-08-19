@@ -5,6 +5,7 @@ import {
   type PageRenderData,
   useCurrentEnvelopeRender,
 } from '@documenso/lib/client-only/providers/envelope-render-provider';
+import { PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
 import { FIELD_META_DEFAULT_VALUES } from '@documenso/lib/types/field-meta';
 import {
   convertPixelToPercentage,
@@ -26,6 +27,57 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fieldButtonList } from './envelope-editor-fields-drag-drop';
 import { EnvelopeRecipientSelectorCommand } from './envelope-recipient-selector';
 
+const getClientPoint = (event: KonvaEventObject<Event>) => {
+  const nativeEvent = event.evt as MouseEvent & {
+    changedTouches?: TouchList;
+  };
+  const touch = nativeEvent.changedTouches?.[0];
+
+  if (touch) {
+    return { x: touch.clientX, y: touch.clientY };
+  }
+
+  if (typeof nativeEvent.clientX === 'number' && typeof nativeEvent.clientY === 'number') {
+    return { x: nativeEvent.clientX, y: nativeEvent.clientY };
+  }
+
+  return null;
+};
+
+const getPageAtPoint = (x: number, y: number) =>
+  Array.from(document.querySelectorAll<HTMLElement>(PDF_VIEWER_PAGE_SELECTOR)).find((page) => {
+    const rect = page.getBoundingClientRect();
+
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+  });
+
+const getScrollableParent = (element: HTMLElement) => {
+  let parent = element.parentElement;
+
+  while (parent) {
+    const { overflowY } = window.getComputedStyle(parent);
+
+    if ((overflowY === 'auto' || overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight) {
+      return parent;
+    }
+
+    parent = parent.parentElement;
+  }
+
+  return null;
+};
+
+type PageRenderer = {
+  container: HTMLElement;
+  pageLayer: Konva.Layer;
+  pageHeight: number;
+  pageNumber: number;
+  pageWidth: number;
+  scale: number;
+};
+
+const pageRendererRegistry = new Map<number, PageRenderer>();
+
 export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageRenderData }) => {
   const { t, i18n } = useLingui();
   const { envelope, editorFields, getRecipientColorKey } = useCurrentEnvelopeEditor();
@@ -45,6 +97,16 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
   const { scale, pageNumber } = pageData;
 
+  useEffect(() => {
+    return () => {
+      const registeredPage = pageRendererRegistry.get(pageNumber);
+
+      if (registeredPage?.container === konvaContainer.current) {
+        pageRendererRegistry.delete(pageNumber);
+      }
+    };
+  }, [pageNumber, konvaContainer]);
+
   const localPageFields = useMemo(
     () =>
       editorFields.localFields.filter(
@@ -58,6 +120,76 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     const fieldGroup = event.target as Konva.Group;
     const fieldFormId = fieldGroup.id();
+
+    if (isDragEvent) {
+      const clientPoint = getClientPoint(event);
+      const originalPageNumber = fieldGroup.getAttr<number>('dragStartPage') ?? pageNumber;
+      const originalPage = pageRendererRegistry.get(originalPageNumber);
+      const targetPageElement = clientPoint ? getPageAtPoint(clientPoint.x, clientPoint.y) : undefined;
+      const targetPageNumber = targetPageElement
+        ? Number(targetPageElement.dataset.pageNumber)
+        : (fieldGroup.getAttr<number>('dragPageNumber') ?? originalPageNumber);
+      const targetPage = pageRendererRegistry.get(targetPageNumber);
+
+      if (!originalPage || !targetPageElement || !targetPage) {
+        const originalX = fieldGroup.getAttr<number>('dragStartX');
+        const originalY = fieldGroup.getAttr<number>('dragStartY');
+
+        if (originalPage && fieldGroup.getLayer() !== originalPage.pageLayer) {
+          fieldGroup.moveTo(originalPage.pageLayer);
+          interactiveTransformer.current?.moveTo(originalPage.pageLayer);
+        }
+
+        if (typeof originalX === 'number' && typeof originalY === 'number') {
+          fieldGroup.position({ x: originalX, y: originalY });
+        }
+
+        fieldGroup.setAttrs({
+          dragPageHeight: originalPage?.pageHeight,
+          dragPageNumber: originalPageNumber,
+          dragPageWidth: originalPage?.pageWidth,
+          dragScale: originalPage?.scale,
+        });
+
+        editorFields.updateFieldByFormId(fieldFormId, {
+          page: originalPageNumber,
+          positionX:
+            originalPage && typeof originalX === 'number' ? (originalX / originalPage.pageWidth) * 100 : undefined,
+          positionY:
+            originalPage && typeof originalY === 'number' ? (originalY / originalPage.pageHeight) * 100 : undefined,
+        });
+
+        originalPage?.pageLayer.batchDraw();
+        return;
+      }
+
+      const fieldWidth = fieldGroup.getAttr<number>('dragFieldWidth') ?? fieldGroup.width();
+      const fieldHeight = fieldGroup.getAttr<number>('dragFieldHeight') ?? fieldGroup.height();
+      const maxX = Math.max(0, targetPage.pageWidth - fieldWidth);
+      const maxY = Math.max(0, targetPage.pageHeight - fieldHeight);
+      const positionX = Math.max(0, Math.min(maxX, fieldGroup.x())) / targetPage.pageWidth;
+      const positionY = Math.max(0, Math.min(maxY, fieldGroup.y())) / targetPage.pageHeight;
+
+      fieldGroup.position({
+        x: positionX * targetPage.pageWidth,
+        y: positionY * targetPage.pageHeight,
+      });
+      fieldGroup.setAttrs({
+        dragPageHeight: targetPage.pageHeight,
+        dragPageNumber: targetPageNumber,
+        dragPageWidth: targetPage.pageWidth,
+        dragScale: targetPage.scale,
+      });
+
+      editorFields.updateFieldByFormId(fieldFormId, {
+        page: targetPageNumber,
+        positionX: positionX * 100,
+        positionY: positionY * 100,
+      });
+
+      targetPage.pageLayer.batchDraw();
+      return;
+    }
 
     // Note: This values are scaled.
     const {
@@ -104,6 +236,74 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     pageLayer.current?.batchDraw();
   };
 
+  const handleFieldDragMove = (event: KonvaEventObject<Event>) => {
+    const clientPoint = getClientPoint(event);
+
+    if (!clientPoint) {
+      return;
+    }
+
+    const fieldGroup = event.target as Konva.Group;
+    const currentPageNumber = fieldGroup.getAttr<number>('dragPageNumber') ?? pageNumber;
+    const currentPage = pageRendererRegistry.get(currentPageNumber);
+    const stageContainer = fieldGroup.getStage()?.container() ?? konvaContainer.current;
+
+    if (!stageContainer) {
+      return;
+    }
+
+    const scrollContainer = getScrollableParent(stageContainer);
+
+    if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+      const scrollRect = scrollContainer.getBoundingClientRect();
+      const scrollEdge = 128;
+      const scrollStep = 20;
+      const visibleTop = Math.max(scrollRect.top, 0);
+      const visibleBottom = Math.min(scrollRect.bottom, window.innerHeight);
+
+      if (clientPoint.y < visibleTop + scrollEdge && scrollContainer.scrollTop > 0) {
+        scrollContainer.scrollTop -= scrollStep;
+      } else if (
+        clientPoint.y > visibleBottom - scrollEdge &&
+        scrollContainer.scrollTop + scrollContainer.clientHeight < scrollContainer.scrollHeight
+      ) {
+        scrollContainer.scrollTop += scrollStep;
+      }
+    }
+
+    const targetPageElement = getPageAtPoint(clientPoint.x, clientPoint.y);
+    const targetPageNumber = targetPageElement ? Number(targetPageElement.dataset.pageNumber) : currentPageNumber;
+    const targetPage = pageRendererRegistry.get(targetPageNumber) ?? currentPage;
+
+    if (!targetPage || !targetPageElement) {
+      return;
+    }
+
+    if (fieldGroup.getLayer() !== targetPage.pageLayer) {
+      fieldGroup.moveTo(targetPage.pageLayer);
+      interactiveTransformer.current?.moveTo(targetPage.pageLayer);
+    }
+
+    const targetPageRect = targetPage.container.getBoundingClientRect();
+    const fieldWidth = fieldGroup.getAttr<number>('dragFieldWidth') ?? fieldGroup.width();
+    const fieldHeight = fieldGroup.getAttr<number>('dragFieldHeight') ?? fieldGroup.height();
+    const dragOffsetX = fieldGroup.getAttr<number>('dragOffsetX') ?? fieldWidth * targetPage.scale * 0.5;
+    const dragOffsetY = fieldGroup.getAttr<number>('dragOffsetY') ?? fieldHeight * targetPage.scale * 0.5;
+
+    fieldGroup.position({
+      x: (clientPoint.x - targetPageRect.left - dragOffsetX) / targetPage.scale,
+      y: (clientPoint.y - targetPageRect.top - dragOffsetY) / targetPage.scale,
+    });
+    fieldGroup.setAttrs({
+      dragPageHeight: targetPage.pageHeight,
+      dragPageNumber: targetPage.pageNumber,
+      dragPageWidth: targetPage.pageWidth,
+      dragScale: targetPage.scale,
+    });
+
+    targetPage.pageLayer.batchDraw();
+  };
+
   const unsafeRenderFieldOnLayer = (field: TLocalField) => {
     if (!pageLayer.current) {
       return;
@@ -130,11 +330,14 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       mode: 'edit',
     });
 
+    fieldGroup.setAttr('dragPageNumber', field.page);
+
     if (!isFieldEditable) {
       return;
     }
 
     fieldGroup.off('click');
+    fieldGroup.off('dragmove');
     fieldGroup.off('transformend');
     fieldGroup.off('dragend');
 
@@ -146,6 +349,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     });
 
     fieldGroup.on('transformend', handleResizeOrMove);
+    fieldGroup.on('dragmove', handleFieldDragMove);
     fieldGroup.on('dragend', handleResizeOrMove);
   };
 
@@ -169,6 +373,15 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     interactiveTransformer.current = createInteractiveTransformer(currentStage, currentPageLayer);
 
     // Render the fields.
+    pageRendererRegistry.set(pageNumber, {
+      container: currentStage.container(),
+      pageLayer: currentPageLayer,
+      pageHeight: unscaledViewport.height,
+      pageNumber,
+      pageWidth: unscaledViewport.width,
+      scale,
+    });
+
     for (const field of localPageFields) {
       renderFieldOnLayer(field);
     }
@@ -192,6 +405,29 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       }
 
       setIsFieldChanging(e.type === 'dragstart');
+
+      if (e.type === 'dragstart') {
+        const fieldGroup = e.target as Konva.Group;
+        const clientPoint = getClientPoint(e);
+        const currentPageNumber = fieldGroup.getAttr<number>('dragPageNumber') ?? pageNumber;
+        const currentPage = pageRendererRegistry.get(currentPageNumber);
+
+        if (clientPoint && currentPage) {
+          const pageRect = currentPage.container.getBoundingClientRect();
+          const fieldWidth = fieldGroup.getAttr<number>('dragFieldWidth') ?? fieldGroup.width();
+          const fieldHeight = fieldGroup.getAttr<number>('dragFieldHeight') ?? fieldGroup.height();
+
+          fieldGroup.setAttrs({
+            dragOffsetX: clientPoint.x - pageRect.left - fieldGroup.x() * currentPage.scale,
+            dragOffsetY: clientPoint.y - pageRect.top - fieldGroup.y() * currentPage.scale,
+            dragStartPage: currentPageNumber,
+            dragStartX: fieldGroup.x(),
+            dragStartY: fieldGroup.y(),
+            dragFieldHeight: fieldHeight,
+            dragFieldWidth: fieldWidth,
+          });
+        }
+      }
 
       const itemAlreadySelected = (interactiveTransformer.current?.nodes() || []).includes(e.target);
 
@@ -554,6 +790,8 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       width: fieldWidth,
       height: fieldHeight,
       recipientId: editorFields.selectedRecipient.id,
+      fieldGroupId: null,
+      fieldGroup: null,
       fieldMeta: structuredClone(FIELD_META_DEFAULT_VALUES[type]),
     });
   };
