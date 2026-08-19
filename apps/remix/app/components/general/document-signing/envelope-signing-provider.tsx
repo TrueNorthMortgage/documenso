@@ -5,7 +5,7 @@ import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/tr
 import type { EnvelopeForSigningResponse } from '@documenso/lib/server-only/envelope/get-envelope-for-recipient-signing';
 import type { TRecipientActionAuth } from '@documenso/lib/types/document-auth';
 import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
-import { isFieldUnsignedAndRequired, isRequiredField } from '@documenso/lib/utils/advanced-fields-helpers';
+import { getFieldsRequiringValidation } from '@documenso/lib/utils/advanced-fields-helpers';
 import { extractFieldInsertionValues } from '@documenso/lib/utils/envelope-signing';
 import { trpc } from '@documenso/trpc/react';
 import type { TSignEnvelopeFieldValue } from '@documenso/trpc/server/envelope-router/sign-envelope-field.types';
@@ -240,8 +240,8 @@ export const EnvelopeSigningProvider = ({
    * The fields that are still required to be signed by the actual recipient.
    */
   const recipientFieldsRemaining = useMemo(() => {
-    const requiredFields = envelopeData.recipient.fields
-      .filter((field) => isFieldVisible(field) && isFieldUnsignedAndRequired(field))
+    const requiredFields = getFieldsRequiringValidation(envelopeData.recipient.fields.filter(isFieldVisible))
+      .filter((field) => !field.inserted)
       .map((field) => {
         const envelopeItem = envelope.envelopeItems.find((item) => item.id === field.envelopeItemId);
 
@@ -267,7 +267,7 @@ export const EnvelopeSigningProvider = ({
    * All the required fields for the actual recipient.
    */
   const requiredRecipientFields = useMemo(() => {
-    return envelopeData.recipient.fields.filter((field) => isFieldVisible(field) && isRequiredField(field));
+    return getFieldsRequiringValidation(envelopeData.recipient.fields.filter(isFieldVisible));
   }, [envelopeData.recipient.fields, fieldVisibility]);
 
   /**

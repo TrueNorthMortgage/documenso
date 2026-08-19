@@ -15,6 +15,7 @@ export const assertConditionalFieldIsVisible = async ({
     },
     include: {
       conditionalChildRule: true,
+      fieldGroup: true,
       envelope: {
         select: {
           internalVersion: true,

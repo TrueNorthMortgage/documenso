@@ -93,6 +93,7 @@ export const signFieldWithToken = async ({
         },
       },
       recipient: true,
+      fieldGroup: true,
     },
   });
 
@@ -120,7 +121,7 @@ export const signFieldWithToken = async ({
     throw new Error(`Recipient ${recipient.id} has already signed`);
   }
 
-  if (field.inserted) {
+  if (field.inserted && !field.fieldGroupId) {
     throw new Error(`Field ${fieldId} has already been inserted`);
   }
 
@@ -156,7 +157,7 @@ export const signFieldWithToken = async ({
     const checkboxFieldParsedMeta = ZCheckboxFieldMeta.parse(field.fieldMeta);
     const checkboxFieldValues: string[] = fromCheckboxValue(value);
 
-    const errors = validateCheckboxField(checkboxFieldValues, checkboxFieldParsedMeta, true);
+    const errors = field.fieldGroupId ? [] : validateCheckboxField(checkboxFieldValues, checkboxFieldParsedMeta, true);
 
     if (errors.length > 0) {
       throw new Error(errors.join(', '));
@@ -218,7 +219,7 @@ export const signFieldWithToken = async ({
     throw new Error('Typed signatures are not allowed. Please draw your signature');
   }
 
-  if (field.fieldMeta?.readOnly && !AUTO_SIGNABLE_FIELD_TYPES.includes(field.type)) {
+  if ((field.fieldMeta?.readOnly || field.fieldGroup?.readOnly) && !AUTO_SIGNABLE_FIELD_TYPES.includes(field.type)) {
     // !: This is a bit of a hack at the moment, readonly fields with default values
     // !: should be inserted with their default value on document creation instead of
     // !: this weird programattic approach. Until that's fixed though this will verify
@@ -244,6 +245,18 @@ export const signFieldWithToken = async ({
   const assistant = recipient.role === RecipientRole.ASSISTANT ? recipient : undefined;
 
   return await prisma.$transaction(async (tx) => {
+    if (field.fieldGroupId && field.type === FieldType.RADIO) {
+      await tx.field.updateMany({
+        where: {
+          fieldGroupId: field.fieldGroupId,
+        },
+        data: {
+          customText: '',
+          inserted: false,
+        },
+      });
+    }
+
     const updatedField = await tx.field.update({
       where: {
         id: field.id,

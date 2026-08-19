@@ -20,18 +20,35 @@ export const upsertFieldGroup = (field: FieldToRender, options: RenderFieldEleme
       name: 'field-group',
     });
 
-  const maxXPosition = (pageWidth - fieldWidth) * scale;
-  const maxYPosition = (pageHeight - fieldHeight) * scale;
-
   fieldGroup.setAttrs({
     scaleX: 1,
     scaleY: 1,
     x: fieldX,
     y: fieldY,
+    dragPageHeight: pageHeight,
+    dragPageWidth: pageWidth,
+    dragScale: scale,
+    dragFieldHeight: fieldHeight,
+    dragFieldWidth: fieldWidth,
     draggable: editable,
     dragBoundFunc: (pos) => {
-      const newX = Math.max(0, Math.min(maxXPosition, pos.x));
-      const newY = Math.max(0, Math.min(maxYPosition, pos.y));
+      // Allow the editor to move a field across page boundaries while it is
+      // being dragged. The editor validates the final drop target and snaps
+      // invalid drops back to the original page.
+      if (fieldGroup.isDragging()) {
+        return pos;
+      }
+
+      const currentPageWidth = fieldGroup.getAttr<number>('dragPageWidth') ?? pageWidth;
+      const currentPageHeight = fieldGroup.getAttr<number>('dragPageHeight') ?? pageHeight;
+      const currentScale = fieldGroup.getAttr<number>('dragScale') ?? scale;
+      const currentFieldWidth = fieldGroup.getAttr<number>('dragFieldWidth') ?? fieldWidth;
+      const currentFieldHeight = fieldGroup.getAttr<number>('dragFieldHeight') ?? fieldHeight;
+      const currentMaxXPosition = (currentPageWidth - currentFieldWidth) * currentScale;
+      const currentMaxYPosition = (currentPageHeight - currentFieldHeight) * currentScale;
+
+      const newX = Math.max(0, Math.min(currentMaxXPosition, pos.x));
+      const newY = Math.max(0, Math.min(currentMaxYPosition, pos.y));
 
       return { x: newX, y: newY };
     },

@@ -29,6 +29,7 @@ const getHiddenConditionalFieldIdsBeforeUpdate = async ({
     },
     include: {
       conditionalChildRule: true,
+      fieldGroup: true,
       envelope: {
         select: {
           internalVersion: true,
@@ -47,6 +48,47 @@ const getHiddenConditionalFieldIdsBeforeUpdate = async ({
   return fields
     .filter((candidate) => candidate.conditionalChildRule && visibility.get(candidate.id) === false)
     .map((candidate) => candidate.id);
+};
+
+const clearRadioGroupFields = async ({
+  tx,
+  fieldGroupId,
+  fieldId,
+}: {
+  tx: Prisma.TransactionClient;
+  fieldGroupId: string | null;
+  fieldId: number;
+}) => {
+  if (!fieldGroupId) {
+    return [];
+  }
+
+  const fieldsToClear = await tx.field.findMany({
+    where: {
+      fieldGroupId,
+      id: {
+        not: fieldId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  await tx.field.updateMany({
+    where: {
+      fieldGroupId,
+      id: {
+        not: fieldId,
+      },
+    },
+    data: {
+      customText: '',
+      inserted: false,
+    },
+  });
+
+  return fieldsToClear.map((candidate) => candidate.id);
 };
 
 const createAutoInsertedFieldsAuditLog = async ({
@@ -132,6 +174,7 @@ export const signEnvelopeFieldRoute = procedure
           },
         },
         recipient: true,
+        fieldGroup: true,
       },
     });
 
@@ -184,7 +227,7 @@ export const signEnvelopeFieldRoute = procedure
       });
     }
 
-    if (field.fieldMeta?.readOnly) {
+    if (field.fieldMeta?.readOnly || field.fieldGroup?.readOnly) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: `Field ${fieldId} is read only`,
       });
@@ -210,6 +253,15 @@ export const signEnvelopeFieldRoute = procedure
           envelopeItemId: field.envelopeItemId,
         });
 
+        const clearedRadioGroupFieldIds =
+          field.fieldGroupId && field.type === FieldType.RADIO
+            ? await clearRadioGroupFields({
+                tx,
+                fieldGroupId: field.fieldGroupId,
+                fieldId: field.id,
+              })
+            : [];
+
         const updatedField = await tx.field.update({
           where: {
             id: field.id,
@@ -220,10 +272,11 @@ export const signEnvelopeFieldRoute = procedure
           },
         });
 
-        const clearedFieldIds = await clearHiddenConditionalFields({
+        const hiddenConditionalFieldIds = await clearHiddenConditionalFields({
           tx,
           envelopeItemId: field.envelopeItemId,
         });
+        const clearedFieldIds = [...new Set([...clearedRadioGroupFieldIds, ...hiddenConditionalFieldIds])];
 
         const autoInsertedFields = await autoInsertConditionalFieldDefaults({
           tx,
@@ -306,6 +359,15 @@ export const signEnvelopeFieldRoute = procedure
         envelopeItemId: field.envelopeItemId,
       });
 
+      const clearedRadioGroupFieldIds =
+        field.fieldGroupId && field.type === FieldType.RADIO
+          ? await clearRadioGroupFields({
+              tx,
+              fieldGroupId: field.fieldGroupId,
+              fieldId: field.id,
+            })
+          : [];
+
       const updatedField = await tx.field.update({
         where: {
           id: field.id,
@@ -319,10 +381,11 @@ export const signEnvelopeFieldRoute = procedure
         },
       });
 
-      const clearedFieldIds = await clearHiddenConditionalFields({
+      const hiddenConditionalFieldIds = await clearHiddenConditionalFields({
         tx,
         envelopeItemId: field.envelopeItemId,
       });
+      const clearedFieldIds = [...new Set([...clearedRadioGroupFieldIds, ...hiddenConditionalFieldIds])];
 
       const autoInsertedFields = await autoInsertConditionalFieldDefaults({
         tx,

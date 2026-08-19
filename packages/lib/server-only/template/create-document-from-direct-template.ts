@@ -102,6 +102,7 @@ export const createDocumentFromDirectTemplate = async ({
           fields: {
             include: {
               conditionalChildRule: true,
+              fieldGroup: true,
             },
           },
         },
@@ -397,12 +398,39 @@ export const createDocumentFromDirectTemplate = async ({
       sourceFieldId: number;
     };
     let nonDirectRecipientFieldsToCreate: NonDirectRecipientFieldToCreate[] = [];
+    const nonDirectFieldGroupIds = new Map<string, string>();
 
-    Object.values(nonDirectTemplateRecipients).forEach((templateRecipient) => {
+    for (const templateRecipient of Object.values(nonDirectTemplateRecipients)) {
       const recipient = createdEnvelope.recipients.find((recipient) => recipient.email === templateRecipient.email);
 
       if (!recipient) {
         throw new Error('Recipient not found.');
+      }
+
+      for (const field of templateRecipient.fields) {
+        if (!field.fieldGroupId || !field.fieldGroup || nonDirectFieldGroupIds.has(field.fieldGroupId)) {
+          continue;
+        }
+
+        const id = nanoid(12);
+        nonDirectFieldGroupIds.set(field.fieldGroupId, id);
+
+        await tx.fieldGroup.create({
+          data: {
+            id,
+            name: field.fieldGroup.name,
+            type: field.fieldGroup.type,
+            required: field.fieldGroup.required,
+            readOnly: field.fieldGroup.readOnly,
+            fontSize: field.fieldGroup.fontSize,
+            direction: field.fieldGroup.direction,
+            validationRule: field.fieldGroup.validationRule,
+            validationLength: field.fieldGroup.validationLength,
+            envelopeId: createdEnvelope.id,
+            envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[field.fieldGroup.envelopeItemId],
+            recipientId: recipient.id,
+          },
+        });
       }
 
       nonDirectRecipientFieldsToCreate = nonDirectRecipientFieldsToCreate.concat(
@@ -420,10 +448,11 @@ export const createDocumentFromDirectTemplate = async ({
           customText: '',
           inserted: false,
           templateSourceItemId: null,
+          fieldGroupId: field.fieldGroupId ? (nonDirectFieldGroupIds.get(field.fieldGroupId) ?? null) : null,
           fieldMeta: field.fieldMeta,
         })),
       );
-    });
+    }
 
     const createdNonDirectRecipientFields = await Promise.all(
       nonDirectRecipientFieldsToCreate.map(({ sourceFieldId: _sourceFieldId, ...field }) =>
@@ -461,6 +490,35 @@ export const createDocumentFromDirectTemplate = async ({
       },
     });
 
+    const directFieldGroupIds = new Map<string, string>();
+    for (const field of [...directTemplateNonSignatureFields, ...directTemplateSignatureFields].map(
+      ({ templateField }) => templateField,
+    )) {
+      if (!field.fieldGroupId || !field.fieldGroup || directFieldGroupIds.has(field.fieldGroupId)) {
+        continue;
+      }
+
+      const id = nanoid(12);
+      directFieldGroupIds.set(field.fieldGroupId, id);
+
+      await tx.fieldGroup.create({
+        data: {
+          id,
+          name: field.fieldGroup.name,
+          type: field.fieldGroup.type,
+          required: field.fieldGroup.required,
+          readOnly: field.fieldGroup.readOnly,
+          fontSize: field.fieldGroup.fontSize,
+          direction: field.fieldGroup.direction,
+          validationRule: field.fieldGroup.validationRule,
+          validationLength: field.fieldGroup.validationLength,
+          envelopeId: createdEnvelope.id,
+          envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[field.fieldGroup.envelopeItemId],
+          recipientId: createdDirectRecipient.id,
+        },
+      });
+    }
+
     const createdDirectRecipientNonSignatureFields = await Promise.all(
       directTemplateNonSignatureFields.map(({ templateField, customText }) => {
         let inserted = true;
@@ -484,6 +542,9 @@ export const createDocumentFromDirectTemplate = async ({
             customText: customText ?? '',
             inserted,
             fieldMeta: templateField.fieldMeta || Prisma.JsonNull,
+            fieldGroupId: templateField.fieldGroupId
+              ? (directFieldGroupIds.get(templateField.fieldGroupId) ?? null)
+              : null,
           },
         });
       }),
@@ -511,6 +572,9 @@ export const createDocumentFromDirectTemplate = async ({
             customText: '',
             inserted: true,
             fieldMeta: templateField.fieldMeta || Prisma.JsonNull,
+            fieldGroupId: templateField.fieldGroupId
+              ? (directFieldGroupIds.get(templateField.fieldGroupId) ?? null)
+              : null,
             signature: {
               create: {
                 recipientId: createdDirectRecipient.id,

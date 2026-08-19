@@ -4,6 +4,7 @@ import { validateNumberField } from '@documenso/lib/advanced-fields-validation/v
 import { validateRadioField } from '@documenso/lib/advanced-fields-validation/validate-radio';
 import { validateTextField } from '@documenso/lib/advanced-fields-validation/validate-text';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
+import type { TFieldGroup } from '@documenso/lib/types/field-group';
 import {
   FIELD_META_DEFAULT_VALUES,
   type TFieldMetaSchema as FieldMeta,
@@ -60,6 +61,7 @@ export const setFieldsForDocument = async ({
       fields: {
         include: {
           recipient: true,
+          fieldGroup: true,
         },
       },
     },
@@ -126,6 +128,59 @@ export const setFieldsForDocument = async ({
   });
 
   const persistedFields = await prisma.$transaction(async (tx) => {
+    const fieldGroups = new Map<string, TFieldGroup>();
+
+    for (const field of linkedFields) {
+      if (!field.fieldGroup) {
+        continue;
+      }
+
+      if (
+        (field.fieldGroup.type !== FieldType.RADIO && field.fieldGroup.type !== FieldType.CHECKBOX) ||
+        field.fieldGroup.type !== field.type ||
+        field.fieldGroup.envelopeId !== envelope.id ||
+        field.fieldGroup.envelopeItemId !== field.envelopeItemId ||
+        field.fieldGroup.recipientId !== field._recipient.id
+      ) {
+        throw new AppError(AppErrorCode.INVALID_REQUEST, {
+          message: 'Invalid field group configuration',
+        });
+      }
+
+      fieldGroups.set(field.fieldGroup.id, field.fieldGroup);
+    }
+
+    await Promise.all(
+      [...fieldGroups.values()].map((group) =>
+        tx.fieldGroup.upsert({
+          where: { id: group.id },
+          update: {
+            name: group.name,
+            required: false,
+            readOnly: group.readOnly,
+            fontSize: group.fontSize,
+            direction: group.direction,
+            validationRule: null,
+            validationLength: null,
+          },
+          create: {
+            id: group.id,
+            name: group.name,
+            type: group.type,
+            required: false,
+            readOnly: group.readOnly,
+            fontSize: group.fontSize,
+            direction: group.direction,
+            validationRule: null,
+            validationLength: null,
+            envelopeId: envelope.id,
+            envelopeItemId: group.envelopeItemId,
+            recipientId: group.recipientId,
+          },
+        }),
+      ),
+    );
+
     return await Promise.all(
       linkedFields.map(async (field) => {
         const fieldSignerEmail = field._recipient.email.toLowerCase();
@@ -156,10 +211,12 @@ export const setFieldsForDocument = async ({
         if (field.type === FieldType.CHECKBOX) {
           if (field.fieldMeta) {
             const checkboxFieldParsedMeta = ZCheckboxFieldMeta.parse(field.fieldMeta);
-            const errors = validateCheckboxField(
-              checkboxFieldParsedMeta?.values?.map((item) => item.value) ?? [],
-              checkboxFieldParsedMeta,
-            );
+            const errors = field.fieldGroup
+              ? []
+              : validateCheckboxField(
+                  checkboxFieldParsedMeta?.values?.map((item) => item.value) ?? [],
+                  checkboxFieldParsedMeta,
+                );
 
             if (errors.length > 0) {
               throw new Error(errors.join(', '));
@@ -210,6 +267,7 @@ export const setFieldsForDocument = async ({
             width: field.pageWidth,
             height: field.pageHeight,
             fieldMeta: parsedFieldMeta,
+            fieldGroup: field.fieldGroup ? { connect: { id: field.fieldGroup.id } } : { disconnect: true },
           },
           create: {
             type: field.type,
@@ -221,6 +279,7 @@ export const setFieldsForDocument = async ({
             customText: '',
             inserted: false,
             fieldMeta: parsedFieldMeta,
+            fieldGroup: field.fieldGroup ? { connect: { id: field.fieldGroup.id } } : undefined,
             envelope: {
               connect: {
                 id: envelope.id,
@@ -285,6 +344,7 @@ export const setFieldsForDocument = async ({
 
         return {
           ...upsertedField,
+          fieldGroup: field.fieldGroup ?? null,
           formId: field.formId,
         };
       }),
@@ -357,6 +417,7 @@ type FieldData = {
   pageWidth: number;
   pageHeight: number;
   fieldMeta?: FieldMeta;
+  fieldGroup?: TFieldGroup | null;
 };
 
 const hasFieldBeenChanged = (field: Field, newFieldData: FieldData) => {
@@ -371,6 +432,7 @@ const hasFieldBeenChanged = (field: Field, newFieldData: FieldData) => {
     field.positionY.toNumber() !== newFieldData.pageY ||
     field.width.toNumber() !== newFieldData.pageWidth ||
     field.height.toNumber() !== newFieldData.pageHeight ||
-    !isDeepEqual(currentFieldMeta, newFieldMeta)
+    !isDeepEqual(currentFieldMeta, newFieldMeta) ||
+    field.fieldGroupId !== newFieldData.fieldGroup?.id
   );
 };

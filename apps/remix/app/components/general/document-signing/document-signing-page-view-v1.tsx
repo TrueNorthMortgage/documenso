@@ -12,7 +12,7 @@ import {
   ZTextFieldMeta,
 } from '@documenso/lib/types/field-meta';
 import type { CompletedField } from '@documenso/lib/types/fields';
-import { isFieldUnsignedAndRequired } from '@documenso/lib/utils/advanced-fields-helpers';
+import { getFieldsRequiringValidation } from '@documenso/lib/utils/advanced-fields-helpers';
 import { getDocumentDataUrlForPdfViewer } from '@documenso/lib/utils/envelope-download';
 import { validateFieldsInserted } from '@documenso/lib/utils/fields';
 import type { FieldWithSignatureAndFieldMeta } from '@documenso/prisma/types/field-with-signature-and-fieldmeta';
@@ -92,7 +92,7 @@ export const DocumentSigningPageViewV1 = ({
   // Keep the loading state going if successful since the redirect may take some time.
   const isSubmitting = isPending || isSuccess;
 
-  const fieldsRequiringValidation = useMemo(() => fields.filter(isFieldUnsignedAndRequired), [fields]);
+  const fieldsRequiringValidation = useMemo(() => getFieldsRequiringValidation(fields), [fields]);
 
   const fieldsValidated = () => {
     validateFieldsInserted(fieldsRequiringValidation);

@@ -57,6 +57,7 @@ export const run = async ({ payload, io }: { payload: TSealDocumentJobDefinition
           include: {
             signature: true,
             conditionalChildRule: true,
+            fieldGroup: true,
           },
         },
         envelopeItems: {
@@ -66,6 +67,7 @@ export const run = async ({ payload, io }: { payload: TSealDocumentJobDefinition
               include: {
                 signature: true,
                 conditionalChildRule: true,
+                fieldGroup: true,
               },
             },
           },

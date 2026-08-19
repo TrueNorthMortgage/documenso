@@ -1,6 +1,11 @@
 import { nanoid, prefixedId } from '@documenso/lib/universal/id';
 import { prisma } from '@documenso/prisma';
-import type { ConditionalFieldRule, DocumentDistributionMethod, DocumentSigningOrder } from '@prisma/client';
+import type {
+  ConditionalFieldRule,
+  DocumentDistributionMethod,
+  DocumentSigningOrder,
+  FieldGroup,
+} from '@prisma/client';
 import {
   DocumentSource,
   EnvelopeType,
@@ -56,7 +61,7 @@ import { getOrganisationTemplateWhereInput } from './get-organisation-template-b
 
 type FinalRecipient = Pick<Recipient, 'name' | 'email' | 'role' | 'authOptions' | 'signingOrder' | 'token'> & {
   templateRecipientId: number;
-  fields: Array<Field & { conditionalChildRule: ConditionalFieldRule | null }>;
+  fields: Array<Field & { conditionalChildRule: ConditionalFieldRule | null; fieldGroup: FieldGroup | null }>;
 };
 
 export type CreateDocumentFromTemplateOptions = {
@@ -307,6 +312,7 @@ export const createDocumentFromTemplate = async ({
         fields: {
           include: {
             conditionalChildRule: true,
+            fieldGroup: true,
           },
         },
       },
@@ -595,6 +601,49 @@ export const createDocumentFromTemplate = async ({
     type FieldToCreate = Omit<Field, 'id' | 'secondaryId'> & { sourceFieldId: number };
     let fieldsToCreate: FieldToCreate[] = [];
 
+    const fieldGroupsById = new Map<string, { group: FieldGroup; recipientId: number }>();
+
+    for (const finalRecipient of allFinalRecipients) {
+      const recipient = envelope.recipients.find((candidate) => candidate.token === finalRecipient.token);
+
+      if (!recipient) {
+        continue;
+      }
+
+      for (const field of finalRecipient.fields) {
+        if (field.fieldGroupId && field.fieldGroup && !fieldGroupsById.has(field.fieldGroupId)) {
+          fieldGroupsById.set(field.fieldGroupId, {
+            group: field.fieldGroup,
+            recipientId: recipient.id,
+          });
+        }
+      }
+    }
+
+    const fieldGroupIdMap = new Map<string, string>();
+
+    for (const [sourceGroupId, { group, recipientId }] of fieldGroupsById) {
+      const id = nanoid(12);
+      fieldGroupIdMap.set(sourceGroupId, id);
+
+      await tx.fieldGroup.create({
+        data: {
+          id,
+          name: group.name,
+          type: group.type,
+          required: group.required,
+          readOnly: group.readOnly,
+          fontSize: group.fontSize,
+          direction: group.direction,
+          validationRule: group.validationRule,
+          validationLength: group.validationLength,
+          envelopeId: envelope.id,
+          envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[group.envelopeItemId],
+          recipientId,
+        },
+      });
+    }
+
     // Get all template field IDs first so we can validate later
     const allTemplateFieldIds = finalRecipients.flatMap((recipient) => recipient.fields.map((field) => field.id));
 
@@ -659,6 +708,7 @@ export const createDocumentFromTemplate = async ({
             customText: '',
             inserted: false,
             templateSourceItemId: null,
+            fieldGroupId: field.fieldGroupId ? (fieldGroupIdMap.get(field.fieldGroupId) ?? null) : null,
             fieldMeta: field.fieldMeta,
           };
 

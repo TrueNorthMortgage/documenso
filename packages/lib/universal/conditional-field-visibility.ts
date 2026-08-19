@@ -8,6 +8,9 @@ export type FieldWithConditionalRule = Pick<
   Field,
   'id' | 'type' | 'customText' | 'envelopeItemId' | 'recipientId' | 'fieldMeta'
 > & {
+  fieldGroupId?: string | null;
+  inserted?: boolean;
+  fieldGroup?: { type: FieldType } | null;
   conditionalChildRule?: ConditionalFieldRule | null;
   envelopeInternalVersion?: number;
 };
@@ -34,9 +37,30 @@ const getOptionValues = (field: FieldWithConditionalRule) => {
   });
 };
 
-const getParentValues = (field: FieldWithConditionalRule) => {
+const getParentValues = (field: FieldWithConditionalRule, groupedFields: FieldWithConditionalRule[]) => {
+  const groupFields = field.fieldGroupId
+    ? groupedFields.filter((candidate) => candidate.fieldGroupId === field.fieldGroupId)
+    : [field];
+
   if (field.type === FieldType.CHECKBOX) {
-    const optionValues = getOptionValues(field);
+    const optionValues = groupFields.flatMap(getOptionValues);
+
+    if (field.fieldGroupId) {
+      return groupFields.flatMap((groupField, index) => {
+        if (!groupField.inserted) {
+          return [];
+        }
+
+        const selectedValues = fromCheckboxValue(groupField.customText);
+        return selectedValues.map((selectedValue) => {
+          if (typeof selectedValue === 'number') {
+            return optionValues[index] ?? String(selectedValue);
+          }
+
+          return selectedValue;
+        });
+      });
+    }
 
     return (fromCheckboxValue(field.customText) as Array<number | string>).map((selectedValue) => {
       if (typeof selectedValue === 'number') {
@@ -48,7 +72,18 @@ const getParentValues = (field: FieldWithConditionalRule) => {
   }
 
   if (field.type === FieldType.RADIO) {
-    const optionValues = getOptionValues(field);
+    const optionValues = groupFields.flatMap(getOptionValues);
+
+    if (field.fieldGroupId) {
+      const selectedFieldIndex = groupFields.findIndex(
+        (groupField) => groupField.inserted && groupField.customText !== '',
+      );
+
+      return selectedFieldIndex === -1
+        ? []
+        : [optionValues[selectedFieldIndex] ?? groupFields[selectedFieldIndex].customText];
+    }
+
     const selectedIndex = Number(field.customText);
 
     // Legacy V1 signing stores the selected radio value, while V2 stores its
@@ -65,8 +100,12 @@ const getParentValues = (field: FieldWithConditionalRule) => {
   return [field.customText];
 };
 
-const matchesRule = (parent: FieldWithConditionalRule, rule: ConditionalFieldRule) => {
-  const parentValues = getParentValues(parent);
+const matchesRule = (
+  parent: FieldWithConditionalRule,
+  rule: ConditionalFieldRule,
+  fields: FieldWithConditionalRule[],
+) => {
+  const parentValues = getParentValues(parent, fields);
 
   if (rule.operator === ConditionalFieldRuleOperator.ANY_TEXT) {
     return parent.type === FieldType.TEXT && parentValues.some((value) => value.trim().length > 0);
@@ -98,7 +137,7 @@ export const getConditionalFieldVisibility = (fields: FieldWithConditionalRule[]
     }
 
     const parent = fieldsById.get(rule.parentFieldId);
-    visibility.set(field.id, parent ? matchesRule(parent, rule) : false);
+    visibility.set(field.id, parent ? matchesRule(parent, rule, fields) : false);
   }
 
   return visibility;
