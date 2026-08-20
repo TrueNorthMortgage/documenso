@@ -8,8 +8,77 @@ export type TFieldWithGroup = Pick<Field, 'id' | 'type' | 'fieldGroupId' | 'inse
     fieldGroup?: TFieldGroup | null;
   };
 
+export type TCheckboxGroupOption = {
+  fieldId: number;
+  fieldValueIndex: number;
+  value: string;
+  selected: boolean;
+};
+
 export const getFieldGroupFields = <T extends TFieldWithGroup>(fields: T[], groupId: string): T[] =>
   fields.filter((field) => field.fieldGroupId === groupId);
+
+const getCheckboxFieldValues = (field: TFieldWithGroup) => {
+  if (!field.fieldMeta || typeof field.fieldMeta !== 'object' || Array.isArray(field.fieldMeta)) {
+    return [];
+  }
+
+  const values = (field.fieldMeta as { values?: unknown }).values;
+
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values.flatMap((value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value) || typeof value.value !== 'string') {
+      return [];
+    }
+
+    return [value.value];
+  });
+};
+
+/**
+ * Flattens grouped checkbox fields into the option list shown to a signer.
+ * Each grouped field normally owns one option, but this also supports legacy
+ * grouped fields that still contain multiple values.
+ */
+export const getCheckboxGroupOptions = (fields: TFieldWithGroup[]): TCheckboxGroupOption[] => {
+  return sortByDocumentPosition(fields)
+    .filter((field) => field.type === 'CHECKBOX')
+    .flatMap((field) => {
+      const selectedValues = new Set(fromCheckboxValue(field.customText).map((value) => Number(value)));
+
+      return getCheckboxFieldValues(field).map((value, fieldValueIndex) => ({
+        fieldId: field.id,
+        fieldValueIndex,
+        value,
+        selected: selectedValues.has(fieldValueIndex),
+      }));
+    });
+};
+
+export const getCheckboxGroupFieldValues = (
+  fields: TFieldWithGroup[],
+  selectedOptionIndices: number[],
+): Array<{ fieldId: number; value: number[] }> => {
+  const selectedOptions = new Set(selectedOptionIndices);
+  let optionIndex = 0;
+
+  return sortByDocumentPosition(fields)
+    .filter((field) => field.type === 'CHECKBOX')
+    .map((field) => {
+      const fieldValues = getCheckboxFieldValues(field);
+      const value = fieldValues.flatMap((_fieldValue, fieldValueIndex) => {
+        const isSelected = selectedOptions.has(optionIndex);
+        optionIndex += 1;
+
+        return isSelected ? [fieldValueIndex] : [];
+      });
+
+      return { fieldId: field.id, value };
+    });
+};
 
 const getSelectedOptionCount = (fields: TFieldWithGroup[]) => {
   return fields.reduce((count, field) => {

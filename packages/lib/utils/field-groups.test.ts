@@ -5,7 +5,12 @@ import { ConditionalFieldRuleOperator } from '../types/conditional-field';
 import type { TFieldGroup } from '../types/field-group';
 import { getConditionalFieldVisibility } from '../universal/conditional-field-visibility';
 import { fieldsContainUnsignedRequiredField } from './advanced-fields-helpers';
-import { getFieldsRequiringValidation, type TFieldWithGroup } from './field-groups';
+import {
+  getCheckboxGroupFieldValues,
+  getCheckboxGroupOptions,
+  getFieldsRequiringValidation,
+  type TFieldWithGroup,
+} from './field-groups';
 
 const group = (type: FieldType, overrides: Partial<TFieldGroup> = {}): TFieldGroup => ({
   id: 'group-1',
@@ -105,7 +110,7 @@ describe('field groups', () => {
           values: [{ id: 2, checked: false, value: 'Option 2' }],
         },
       },
-    ];
+    ] as TFieldWithGroup[];
 
     expect(getFieldsRequiringValidation(fields)).toHaveLength(0);
   });
@@ -140,6 +145,43 @@ describe('field groups', () => {
     const fields = [checkboxField(1, true, '[0]', checkboxGroup), checkboxField(2, true, '[0]', checkboxGroup)];
 
     expect(getFieldsRequiringValidation(fields)).toHaveLength(0);
+  });
+
+  it('flattens grouped checkbox options across pages and restores selections per field', () => {
+    const checkboxGroup = group(FieldType.CHECKBOX, {
+      validationRule: 'Select exactly',
+      validationLength: 2,
+    });
+    const fields = [
+      { ...checkboxField(2, true, '[0]', checkboxGroup), page: 2, positionY: 10, positionX: 5 },
+      { ...checkboxField(1, false, '', checkboxGroup), page: 1, positionY: 20, positionX: 5 },
+      {
+        ...checkboxField(3, false, '', checkboxGroup),
+        page: 2,
+        positionY: 20,
+        positionX: 5,
+        fieldMeta: {
+          type: 'checkbox' as const,
+          values: [
+            { id: 3, checked: false, value: 'Option 3' },
+            { id: 4, checked: false, value: 'Option 4' },
+          ],
+        },
+      },
+    ] as TFieldWithGroup[];
+
+    expect(getCheckboxGroupOptions(fields)).toEqual([
+      { fieldId: 1, fieldValueIndex: 0, value: 'Option 1', selected: false },
+      { fieldId: 2, fieldValueIndex: 0, value: 'Option 2', selected: true },
+      { fieldId: 3, fieldValueIndex: 0, value: 'Option 3', selected: false },
+      { fieldId: 3, fieldValueIndex: 1, value: 'Option 4', selected: false },
+    ]);
+
+    expect(getCheckboxGroupFieldValues(fields, [0, 3])).toEqual([
+      { fieldId: 1, value: [0] },
+      { fieldId: 2, value: [] },
+      { fieldId: 3, value: [1] },
+    ]);
   });
 
   it('does not require every checkbox option when the group only requires one selection', () => {

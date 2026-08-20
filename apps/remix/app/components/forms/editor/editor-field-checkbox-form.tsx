@@ -134,6 +134,10 @@ export const EditorFieldCheckboxForm = ({
   }, [formValues]);
 
   const isValidationRuleMetForPreselectedValues = useMemo(() => {
+    if (isGrouped) {
+      return true;
+    }
+
     const preselectedValues = (formValues.values || [])?.filter((value) => value.checked);
 
     if (formValues.validationLength && formValues.validationRule && preselectedValues.length > 0) {
@@ -147,7 +151,7 @@ export const EditorFieldCheckboxForm = ({
     }
 
     return true;
-  }, [formValues]);
+  }, [formValues, isGrouped]);
 
   return (
     <Form {...form}>
@@ -238,7 +242,7 @@ export const EditorFieldCheckboxForm = ({
                             form.setValue('validationRule', checkboxValidationRules[0]);
                           }
 
-                          if (minimumNumberOfValuesRequired > 0) {
+                          if (!isGrouped && minimumNumberOfValuesRequired > 0) {
                             addValue(minimumNumberOfValuesRequired);
                           }
 
@@ -323,7 +327,7 @@ export const EditorFieldCheckboxForm = ({
                     )}
                   />
 
-                  {!isGrouped && (
+                  {(!isGrouped || (formValues.values || []).length > 1) && (
                     <button
                       type="button"
                       data-testid={`field-form-values-${index}-remove`}
