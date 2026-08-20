@@ -88,6 +88,38 @@ describe('getConditionalFieldVisibility', () => {
     expect(visibility.get(2)).toBe(true);
   });
 
+  it('maps grouped checkbox indexes to each field values', () => {
+    const firstField = {
+      ...field(1, FieldType.CHECKBOX, '[1]', undefined, {
+        type: 'checkbox',
+        direction: 'vertical',
+        values: [
+          { id: 1, value: 'A1', checked: false },
+          { id: 2, value: 'A2', checked: false },
+        ],
+      }),
+      fieldGroupId: 'group-1',
+      fieldGroup: { type: FieldType.CHECKBOX },
+      inserted: true,
+    };
+    const secondField = {
+      ...field(3, FieldType.CHECKBOX, '[0]', undefined, {
+        type: 'checkbox',
+        direction: 'vertical',
+        values: [{ id: 3, value: 'B1', checked: false }],
+      }),
+      fieldGroupId: 'group-1',
+      fieldGroup: { type: FieldType.CHECKBOX },
+      inserted: true,
+    };
+    const child = childWithRule(2, 1);
+    child.conditionalChildRule.value = 'B1';
+
+    const visibility = getConditionalFieldVisibility([firstField, secondField, child]);
+
+    expect(visibility.get(2)).toBe(true);
+  });
+
   it('matches numeric radio labels in legacy envelopes', () => {
     const child = childWithRule(2, 1);
     child.conditionalChildRule.value = '2';

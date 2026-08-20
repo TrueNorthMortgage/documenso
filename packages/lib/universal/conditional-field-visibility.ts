@@ -46,15 +46,16 @@ const getParentValues = (field: FieldWithConditionalRule, groupedFields: FieldWi
     const optionValues = groupFields.flatMap(getOptionValues);
 
     if (field.fieldGroupId) {
-      return groupFields.flatMap((groupField, index) => {
+      return groupFields.flatMap((groupField) => {
         if (!groupField.inserted) {
           return [];
         }
 
+        const fieldOptionValues = getOptionValues(groupField);
         const selectedValues = fromCheckboxValue(groupField.customText);
         return selectedValues.map((selectedValue) => {
           if (typeof selectedValue === 'number') {
-            return optionValues[index] ?? String(selectedValue);
+            return fieldOptionValues[selectedValue] ?? String(selectedValue);
           }
 
           return selectedValue;
