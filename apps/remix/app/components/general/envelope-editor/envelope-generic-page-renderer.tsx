@@ -4,6 +4,7 @@ import {
   useCurrentEnvelopeRender,
 } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
+import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import { renderField } from '@documenso/lib/universal/field-renderer/render-field';
 import { getClientSideFieldTranslations } from '@documenso/lib/utils/fields';
 import { EnvelopeRecipientFieldTooltip } from '@documenso/ui/components/document/envelope-recipient-field-tooltip';
@@ -33,6 +34,8 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
   const signaturesByFieldId = useMemo(() => {
     return new Map(signatures.map((signature) => [signature.fieldId, signature]));
   }, [signatures]);
+
+  const conditionalFieldVisibility = useMemo(() => getConditionalFieldVisibility(fields), [fields]);
 
   const { stage, pageLayer, konvaContainer, unscaledViewport } = usePageRenderer(({ stage, pageLayer }) => {
     createPageCanvas(stage, pageLayer);
@@ -66,8 +69,20 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
       .filter(
         ({ inserted, fieldMeta, recipient }) =>
           (recipient.signingStatus === SigningStatus.SIGNED ? inserted : true) || fieldMeta?.readOnly,
+      )
+      .filter(
+        (field) =>
+          overrideSettings?.mode === 'export' || (conditionalFieldVisibility.get(field.id) ?? true),
       );
-  }, [fields, pageNumber, currentEnvelopeItem?.id, recipients, envelopeStatus]);
+  }, [
+    fields,
+    pageNumber,
+    currentEnvelopeItem?.id,
+    recipients,
+    envelopeStatus,
+    conditionalFieldVisibility,
+    overrideSettings?.mode,
+  ]);
 
   const unsafeRenderFieldOnLayer = (field: GenericLocalField) => {
     if (!pageLayer.current) {
