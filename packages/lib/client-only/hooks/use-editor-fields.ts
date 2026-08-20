@@ -6,6 +6,7 @@ import { ZFieldGroupSchema } from '@documenso/lib/types/field-group';
 import { ZFieldMetaSchema } from '@documenso/lib/types/field-meta';
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import { nanoid } from '@documenso/lib/universal/id';
+import { clearOtherRadioGroupSelections } from '@documenso/lib/utils/field-groups';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Field } from '@prisma/client';
 import { FieldType } from '@prisma/client';
@@ -249,7 +250,12 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
       const validationLength = fieldMeta.type === 'checkbox' ? fieldMeta.validationLength || undefined : undefined;
 
       const currentFields = form.getValues('fields');
-      const updatedFields = currentFields.map((candidate) => {
+      const fieldsWithRadioSelectionCleared = clearOtherRadioGroupSelections(currentFields, {
+        formId: field.formId,
+        fieldGroupId: field.fieldGroupId,
+        fieldMeta,
+      });
+      const updatedFields = fieldsWithRadioSelectionCleared.map((candidate) => {
         if (candidate.fieldGroupId !== field.fieldGroupId || !candidate.fieldMeta) {
           return candidate;
         }
