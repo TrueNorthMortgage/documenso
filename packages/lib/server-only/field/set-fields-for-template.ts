@@ -3,6 +3,7 @@ import { validateDropdownField } from '@documenso/lib/advanced-fields-validation
 import { validateNumberField } from '@documenso/lib/advanced-fields-validation/validate-number';
 import { validateRadioField } from '@documenso/lib/advanced-fields-validation/validate-radio';
 import { validateTextField } from '@documenso/lib/advanced-fields-validation/validate-text';
+import type { TFieldGroup } from '@documenso/lib/types/field-group';
 import {
   FIELD_META_DEFAULT_VALUES,
   type TFieldMetaSchema as FieldMeta,
@@ -37,6 +38,7 @@ export type SetFieldsForTemplateOptions = {
     pageWidth: number;
     pageHeight: number;
     fieldMeta?: FieldMeta;
+    fieldGroup?: TFieldGroup | null;
   }[];
 };
 
@@ -60,6 +62,7 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
       fields: {
         include: {
           recipient: true,
+          fieldGroup: true,
         },
       },
     },
@@ -105,6 +108,59 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
     };
   });
 
+  const fieldGroups = new Map<string, TFieldGroup>();
+
+  for (const field of fields) {
+    if (!field.fieldGroup) {
+      continue;
+    }
+
+    if (
+      (field.fieldGroup.type !== FieldType.RADIO && field.fieldGroup.type !== FieldType.CHECKBOX) ||
+      field.fieldGroup.type !== field.type ||
+      field.fieldGroup.envelopeId !== envelope.id ||
+      field.fieldGroup.envelopeItemId !== field.envelopeItemId ||
+      field.fieldGroup.recipientId !== field.recipientId
+    ) {
+      throw new AppError(AppErrorCode.INVALID_REQUEST, {
+        message: 'Invalid field group configuration',
+      });
+    }
+
+    fieldGroups.set(field.fieldGroup.id, field.fieldGroup);
+  }
+
+  await Promise.all(
+    [...fieldGroups.values()].map((group) =>
+      prisma.fieldGroup.upsert({
+        where: { id: group.id },
+        update: {
+          name: group.name,
+          required: false,
+          readOnly: group.readOnly,
+          fontSize: group.fontSize,
+          direction: group.direction,
+          validationRule: null,
+          validationLength: null,
+        },
+        create: {
+          id: group.id,
+          name: group.name,
+          type: group.type,
+          required: false,
+          readOnly: group.readOnly,
+          fontSize: group.fontSize,
+          direction: group.direction,
+          validationRule: null,
+          validationLength: null,
+          envelopeId: envelope.id,
+          envelopeItemId: group.envelopeItemId,
+          recipientId: group.recipientId,
+        },
+      }),
+    ),
+  );
+
   const persistedFields = await Promise.all(
     // Disabling as wrapping promises here causes type issues
     // eslint-disable-next-line @typescript-eslint/promise-function-async
@@ -134,10 +190,12 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
           throw new Error('Checkbox field is missing required metadata');
         }
         const checkboxFieldParsedMeta = ZCheckboxFieldMeta.parse(field.fieldMeta);
-        const errors = validateCheckboxField(
-          checkboxFieldParsedMeta?.values?.map((item) => item.value) ?? [],
-          checkboxFieldParsedMeta,
-        );
+        const errors = field.fieldGroup
+          ? []
+          : validateCheckboxField(
+              checkboxFieldParsedMeta?.values?.map((item) => item.value) ?? [],
+              checkboxFieldParsedMeta,
+            );
         if (errors.length > 0) {
           throw new Error(errors.join(', '));
         }
@@ -180,6 +238,7 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
           width: field.pageWidth,
           height: field.pageHeight,
           fieldMeta: parsedFieldMeta,
+          fieldGroup: field.fieldGroup ? { connect: { id: field.fieldGroup.id } } : { disconnect: true },
         },
         create: {
           type: field.type,
@@ -191,6 +250,7 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
           customText: '',
           inserted: false,
           fieldMeta: parsedFieldMeta,
+          fieldGroup: field.fieldGroup ? { connect: { id: field.fieldGroup.id } } : undefined,
           envelope: {
             connect: {
               id: envelope.id,
@@ -213,6 +273,7 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
 
       return {
         ...upsertedField,
+        fieldGroup: field.fieldGroup ?? null,
         formId: field.formId,
       };
     }),

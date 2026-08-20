@@ -1,6 +1,6 @@
 import type { DocumentAndSender } from '@documenso/lib/server-only/document/get-document-by-token';
 import type { TRecipientAccessAuth } from '@documenso/lib/types/document-auth';
-import { isFieldUnsignedAndRequired } from '@documenso/lib/utils/advanced-fields-helpers';
+import { getFieldsRequiringValidation } from '@documenso/lib/utils/advanced-fields-helpers';
 import { sortFieldsByPosition } from '@documenso/lib/utils/fields';
 import { isSignatureFieldType } from '@documenso/prisma/guards/is-signature-field';
 import type { RecipientWithFields } from '@documenso/prisma/types/recipient-with-fields';
@@ -70,7 +70,7 @@ export const DocumentSigningForm = ({
     },
   });
 
-  const fieldsRequiringValidation = useMemo(() => fields.filter(isFieldUnsignedAndRequired), [fields]);
+  const fieldsRequiringValidation = useMemo(() => getFieldsRequiringValidation(fields), [fields]);
 
   const hasSignatureField = fields.some((field) => isSignatureFieldType(field.type));
 
@@ -79,7 +79,7 @@ export const DocumentSigningForm = ({
   }, [fieldsRequiringValidation]);
 
   const uninsertedRecipientFields = useMemo(() => {
-    return fieldsRequiringValidation.filter((field) => field.recipientId === recipient.id);
+    return fieldsRequiringValidation.filter((field) => field.recipientId === recipient.id && !field.inserted);
   }, [fieldsRequiringValidation, recipient]);
 
   const localFieldsValidated = () => {

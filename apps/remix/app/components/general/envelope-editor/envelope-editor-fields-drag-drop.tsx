@@ -185,6 +185,8 @@ export const EnvelopeEditorFieldDragDrop = ({
         width: fieldPageWidth,
         height: fieldPageHeight,
         recipientId: selectedRecipientId,
+        fieldGroupId: null,
+        fieldGroup: null,
         fieldMeta: structuredClone(FIELD_META_DEFAULT_VALUES[selectedField]),
       };
 

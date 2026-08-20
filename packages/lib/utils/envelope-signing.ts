@@ -182,7 +182,7 @@ export const extractFieldInsertionValues = ({
 
       const { validationRule, validationLength } = parsedCheckboxFieldParsedMeta;
 
-      if (validationRule && validationLength) {
+      if (validationRule && validationLength && !field.fieldGroupId) {
         const checkboxValidationRule = checkboxValidationSigns.find((sign) => sign.label === validationRule);
 
         if (checkboxValidationRule) {

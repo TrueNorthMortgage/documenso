@@ -57,6 +57,7 @@ export const run = async ({ payload, io }: { payload: TSealDocumentJobDefinition
           include: {
             signature: true,
             conditionalChildRule: true,
+            fieldGroup: true,
           },
         },
         envelopeItems: {
@@ -66,6 +67,7 @@ export const run = async ({ payload, io }: { payload: TSealDocumentJobDefinition
               include: {
                 signature: true,
                 conditionalChildRule: true,
+                fieldGroup: true,
               },
             },
           },
@@ -199,7 +201,7 @@ export const run = async ({ payload, io }: { payload: TSealDocumentJobDefinition
     const newDocumentData: Array<{ oldDocumentDataId: string; newDocumentDataId: string }> = [];
 
     for (const { envelopeItem, pdfData } of prefetchedItems) {
-      const envelopeItemFields = envelope.envelopeItems.find((item) => item.id === envelopeItem.id)?.field;
+      const envelopeItemFields = envelopeItems.find((item) => item.id === envelopeItem.id)?.field;
 
       if (!envelopeItemFields) {
         throw new Error(`Envelope item fields not found for envelope item ${envelopeItem.id}`);

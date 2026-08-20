@@ -2,7 +2,7 @@ import { useThrottleFn } from '@documenso/lib/client-only/hooks/use-throttle-fn'
 import { APP_I18N_OPTIONS } from '@documenso/lib/constants/i18n';
 import { PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
 import { ZSignDocumentEmbedDataSchema } from '@documenso/lib/types/embed-document-sign-schema';
-import { isFieldUnsignedAndRequired } from '@documenso/lib/utils/advanced-fields-helpers';
+import { getFieldsRequiringValidation } from '@documenso/lib/utils/advanced-fields-helpers';
 import { getDocumentDataUrlForPdfViewer } from '@documenso/lib/utils/envelope-download';
 import { sortFieldsByPosition, validateFieldsInserted } from '@documenso/lib/utils/fields';
 import { dynamicActivate } from '@documenso/lib/utils/i18n';
@@ -98,16 +98,14 @@ export const EmbedSignDocumentV1ClientPage = ({
   const [throttledOnCompleteClick, isThrottled] = useThrottleFn(() => void onCompleteClick(), 500);
 
   const [pendingFields, _completedFields] = [
-    sortFieldsByPosition(
-      fields.filter((field) => field.recipientId === recipient.id && isFieldUnsignedAndRequired(field)),
-    ),
+    sortFieldsByPosition(getFieldsRequiringValidation(fields.filter((field) => field.recipientId === recipient.id))),
     fields.filter((field) => field.inserted),
   ];
 
   const { mutateAsync: completeDocumentWithToken, isPending: isSubmitting } =
     trpc.recipient.completeDocumentWithToken.useMutation();
 
-  const fieldsRequiringValidation = useMemo(() => fields.filter(isFieldUnsignedAndRequired), [fields]);
+  const fieldsRequiringValidation = useMemo(() => getFieldsRequiringValidation(fields), [fields]);
 
   const hasSignatureField = fields.some((field) => isSignatureFieldType(field.type));
 

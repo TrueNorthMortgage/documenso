@@ -48,6 +48,7 @@ type TRadioFieldFormSchema = z.infer<typeof ZRadioFieldFormSchema>;
 export type EditorFieldRadioFormProps = {
   value: RadioFieldMeta | undefined;
   onValueChange: (value: RadioFieldMeta) => void;
+  isGrouped?: boolean;
 };
 
 export const EditorFieldRadioForm = ({
@@ -56,6 +57,7 @@ export const EditorFieldRadioForm = ({
     direction: 'vertical',
   },
   onValueChange,
+  isGrouped = false,
 }: EditorFieldRadioFormProps) => {
   const { t } = useLingui();
 
@@ -159,13 +161,15 @@ export const EditorFieldRadioForm = ({
                 <Trans>Radio values</Trans>
               </p>
 
-              <button type="button" data-testid="field-form-values-add" onClick={addValue}>
-                <PlusIcon className="h-4 w-4" />
-              </button>
+              {!isGrouped && (
+                <button type="button" data-testid="field-form-values-add" onClick={addValue}>
+                  <PlusIcon className="h-4 w-4" />
+                </button>
+              )}
             </div>
 
             <ul className="space-y-2">
-              {(formValues.values || []).map((value, index) => (
+              {(formValues.values || []).map((_value, index) => (
                 <li key={`radio-value-${index}`} className="flex flex-row items-center gap-2">
                   <FormField
                     control={form.control}
@@ -210,14 +214,16 @@ export const EditorFieldRadioForm = ({
                     )}
                   />
 
-                  <button
-                    type="button"
-                    data-testid={`field-form-values-${index}-remove`}
-                    className="flex h-10 w-10 items-center justify-center text-slate-500 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-                    onClick={() => removeValue(index)}
-                  >
-                    <Trash className="h-5 w-5" />
-                  </button>
+                  {!isGrouped && (
+                    <button
+                      type="button"
+                      data-testid={`field-form-values-${index}-remove`}
+                      className="flex h-10 w-10 items-center justify-center text-slate-500 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => removeValue(index)}
+                    >
+                      <Trash className="h-5 w-5" />
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

@@ -1,7 +1,8 @@
 import { validateCheckboxLength } from '@documenso/lib/advanced-fields-validation/validate-checkbox';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import type { TFieldCheckbox } from '@documenso/lib/types/field';
-import { parseCheckboxCustomText } from '@documenso/lib/utils/fields';
+import type { TCheckboxFieldMeta } from '@documenso/lib/types/field-meta';
+import { getCheckboxGroupFieldValues, getCheckboxGroupOptions } from '@documenso/lib/utils/field-groups';
 import type { TSignEnvelopeFieldValue } from '@documenso/trpc/server/envelope-router/sign-envelope-field.types';
 import { checkboxValidationSigns } from '@documenso/ui/primitives/document-flow/field-items-advanced-settings/constants';
 import { FieldType } from '@prisma/client';
@@ -11,12 +12,18 @@ import { SignFieldCheckboxDialog } from '~/components/dialogs/sign-field-checkbo
 type HandleCheckboxFieldClickOptions = {
   field: TFieldCheckbox;
   clickedCheckboxIndex: number;
+  groupFields?: TFieldCheckbox[];
+};
+
+export type TCheckboxFieldSigningPayload = {
+  fieldId: number;
+  fieldValue: Extract<TSignEnvelopeFieldValue, { type: typeof FieldType.CHECKBOX }>;
 };
 
 export const handleCheckboxFieldClick = async (
   options: HandleCheckboxFieldClickOptions,
-): Promise<Extract<TSignEnvelopeFieldValue, { type: typeof FieldType.CHECKBOX }> | null> => {
-  const { field, clickedCheckboxIndex } = options;
+): Promise<TCheckboxFieldSigningPayload[] | null> => {
+  const { field, clickedCheckboxIndex, groupFields = [] } = options;
 
   if (field.type !== FieldType.CHECKBOX) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
@@ -24,32 +31,50 @@ export const handleCheckboxFieldClick = async (
     });
   }
 
-  const { values = [], validationRule, validationLength } = field.fieldMeta;
-  const { customText } = field;
+  const isGrouped = field.fieldGroupId !== null && groupFields.length > 1;
+  const fields = isGrouped ? groupFields : [field];
+  const groupOptions = getCheckboxGroupOptions(fields);
+  const clickedOptionIndex = isGrouped
+    ? groupOptions.findIndex((option) => option.fieldId === field.id && option.fieldValueIndex === clickedCheckboxIndex)
+    : clickedCheckboxIndex;
 
-  const currentCheckedIndices: number[] = customText ? parseCheckboxCustomText(customText) : [];
+  if (clickedOptionIndex < 0) {
+    return null;
+  }
 
-  const newValues = values.map((_value, i) => {
-    let isChecked = currentCheckedIndices.includes(i);
+  const checkedValues = groupOptions.flatMap((option, index) => (option.selected ? [index] : []));
+  const selectedValues = checkedValues.includes(clickedOptionIndex)
+    ? checkedValues.filter((index) => index !== clickedOptionIndex)
+    : [...checkedValues, clickedOptionIndex];
 
-    if (i === clickedCheckboxIndex) {
-      isChecked = !isChecked;
+  const createPayloads = (selectedOptionIndices: number[]): TCheckboxFieldSigningPayload[] => {
+    if (!isGrouped) {
+      return [
+        {
+          fieldId: field.id,
+          fieldValue: {
+            type: FieldType.CHECKBOX,
+            value: selectedOptionIndices,
+          },
+        },
+      ];
     }
 
-    return {
-      index: i,
-      isChecked,
-    };
-  });
+    return getCheckboxGroupFieldValues(fields, selectedOptionIndices).map(({ fieldId, value }) => ({
+      fieldId,
+      fieldValue: {
+        type: FieldType.CHECKBOX,
+        value,
+      },
+    }));
+  };
 
-  let checkedValues: number[] | null = newValues.filter((v) => v.isChecked).map((v) => v.index);
-
-  if (checkedValues.length === 0) {
-    return {
-      type: FieldType.CHECKBOX,
-      value: [],
-    };
+  if (selectedValues.length === 0) {
+    return createPayloads([]);
   }
+
+  const validationRule = field.fieldGroup?.validationRule ?? field.fieldMeta.validationRule;
+  const validationLength = field.fieldGroup?.validationLength ?? field.fieldMeta.validationLength;
 
   if (validationRule && validationLength) {
     const checkboxValidationRule = checkboxValidationSigns.find((sign) => sign.label === validationRule);
@@ -63,31 +88,37 @@ export const handleCheckboxFieldClick = async (
     // Custom logic to make it flow better.
     // If "at most" OR "exactly" 1 value then just return the new selected value if exists.
     if ((checkboxValidationRule.value === '=' || checkboxValidationRule.value === '<=') && validationLength === 1) {
-      return {
-        type: FieldType.CHECKBOX,
-        value: [clickedCheckboxIndex],
-      };
+      return createPayloads([clickedOptionIndex]);
     }
 
-    const isValid = validateCheckboxLength(checkedValues.length, checkboxValidationRule.value, validationLength);
+    const isValid = validateCheckboxLength(selectedValues.length, checkboxValidationRule.value, validationLength);
 
     // Only render validation dialog if validation is invalid.
     if (!isValid) {
-      checkedValues = await SignFieldCheckboxDialog.call({
-        fieldMeta: field.fieldMeta,
+      const dialogFieldMeta: TCheckboxFieldMeta = {
+        ...field.fieldMeta,
+        label: field.fieldGroup?.name ?? field.fieldMeta.label,
+        values: groupOptions.map((option, index) => ({
+          id: index,
+          checked: selectedValues.includes(index),
+          value: option.value,
+        })),
+      };
+
+      const dialogSelection = await SignFieldCheckboxDialog.call({
+        fieldMeta: dialogFieldMeta,
         validationRule: checkboxValidationRule.value,
         validationLength,
-        preselectedIndices: checkedValues,
+        preselectedIndices: selectedValues,
       });
+
+      if (!dialogSelection) {
+        return null;
+      }
+
+      return createPayloads(dialogSelection);
     }
   }
 
-  if (!checkedValues) {
-    return null;
-  }
-
-  return {
-    type: FieldType.CHECKBOX,
-    value: checkedValues,
-  };
+  return createPayloads(selectedValues);
 };

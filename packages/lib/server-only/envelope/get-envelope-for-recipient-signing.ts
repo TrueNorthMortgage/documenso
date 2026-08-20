@@ -193,6 +193,7 @@ export const getEnvelopeForRecipientSigning = async ({
             include: {
               signature: true,
               conditionalChildRule: true,
+              fieldGroup: true,
             },
           },
         },

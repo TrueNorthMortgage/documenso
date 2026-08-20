@@ -8,6 +8,7 @@ import { DIRECT_TEMPLATE_RECIPIENT_EMAIL } from '@documenso/lib/constants/direct
 import { isBase64Image } from '@documenso/lib/constants/signatures';
 import type { TRecipientActionAuth } from '@documenso/lib/types/document-auth';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
+import type { TFieldCheckbox } from '@documenso/lib/types/field';
 import { ZFullFieldSchema } from '@documenso/lib/types/field';
 import { createSpinner } from '@documenso/lib/universal/field-renderer/field-generic-items';
 import { renderField } from '@documenso/lib/universal/field-renderer/render-field';
@@ -207,11 +208,25 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
             return;
           }
 
-          handleCheckboxFieldClick({ field, clickedCheckboxIndex })
-            .then(async (payload) => {
-              if (payload) {
+          const activeRecipientFields =
+            recipient.role === RecipientRole.ASSISTANT ? selectedAssistantRecipientFields : recipientFields;
+          const groupFields = field.fieldGroupId
+            ? activeRecipientFields
+                .filter(
+                  (candidate) => candidate.fieldGroupId === field.fieldGroupId && candidate.type === FieldType.CHECKBOX,
+                )
+                .map((candidate) => ZFullFieldSchema.parse(candidate))
+                .filter((candidate): candidate is TFieldCheckbox => candidate.type === FieldType.CHECKBOX)
+            : undefined;
+
+          void handleCheckboxFieldClick({ field, clickedCheckboxIndex, groupFields })
+            .then(async (payloads) => {
+              if (payloads) {
                 fieldGroup.add(loadingSpinnerGroup);
-                await signField(field.id, payload);
+
+                for (const payload of payloads) {
+                  await signField(payload.fieldId, payload.fieldValue);
+                }
               }
             })
             .finally(() => {

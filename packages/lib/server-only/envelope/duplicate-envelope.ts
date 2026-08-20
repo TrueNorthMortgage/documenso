@@ -65,6 +65,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
           fields: {
             include: {
               conditionalChildRule: true,
+              fieldGroup: true,
             },
           },
         },
@@ -163,6 +164,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
   );
 
   const duplicatedFieldIdsBySourceId = new Map<number, number>();
+  const duplicatedFieldGroupIdsBySourceId = new Map<string, string>();
 
   if (includeRecipients) {
     await pMap(
@@ -180,9 +182,49 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
         });
 
         if (includeFields) {
+          const sourceGroups = recipient.fields.reduce<NonNullable<(typeof recipient.fields)[number]['fieldGroup']>[]>(
+            (groups, field) => {
+              if (field.fieldGroup && !groups.some((group) => group.id === field.fieldGroup?.id)) {
+                groups.push(field.fieldGroup);
+              }
+
+              return groups;
+            },
+            [],
+          );
+
+          await Promise.all(
+            sourceGroups
+              .filter((group) => !duplicatedFieldGroupIdsBySourceId.has(group.id))
+              .map(async (group) => {
+                const duplicatedFieldGroup = await prisma.fieldGroup.create({
+                  data: {
+                    id: nanoid(12),
+                    name: group.name,
+                    type: group.type,
+                    required: group.required,
+                    readOnly: group.readOnly,
+                    fontSize: group.fontSize,
+                    direction: group.direction,
+                    validationRule: group.validationRule,
+                    validationLength: group.validationLength,
+                    envelopeId: duplicatedEnvelope.id,
+                    envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[group.envelopeItemId],
+                    recipientId: duplicatedRecipient.id,
+                  },
+                });
+
+                duplicatedFieldGroupIdsBySourceId.set(group.id, duplicatedFieldGroup.id);
+              }),
+          );
+
           const duplicatedFields = await Promise.all(
-            recipient.fields.map((field) =>
-              prisma.field.create({
+            recipient.fields.map((field) => {
+              const duplicatedFieldGroupId = field.fieldGroup
+                ? duplicatedFieldGroupIdsBySourceId.get(field.fieldGroup.id)
+                : undefined;
+
+              return prisma.field.create({
                 data: {
                   envelopeId: duplicatedEnvelope.id,
                   envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[field.envelopeItemId],
@@ -196,9 +238,10 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
                   customText: '',
                   inserted: false,
                   fieldMeta: field.fieldMeta as PrismaJson.FieldMeta,
+                  fieldGroupId: duplicatedFieldGroupId ?? null,
                 },
-              }),
-            ),
+              });
+            }),
           );
 
           recipient.fields.forEach((field, index) => {

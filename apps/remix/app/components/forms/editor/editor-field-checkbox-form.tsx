@@ -64,6 +64,7 @@ type TCheckboxFieldFormSchema = z.infer<typeof ZCheckboxFieldFormSchema>;
 type EditorFieldCheckboxFormProps = {
   value: CheckboxFieldMeta | undefined;
   onValueChange: (value: CheckboxFieldMeta) => void;
+  isGrouped?: boolean;
 };
 
 export const EditorFieldCheckboxForm = ({
@@ -72,6 +73,7 @@ export const EditorFieldCheckboxForm = ({
     direction: 'vertical',
   },
   onValueChange,
+  isGrouped = false,
 }: EditorFieldCheckboxFormProps) => {
   const form = useForm<TCheckboxFieldFormSchema>({
     resolver: zodResolver(ZCheckboxFieldFormSchema),
@@ -132,6 +134,10 @@ export const EditorFieldCheckboxForm = ({
   }, [formValues]);
 
   const isValidationRuleMetForPreselectedValues = useMemo(() => {
+    if (isGrouped) {
+      return true;
+    }
+
     const preselectedValues = (formValues.values || [])?.filter((value) => value.checked);
 
     if (formValues.validationLength && formValues.validationRule && preselectedValues.length > 0) {
@@ -145,7 +151,7 @@ export const EditorFieldCheckboxForm = ({
     }
 
     return true;
-  }, [formValues]);
+  }, [formValues, isGrouped]);
 
   return (
     <Form {...form}>
@@ -236,7 +242,7 @@ export const EditorFieldCheckboxForm = ({
                             form.setValue('validationRule', checkboxValidationRules[0]);
                           }
 
-                          if (minimumNumberOfValuesRequired > 0) {
+                          if (!isGrouped && minimumNumberOfValuesRequired > 0) {
                             addValue(minimumNumberOfValuesRequired);
                           }
 
@@ -282,13 +288,15 @@ export const EditorFieldCheckboxForm = ({
                 <Trans>Checkbox values</Trans>
               </p>
 
-              <button type="button" data-testid="field-form-values-add" onClick={() => addValue()}>
-                <PlusIcon className="h-4 w-4" />
-              </button>
+              {!isGrouped && (
+                <button type="button" data-testid="field-form-values-add" onClick={() => addValue()}>
+                  <PlusIcon className="h-4 w-4" />
+                </button>
+              )}
             </div>
 
             <ul className="space-y-2">
-              {(formValues.values || []).map((value, index) => (
+              {(formValues.values || []).map((_value, index) => (
                 <li key={`checkbox-value-${index}`} className="flex flex-row items-center gap-2">
                   <FormField
                     control={form.control}
@@ -319,14 +327,16 @@ export const EditorFieldCheckboxForm = ({
                     )}
                   />
 
-                  <button
-                    type="button"
-                    data-testid={`field-form-values-${index}-remove`}
-                    className="flex h-10 w-10 items-center justify-center text-slate-500 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-                    onClick={() => removeValue(index)}
-                  >
-                    <Trash className="h-5 w-5" />
-                  </button>
+                  {(!isGrouped || (formValues.values || []).length > 1) && (
+                    <button
+                      type="button"
+                      data-testid={`field-form-values-${index}-remove`}
+                      className="flex h-10 w-10 items-center justify-center text-slate-500 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => removeValue(index)}
+                    >
+                      <Trash className="h-5 w-5" />
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

@@ -2,7 +2,7 @@ import { DEFAULT_RECT_BACKGROUND, getRecipientColorStyles } from '@documenso/ui/
 import Konva from 'konva';
 
 import type { FieldToRender, RenderFieldElementOptions } from './field-renderer';
-import { calculateFieldPosition } from './field-renderer';
+import { calculateFieldPosition, getNumericAttr } from './field-renderer';
 
 export const konvaTextFontFamily =
   '"Noto Sans", "Noto Sans Japanese", "Noto Sans Chinese", "Noto Sans Korean", sans-serif';
@@ -20,18 +20,35 @@ export const upsertFieldGroup = (field: FieldToRender, options: RenderFieldEleme
       name: 'field-group',
     });
 
-  const maxXPosition = (pageWidth - fieldWidth) * scale;
-  const maxYPosition = (pageHeight - fieldHeight) * scale;
-
   fieldGroup.setAttrs({
     scaleX: 1,
     scaleY: 1,
     x: fieldX,
     y: fieldY,
+    dragPageHeight: pageHeight,
+    dragPageWidth: pageWidth,
+    dragScale: scale,
+    dragFieldHeight: fieldHeight,
+    dragFieldWidth: fieldWidth,
     draggable: editable,
     dragBoundFunc: (pos) => {
-      const newX = Math.max(0, Math.min(maxXPosition, pos.x));
-      const newY = Math.max(0, Math.min(maxYPosition, pos.y));
+      // Allow the editor to move a field across page boundaries while it is
+      // being dragged. The editor validates the final drop target and snaps
+      // invalid drops back to the original page.
+      if (fieldGroup.isDragging()) {
+        return pos;
+      }
+
+      const currentPageWidth = getNumericAttr(fieldGroup, 'dragPageWidth') ?? pageWidth;
+      const currentPageHeight = getNumericAttr(fieldGroup, 'dragPageHeight') ?? pageHeight;
+      const currentScale = getNumericAttr(fieldGroup, 'dragScale') ?? scale;
+      const currentFieldWidth = getNumericAttr(fieldGroup, 'dragFieldWidth') ?? fieldWidth;
+      const currentFieldHeight = getNumericAttr(fieldGroup, 'dragFieldHeight') ?? fieldHeight;
+      const currentMaxXPosition = (currentPageWidth - currentFieldWidth) * currentScale;
+      const currentMaxYPosition = (currentPageHeight - currentFieldHeight) * currentScale;
+
+      const newX = Math.max(0, Math.min(currentMaxXPosition, pos.x));
+      const newY = Math.max(0, Math.min(currentMaxYPosition, pos.y));
 
       return { x: newX, y: newY };
     },

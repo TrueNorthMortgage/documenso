@@ -1,7 +1,10 @@
 import { getPdfPagesCount } from '@documenso/lib/constants/pdf-viewer';
 import { type TConditionalFieldRule, ZConditionalFieldRuleSchema } from '@documenso/lib/types/conditional-field';
 import type { TEditorEnvelope } from '@documenso/lib/types/envelope-editor';
+import type { TFieldGroup } from '@documenso/lib/types/field-group';
+import { ZFieldGroupSchema } from '@documenso/lib/types/field-group';
 import { ZFieldMetaSchema } from '@documenso/lib/types/field-meta';
+import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import { nanoid } from '@documenso/lib/universal/id';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Field } from '@prisma/client';
@@ -24,7 +27,11 @@ export const ZLocalFieldSchema = z.object({
   positionY: z.number().min(0),
   width: z.number().min(0),
   height: z.number().min(0),
+  inserted: z.boolean().optional(),
+  customText: z.string().optional(),
   templateSourceItemId: z.string().nullable().optional(),
+  fieldGroupId: z.string().nullable().default(null),
+  fieldGroup: ZFieldGroupSchema.nullable().default(null),
   conditionalChildRule: ZConditionalFieldRuleSchema.nullable().optional(),
   conditionalParentRules: ZConditionalFieldRuleSchema.array().optional(),
   fieldMeta: ZFieldMetaSchema,
@@ -45,6 +52,7 @@ type EditorFieldsProps = {
 
 type TEditorField = Omit<Field, 'templateSourceItemId'> & {
   templateSourceItemId?: string | null;
+  fieldGroup?: TFieldGroup | null;
   conditionalChildRule?: TConditionalFieldRule | null;
   conditionalParentRules?: TConditionalFieldRule[];
 };
@@ -61,8 +69,12 @@ type UseEditorFieldsResponse = {
   setFieldId: (formId: string, id: number) => void;
   removeFieldsByFormId: (formIds: string[]) => void;
   updateFieldByFormId: (formId: string, updates: Partial<TLocalField>) => void;
+  updateFieldGroupMeta: (field: TLocalField, fieldMeta: TLocalField['fieldMeta']) => void;
   duplicateField: (field: TLocalField, recipientId?: number) => TLocalField;
   duplicateFieldToAllPages: (field: TLocalField, recipientId?: number) => TLocalField[];
+  createFieldGroup: (field: TLocalField, name: string) => TLocalField[];
+  assignFieldToGroup: (field: TLocalField, group: TFieldGroup) => void;
+  ungroupField: (field: TLocalField) => void;
 
   // Field utilities
   getFieldByFormId: (formId: string) => TLocalField | undefined;
@@ -92,6 +104,8 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         width: Number(field.width),
         height: Number(field.height),
         templateSourceItemId: field.templateSourceItemId ?? null,
+        fieldGroupId: field.fieldGroupId ?? field.fieldGroup?.id ?? null,
+        fieldGroup: field.fieldGroup ?? null,
         conditionalChildRule: field.conditionalChildRule,
         conditionalParentRules: field.conditionalParentRules,
         recipientId: field.recipientId,
@@ -112,6 +126,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
   const {
     append,
     remove,
+    replace,
     update,
     fields: localFields,
   } = useFieldArray({
@@ -208,6 +223,67 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
     [localFields, update, triggerFieldsUpdate],
   );
 
+  const updateFieldGroupMeta = useCallback(
+    (field: TLocalField, fieldMeta: TLocalField['fieldMeta']) => {
+      if (!fieldMeta) {
+        return;
+      }
+
+      if (!field.fieldGroupId || !field.fieldGroup) {
+        updateFieldByFormId(field.formId, { fieldMeta });
+        return;
+      }
+
+      const group = {
+        ...field.fieldGroup,
+        required: false,
+        readOnly: 'readOnly' in fieldMeta ? (fieldMeta.readOnly ?? false) : field.fieldGroup.readOnly,
+        fontSize: 'fontSize' in fieldMeta ? (fieldMeta.fontSize ?? null) : field.fieldGroup.fontSize,
+        direction: 'direction' in fieldMeta ? (fieldMeta.direction ?? null) : field.fieldGroup.direction,
+        validationRule: null,
+        validationLength: null,
+      };
+
+      const required = fieldMeta.required ?? false;
+      const validationRule = fieldMeta.type === 'checkbox' ? fieldMeta.validationRule || undefined : undefined;
+      const validationLength = fieldMeta.type === 'checkbox' ? fieldMeta.validationLength || undefined : undefined;
+
+      const currentFields = form.getValues('fields');
+      const updatedFields = currentFields.map((candidate) => {
+        if (candidate.fieldGroupId !== field.fieldGroupId || !candidate.fieldMeta) {
+          return candidate;
+        }
+
+        const normalizedFieldMeta =
+          candidate.formId === field.formId
+            ? fieldMeta
+            : {
+                ...candidate.fieldMeta,
+              };
+
+        return {
+          ...candidate,
+          fieldGroup: group,
+          fieldMeta: {
+            ...normalizedFieldMeta,
+            required,
+            readOnly: false,
+            ...(normalizedFieldMeta.type === 'checkbox'
+              ? {
+                  validationRule,
+                  validationLength,
+                }
+              : {}),
+          },
+        };
+      });
+
+      replace(updatedFields as never);
+      triggerFieldsUpdate();
+    },
+    [form, replace, triggerFieldsUpdate, updateFieldByFormId],
+  );
+
   const duplicateField = useCallback(
     (field: TLocalField): TLocalField => {
       const newField: TLocalField = {
@@ -255,6 +331,183 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
       return newFields;
     },
     [append, triggerFieldsUpdate],
+  );
+
+  const createFieldGroup = useCallback(
+    (field: TLocalField, name: string, existingGroup?: TFieldGroup): TLocalField[] => {
+      if (field.type !== FieldType.RADIO && field.type !== FieldType.CHECKBOX) {
+        return [];
+      }
+
+      const metaType = field.type === FieldType.RADIO ? 'radio' : 'checkbox';
+      const fieldMeta = field.fieldMeta?.type === metaType ? field.fieldMeta : undefined;
+
+      const group: TFieldGroup = {
+        ...(existingGroup ?? {
+          id: nanoid(12),
+          name,
+          type: field.type,
+          readOnly: fieldMeta?.readOnly ?? false,
+          fontSize: fieldMeta?.fontSize ?? null,
+          direction: fieldMeta?.direction ?? 'vertical',
+          envelopeId: envelope.id,
+          envelopeItemId: field.envelopeItemId,
+          recipientId: field.recipientId,
+        }),
+        required: false,
+        validationRule: null,
+        validationLength: null,
+      };
+
+      const values = field.fieldMeta && 'values' in field.fieldMeta ? field.fieldMeta.values || [] : [];
+      const groupValues: Array<{ id: number; checked: boolean; value: string }> =
+        values.length > 0
+          ? values.map((option, index) => {
+              const normalizedOption = option as { id?: number; checked?: boolean; value: string };
+
+              return {
+                id: normalizedOption.id ?? index + 1,
+                checked: normalizedOption.checked ?? false,
+                value: normalizedOption.value,
+              };
+            })
+          : [{ id: 1, checked: false, value: '' }];
+      const currentIndex = localFields.findIndex((candidate) => candidate.formId === field.formId);
+
+      if (currentIndex === -1) {
+        return [];
+      }
+
+      const isHorizontal = fieldMeta?.direction === 'horizontal';
+      const optionWidth = isHorizontal ? field.width / groupValues.length : field.width;
+      const optionHeight = isHorizontal ? field.height : field.height / groupValues.length;
+      const selectedCheckboxes =
+        field.type === FieldType.CHECKBOX && field.customText
+          ? fromCheckboxValue(field.customText).flatMap((value) => {
+              const index = Number(value);
+              return Number.isInteger(index) ? [index] : [];
+            })
+          : [];
+      const selectedRadio = field.type === FieldType.RADIO ? Number(field.customText) : -1;
+
+      const createdFields = groupValues.map(
+        (option, index): TLocalField => ({
+          ...structuredClone(field),
+          id: index === 0 ? field.id : undefined,
+          formId: index === 0 ? field.formId : nanoid(12),
+          fieldGroupId: group.id,
+          fieldGroup: group,
+          positionX: isHorizontal ? field.positionX + optionWidth * index : field.positionX,
+          positionY: isHorizontal ? field.positionY : field.positionY + optionHeight * index,
+          width: optionWidth,
+          height: optionHeight,
+          customText:
+            field.type === FieldType.RADIO
+              ? selectedRadio === index
+                ? '0'
+                : ''
+              : selectedCheckboxes.includes(index)
+                ? JSON.stringify([0])
+                : '',
+          fieldMeta: fieldMeta
+            ? {
+                ...fieldMeta,
+                required: fieldMeta.required ?? false,
+                readOnly: false,
+                values: [option],
+              }
+            : field.fieldMeta,
+        }),
+      );
+
+      const newFields = [...localFields] as unknown as TLocalField[];
+      newFields.splice(currentIndex, 1, ...createdFields);
+      replace(newFields as never);
+      triggerFieldsUpdate();
+      setSelectedField(createdFields[0]?.formId ?? null, true);
+
+      return createdFields;
+    },
+    [envelope.id, localFields, replace, triggerFieldsUpdate],
+  );
+
+  const assignFieldToGroup = useCallback(
+    (field: TLocalField, group: TFieldGroup) => {
+      if (
+        field.type !== group.type ||
+        field.envelopeItemId !== group.envelopeItemId ||
+        field.recipientId !== group.recipientId
+      ) {
+        return;
+      }
+
+      const values = field.fieldMeta && 'values' in field.fieldMeta ? field.fieldMeta.values || [] : [];
+
+      if (values.length > 1) {
+        createFieldGroup(field, group.name, group);
+        return;
+      }
+
+      const existingGroupField = localFields.find((candidate) => candidate.fieldGroupId === group.id);
+      const existingGroupMeta = existingGroupField?.fieldMeta;
+
+      updateFieldByFormId(field.formId, {
+        fieldGroupId: group.id,
+        fieldGroup: {
+          ...group,
+          required: false,
+          validationRule: null,
+          validationLength: null,
+        },
+        fieldMeta: field.fieldMeta
+          ? {
+              ...field.fieldMeta,
+              required: existingGroupMeta?.required ?? field.fieldMeta.required ?? false,
+              readOnly: false,
+              ...(field.fieldMeta.type === 'checkbox'
+                ? {
+                    validationRule:
+                      existingGroupMeta?.type === 'checkbox'
+                        ? existingGroupMeta.validationRule || undefined
+                        : field.fieldMeta.validationRule || undefined,
+                    validationLength:
+                      existingGroupMeta?.type === 'checkbox'
+                        ? existingGroupMeta.validationLength || undefined
+                        : field.fieldMeta.validationLength || undefined,
+                  }
+                : {}),
+            }
+          : field.fieldMeta,
+      });
+    },
+    [createFieldGroup, localFields, updateFieldByFormId],
+  );
+
+  const ungroupField = useCallback(
+    (field: TLocalField) => {
+      if (!field.fieldGroupId) {
+        return;
+      }
+
+      const groupedFields = localFields.filter((candidate) => candidate.fieldGroupId === field.fieldGroupId);
+      const group = field.fieldGroup;
+
+      for (const groupedField of groupedFields) {
+        updateFieldByFormId(groupedField.formId, {
+          fieldGroupId: null,
+          fieldGroup: null,
+          fieldMeta: groupedField.fieldMeta
+            ? ({
+                ...groupedField.fieldMeta,
+                readOnly: group?.readOnly ?? false,
+                fontSize: group?.fontSize ?? undefined,
+                direction: group?.direction === 'horizontal' ? 'horizontal' : 'vertical',
+              } as TLocalField['fieldMeta'])
+            : groupedField.fieldMeta,
+        });
+      }
+    },
+    [localFields, updateFieldByFormId],
   );
 
   const getFieldByFormId = useCallback(
@@ -306,8 +559,12 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
     setFieldId,
     removeFieldsByFormId,
     updateFieldByFormId,
+    updateFieldGroupMeta,
     duplicateField,
     duplicateFieldToAllPages,
+    createFieldGroup,
+    assignFieldToGroup,
+    ungroupField,
 
     // Field utilities
     getFieldByFormId,

@@ -3,6 +3,7 @@ import { type ConditionalFieldRule, type Field, FieldType, Prisma } from '@prism
 import { z } from 'zod';
 
 import { ZConditionalFieldRuleSchema } from './conditional-field';
+import { ZFieldGroupSchema } from './field-group';
 import {
   FIELD_SIGNATURE_META_DEFAULT_VALUES,
   ZCheckboxFieldMeta,
@@ -44,8 +45,10 @@ export const ZFieldSchema = FieldSchema.pick({
   customText: true,
   inserted: true,
   templateSourceItemId: true,
+  fieldGroupId: true,
   fieldMeta: true,
 }).extend({
+  fieldGroup: ZFieldGroupSchema.nullable().optional(),
   conditionalChildRule: ZConditionalFieldRuleSchema.nullable().optional(),
   conditionalParentRules: ZConditionalFieldRuleSchema.array().optional(),
   // Backwards compatibility.

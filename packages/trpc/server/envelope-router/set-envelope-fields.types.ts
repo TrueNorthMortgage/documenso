@@ -5,6 +5,7 @@ import {
   ZClampedFieldWidthSchema,
   ZEnvelopeFieldSchema,
 } from '@documenso/lib/types/field';
+import { ZFieldGroupSchema } from '@documenso/lib/types/field-group';
 import { ZFieldMetaSchema } from '@documenso/lib/types/field-meta';
 import { EnvelopeType, FieldType } from '@prisma/client';
 import { z } from 'zod';
@@ -25,6 +26,7 @@ export const ZSetEnvelopeFieldsRequestSchema = z.object({
       positionY: ZClampedFieldPositionYSchema,
       width: ZClampedFieldWidthSchema,
       height: ZClampedFieldHeightSchema,
+      fieldGroup: ZFieldGroupSchema.nullable().optional(),
       fieldMeta: ZFieldMetaSchema,
     }),
   ),

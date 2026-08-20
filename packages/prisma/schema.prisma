@@ -407,6 +407,7 @@ model Envelope {
   envelopeItems EnvelopeItem[]
   recipients    Recipient[]
   fields        Field[]
+  fieldGroups   FieldGroup[]
   shareLinks    DocumentShareLink[]
   auditLogs     DocumentAuditLog[]
 
@@ -501,6 +502,7 @@ model EnvelopeItem {
   envelope   Envelope @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
 
   field Field[]
+  fieldGroups FieldGroup[]
 
   @@unique([documentDataId])
   @@index([envelopeId])
@@ -645,6 +647,7 @@ model Recipient {
   sendStatus           SendStatus    @default(NOT_SENT)
   envelope             Envelope      @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
   fields               Field[]
+  fieldGroups          FieldGroup[]
   signatures           Signature[]
 
   @@index([token])
@@ -695,9 +698,11 @@ model Field {
   customText     String
   inserted       Boolean
   templateSourceItemId String?
+  fieldGroupId   String?
   envelopeItem   EnvelopeItem @relation(fields: [envelopeItemId], references: [id], onDelete: Cascade)
   envelope       Envelope     @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
   recipient      Recipient    @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  fieldGroup     FieldGroup?  @relation(fields: [fieldGroupId], references: [id], onDelete: SetNull)
   signature      Signature?
   fieldMeta      Json? /// [FieldMeta] @zod.custom.use(ZFieldMetaNotOptionalSchema)
   conditionalChildRule  ConditionalFieldRule? @relation("ConditionalFieldRuleChild")
@@ -707,6 +712,33 @@ model Field {
   @@index([envelopeItemId])
   @@index([recipientId])
   @@index([templateSourceItemId])
+  @@index([fieldGroupId])
+}
+
+model FieldGroup {
+  id             String   @id
+  name           String
+  type           FieldType
+  required       Boolean  @default(false)
+  readOnly       Boolean  @default(false)
+  fontSize       Int?
+  direction      String?
+  validationRule String?
+  validationLength Int?
+  envelopeId     String
+  envelopeItemId String
+  recipientId    Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  envelope     Envelope     @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  envelopeItem EnvelopeItem @relation(fields: [envelopeItemId], references: [id], onDelete: Cascade)
+  recipient    Recipient    @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  fields       Field[]
+
+  @@index([envelopeId])
+  @@index([envelopeItemId])
+  @@index([recipientId])
 }
 
 model ConditionalFieldRule {

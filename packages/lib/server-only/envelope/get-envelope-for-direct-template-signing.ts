@@ -56,6 +56,7 @@ export const getEnvelopeForDirectTemplateSigning = async ({
             include: {
               signature: true,
               conditionalChildRule: true,
+              fieldGroup: true,
             },
           },
         },

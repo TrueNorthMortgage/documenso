@@ -49,6 +49,7 @@ import { EditorFieldCheckboxForm } from '~/components/forms/editor/editor-field-
 import { EditorFieldDateForm } from '~/components/forms/editor/editor-field-date-form';
 import { EditorFieldDropdownForm } from '~/components/forms/editor/editor-field-dropdown-form';
 import { EditorFieldEmailForm } from '~/components/forms/editor/editor-field-email-form';
+import { EditorFieldGroupSettings } from '~/components/forms/editor/editor-field-group-settings';
 import { EditorFieldInitialsForm } from '~/components/forms/editor/editor-field-initials-form';
 import { EditorFieldNameForm } from '~/components/forms/editor/editor-field-name-form';
 import { EditorFieldNumberForm } from '~/components/forms/editor/editor-field-number-form';
@@ -130,6 +131,14 @@ export const EnvelopeEditorFieldsPage = () => {
   );
 
   const selectedConditionalField = conditionalFields.find((field) => field.formId === selectedField?.formId);
+  const selectedFieldMeta = selectedField?.fieldGroup
+    ? {
+        ...selectedField.fieldMeta,
+        readOnly: selectedField.fieldGroup.readOnly,
+        fontSize: selectedField.fieldGroup.fontSize ?? undefined,
+        direction: selectedField.fieldGroup.direction === 'horizontal' ? 'horizontal' : 'vertical',
+      }
+    : selectedField?.fieldMeta;
 
   const updateConditionalRuleState = (rule: TConditionalFieldRule) => {
     for (const field of editorFields.localFields) {
@@ -166,9 +175,11 @@ export const EnvelopeEditorFieldsPage = () => {
     const isMetaSame = isDeepEqual(selectedField.fieldMeta, fieldMeta);
 
     if (!isMetaSame) {
-      editorFields.updateFieldByFormId(selectedField.formId, {
-        fieldMeta,
-      });
+      if (selectedField.fieldGroupId) {
+        editorFields.updateFieldGroupMeta(selectedField, fieldMeta);
+      } else {
+        editorFields.updateFieldByFormId(selectedField.formId, { fieldMeta });
+      }
     }
   };
 
@@ -182,6 +193,8 @@ export const EnvelopeEditorFieldsPage = () => {
         type: field.type,
         envelopeItemId: field.envelopeItemId,
         recipientId: field.recipientId,
+        fieldGroupId: null,
+        fieldGroup: null,
         page: field.pageNumber,
         fieldMeta: structuredClone(FIELD_META_DEFAULT_VALUES[field.type]),
       });
@@ -472,7 +485,8 @@ export const EnvelopeEditorFieldsPage = () => {
                     ))
                     .with(FieldType.CHECKBOX, () => (
                       <EditorFieldCheckboxForm
-                        value={selectedField?.fieldMeta as TCheckboxFieldMeta | undefined}
+                        value={selectedFieldMeta as TCheckboxFieldMeta | undefined}
+                        isGrouped={Boolean(selectedField.fieldGroupId)}
                         onValueChange={(value) => updateSelectedFieldMeta(value)}
                       />
                     ))
@@ -514,7 +528,8 @@ export const EnvelopeEditorFieldsPage = () => {
                     ))
                     .with(FieldType.RADIO, () => (
                       <EditorFieldRadioForm
-                        value={selectedField?.fieldMeta as TRadioFieldMeta | undefined}
+                        value={selectedFieldMeta as TRadioFieldMeta | undefined}
+                        isGrouped={Boolean(selectedField.fieldGroupId)}
                         onValueChange={(value) => updateSelectedFieldMeta(value)}
                       />
                     ))
@@ -525,6 +540,20 @@ export const EnvelopeEditorFieldsPage = () => {
                       />
                     ))
                     .otherwise(() => null)}
+
+                  <EditorFieldGroupSettings
+                    field={selectedField}
+                    fields={editorFields.localFields}
+                    onCreateGroup={(name) => {
+                      editorFields.createFieldGroup(selectedField, name);
+                    }}
+                    onAssignGroup={(group) => {
+                      editorFields.assignFieldToGroup(selectedField, group);
+                    }}
+                    onUngroup={() => {
+                      editorFields.ungroupField(selectedField);
+                    }}
+                  />
 
                   {selectedConditionalField && (
                     <ConditionalFieldSettings

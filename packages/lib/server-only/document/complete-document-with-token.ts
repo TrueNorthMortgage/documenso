@@ -181,6 +181,7 @@ export const completeDocumentWithToken = async ({
       },
       include: {
         conditionalChildRule: true,
+        fieldGroup: true,
       },
     })
   ).map((field) => ({
