@@ -3,6 +3,7 @@ import type { ConditionalFieldRule, Field } from '@prisma/client';
 import { FieldType } from '@prisma/client';
 
 import { ConditionalFieldRuleOperator } from '../types/conditional-field';
+import { getFieldOptionValue } from '../utils/field-option-values';
 
 export type FieldWithConditionalRule = Pick<
   Field,
@@ -28,12 +29,20 @@ const getOptionValues = (field: FieldWithConditionalRule) => {
     return [];
   }
 
-  return values.flatMap((option) => {
+  return values.flatMap((option, index) => {
     if (!option || typeof option !== 'object' || Array.isArray(option) || !('value' in option)) {
       return [];
     }
 
-    return typeof option.value === 'string' ? [option.value] : [];
+    return [
+      getFieldOptionValue(
+        {
+          id: 'id' in option && typeof option.id === 'number' ? option.id : undefined,
+          value: typeof option.value === 'string' ? option.value : undefined,
+        },
+        index,
+      ),
+    ];
   });
 };
 

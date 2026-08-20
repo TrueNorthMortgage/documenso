@@ -3,6 +3,7 @@ import {
   type TConditionalFieldRule,
   type ConditionalFieldRuleOperator as TConditionalFieldRuleOperator,
 } from '@documenso/lib/types/conditional-field';
+import { getFieldOptionValue } from '@documenso/lib/utils/field-option-values';
 import { FieldType } from '@prisma/client';
 import { useMemo, useState } from 'react';
 import { cn } from '../../lib/utils';
@@ -60,7 +61,7 @@ const getParentValues = (field: FieldFormType) => {
     return [];
   }
 
-  return field.fieldMeta.values?.map((option) => ('value' in option ? option.value : '')).filter(Boolean) ?? [];
+  return field.fieldMeta.values?.map((option, index) => getFieldOptionValue(option, index)) ?? [];
 };
 
 export const ConditionalFieldSettings = ({
