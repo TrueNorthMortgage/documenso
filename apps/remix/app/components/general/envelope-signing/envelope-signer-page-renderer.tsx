@@ -8,7 +8,7 @@ import { DIRECT_TEMPLATE_RECIPIENT_EMAIL } from '@documenso/lib/constants/direct
 import { isBase64Image } from '@documenso/lib/constants/signatures';
 import type { TRecipientActionAuth } from '@documenso/lib/types/document-auth';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
-import type { TFieldCheckbox } from '@documenso/lib/types/field';
+import type { TFieldCheckbox, TFieldDate } from '@documenso/lib/types/field';
 import { ZFullFieldSchema } from '@documenso/lib/types/field';
 import { createSpinner } from '@documenso/lib/universal/field-renderer/field-generic-items';
 import { renderField } from '@documenso/lib/universal/field-renderer/render-field';
@@ -28,6 +28,7 @@ import { match } from 'ts-pattern';
 
 import { useEmbedSigningContext } from '~/components/embed/embed-signing-context';
 import { handleCheckboxFieldClick } from '~/utils/field-signing/checkbox-field';
+import { handleDateFieldClick } from '~/utils/field-signing/date-field';
 import { handleDropdownFieldClick } from '~/utils/field-signing/dropdown-field';
 import { handleEmailFieldClick } from '~/utils/field-signing/email-field';
 import { handleInitialsFieldClick } from '~/utils/field-signing/initial-field';
@@ -362,14 +363,28 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
          * DATE FIELD.
          */
         .with({ type: FieldType.DATE }, (field) => {
-          fieldGroup.add(loadingSpinnerGroup);
+          const dateField = field as TFieldDate;
+          const dateSelection = dateField.fieldMeta.autoFill
+            ? Promise.resolve({
+                type: FieldType.DATE,
+                value: !field.inserted,
+              } satisfies TSignEnvelopeFieldValue)
+            : handleDateFieldClick({
+                field: dateField,
+                dateFormat: envelope.documentMeta.dateFormat,
+                timezone: envelope.documentMeta.timezone,
+              });
 
-          void signField(field.id, {
-            type: FieldType.DATE,
-            value: !field.inserted,
-          }).finally(() => {
-            loadingSpinnerGroup.destroy();
-          });
+          void dateSelection
+            .then(async (payload) => {
+              if (payload) {
+                fieldGroup.add(loadingSpinnerGroup);
+                await signField(field.id, payload);
+              }
+            })
+            .finally(() => {
+              loadingSpinnerGroup.destroy();
+            });
         })
         /**
          * SIGNATURE FIELD.

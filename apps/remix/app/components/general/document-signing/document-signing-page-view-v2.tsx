@@ -21,6 +21,7 @@ import { match } from 'ts-pattern';
 
 import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-dialog';
 import { SignFieldCheckboxDialog } from '~/components/dialogs/sign-field-checkbox-dialog';
+import { SignFieldDateDialog } from '~/components/dialogs/sign-field-date-dialog';
 import { SignFieldDropdownDialog } from '~/components/dialogs/sign-field-dropdown-dialog';
 import { SignFieldEmailDialog } from '~/components/dialogs/sign-field-email-dialog';
 import { SignFieldInitialsDialog } from '~/components/dialogs/sign-field-initials-dialog';
@@ -84,6 +85,7 @@ export const DocumentSigningPageViewV2 = () => {
       <SignFieldEmailDialog.Root />
       <SignFieldTextDialog.Root />
       <SignFieldNumberDialog.Root />
+      <SignFieldDateDialog.Root />
       <SignFieldNameDialog.Root />
       <SignFieldInitialsDialog.Root />
       <SignFieldDropdownDialog.Root />

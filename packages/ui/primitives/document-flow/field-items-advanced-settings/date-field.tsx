@@ -1,5 +1,6 @@
 import { validateFields as validateDateFields } from '@documenso/lib/advanced-fields-validation/validate-fields';
 import { type TDateFieldMeta as DateFieldMeta, DEFAULT_DATE_OVERFLOW_MODE } from '@documenso/lib/types/field-meta';
+import { Checkbox } from '@documenso/ui/primitives/checkbox';
 import { Input } from '@documenso/ui/primitives/input';
 import { Label } from '@documenso/ui/primitives/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
@@ -43,6 +44,7 @@ export const DateFieldAdvancedSettings = ({
       fontSize,
       overflow: fieldState.overflow ?? DEFAULT_DATE_OVERFLOW_MODE,
       type: 'date',
+      autoFill: fieldState.autoFill !== false,
     });
 
     handleErrors(errors);
@@ -51,6 +53,17 @@ export const DateFieldAdvancedSettings = ({
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center">
+        <Checkbox
+          id="date-auto-fill"
+          checked={fieldState.autoFill !== false}
+          onCheckedChange={(checked) => handleInput('autoFill', checked === true)}
+        />
+        <Label className="ml-2" htmlFor="date-auto-fill">
+          <Trans>Auto-fill current date</Trans>
+        </Label>
+      </div>
+
       <div>
         <Label>
           <Trans>Font Size</Trans>

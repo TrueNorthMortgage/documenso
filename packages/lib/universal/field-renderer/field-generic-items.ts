@@ -160,9 +160,6 @@ export const createSpinner = ({ fieldWidth, fieldHeight }: { fieldWidth: number;
     lineCap: 'round',
   });
 
-  rect.moveToTop();
-  spinner.moveToTop();
-
   loadingGroup.add(rect);
   loadingGroup.add(spinner);
 

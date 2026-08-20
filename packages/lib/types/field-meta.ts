@@ -105,6 +105,7 @@ export type TEmailFieldMeta = z.infer<typeof ZEmailFieldMeta>;
 export const ZDateFieldMeta = ZBaseFieldMeta.extend({
   type: z.literal('date'),
   textAlign: ZFieldTextAlignSchema.optional(),
+  autoFill: z.boolean().default(true),
   overflow: ZFieldOverflowMode.optional().default(DEFAULT_DATE_OVERFLOW_MODE),
 });
 
@@ -308,6 +309,7 @@ export const FIELD_DATE_META_DEFAULT_VALUES: TDateFieldMeta = {
   type: 'date',
   fontSize: DEFAULT_FIELD_FONT_SIZE,
   textAlign: 'left',
+  autoFill: true,
   overflow: DEFAULT_DATE_OVERFLOW_MODE,
 };
 

@@ -3,7 +3,8 @@ import { DEFAULT_DOCUMENT_TIME_ZONE } from '@documenso/lib/constants/time-zones'
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import type { TRecipientActionAuth } from '@documenso/lib/types/document-auth';
-import { ZDateFieldMeta } from '@documenso/lib/types/field-meta';
+import { FIELD_DATE_META_DEFAULT_VALUES, ZDateFieldMeta } from '@documenso/lib/types/field-meta';
+import { getDateFieldInputValue } from '@documenso/lib/utils/date-fields';
 import type { FieldWithSignature } from '@documenso/prisma/types/field-with-signature';
 import { trpc } from '@documenso/trpc/react';
 import type {
@@ -17,7 +18,7 @@ import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { Loader } from 'lucide-react';
 import { useRevalidator } from 'react-router';
-
+import { SignFieldDateDialog } from '~/components/dialogs/sign-field-date-dialog';
 import { DocumentSigningFieldContainer } from './document-signing-field-container';
 import { useDocumentSigningRecipientContext } from './document-signing-recipient-provider';
 
@@ -51,7 +52,7 @@ export const DocumentSigningDateField = ({
   const isLoading = isSignFieldWithTokenLoading || isRemoveSignedFieldWithTokenLoading;
 
   const safeFieldMeta = ZDateFieldMeta.safeParse(field.fieldMeta);
-  const parsedFieldMeta = safeFieldMeta.success ? safeFieldMeta.data : null;
+  const parsedFieldMeta = safeFieldMeta.success ? safeFieldMeta.data : FIELD_DATE_META_DEFAULT_VALUES;
 
   const localDateString = convertToLocalSystemFormat(field.customText, dateFormat, timezone);
   const isDifferentTime = field.inserted && localDateString !== field.customText;
@@ -61,10 +62,28 @@ export const DocumentSigningDateField = ({
 
   const onSign = async (authOptions?: TRecipientActionAuth) => {
     try {
+      const dateValue = parsedFieldMeta.autoFill
+        ? (dateFormat ?? DEFAULT_DOCUMENT_DATE_FORMAT)
+        : await SignFieldDateDialog.call({
+            fieldMeta: parsedFieldMeta,
+            dateFormat,
+            initialDate: field.inserted
+              ? getDateFieldInputValue({
+                  value: field.customText,
+                  dateFormat,
+                  timezone,
+                })
+              : undefined,
+          });
+
+      if (!dateValue) {
+        return;
+      }
+
       const payload: TSignFieldWithTokenMutationSchema = {
         token: recipient.token,
         fieldId: field.id,
-        value: dateFormat ?? DEFAULT_DOCUMENT_DATE_FORMAT,
+        value: dateValue,
         authOptions,
       };
 

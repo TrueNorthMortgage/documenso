@@ -7,6 +7,7 @@ import type { SignatureFontFamily } from '@documenso/lib/constants/signatures';
 import { assertConditionalFieldIsVisible } from '@documenso/lib/server-only/field/assert-conditional-field-visible';
 import { clearHiddenConditionalFields } from '@documenso/lib/server-only/field/clear-hidden-conditional-fields';
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
+import { formatDateFieldValue, isDateFieldAutoFillEnabled } from '@documenso/lib/utils/date-fields';
 import { prisma } from '@documenso/prisma';
 import { DocumentStatus, FieldType, RecipientRole, SigningStatus } from '@prisma/client';
 import { DateTime } from 'luxon';
@@ -206,9 +207,15 @@ export const signFieldWithToken = async ({
   const typedSignature = isSignatureField && !isBase64 ? value : undefined;
 
   if (field.type === FieldType.DATE) {
-    customText = DateTime.now()
-      .setZone(documentMeta?.timezone ?? DEFAULT_DOCUMENT_TIME_ZONE)
-      .toFormat(documentMeta?.dateFormat ?? DEFAULT_DOCUMENT_DATE_FORMAT);
+    customText = isDateFieldAutoFillEnabled(field.fieldMeta)
+      ? DateTime.now()
+          .setZone(documentMeta?.timezone ?? DEFAULT_DOCUMENT_TIME_ZONE)
+          .toFormat(documentMeta?.dateFormat ?? DEFAULT_DOCUMENT_DATE_FORMAT)
+      : formatDateFieldValue({
+          value,
+          dateFormat: documentMeta?.dateFormat,
+          timezone: documentMeta?.timezone,
+        });
   }
 
   if (isSignatureField && !signatureImageAsBase64 && !typedSignature) {

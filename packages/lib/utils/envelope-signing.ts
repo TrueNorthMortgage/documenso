@@ -9,11 +9,13 @@ import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import type { TDocumentMeta } from '@documenso/lib/types/document-meta';
 import {
   ZCheckboxFieldMeta,
+  ZDateFieldMeta,
   ZDropdownFieldMeta,
   ZNumberFieldMeta,
   ZRadioFieldMeta,
   ZTextFieldMeta,
 } from '@documenso/lib/types/field-meta';
+import { formatDateFieldValue } from '@documenso/lib/utils/date-fields';
 import { toCheckboxCustomText, toRadioCustomText } from '@documenso/lib/utils/fields';
 import { zEmail } from '@documenso/lib/utils/zod';
 import type { TSignEnvelopeFieldValue } from '@documenso/trpc/server/envelope-router/sign-envelope-field.types';
@@ -79,7 +81,33 @@ export const extractFieldInsertionValues = ({
       };
     })
     .with({ type: FieldType.DATE }, (fieldValue) => {
-      if (!fieldValue.value) {
+      const parsedDateFieldMeta = ZDateFieldMeta.parse(field.fieldMeta);
+
+      if (!parsedDateFieldMeta.autoFill) {
+        if (fieldValue.value === false) {
+          return {
+            customText: '',
+            inserted: false,
+          };
+        }
+
+        if (typeof fieldValue.value !== 'string') {
+          throw new AppError(AppErrorCode.INVALID_BODY, {
+            message: 'A date is required',
+          });
+        }
+
+        return {
+          customText: formatDateFieldValue({
+            value: fieldValue.value,
+            dateFormat: documentMeta.dateFormat,
+            timezone: documentMeta.timezone,
+          }),
+          inserted: true,
+        };
+      }
+
+      if (fieldValue.value !== true) {
         return {
           customText: '',
           inserted: false,

@@ -5,8 +5,10 @@ import {
   FIELD_DEFAULT_GENERIC_ALIGN,
   ZDateFieldMeta,
 } from '@documenso/lib/types/field-meta';
-import { Form } from '@documenso/ui/primitives/form/form';
+import { Checkbox } from '@documenso/ui/primitives/checkbox';
+import { Form, FormControl, FormField, FormItem } from '@documenso/ui/primitives/form/form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Trans } from '@lingui/react/macro';
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import type { z } from 'zod';
@@ -14,6 +16,7 @@ import type { z } from 'zod';
 import { EditorGenericFontSizeField, EditorGenericTextAlignField } from './editor-field-generic-field-forms';
 
 const ZDateFieldFormSchema = ZDateFieldMeta.pick({
+  autoFill: true,
   fontSize: true,
   textAlign: true,
   overflow: true,
@@ -36,6 +39,7 @@ export const EditorFieldDateForm = ({
     resolver: zodResolver(ZDateFieldFormSchema),
     mode: 'onChange',
     defaultValues: {
+      autoFill: value.autoFill ?? FIELD_DATE_META_DEFAULT_VALUES.autoFill,
       fontSize: value.fontSize || DEFAULT_FIELD_FONT_SIZE,
       textAlign: value.textAlign ?? FIELD_DEFAULT_GENERIC_ALIGN,
       overflow: value.overflow || FIELD_DATE_META_DEFAULT_VALUES.overflow,
@@ -64,6 +68,23 @@ export const EditorFieldDateForm = ({
     <Form {...form}>
       <form>
         <fieldset className="flex flex-col gap-2">
+          <FormField
+            control={form.control}
+            name="autoFill"
+            render={({ field }) => (
+              <FormItem className="flex items-center space-x-2">
+                <FormControl>
+                  <div className="flex items-center">
+                    <Checkbox id="field-date-auto-fill" checked={field.value} onCheckedChange={field.onChange} />
+                    <label className="ml-2 text-muted-foreground text-sm" htmlFor="field-date-auto-fill">
+                      <Trans>Auto-fill current date</Trans>
+                    </label>
+                  </div>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
           <EditorGenericFontSizeField formControl={form.control} />
 
           <EditorGenericTextAlignField formControl={form.control} />

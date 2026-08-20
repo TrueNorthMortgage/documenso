@@ -4,6 +4,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE, RECIPIENT_DIFF_TYPE } from '@documenso/lib/typ
 import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import type { RequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import { fieldsContainUnsignedRequiredField } from '@documenso/lib/utils/advanced-fields-helpers';
+import { isDateFieldAutoFillEnabled } from '@documenso/lib/utils/date-fields';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { prisma } from '@documenso/prisma';
 import {
@@ -193,7 +194,9 @@ export const completeDocumentWithToken = async ({
   const visibleFields = () => fields.filter((field) => fieldVisibility.get(field.id) ?? true);
 
   // This should be scoped to the current recipient.
-  const uninsertedDateFields = visibleFields().filter((field) => field.type === FieldType.DATE && !field.inserted);
+  const uninsertedDateFields = visibleFields().filter(
+    (field) => field.type === FieldType.DATE && !field.inserted && isDateFieldAutoFillEnabled(field.fieldMeta),
+  );
 
   let recipientName = recipient.name;
   let recipientEmail = recipient.email;
@@ -274,7 +277,7 @@ export const completeDocumentWithToken = async ({
 
     // Update the local fields array so the subsequent validation check passes.
     fields = fields.map((field) => {
-      if (field.type === FieldType.DATE && !field.inserted) {
+      if (field.type === FieldType.DATE && !field.inserted && isDateFieldAutoFillEnabled(field.fieldMeta)) {
         return {
           ...field,
           ...newDateFieldValues,

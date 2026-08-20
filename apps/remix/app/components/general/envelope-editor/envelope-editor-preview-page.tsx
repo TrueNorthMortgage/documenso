@@ -3,8 +3,10 @@ import {
   EnvelopeRenderProvider,
   useCurrentEnvelopeRender,
 } from '@documenso/lib/client-only/providers/envelope-render-provider';
+import { DEFAULT_DOCUMENT_DATE_FORMAT } from '@documenso/lib/constants/date-formats';
 import { PDF_VIEWER_ERROR_MESSAGES } from '@documenso/lib/constants/pdf-viewer-i18n';
-import { ZFieldAndMetaSchema } from '@documenso/lib/types/field-meta';
+import { DEFAULT_DOCUMENT_TIME_ZONE } from '@documenso/lib/constants/time-zones';
+import { ZDateFieldMeta, ZFieldAndMetaSchema } from '@documenso/lib/types/field-meta';
 import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import { extractFieldInsertionValues } from '@documenso/lib/utils/envelope-signing';
 import { toCheckboxCustomText } from '@documenso/lib/utils/fields';
@@ -17,6 +19,7 @@ import type { Faker } from '@faker-js/faker';
 import { Trans } from '@lingui/react/macro';
 import { FieldType, SigningStatus } from '@prisma/client';
 import { FileTextIcon } from 'lucide-react';
+import { DateTime } from 'luxon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { match } from 'ts-pattern';
 
@@ -96,6 +99,18 @@ export const EnvelopeEditorPreviewPage = () => {
             };
           })
           .with({ type: FieldType.DATE }, () => {
+            const dateFieldMeta = ZDateFieldMeta.parse(field.fieldMeta);
+
+            if (!dateFieldMeta.autoFill) {
+              return {
+                customText:
+                  field.customText ||
+                  DateTime.now()
+                    .setZone(envelope.documentMeta.timezone ?? DEFAULT_DOCUMENT_TIME_ZONE)
+                    .toFormat(envelope.documentMeta.dateFormat ?? DEFAULT_DOCUMENT_DATE_FORMAT),
+              };
+            }
+
             const date = extractFieldInsertionValues({
               fieldValue: {
                 type: FieldType.DATE,

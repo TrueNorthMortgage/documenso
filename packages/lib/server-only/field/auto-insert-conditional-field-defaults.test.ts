@@ -66,6 +66,26 @@ describe('autoInsertConditionalFieldDefaults', () => {
         envelope: { internalVersion: 2 },
         recipient: { email: 'recipient@example.com' },
       },
+      {
+        id: 4,
+        type: FieldType.DATE,
+        customText: '',
+        inserted: false,
+        fieldMeta: { type: 'date', autoFill: false },
+        envelopeItemId: 'item-1',
+        recipientId: 1,
+        conditionalChildRule: {
+          id: 14,
+          childFieldId: 4,
+          parentFieldId: 1,
+          operator: ConditionalFieldRuleOperator.EQUALS,
+          value: 'Yes',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        envelope: { internalVersion: 2 },
+        recipient: { email: 'recipient@example.com' },
+      },
     ];
 
     const update = vi.fn(async ({ where, data }: { where: { id: number }; data: object }) => ({
@@ -83,7 +103,7 @@ describe('autoInsertConditionalFieldDefaults', () => {
     const updatedFields = await autoInsertConditionalFieldDefaults({
       tx,
       envelopeItemId: 'item-1',
-      fieldIds: [2, 3],
+      fieldIds: [2, 3, 4],
       documentMeta: {
         timezone: 'UTC',
         dateFormat: 'yyyy-MM-dd',
@@ -99,5 +119,6 @@ describe('autoInsertConditionalFieldDefaults', () => {
       where: { id: 3 },
       data: expect.objectContaining({ inserted: true }),
     });
+    expect(update).not.toHaveBeenCalledWith(expect.objectContaining({ where: { id: 4 } }));
   });
 });
