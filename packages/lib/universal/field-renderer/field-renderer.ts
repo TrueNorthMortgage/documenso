@@ -8,6 +8,12 @@ import type { TFieldMetaSchema } from '../../types/field-meta';
 export const MIN_FIELD_HEIGHT_PX = 12;
 export const MIN_FIELD_WIDTH_PX = 36;
 
+export const getNumericAttr = (node: Konva.Node, attr: string): number | undefined => {
+  const value: unknown = node.getAttr(attr);
+
+  return typeof value === 'number' ? value : undefined;
+};
+
 export type FieldToRender = Pick<
   Field,
   'envelopeItemId' | 'recipientId' | 'type' | 'page' | 'customText' | 'inserted' | 'recipientId'

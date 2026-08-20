@@ -2,7 +2,7 @@ import { DEFAULT_RECT_BACKGROUND, getRecipientColorStyles } from '@documenso/ui/
 import Konva from 'konva';
 
 import type { FieldToRender, RenderFieldElementOptions } from './field-renderer';
-import { calculateFieldPosition } from './field-renderer';
+import { calculateFieldPosition, getNumericAttr } from './field-renderer';
 
 export const konvaTextFontFamily =
   '"Noto Sans", "Noto Sans Japanese", "Noto Sans Chinese", "Noto Sans Korean", sans-serif';
@@ -39,11 +39,11 @@ export const upsertFieldGroup = (field: FieldToRender, options: RenderFieldEleme
         return pos;
       }
 
-      const currentPageWidth = fieldGroup.getAttr<number>('dragPageWidth') ?? pageWidth;
-      const currentPageHeight = fieldGroup.getAttr<number>('dragPageHeight') ?? pageHeight;
-      const currentScale = fieldGroup.getAttr<number>('dragScale') ?? scale;
-      const currentFieldWidth = fieldGroup.getAttr<number>('dragFieldWidth') ?? fieldWidth;
-      const currentFieldHeight = fieldGroup.getAttr<number>('dragFieldHeight') ?? fieldHeight;
+      const currentPageWidth = getNumericAttr(fieldGroup, 'dragPageWidth') ?? pageWidth;
+      const currentPageHeight = getNumericAttr(fieldGroup, 'dragPageHeight') ?? pageHeight;
+      const currentScale = getNumericAttr(fieldGroup, 'dragScale') ?? scale;
+      const currentFieldWidth = getNumericAttr(fieldGroup, 'dragFieldWidth') ?? fieldWidth;
+      const currentFieldHeight = getNumericAttr(fieldGroup, 'dragFieldHeight') ?? fieldHeight;
       const currentMaxXPosition = (currentPageWidth - currentFieldWidth) * currentScale;
       const currentMaxYPosition = (currentPageHeight - currentFieldHeight) * currentScale;
 

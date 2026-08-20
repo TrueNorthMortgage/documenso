@@ -9,6 +9,7 @@ import { PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
 import { FIELD_META_DEFAULT_VALUES } from '@documenso/lib/types/field-meta';
 import {
   convertPixelToPercentage,
+  getNumericAttr,
   MIN_FIELD_HEIGHT_PX,
   MIN_FIELD_WIDTH_PX,
 } from '@documenso/lib/universal/field-renderer/field-renderer';
@@ -131,17 +132,17 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     if (isDragEvent) {
       const clientPoint = getClientPoint(event);
-      const originalPageNumber = fieldGroup.getAttr<number>('dragStartPage') ?? pageNumber;
+      const originalPageNumber = getNumericAttr(fieldGroup, 'dragStartPage') ?? pageNumber;
       const originalPage = pageRendererRegistry.get(originalPageNumber);
       const targetPageElement = clientPoint ? getPageAtPoint(clientPoint.x, clientPoint.y) : undefined;
       const targetPageNumber = targetPageElement
         ? Number(targetPageElement.dataset.pageNumber)
-        : (fieldGroup.getAttr<number>('dragPageNumber') ?? originalPageNumber);
+        : (getNumericAttr(fieldGroup, 'dragPageNumber') ?? originalPageNumber);
       const targetPage = pageRendererRegistry.get(targetPageNumber);
 
       if (!originalPage || !targetPageElement || !targetPage) {
-        const originalX = fieldGroup.getAttr<number>('dragStartX');
-        const originalY = fieldGroup.getAttr<number>('dragStartY');
+        const originalX = getNumericAttr(fieldGroup, 'dragStartX');
+        const originalY = getNumericAttr(fieldGroup, 'dragStartY');
 
         if (originalPage && fieldGroup.getLayer() !== originalPage.pageLayer) {
           fieldGroup.moveTo(originalPage.pageLayer);
@@ -170,8 +171,8 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         return;
       }
 
-      const fieldWidth = fieldGroup.getAttr<number>('dragFieldWidth') ?? fieldGroup.width();
-      const fieldHeight = fieldGroup.getAttr<number>('dragFieldHeight') ?? fieldGroup.height();
+      const fieldWidth = getNumericAttr(fieldGroup, 'dragFieldWidth') ?? fieldGroup.width();
+      const fieldHeight = getNumericAttr(fieldGroup, 'dragFieldHeight') ?? fieldGroup.height();
       const maxX = Math.max(0, targetPage.pageWidth - fieldWidth);
       const maxY = Math.max(0, targetPage.pageHeight - fieldHeight);
       const positionX = Math.max(0, Math.min(maxX, fieldGroup.x())) / targetPage.pageWidth;
@@ -251,7 +252,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     }
 
     const fieldGroup = event.target as Konva.Group;
-    const currentPageNumber = fieldGroup.getAttr<number>('dragPageNumber') ?? pageNumber;
+    const currentPageNumber = getNumericAttr(fieldGroup, 'dragPageNumber') ?? pageNumber;
     const currentPage = pageRendererRegistry.get(currentPageNumber);
     const stageContainer = fieldGroup.getStage()?.container() ?? konvaContainer.current;
 
@@ -292,10 +293,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     }
 
     const targetPageRect = targetPage.container.getBoundingClientRect();
-    const fieldWidth = fieldGroup.getAttr<number>('dragFieldWidth') ?? fieldGroup.width();
-    const fieldHeight = fieldGroup.getAttr<number>('dragFieldHeight') ?? fieldGroup.height();
-    const dragOffsetX = fieldGroup.getAttr<number>('dragOffsetX') ?? fieldWidth * targetPage.scale * 0.5;
-    const dragOffsetY = fieldGroup.getAttr<number>('dragOffsetY') ?? fieldHeight * targetPage.scale * 0.5;
+    const fieldWidth = getNumericAttr(fieldGroup, 'dragFieldWidth') ?? fieldGroup.width();
+    const fieldHeight = getNumericAttr(fieldGroup, 'dragFieldHeight') ?? fieldGroup.height();
+    const dragOffsetX = getNumericAttr(fieldGroup, 'dragOffsetX') ?? fieldWidth * targetPage.scale * 0.5;
+    const dragOffsetY = getNumericAttr(fieldGroup, 'dragOffsetY') ?? fieldHeight * targetPage.scale * 0.5;
 
     fieldGroup.position({
       x: (clientPoint.x - targetPageRect.left - dragOffsetX) / targetPage.scale,
@@ -417,13 +418,13 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       if (e.type === 'dragstart') {
         const fieldGroup = e.target as Konva.Group;
         const clientPoint = getClientPoint(e);
-        const currentPageNumber = fieldGroup.getAttr<number>('dragPageNumber') ?? pageNumber;
+        const currentPageNumber = getNumericAttr(fieldGroup, 'dragPageNumber') ?? pageNumber;
         const currentPage = pageRendererRegistry.get(currentPageNumber);
 
         if (clientPoint && currentPage) {
           const pageRect = currentPage.container.getBoundingClientRect();
-          const fieldWidth = fieldGroup.getAttr<number>('dragFieldWidth') ?? fieldGroup.width();
-          const fieldHeight = fieldGroup.getAttr<number>('dragFieldHeight') ?? fieldGroup.height();
+          const fieldWidth = getNumericAttr(fieldGroup, 'dragFieldWidth') ?? fieldGroup.width();
+          const fieldHeight = getNumericAttr(fieldGroup, 'dragFieldHeight') ?? fieldGroup.height();
 
           fieldGroup.setAttrs({
             dragOffsetX: clientPoint.x - pageRect.left - fieldGroup.x() * currentPage.scale,
