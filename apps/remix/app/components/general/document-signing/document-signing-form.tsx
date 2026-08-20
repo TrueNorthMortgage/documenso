@@ -79,7 +79,7 @@ export const DocumentSigningForm = ({
   }, [fieldsRequiringValidation]);
 
   const uninsertedRecipientFields = useMemo(() => {
-    return fieldsRequiringValidation.filter((field) => field.recipientId === recipient.id);
+    return fieldsRequiringValidation.filter((field) => field.recipientId === recipient.id && !field.inserted);
   }, [fieldsRequiringValidation, recipient]);
 
   const localFieldsValidated = () => {

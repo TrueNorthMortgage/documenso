@@ -81,7 +81,9 @@ export default defineConfig({
     {
       name: 'api',
       testMatch: /e2e\/api\/.*\.spec\.ts/,
-      workers: 10, // Limited by DB connections before it gets flakey.
+      // GitHub-hosted runners have fewer resources than the previous Warp runner.
+      // Keep enough parallelism for speed without overloading the app/database.
+      workers: process.env.CI ? 4 : 10,
     },
     // License tests that share a single license file - must run serially
     {
