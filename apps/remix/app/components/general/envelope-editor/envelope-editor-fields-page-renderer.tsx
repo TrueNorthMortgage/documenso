@@ -28,9 +28,16 @@ import { fieldButtonList } from './envelope-editor-fields-drag-drop';
 import { EnvelopeRecipientSelectorCommand } from './envelope-recipient-selector';
 
 const getClientPoint = (event: KonvaEventObject<Event>) => {
-  const nativeEvent = event.evt as MouseEvent & {
-    changedTouches?: TouchList;
-  };
+  const nativeEvent = event.evt as
+    | (MouseEvent & {
+        changedTouches?: TouchList;
+      })
+    | undefined;
+
+  if (!nativeEvent) {
+    return null;
+  }
+
   const touch = nativeEvent.changedTouches?.[0];
 
   if (touch) {
@@ -69,6 +76,7 @@ const getScrollableParent = (element: HTMLElement) => {
 
 type PageRenderer = {
   container: HTMLElement;
+  clearSelection: () => void;
   pageLayer: Konva.Layer;
   pageHeight: number;
   pageNumber: number;
@@ -137,7 +145,6 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
         if (originalPage && fieldGroup.getLayer() !== originalPage.pageLayer) {
           fieldGroup.moveTo(originalPage.pageLayer);
-          interactiveTransformer.current?.moveTo(originalPage.pageLayer);
         }
 
         if (typeof originalX === 'number' && typeof originalY === 'number') {
@@ -281,7 +288,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     if (fieldGroup.getLayer() !== targetPage.pageLayer) {
       fieldGroup.moveTo(targetPage.pageLayer);
-      interactiveTransformer.current?.moveTo(targetPage.pageLayer);
+      setSelectedFields([], false);
     }
 
     const targetPageRect = targetPage.container.getBoundingClientRect();
@@ -375,6 +382,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     // Render the fields.
     pageRendererRegistry.set(pageNumber, {
       container: currentStage.container(),
+      clearSelection: () => setSelectedFields([], false),
       pageLayer: currentPageLayer,
       pageHeight: unscaledViewport.height,
       pageNumber,
@@ -664,7 +672,15 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     pageLayer.current.batchDraw();
   }, [localPageFields, selectedKonvaFieldGroups]);
 
-  const setSelectedFields = (nodes: Konva.Node[]) => {
+  const setSelectedFields = (nodes: Konva.Node[], clearOtherPages = true) => {
+    if (clearOtherPages) {
+      for (const renderer of pageRendererRegistry.values()) {
+        if (renderer.pageLayer !== pageLayer.current) {
+          renderer.clearSelection();
+        }
+      }
+    }
+
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const fieldGroups = nodes.filter(
       (node) => node.hasName('field-group') && Boolean(node.getStage()) && Boolean(node.getParent()),
