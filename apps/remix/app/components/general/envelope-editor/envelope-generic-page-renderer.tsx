@@ -57,7 +57,7 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
           throw new Error(`Recipient not found for field ${field.id}`);
         }
 
-        const isInserted = recipient.signingStatus === SigningStatus.SIGNED && field.inserted;
+        const isInserted = field.inserted;
 
         return {
           ...field,
@@ -70,10 +70,7 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
         ({ inserted, fieldMeta, recipient }) =>
           (recipient.signingStatus === SigningStatus.SIGNED ? inserted : true) || fieldMeta?.readOnly,
       )
-      .filter(
-        (field) =>
-          overrideSettings?.mode === 'export' || (conditionalFieldVisibility.get(field.id) ?? true),
-      );
+      .filter((field) => overrideSettings?.mode === 'export' || (conditionalFieldVisibility.get(field.id) ?? true));
   }, [
     fields,
     pageNumber,
@@ -158,6 +155,14 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
     pageLayer.current.find('Group').forEach((group) => {
       if (group.name() === 'field-group' && !localPageFields.some((field) => field.id.toString() === group.id())) {
         group.destroy();
+      }
+    });
+
+    pageLayer.current.find('.conditional-field-indicator').forEach((indicator) => {
+      const fieldId = indicator.id().replace(/-conditional-indicator$/, '');
+
+      if (!localPageFields.some((field) => field.id.toString() === fieldId)) {
+        indicator.destroy();
       }
     });
 

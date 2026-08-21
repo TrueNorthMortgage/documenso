@@ -16,7 +16,7 @@ export type RecipientColorStyles = {
   comboBoxItem: string;
 };
 
-export const DEFAULT_RECT_BACKGROUND = 'rgba(255, 255, 255, 0.95)';
+export const DEFAULT_RECT_BACKGROUND = 'rgba(255, 255, 255, 0)';
 
 // !: values of the declared variable to do all the background, border and shadow styles.
 const RECIPIENT_COLOR_STYLES: Record<TRecipientColor, () => RecipientColorStyles> = {

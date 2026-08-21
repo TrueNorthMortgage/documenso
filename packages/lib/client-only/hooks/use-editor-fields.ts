@@ -8,6 +8,7 @@ import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import { nanoid } from '@documenso/lib/universal/id';
 import { removeConditionalRulesForDeletedFields } from '@documenso/lib/utils/conditional-field-rules';
 import { clearOtherRadioGroupSelections } from '@documenso/lib/utils/field-groups';
+import { getFieldOptionId, getNextFieldOptionId } from '@documenso/lib/utils/field-option-values';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Field } from '@prisma/client';
 import { FieldType } from '@prisma/client';
@@ -40,6 +41,48 @@ export const ZLocalFieldSchema = z.object({
 });
 
 export type TLocalField = z.infer<typeof ZLocalFieldSchema>;
+
+const getFieldOptions = (field: TLocalField) => {
+  if (!field.fieldMeta || !('values' in field.fieldMeta) || !field.fieldMeta.values) {
+    return [];
+  }
+
+  return field.fieldMeta.values;
+};
+
+const getUnusedFieldOptionId = (
+  option: { id?: number; value?: string },
+  existingOptions: { id?: number; value?: string }[],
+) => {
+  const existingOptionIds = new Set(
+    existingOptions.map((existingOption, index) => getFieldOptionId(existingOption, index)),
+  );
+  const optionId = option.id ?? 1;
+
+  return existingOptionIds.has(optionId) ? getNextFieldOptionId(existingOptions) : optionId;
+};
+
+const updateSingleFieldOptionId = (field: TLocalField, optionId: number): TLocalField['fieldMeta'] => {
+  if (field.type === FieldType.RADIO && field.fieldMeta?.type === 'radio' && field.fieldMeta.values?.length === 1) {
+    return {
+      ...field.fieldMeta,
+      values: [{ ...field.fieldMeta.values[0], id: optionId }],
+    };
+  }
+
+  if (
+    field.type === FieldType.CHECKBOX &&
+    field.fieldMeta?.type === 'checkbox' &&
+    field.fieldMeta.values?.length === 1
+  ) {
+    return {
+      ...field.fieldMeta,
+      values: [{ ...field.fieldMeta.values[0], id: optionId }],
+    };
+  }
+
+  return field.fieldMeta;
+};
 
 const ZEditorFieldsFormSchema = z.object({
   fields: z.array(ZLocalFieldSchema),
@@ -295,6 +338,13 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
 
   const duplicateField = useCallback(
     (field: TLocalField): TLocalField => {
+      const existingGroupOptions = field.fieldGroupId
+        ? localFields.filter((candidate) => candidate.fieldGroupId === field.fieldGroupId).flatMap(getFieldOptions)
+        : [];
+      const fieldMeta =
+        field.fieldGroupId && getFieldOptions(field).length === 1
+          ? updateSingleFieldOptionId(field, getUnusedFieldOptionId(getFieldOptions(field)[0], existingGroupOptions))
+          : field.fieldMeta;
       const newField: TLocalField = {
         ...structuredClone(field),
         id: undefined,
@@ -302,13 +352,14 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         recipientId: field.recipientId,
         positionX: field.positionX + 3,
         positionY: field.positionY + 3,
+        fieldMeta,
       };
 
       append(newField);
       triggerFieldsUpdate();
       return newField;
     },
-    [append, triggerFieldsUpdate],
+    [append, localFields, triggerFieldsUpdate],
   );
 
   const duplicateFieldToAllPages = useCallback(
@@ -325,11 +376,22 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
           continue;
         }
 
+        const existingGroupOptions = field.fieldGroupId
+          ? localFields.filter((candidate) => candidate.fieldGroupId === field.fieldGroupId).flatMap(getFieldOptions)
+          : [];
+        const fieldMeta =
+          field.fieldGroupId && getFieldOptions(field).length === 1
+            ? updateSingleFieldOptionId(
+                field,
+                getNextFieldOptionId([...existingGroupOptions, ...newFields.flatMap(getFieldOptions)]),
+              )
+            : field.fieldMeta;
         const newField: TLocalField = {
           ...structuredClone(field),
           id: undefined,
           formId: nanoid(12),
           page: pageNumber,
+          fieldMeta,
         };
 
         append(newField);
@@ -339,7 +401,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
       triggerFieldsUpdate();
       return newFields;
     },
-    [append, triggerFieldsUpdate],
+    [append, localFields, triggerFieldsUpdate],
   );
 
   const createFieldGroup = useCallback(
@@ -459,6 +521,13 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
 
       const existingGroupField = localFields.find((candidate) => candidate.fieldGroupId === group.id);
       const existingGroupMeta = existingGroupField?.fieldMeta;
+      const existingGroupOptions = localFields
+        .filter((candidate) => candidate.fieldGroupId === group.id && candidate.formId !== field.formId)
+        .flatMap(getFieldOptions);
+      const fieldMetaWithUniqueOptionId =
+        field.fieldMeta && values.length === 1
+          ? updateSingleFieldOptionId(field, getUnusedFieldOptionId(values[0], existingGroupOptions))
+          : field.fieldMeta;
 
       updateFieldByFormId(field.formId, {
         fieldGroupId: group.id,
@@ -468,25 +537,25 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
           validationRule: null,
           validationLength: null,
         },
-        fieldMeta: field.fieldMeta
+        fieldMeta: fieldMetaWithUniqueOptionId
           ? {
-              ...field.fieldMeta,
-              required: existingGroupMeta?.required ?? field.fieldMeta.required ?? false,
+              ...fieldMetaWithUniqueOptionId,
+              required: existingGroupMeta?.required ?? fieldMetaWithUniqueOptionId.required ?? false,
               readOnly: false,
-              ...(field.fieldMeta.type === 'checkbox'
+              ...(fieldMetaWithUniqueOptionId.type === 'checkbox'
                 ? {
                     validationRule:
                       existingGroupMeta?.type === 'checkbox'
                         ? existingGroupMeta.validationRule || undefined
-                        : field.fieldMeta.validationRule || undefined,
+                        : fieldMetaWithUniqueOptionId.validationRule || undefined,
                     validationLength:
                       existingGroupMeta?.type === 'checkbox'
                         ? existingGroupMeta.validationLength || undefined
-                        : field.fieldMeta.validationLength || undefined,
+                        : fieldMetaWithUniqueOptionId.validationLength || undefined,
                   }
                 : {}),
             }
-          : field.fieldMeta,
+          : fieldMetaWithUniqueOptionId,
       });
     },
     [createFieldGroup, localFields, updateFieldByFormId],
