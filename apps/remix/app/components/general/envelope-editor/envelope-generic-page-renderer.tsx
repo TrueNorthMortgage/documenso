@@ -57,7 +57,7 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
           throw new Error(`Recipient not found for field ${field.id}`);
         }
 
-        const isInserted = recipient.signingStatus === SigningStatus.SIGNED && field.inserted;
+        const isInserted = field.inserted;
 
         return {
           ...field,

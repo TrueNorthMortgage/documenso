@@ -130,7 +130,7 @@ export const renderCheckboxFieldElement = (field: FieldToRender, options: Render
 
   checkboxValues.forEach(({ value, checked }, index) => {
     const isCheckboxChecked = match(mode)
-      .with('edit', () => checked)
+      .with('edit', () => (field.inserted ? checkedValues.includes(index) : checked))
       .with('sign', () => checkedValues.includes(index))
       .with('export', () => {
         // If it's read-only, check the originally checked state.

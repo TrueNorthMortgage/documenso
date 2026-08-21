@@ -121,7 +121,7 @@ export const renderRadioFieldElement = (field: FieldToRender, options: RenderFie
 
   radioValues.forEach(({ value, checked }, index) => {
     const isRadioValueChecked = match(mode)
-      .with('edit', () => checked)
+      .with('edit', () => (field.inserted ? index.toString() === field.customText : checked))
       .with('sign', () => index.toString() === field.customText)
       .with('export', () => {
         // If it's read-only, check the originally checked state.
