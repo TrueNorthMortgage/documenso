@@ -6,6 +6,7 @@ import type { TFieldGroup } from '../types/field-group';
 import { getConditionalFieldVisibility } from '../universal/conditional-field-visibility';
 import { fieldsContainUnsignedRequiredField } from './advanced-fields-helpers';
 import {
+  clearOtherRadioGroupSelections,
   getCheckboxGroupFieldValues,
   getCheckboxGroupOptions,
   getFieldsRequiringValidation,
@@ -64,6 +65,36 @@ const checkboxField = (
 });
 
 describe('field groups', () => {
+  it('clears other preselected radio options in the same group', () => {
+    const radioGroup = group(FieldType.RADIO);
+    const fields = [
+      {
+        formId: 'radio-1',
+        fieldGroupId: radioGroup.id,
+        fieldMeta: {
+          type: 'radio' as const,
+          direction: 'vertical' as const,
+          values: [{ id: 1, checked: true, value: 'Option 1' }],
+        },
+      },
+      {
+        formId: 'radio-2',
+        fieldGroupId: radioGroup.id,
+        fieldMeta: {
+          type: 'radio' as const,
+          direction: 'vertical' as const,
+          values: [{ id: 2, checked: true, value: 'Option 2' }],
+        },
+      },
+    ];
+
+    const updatedFields = clearOtherRadioGroupSelections(fields, fields[1]);
+
+    expect(
+      updatedFields.map((field) => (field.fieldMeta?.type === 'radio' ? field.fieldMeta.values?.[0]?.checked : null)),
+    ).toEqual([false, true]);
+  });
+
   it('treats radio options on different pages as one required field', () => {
     const radioGroup = group(FieldType.RADIO);
     const fields = [radioField(1, false, '', radioGroup), radioField(2, true, '0', radioGroup)];

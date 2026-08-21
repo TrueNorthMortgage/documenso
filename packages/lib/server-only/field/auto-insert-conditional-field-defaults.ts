@@ -2,6 +2,7 @@ import { DEFAULT_DOCUMENT_DATE_FORMAT } from '@documenso/lib/constants/date-form
 import { DEFAULT_DOCUMENT_TIME_ZONE } from '@documenso/lib/constants/time-zones';
 import type { TDocumentMeta } from '@documenso/lib/types/document-meta';
 import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
+import { isDateFieldAutoFillEnabled } from '@documenso/lib/utils/date-fields';
 import type { Prisma } from '@prisma/client';
 import { FieldType } from '@prisma/client';
 import { DateTime } from 'luxon';
@@ -54,7 +55,7 @@ export const autoInsertConditionalFieldDefaults = async ({
       return [];
     }
 
-    if (field.type === FieldType.DATE) {
+    if (field.type === FieldType.DATE && isDateFieldAutoFillEnabled(field.fieldMeta)) {
       return [
         {
           id: field.id,

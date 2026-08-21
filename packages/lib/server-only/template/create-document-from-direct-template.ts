@@ -31,6 +31,7 @@ import type { ApiRequestMetadata } from '../../universal/extract-request-metadat
 import { getFileServerSide } from '../../universal/upload/get-file.server';
 import { putPdfFileServerSide } from '../../universal/upload/put-file.server';
 import { isRequiredField } from '../../utils/advanced-fields-helpers';
+import { formatDateFieldValue, isDateFieldAutoFillEnabled } from '../../utils/date-fields';
 import { extractDerivedDocumentMeta } from '../../utils/document';
 import type { CreateDocumentAuditLogDataResponse } from '../../utils/document-audit-logs';
 import { createDocumentAuditLogData } from '../../utils/document-audit-logs';
@@ -265,7 +266,21 @@ export const createDocumentFromDirectTemplate = async ({
       const typedSignature = isSignatureField && !isBase64 ? value : undefined;
 
       if (templateField.type === FieldType.DATE) {
-        customText = DateTime.now().setZone(derivedDocumentMeta.timezone).toFormat(derivedDocumentMeta.dateFormat);
+        const isAutoFillEnabled = isDateFieldAutoFillEnabled(templateField.fieldMeta);
+
+        if (!isAutoFillEnabled && !value) {
+          throw new AppError(AppErrorCode.INVALID_BODY, {
+            message: 'A date is required',
+          });
+        }
+
+        customText = isAutoFillEnabled
+          ? DateTime.now().setZone(derivedDocumentMeta.timezone).toFormat(derivedDocumentMeta.dateFormat)
+          : formatDateFieldValue({
+              value: value ?? '',
+              dateFormat: derivedDocumentMeta.dateFormat,
+              timezone: derivedDocumentMeta.timezone,
+            });
       }
 
       if (isSignatureField && !signatureImageAsBase64 && !typedSignature) {

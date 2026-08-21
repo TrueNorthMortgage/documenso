@@ -2,6 +2,7 @@ import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import type { Field, FieldType } from '@prisma/client';
 
 import type { TFieldGroup } from '../types/field-group';
+import type { TFieldMetaSchema } from '../types/field-meta';
 
 export type TFieldWithGroup = Pick<Field, 'id' | 'type' | 'fieldGroupId' | 'inserted' | 'customText' | 'fieldMeta'> &
   Partial<Pick<Field, 'page' | 'positionX' | 'positionY'>> & {
@@ -17,6 +18,48 @@ export type TCheckboxGroupOption = {
 
 export const getFieldGroupFields = <T extends TFieldWithGroup>(fields: T[], groupId: string): T[] =>
   fields.filter((field) => field.fieldGroupId === groupId);
+
+type TRadioGroupSelectionField = {
+  formId: string;
+  fieldGroupId: string | null;
+  fieldMeta?: TFieldMetaSchema;
+};
+
+export const clearOtherRadioGroupSelections = <T extends TRadioGroupSelectionField>(
+  fields: T[],
+  selectedField: TRadioGroupSelectionField,
+): T[] => {
+  const selectedRadioMeta = selectedField.fieldMeta;
+  const hasSelectedValue =
+    selectedField.fieldGroupId &&
+    selectedRadioMeta?.type === 'radio' &&
+    selectedRadioMeta.values?.some((value) => value.checked);
+
+  if (!hasSelectedValue) {
+    return fields;
+  }
+
+  return fields.map((candidate) => {
+    if (
+      candidate.formId === selectedField.formId ||
+      candidate.fieldGroupId !== selectedField.fieldGroupId ||
+      candidate.fieldMeta?.type !== 'radio'
+    ) {
+      return candidate;
+    }
+
+    return {
+      ...candidate,
+      fieldMeta: {
+        ...candidate.fieldMeta,
+        values: candidate.fieldMeta.values?.map((value) => ({
+          ...value,
+          checked: false,
+        })),
+      },
+    };
+  });
+};
 
 const getCheckboxFieldValues = (field: TFieldWithGroup) => {
   if (!field.fieldMeta || typeof field.fieldMeta !== 'object' || Array.isArray(field.fieldMeta)) {

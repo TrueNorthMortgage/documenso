@@ -1,6 +1,7 @@
 import { unsafe_useEffectOnce } from '@documenso/lib/client-only/hooks/use-effect-once';
 import { AUTO_SIGNABLE_FIELD_TYPES } from '@documenso/lib/constants/autosign';
 import { DocumentAuth } from '@documenso/lib/types/document-auth';
+import { isDateFieldAutoFillEnabled } from '@documenso/lib/utils/date-fields';
 import { extractInitials } from '@documenso/lib/utils/recipient-formatter';
 import { trpc } from '@documenso/trpc/react';
 import { Button } from '@documenso/ui/primitives/button';
@@ -77,6 +78,10 @@ export const DocumentSigningAutoSign = ({ recipient, fields }: DocumentSigningAu
     }
 
     if (field.type === FieldType.EMAIL && !email) {
+      return false;
+    }
+
+    if (field.type === FieldType.DATE && !isDateFieldAutoFillEnabled(field.fieldMeta)) {
       return false;
     }
 

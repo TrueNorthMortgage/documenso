@@ -69,6 +69,25 @@ describe('getConditionalFieldVisibility', () => {
     expect(visibility.get(2)).toBe(true);
   });
 
+  it('uses a generated value for a blank radio option', () => {
+    const child = childWithRule(2, 1);
+    child.conditionalChildRule.value = 'Option 2';
+
+    const visibility = getConditionalFieldVisibility([
+      field(1, FieldType.RADIO, '1', undefined, {
+        type: 'radio',
+        direction: 'vertical',
+        values: [
+          { id: 1, value: 'Visible', checked: false },
+          { id: 2, value: '', checked: false },
+        ],
+      }),
+      child,
+    ]);
+
+    expect(visibility.get(2)).toBe(true);
+  });
+
   it('maps checkbox indexes to configured option values', () => {
     const child = childWithRule(2, 1);
     child.conditionalChildRule.value = 'Two';

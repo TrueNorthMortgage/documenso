@@ -6,6 +6,7 @@ import {
   ConditionalFieldRuleOperator,
   type ConditionalFieldRuleOperator as TConditionalFieldRuleOperator,
 } from '../../types/conditional-field';
+import { getFieldOptionValue } from '../../utils/field-option-values';
 import { buildTeamWhereQuery } from '../../utils/teams';
 
 const CONDITIONAL_PARENT_TYPES = new Set<FieldType>([
@@ -127,8 +128,8 @@ const validateRule = ({
     return;
   }
 
-  const parentMeta = parentField.fieldMeta as { values?: Array<{ value: string }> } | null;
-  const allowedValues = parentMeta?.values?.map((option) => option.value) ?? [];
+  const parentMeta = parentField.fieldMeta as { values?: Array<{ id?: number; value?: string }> } | null;
+  const allowedValues = parentMeta?.values?.map((option, index) => getFieldOptionValue(option, index)) ?? [];
 
   if (!allowedValues.includes(value)) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {

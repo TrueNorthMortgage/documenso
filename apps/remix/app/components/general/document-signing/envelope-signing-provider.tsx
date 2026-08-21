@@ -6,6 +6,7 @@ import type { EnvelopeForSigningResponse } from '@documenso/lib/server-only/enve
 import type { TRecipientActionAuth } from '@documenso/lib/types/document-auth';
 import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import { getFieldsRequiringValidation } from '@documenso/lib/utils/advanced-fields-helpers';
+import { isDateFieldAutoFillEnabled } from '@documenso/lib/utils/date-fields';
 import { extractFieldInsertionValues } from '@documenso/lib/utils/envelope-signing';
 import { trpc } from '@documenso/trpc/react';
 import type { TSignEnvelopeFieldValue } from '@documenso/trpc/server/envelope-router/sign-envelope-field.types';
@@ -103,7 +104,12 @@ const prefillDateFields = (data: EnvelopeForSigningResponse): EnvelopeForSigning
   >(
     field: T,
   ): T => {
-    if (field.type !== FieldType.DATE || field.inserted || fieldVisibility.get(field.id) === false) {
+    if (
+      field.type !== FieldType.DATE ||
+      !isDateFieldAutoFillEnabled(field.fieldMeta) ||
+      field.inserted ||
+      fieldVisibility.get(field.id) === false
+    ) {
       return field;
     }
 

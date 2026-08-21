@@ -96,6 +96,7 @@ const getDefaultState = (fieldType: FieldType): FieldMeta => {
         type: 'date',
         fontSize: 14,
         textAlign: 'left',
+        autoFill: true,
         overflow: DEFAULT_DATE_OVERFLOW_MODE,
       };
     case FieldType.TEXT:

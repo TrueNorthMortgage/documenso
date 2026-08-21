@@ -190,3 +190,7 @@ export const convertToLocalSystemFormat = (
 export const isValidDateFormat = (dateFormat: unknown): dateFormat is ValidDateFormat => {
   return VALID_DATE_FORMAT_VALUES.includes(dateFormat as ValidDateFormat);
 };
+
+export const isDateFormatWithTime = (dateFormat?: string | null): boolean => {
+  return /(?:h|H|m|s|a)/.test(dateFormat ?? DEFAULT_DOCUMENT_DATE_FORMAT);
+};

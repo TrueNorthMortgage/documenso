@@ -30,6 +30,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { match, P } from 'ts-pattern';
 
+import { SignFieldDateDialog } from '~/components/dialogs/sign-field-date-dialog';
 import { DocumentSigningAttachmentsPopover } from '~/components/general/document-signing/document-signing-attachments-popover';
 import { DocumentSigningAutoSign } from '~/components/general/document-signing/document-signing-auto-sign';
 import { DocumentSigningCheckboxField } from '~/components/general/document-signing/document-signing-checkbox-field';
@@ -170,6 +171,7 @@ export const DocumentSigningPageViewV1 = ({
 
   return (
     <DocumentSigningRecipientProvider recipient={recipient} targetSigner={targetSigner}>
+      <SignFieldDateDialog.Root />
       <div className="mx-auto w-full max-w-screen-xl sm:px-6">
         {document.team.teamGlobalSettings.brandingEnabled && document.team.teamGlobalSettings.brandingLogo && (
           <img

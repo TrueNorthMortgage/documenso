@@ -6,6 +6,8 @@ import { ZFieldGroupSchema } from '@documenso/lib/types/field-group';
 import { ZFieldMetaSchema } from '@documenso/lib/types/field-meta';
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import { nanoid } from '@documenso/lib/universal/id';
+import { removeConditionalRulesForDeletedFields } from '@documenso/lib/utils/conditional-field-rules';
+import { clearOtherRadioGroupSelections } from '@documenso/lib/utils/field-groups';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Field } from '@prisma/client';
 import { FieldType } from '@prisma/client';
@@ -125,7 +127,6 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
 
   const {
     append,
-    remove,
     replace,
     update,
     fields: localFields,
@@ -178,16 +179,19 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
 
   const removeFieldsByFormId = useCallback(
     (formIds: string[]) => {
-      const indexes = formIds
-        .map((formId) => localFields.findIndex((field) => field.formId === formId))
-        .filter((index) => index !== -1);
+      const fields = form.getValues().fields;
+      const fieldsToRemove = fields.filter((field) => formIds.includes(field.formId));
 
-      if (indexes.length > 0) {
-        remove(indexes);
-        triggerFieldsUpdate();
+      if (fieldsToRemove.length > 0) {
+        const deletedFieldIds = new Set(fieldsToRemove.flatMap((field) => (field.id === undefined ? [] : [field.id])));
+        const fieldsWithRulesCleaned = removeConditionalRulesForDeletedFields(fields, deletedFieldIds);
+        const remainingFields = fieldsWithRulesCleaned.filter((field) => !formIds.includes(field.formId));
+
+        replace(remainingFields);
+        void handleFieldsUpdate(remainingFields);
       }
     },
-    [localFields, remove, triggerFieldsUpdate],
+    [form, handleFieldsUpdate, replace],
   );
 
   const setFieldId = (formId: string, id: number) => {
@@ -249,7 +253,12 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
       const validationLength = fieldMeta.type === 'checkbox' ? fieldMeta.validationLength || undefined : undefined;
 
       const currentFields = form.getValues('fields');
-      const updatedFields = currentFields.map((candidate) => {
+      const fieldsWithRadioSelectionCleared = clearOtherRadioGroupSelections(currentFields, {
+        formId: field.formId,
+        fieldGroupId: field.fieldGroupId,
+        fieldMeta,
+      });
+      const updatedFields = fieldsWithRadioSelectionCleared.map((candidate) => {
         if (candidate.fieldGroupId !== field.fieldGroupId || !candidate.fieldMeta) {
           return candidate;
         }
