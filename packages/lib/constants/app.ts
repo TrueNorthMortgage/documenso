@@ -34,7 +34,15 @@ export const SUPPORT_EMAIL = env('NEXT_PUBLIC_SUPPORT_EMAIL') ?? 'support@docume
 
 export const USE_INTERNAL_URL_BROWSERLESS = () => env('NEXT_PUBLIC_USE_INTERNAL_URL_BROWSERLESS') === 'true';
 
-export const IS_AI_FEATURES_CONFIGURED = () => !!env('GOOGLE_VERTEX_PROJECT_ID') && !!env('GOOGLE_VERTEX_API_KEY');
+export const IS_AI_FEATURES_CONFIGURED = () => {
+  const publicConfiguration = env('NEXT_PUBLIC_AI_FEATURES_CONFIGURED');
+
+  if (publicConfiguration !== undefined) {
+    return publicConfiguration === 'true';
+  }
+
+  return !!env('GOOGLE_VERTEX_PROJECT_ID') && !!env('GOOGLE_VERTEX_API_KEY');
+};
 
 /**
  * Temporary flag to toggle between Playwright-based and Konva-based PDF generation

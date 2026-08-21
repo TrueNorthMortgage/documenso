@@ -22,6 +22,9 @@ export const env = <K extends EnvKey>(variable: K): EnvValue<K> => {
 
 export const createPublicEnv = () => ({
   ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key.startsWith('NEXT_PUBLIC_'))),
+  // Expose only the derived availability flag, not the private Vertex credentials.
+  NEXT_PUBLIC_AI_FEATURES_CONFIGURED:
+    process.env.GOOGLE_VERTEX_PROJECT_ID && process.env.GOOGLE_VERTEX_API_KEY ? 'true' : 'false',
   // Derived from the private URL so the public flag cannot drift from the
   // real server-side configuration. Placed last so it wins over any literal
   // env var with the same name.
