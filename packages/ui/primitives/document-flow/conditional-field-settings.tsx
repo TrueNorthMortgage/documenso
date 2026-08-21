@@ -5,7 +5,7 @@ import {
 } from '@documenso/lib/types/conditional-field';
 import { getFieldOptionValue } from '@documenso/lib/utils/field-option-values';
 import { FieldType } from '@prisma/client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { cn } from '../../lib/utils';
 import { Button } from '../button';
 import { Checkbox } from '../checkbox';
@@ -29,6 +29,8 @@ export type ConditionalFieldSettingsProps = {
   onDeleteRule?: (childFieldId: number) => Promise<void>;
   onRuleCreated?: (rule: TConditionalFieldRule) => void;
   onRuleDeleted?: (childFieldId: number) => void;
+  onSelectedChildIdsChange?: (childFieldIds: number[]) => void;
+  onSelectionModeChange?: (fieldIds: number[]) => void;
 };
 
 const FIELD_TYPE_LABELS: Partial<Record<FieldType, string>> = {
@@ -72,6 +74,8 @@ export const ConditionalFieldSettings = ({
   onDeleteRule,
   onRuleCreated,
   onRuleDeleted,
+  onSelectedChildIdsChange,
+  onSelectionModeChange,
 }: ConditionalFieldSettingsProps) => {
   const [isAddingRule, setIsAddingRule] = useState(false);
   const [operator, setOperator] = useState<TConditionalFieldRuleOperator>(ConditionalFieldRuleOperator.EQUALS);
@@ -107,18 +111,35 @@ export const ConditionalFieldSettings = ({
     ? fields.find((candidate) => candidate.nativeId === childRule.parentFieldId)
     : undefined;
 
+  useEffect(() => {
+    return () => {
+      onSelectedChildIdsChange?.([]);
+      onSelectionModeChange?.([]);
+    };
+  }, [field.nativeId, onSelectedChildIdsChange, onSelectionModeChange]);
+
   const resetForm = () => {
     setIsAddingRule(false);
     setOperator(ConditionalFieldRuleOperator.EQUALS);
     setValue('');
     setSelectedChildIds([]);
+    onSelectedChildIdsChange?.([]);
+    onSelectionModeChange?.([]);
     setError(null);
   };
 
+  const startAddingRule = () => {
+    setIsAddingRule(true);
+    onSelectionModeChange?.(eligibleChildren.flatMap((candidate) => (candidate.nativeId ? [candidate.nativeId] : [])));
+  };
+
   const toggleChild = (childFieldId: number, checked: boolean) => {
-    setSelectedChildIds((current) =>
-      checked ? [...current, childFieldId] : current.filter((candidate) => candidate !== childFieldId),
-    );
+    const nextSelectedChildIds = checked
+      ? [...selectedChildIds, childFieldId]
+      : selectedChildIds.filter((candidate) => candidate !== childFieldId);
+
+    setSelectedChildIds(nextSelectedChildIds);
+    onSelectedChildIdsChange?.(nextSelectedChildIds);
   };
 
   const handleCreate = async () => {
@@ -240,7 +261,7 @@ export const ConditionalFieldSettings = ({
           )}
 
           {!isAddingRule ? (
-            <Button className="mt-4 w-full" variant="outline" size="sm" onClick={() => setIsAddingRule(true)}>
+            <Button className="mt-4 w-full" variant="outline" size="sm" onClick={startAddingRule}>
               Add condition
             </Button>
           ) : (

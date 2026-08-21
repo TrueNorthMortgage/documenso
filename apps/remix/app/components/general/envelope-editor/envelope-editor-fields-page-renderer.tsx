@@ -23,8 +23,9 @@ import Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Transformer } from 'konva/lib/shapes/Transformer';
 import { CopyPlusIcon, SquareStackIcon, TrashIcon, UserCircleIcon } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import { ConditionalFieldHighlightContext } from './conditional-field-highlight-context';
 import { fieldButtonList } from './envelope-editor-fields-drag-drop';
 import { EnvelopeRecipientSelectorCommand } from './envelope-recipient-selector';
 
@@ -91,6 +92,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
   const { t, i18n } = useLingui();
   const { envelope, editorFields, getRecipientColorKey } = useCurrentEnvelopeEditor();
   const { currentEnvelopeItem, setRenderError } = useCurrentEnvelopeRender();
+  const { highlightedFieldIds, selectionFieldIds, fieldNames } = useContext(ConditionalFieldHighlightContext);
 
   const interactiveTransformer = useRef<Transformer | null>(null);
 
@@ -329,6 +331,9 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         customText: '',
         inserted: false,
         fieldMeta: field.fieldMeta,
+        isHighlighted: field.id !== undefined && highlightedFieldIds.has(field.id),
+        selectionLabel:
+          field.id !== undefined && selectionFieldIds.has(field.id) ? fieldNames.get(field.id) : undefined,
       },
       translations: getClientSideFieldTranslations(i18n),
       pageWidth: unscaledViewport.width,
@@ -649,6 +654,22 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       }
     });
 
+    pageLayer.current.find('.conditional-field-indicator').forEach((indicator) => {
+      const fieldFormId = indicator.id().replace(/-conditional-indicator$/, '');
+
+      if (!localPageFields.some((field) => field.formId === fieldFormId)) {
+        indicator.destroy();
+      }
+    });
+
+    pageLayer.current.find('.conditional-selection-label').forEach((label) => {
+      const fieldFormId = label.id().replace(/-conditional-selection-label$/, '');
+
+      if (!localPageFields.some((field) => field.formId === fieldFormId)) {
+        label.destroy();
+      }
+    });
+
     // If it exists, rerender.
     localPageFields.forEach((field) => {
       renderFieldOnLayer(field);
@@ -671,7 +692,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     interactiveTransformer.current?.forceUpdate();
 
     pageLayer.current.batchDraw();
-  }, [localPageFields, selectedKonvaFieldGroups]);
+  }, [fieldNames, highlightedFieldIds, localPageFields, selectedKonvaFieldGroups, selectionFieldIds]);
 
   const setSelectedFields = (nodes: Konva.Node[], clearOtherPages = true) => {
     if (clearOtherPages) {

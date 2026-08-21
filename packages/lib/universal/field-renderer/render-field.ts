@@ -6,7 +6,7 @@ import { match } from 'ts-pattern';
 
 import type { TConditionalFieldRule } from '../../types/conditional-field';
 import type { TFieldMetaSchema } from '../../types/field-meta';
-import { createConditionalFieldIndicator } from './field-generic-items';
+import { upsertConditionalFieldIndicator, upsertConditionalFieldSelectionLabel } from './field-generic-items';
 import { renderCheckboxFieldElement } from './render-checkbox-field';
 import { renderDropdownFieldElement } from './render-dropdown-field';
 import { renderGenericTextFieldElement } from './render-generic-text-field';
@@ -38,6 +38,8 @@ export type FieldToRender = Pick<
   positionY: number;
   fieldMeta?: TFieldMetaSchema | null;
   conditionalChildRule?: TConditionalFieldRule | null;
+  isHighlighted?: boolean;
+  selectionLabel?: string;
   signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'> | null;
 };
 
@@ -94,7 +96,15 @@ export const renderField = ({
     .exhaustive();
 
   if (mode === 'edit' && field.conditionalChildRule) {
-    renderedField.fieldGroup.add(createConditionalFieldIndicator(field, options));
+    upsertConditionalFieldIndicator(field, options);
+  } else {
+    options.pageLayer.findOne(`#${field.renderId}-conditional-indicator`)?.destroy();
+  }
+
+  if (mode === 'edit' && field.selectionLabel) {
+    upsertConditionalFieldSelectionLabel(field, options);
+  } else {
+    options.pageLayer.findOne(`#${field.renderId}-conditional-selection-label`)?.destroy();
   }
 
   return renderedField;

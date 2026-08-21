@@ -59,6 +59,7 @@ import { EditorFieldTextForm } from '~/components/forms/editor/editor-field-text
 import { EnvelopePdfViewer } from '~/components/general/pdf-viewer/envelope-pdf-viewer';
 import { useCurrentTeam } from '~/providers/team';
 
+import { ConditionalFieldHighlightContext } from './conditional-field-highlight-context';
 import { EnvelopeEditorFieldDragDrop } from './envelope-editor-fields-drag-drop';
 import { EnvelopeEditorFieldsPageRenderer } from './envelope-editor-fields-page-renderer';
 import { EnvelopeRendererFileSelector } from './envelope-file-selector';
@@ -100,7 +101,14 @@ export const EnvelopeEditorFieldsPage = () => {
 
   const [isAiFieldDialogOpen, setIsAiFieldDialogOpen] = useState(false);
   const [isAiEnableDialogOpen, setIsAiEnableDialogOpen] = useState(false);
+  const [highlightedConditionalFieldIds, setHighlightedConditionalFieldIds] = useState<number[]>([]);
+  const [conditionalSelectionFieldIds, setConditionalSelectionFieldIds] = useState<number[]>([]);
   const { revalidate } = useRevalidator();
+
+  const highlightedConditionalFieldIdSet = useMemo(
+    () => new Set(highlightedConditionalFieldIds),
+    [highlightedConditionalFieldIds],
+  );
 
   const envelopeItemPermissions = useMemo(
     () => getEnvelopeItemPermissions(envelope, envelope.recipients),
@@ -128,6 +136,25 @@ export const EnvelopeEditorFieldsPage = () => {
         envelopeItemId: field.envelopeItemId,
       })),
     [editorFields.localFields, envelope.recipients],
+  );
+
+  const conditionalFieldNames = useMemo(
+    () =>
+      new Map(
+        conditionalFields.flatMap((field) =>
+          field.nativeId ? [[field.nativeId, getFieldDisplayName(field, conditionalFields)] as const] : [],
+        ),
+      ),
+    [conditionalFields],
+  );
+
+  const conditionalFieldHighlightContextValue = useMemo(
+    () => ({
+      highlightedFieldIds: highlightedConditionalFieldIdSet,
+      selectionFieldIds: new Set(conditionalSelectionFieldIds),
+      fieldNames: conditionalFieldNames,
+    }),
+    [conditionalFieldNames, conditionalSelectionFieldIds, highlightedConditionalFieldIdSet],
   );
 
   const selectedConditionalField = conditionalFields.find((field) => field.formId === selectedField?.formId);
@@ -230,7 +257,7 @@ export const EnvelopeEditorFieldsPage = () => {
     });
   };
 
-  return (
+  const pageContent = (
     <div className="relative flex h-full">
       <div className="flex h-full w-full flex-col overflow-y-auto px-2" ref={scrollableContainerRef}>
         {/* Horizontal envelope item selector */}
@@ -569,6 +596,8 @@ export const EnvelopeEditorFieldsPage = () => {
                         await deleteConditionalRule({ childFieldId });
                         removeConditionalRuleState(childFieldId);
                       }}
+                      onSelectedChildIdsChange={setHighlightedConditionalFieldIds}
+                      onSelectionModeChange={setConditionalSelectionFieldIds}
                     />
                   )}
                 </div>
@@ -578,5 +607,11 @@ export const EnvelopeEditorFieldsPage = () => {
         </div>
       )}
     </div>
+  );
+
+  return (
+    <ConditionalFieldHighlightContext.Provider value={conditionalFieldHighlightContextValue}>
+      {pageContent}
+    </ConditionalFieldHighlightContext.Provider>
   );
 };

@@ -25,6 +25,8 @@ export type FieldToRender = Pick<
   positionY: number;
   fieldMeta?: TFieldMetaSchema | null;
   conditionalChildRule?: TConditionalFieldRule | null;
+  isHighlighted?: boolean;
+  selectionLabel?: string;
   signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'> | null;
 };
 
