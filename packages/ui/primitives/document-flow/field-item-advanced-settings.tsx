@@ -76,6 +76,7 @@ const getDefaultState = (fieldType: FieldType): FieldMeta => {
       return {
         type: 'initials',
         fontSize: 14,
+        required: true,
         textAlign: 'left',
       };
     case FieldType.NAME:

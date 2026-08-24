@@ -6,6 +6,7 @@ export { getFieldsRequiringValidation, isFieldUnsignedAndRequired, isRequiredFie
 
 // Field types that expose optional field metadata in the editor.
 export const ADVANCED_FIELD_TYPES_WITH_OPTIONAL_SETTING: FieldType[] = [
+  FieldType.INITIALS,
   FieldType.NUMBER,
   FieldType.TEXT,
   FieldType.DROPDOWN,

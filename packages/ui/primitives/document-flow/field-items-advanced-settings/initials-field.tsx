@@ -2,6 +2,7 @@ import { validateFields as validateInitialsFields } from '@documenso/lib/advance
 import type { TInitialsFieldMeta as InitialsFieldMeta } from '@documenso/lib/types/field-meta';
 import { Input } from '@documenso/ui/primitives/input';
 import { Label } from '@documenso/ui/primitives/label';
+import { Switch } from '@documenso/ui/primitives/switch';
 import { Trans, useLingui } from '@lingui/react/macro';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../select';
@@ -65,6 +66,17 @@ export const InitialsFieldAdvancedSettings = ({
             <SelectItem value="right">Right</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex flex-row items-center gap-2">
+        <Switch
+          className="bg-background"
+          checked={fieldState.required}
+          onCheckedChange={(checked) => handleInput('required', checked)}
+        />
+        <Label>
+          <Trans>Required field</Trans>
+        </Label>
       </div>
     </div>
   );
