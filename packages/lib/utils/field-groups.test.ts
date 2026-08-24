@@ -115,6 +115,34 @@ describe('field groups', () => {
     expect(fieldsContainUnsignedRequiredField([field])).toBe(false);
   });
 
+  it('keeps initials required by default but allows them to be optional', () => {
+    const field: TFieldWithGroup = {
+      id: 1,
+      type: FieldType.INITIALS,
+      fieldGroupId: null,
+      inserted: false,
+      customText: '',
+      fieldMeta: {
+        type: 'initials',
+        fontSize: 12,
+        textAlign: 'left',
+      },
+    };
+
+    expect(getFieldsRequiringValidation([field])).toHaveLength(1);
+    expect(
+      getFieldsRequiringValidation([
+        {
+          ...field,
+          fieldMeta: {
+            ...field.fieldMeta,
+            required: false,
+          },
+        },
+      ]),
+    ).toHaveLength(0);
+  });
+
   it('keeps an incomplete required radio group in validation', () => {
     const radioGroup = group(FieldType.RADIO);
     const fields = [radioField(1, false, '', radioGroup), radioField(2, false, '', radioGroup)];

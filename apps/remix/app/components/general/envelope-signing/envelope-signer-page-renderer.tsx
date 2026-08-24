@@ -310,7 +310,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
          * INITIALS FIELD.
          */
         .with({ type: FieldType.INITIALS }, (field) => {
-          const initials = localFullName ? extractInitials(localFullName) : null;
+          const initials = localFullName ? extractInitials(localFullName, Number.POSITIVE_INFINITY) : null;
 
           handleInitialsFieldClick({ field, initials })
             .then(async (payload) => {

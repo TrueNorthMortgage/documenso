@@ -337,6 +337,7 @@ export const FIELD_NUMBER_META_DEFAULT_VALUES: TNumberFieldMeta = {
 export const FIELD_INITIALS_META_DEFAULT_VALUES: TInitialsFieldMeta = {
   type: 'initials',
   fontSize: DEFAULT_FIELD_FONT_SIZE,
+  required: true,
   textAlign: 'left',
 };
 

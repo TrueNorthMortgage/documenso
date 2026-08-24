@@ -1,5 +1,5 @@
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
-import type { Field, FieldType } from '@prisma/client';
+import { type Field, FieldType } from '@prisma/client';
 
 import type { TFieldGroup } from '../types/field-group';
 import type { TFieldMetaSchema } from '../types/field-meta';
@@ -255,17 +255,21 @@ export const isRequiredField = (field: TFieldWithGroup) => {
   }
 
   // All fields without the optional metadata are assumed to be required.
-  const optionalFieldTypes: FieldType[] = ['NUMBER', 'TEXT', 'DROPDOWN', 'RADIO', 'CHECKBOX'];
+  const optionalFieldTypes: FieldType[] = ['INITIALS', 'NUMBER', 'TEXT', 'DROPDOWN', 'RADIO', 'CHECKBOX'];
 
   if (!optionalFieldTypes.includes(field.type)) {
     return true;
   }
 
   if (!field.fieldMeta || typeof field.fieldMeta !== 'object' || Array.isArray(field.fieldMeta)) {
-    return false;
+    return field.type === FieldType.INITIALS;
   }
 
-  return 'required' in field.fieldMeta && field.fieldMeta.required === true;
+  if (!('required' in field.fieldMeta)) {
+    return field.type === FieldType.INITIALS;
+  }
+
+  return field.fieldMeta.required === true;
 };
 
 export const isFieldUnsignedAndRequired = (field: TFieldWithGroup) => isRequiredField(field) && !field.inserted;
