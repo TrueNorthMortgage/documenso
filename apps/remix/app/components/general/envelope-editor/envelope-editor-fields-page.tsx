@@ -20,6 +20,7 @@ import {
   type TTextFieldMeta,
 } from '@documenso/lib/types/field-meta';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
+import { getDragScrollDelta } from '@documenso/lib/utils/field-drag';
 import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
 import { trpc } from '@documenso/trpc/react';
 import { AnimateGenericFadeInOut } from '@documenso/ui/components/animate/animate-generic-fade-in-out';
@@ -30,18 +31,19 @@ import {
   ConditionalFieldSettings,
   getFieldDisplayName,
 } from '@documenso/ui/primitives/document-flow/conditional-field-settings';
+import { FRIENDLY_FIELD_TYPE } from '@documenso/ui/primitives/document-flow/types';
 import { Separator } from '@documenso/ui/primitives/separator';
 import type { MessageDescriptor } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { DocumentStatus, FieldType, RecipientRole } from '@prisma/client';
-import { EyeOffIcon, FileTextIcon, PencilIcon, SparklesIcon } from 'lucide-react';
+import { AlertCircleIcon, EyeOffIcon, FileTextIcon, PencilIcon, SparklesIcon } from 'lucide-react';
+import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRevalidator, useSearchParams } from 'react-router';
 import { isDeepEqual } from 'remeda';
 import { match } from 'ts-pattern';
-
 import { AiFeaturesEnableDialog } from '~/components/dialogs/ai-features-enable-dialog';
 import { AiFieldDetectionDialog } from '~/components/dialogs/ai-field-detection-dialog';
 import { ApplyTemplateToEnvelopeItemDialog } from '~/components/dialogs/apply-template-to-envelope-item-dialog';
@@ -61,8 +63,9 @@ import { EnvelopePdfViewer } from '~/components/general/pdf-viewer/envelope-pdf-
 import { useCurrentTeam } from '~/providers/team';
 
 import { ConditionalFieldHighlightContext } from './conditional-field-highlight-context';
+import { useEnvelopeEditorFieldDrag } from './envelope-editor-field-drag-context';
 import { EnvelopeEditorFieldDragDrop } from './envelope-editor-fields-drag-drop';
-import { EnvelopeEditorFieldsPageRenderer } from './envelope-editor-fields-page-renderer';
+import { EnvelopeEditorFieldsPageRenderer, getPageAtPoint } from './envelope-editor-fields-page-renderer';
 import { EnvelopeRendererFileSelector } from './envelope-file-selector';
 import { EnvelopeRecipientSelector } from './envelope-recipient-selector';
 
@@ -78,6 +81,179 @@ const FieldSettingsTypeTranslations: Record<FieldType, MessageDescriptor> = {
   [FieldType.RADIO]: msg`Radio Settings`,
   [FieldType.CHECKBOX]: msg`Checkbox Settings`,
   [FieldType.DROPDOWN]: msg`Dropdown Settings`,
+};
+
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+export const INVALID_FIELD_PLACEMENT_CLASS_NAME = 'rounded-[2px] border-2 border-red-500 bg-white text-red-600';
+
+const InvalidFieldPlacementOverlay = ({
+  scrollableContainerRef,
+}: {
+  scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
+}) => {
+  const { editorFields } = useCurrentEnvelopeEditor();
+  const { currentEnvelopeItem } = useCurrentEnvelopeRender();
+  const { invalidPlacement, setInvalidPlacement } = useEnvelopeEditorFieldDrag();
+  const { _ } = useLingui();
+  const placementRef = useRef(invalidPlacement);
+  const dragRef = useRef<{ offsetX: number; offsetY: number; pointerId: number; lastMoveAt: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    placementRef.current = invalidPlacement;
+  }, [invalidPlacement]);
+
+  useEffect(() => {
+    if (invalidPlacement && !editorFields.getFieldByFormId(invalidPlacement.fieldFormId)) {
+      setInvalidPlacement(null);
+    }
+  }, [editorFields, invalidPlacement, setInvalidPlacement]);
+
+  if (!invalidPlacement || invalidPlacement.envelopeItemId !== currentEnvelopeItem?.id) {
+    return null;
+  }
+
+  const updatePlacement = (clientX: number, clientY: number) => {
+    const scrollContainer = scrollableContainerRef.current;
+    const placement = placementRef.current;
+    const drag = dragRef.current;
+
+    if (!scrollContainer || !placement || !drag) {
+      return;
+    }
+
+    const scrollRect = scrollContainer.getBoundingClientRect();
+    const now = performance.now();
+    const elapsedMs = Math.max(0, now - drag.lastMoveAt);
+
+    drag.lastMoveAt = now;
+    scrollContainer.scrollTop += getDragScrollDelta({
+      clientHeight: scrollContainer.clientHeight,
+      containerBottom: scrollRect.bottom,
+      containerTop: scrollRect.top,
+      elapsedMs,
+      pointerY: clientY,
+      scrollHeight: scrollContainer.scrollHeight,
+      scrollTop: scrollContainer.scrollTop,
+    });
+
+    const maxX = Math.max(0, scrollContainer.clientWidth - placement.width);
+    const maxY = Math.max(
+      scrollContainer.scrollTop + scrollContainer.clientHeight - placement.height,
+      scrollContainer.scrollHeight - placement.height,
+    );
+    const nextPlacement = {
+      ...placement,
+      x: clamp(clientX - scrollRect.left + scrollContainer.scrollLeft - drag.offsetX, 0, maxX),
+      y: clamp(clientY - scrollRect.top + scrollContainer.scrollTop - drag.offsetY, 0, maxY),
+    };
+
+    placementRef.current = nextPlacement;
+    setInvalidPlacement(nextPlacement);
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const scrollContainer = scrollableContainerRef.current;
+
+    if (!scrollContainer) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const scrollRect = scrollContainer.getBoundingClientRect();
+
+    dragRef.current = {
+      lastMoveAt: performance.now(),
+      offsetX: event.clientX - scrollRect.left + scrollContainer.scrollLeft - invalidPlacement.x,
+      offsetY: event.clientY - scrollRect.top + scrollContainer.scrollTop - invalidPlacement.y,
+      pointerId: event.pointerId,
+    };
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsDragging(true);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) {
+      return;
+    }
+
+    event.preventDefault();
+    updatePlacement(event.clientX, event.clientY);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) {
+      return;
+    }
+
+    event.preventDefault();
+    updatePlacement(event.clientX, event.clientY);
+
+    const placement = placementRef.current;
+    const field = placement ? editorFields.getFieldByFormId(placement.fieldFormId) : undefined;
+    const targetPage = getPageAtPoint(event.clientX, event.clientY);
+
+    if (placement && field && targetPage) {
+      const pageRect = targetPage.getBoundingClientRect();
+      const scrollContainer = scrollableContainerRef.current;
+      const scrollRect = scrollContainer?.getBoundingClientRect();
+      const pageNumber = Number(targetPage.dataset.pageNumber);
+
+      if (scrollContainer && scrollRect && Number.isInteger(pageNumber) && pageRect.width > 0 && pageRect.height > 0) {
+        const pageX = pageRect.left - scrollRect.left + scrollContainer.scrollLeft;
+        const pageY = pageRect.top - scrollRect.top + scrollContainer.scrollTop;
+        const maxPositionX = Math.max(0, 100 - field.width);
+        const maxPositionY = Math.max(0, 100 - field.height);
+
+        editorFields.updateFieldByFormId(field.formId, {
+          page: pageNumber,
+          positionX: clamp(((placement.x - pageX) / pageRect.width) * 100, 0, maxPositionX),
+          positionY: clamp(((placement.y - pageY) / pageRect.height) * 100, 0, maxPositionY),
+        });
+        editorFields.setSelectedField(field.formId);
+        setInvalidPlacement(null);
+      }
+    }
+
+    dragRef.current = null;
+    setIsDragging(false);
+  };
+
+  const field = editorFields.getFieldByFormId(invalidPlacement.fieldFormId);
+  const fieldText = field ? field.fieldMeta?.label || _(FRIENDLY_FIELD_TYPE[field.type]) : null;
+
+  return (
+    <div
+      className={`absolute z-50 cursor-move ${INVALID_FIELD_PLACEMENT_CLASS_NAME}`}
+      onPointerCancel={handlePointerUp}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      style={{
+        height: invalidPlacement.height,
+        left: invalidPlacement.x,
+        opacity: isDragging ? 0.8 : 1,
+        pointerEvents: 'auto',
+        top: invalidPlacement.y,
+        width: invalidPlacement.width,
+      }}
+      title={field ? `${field.type}: place this field on a document page` : 'Place this field on a document page'}
+    >
+      {fieldText && (
+        <span className="flex h-full items-center justify-center overflow-hidden px-1 text-center text-xs">
+          {fieldText}
+        </span>
+      )}
+      <AlertCircleIcon className="absolute -top-3 -right-3 h-5 w-5 rounded-full bg-white text-red-600" />
+    </div>
+  );
 };
 
 export const EnvelopeEditorFieldsPage = () => {
@@ -260,7 +436,7 @@ export const EnvelopeEditorFieldsPage = () => {
 
   const pageContent = (
     <div className="relative flex h-full">
-      <div className="flex h-full w-full flex-col overflow-y-auto px-2" ref={scrollableContainerRef}>
+      <div className="relative flex h-full w-full flex-col overflow-y-auto px-2" ref={scrollableContainerRef}>
         {/* Horizontal envelope item selector */}
         <EnvelopeRendererFileSelector
           className="px-0"
@@ -335,6 +511,8 @@ export const EnvelopeEditorFieldsPage = () => {
             </div>
           )}
         </div>
+
+        <InvalidFieldPlacementOverlay scrollableContainerRef={scrollableContainerRef} />
       </div>
 
       {/* Right Section - Form Fields Panel */}

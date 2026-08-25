@@ -37,7 +37,7 @@ import { EnvelopeSaveAsTemplateDialog } from '~/components/dialogs/envelope-save
 import { TemplateDirectLinkDialog } from '~/components/dialogs/template-direct-link-dialog';
 import { EnvelopeEditorSettingsDialog } from '~/components/general/envelope-editor/envelope-editor-settings-dialog';
 import { SourceAttributionFooter } from '~/components/general/source-attribution-footer';
-
+import { EnvelopeEditorFieldDragProvider } from './envelope-editor-field-drag-context';
 import { EnvelopeEditorFieldsPage } from './envelope-editor-fields-page';
 import EnvelopeEditorHeader from './envelope-editor-header';
 import { EnvelopeEditorPreviewPage } from './envelope-editor-preview-page';
@@ -175,7 +175,7 @@ export const EnvelopeEditor = () => {
 
   const currentStepData = envelopeEditorSteps.find((step) => step.id === searchParamsStep) || envelopeEditorSteps[0];
 
-  return (
+  const editorContent = (
     <div className="h-screen w-screen bg-envelope-editor-background">
       <EnvelopeEditorHeader />
 
@@ -538,4 +538,6 @@ export const EnvelopeEditor = () => {
       </div>
     </div>
   );
+
+  return <EnvelopeEditorFieldDragProvider>{editorContent}</EnvelopeEditorFieldDragProvider>;
 };

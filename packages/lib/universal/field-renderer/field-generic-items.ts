@@ -110,8 +110,7 @@ export const upsertFieldGroup = (field: FieldToRender, options: RenderFieldEleme
     draggable: editable,
     dragBoundFunc: (pos) => {
       // Allow the editor to move a field across page boundaries while it is
-      // being dragged. The editor validates the final drop target and snaps
-      // invalid drops back to the original page.
+      // being dragged. The editor validates the final drop target.
       if (fieldGroup.isDragging()) {
         return pos;
       }
