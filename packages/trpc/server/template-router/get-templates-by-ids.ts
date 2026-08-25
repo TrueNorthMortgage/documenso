@@ -47,6 +47,8 @@ export const getTemplatesByIdsRoute = authenticatedProcedure
         },
         envelopeItems: {
           select: {
+            id: true,
+            envelopeId: true,
             documentData: true,
           },
         },
@@ -113,6 +115,10 @@ export const getTemplatesByIdsRoute = authenticatedProcedure
             }
           : null,
         fields: envelope.fields.map((field) => mapFieldToLegacyField(field, envelope)),
+        envelopeItems: envelope.envelopeItems.map((item) => ({
+          id: item.id,
+          envelopeId: envelope.id,
+        })),
         recipients: envelope.recipients.map((recipient) => mapRecipientToLegacyRecipient(recipient, envelope)),
         templateMeta: envelope.documentMeta
           ? {

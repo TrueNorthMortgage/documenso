@@ -62,6 +62,12 @@ export const findOrganisationTemplates = async ({
     },
     fields: true,
     recipients: true,
+    envelopeItems: {
+      select: {
+        id: true,
+        envelopeId: true,
+      },
+    },
     documentMeta: true,
     directLink: {
       select: {

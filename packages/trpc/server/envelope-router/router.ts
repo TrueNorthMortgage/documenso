@@ -1,4 +1,5 @@
 import { router } from '../trpc';
+import { addTemplateToEnvelopeRoute } from './add-template-to-envelope';
 import { applyTemplateToEnvelopeItemRoute } from './apply-template-to-envelope-item';
 import { createAttachmentRoute } from './attachment/create-attachment';
 import { deleteAttachmentRoute } from './attachment/delete-attachment';
@@ -82,6 +83,7 @@ export const envelopeRouter = router({
   template: {
     apply: applyTemplateToEnvelopeItemRoute,
     remove: removeTemplateFromEnvelopeItemRoute,
+    add: addTemplateToEnvelopeRoute,
   },
   find: findEnvelopesRoute,
   auditLog: {

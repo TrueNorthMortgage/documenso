@@ -31,7 +31,7 @@ export type RemoveTemplateFromEnvelopeItemOptions = {
 
 type TemplateRecipientReference = Pick<Recipient, 'id' | 'role' | 'signingOrder'>;
 
-const getAccessibleTemplate = async ({
+export const getAccessibleTemplate = async ({
   templateId,
   userId,
   teamId,

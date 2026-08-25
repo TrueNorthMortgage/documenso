@@ -2,6 +2,7 @@ import { useDebouncedValue } from '@documenso/lib/client-only/hooks/use-debounce
 import { AppError } from '@documenso/lib/errors/app-error';
 import type { TEditorEnvelope } from '@documenso/lib/types/envelope-editor';
 import { trpc } from '@documenso/trpc/react';
+import type { TAddTemplateToEnvelopeResponse } from '@documenso/trpc/server/envelope-router/add-template-to-envelope.types';
 import type { TFindTemplatesResponse } from '@documenso/trpc/server/template-router/schema';
 import { Alert, AlertDescription, AlertTitle } from '@documenso/ui/primitives/alert';
 import { Button } from '@documenso/ui/primitives/button';
@@ -27,8 +28,10 @@ import { useEffect, useState } from 'react';
 
 type ApplyTemplateToEnvelopeItemDialogProps = {
   envelope: TEditorEnvelope;
-  envelopeItemId: string;
+  envelopeItemId?: string;
   onChanged: () => Promise<void>;
+  onAdded?: (item: TAddTemplateToEnvelopeResponse['data']) => Promise<void>;
+  mode?: 'apply' | 'add';
   disabled?: boolean;
   trigger?: React.ReactNode;
 };
@@ -38,7 +41,7 @@ const getTemplateItemIds = (template: TTemplateRow | undefined) => {
     return [];
   }
 
-  return [...new Set(template.fields.map((field) => field.envelopeItemId))];
+  return template.envelopeItems.map((item) => item.id);
 };
 
 const mergeTemplateRows = (rows: TTemplateRow[]) => {
@@ -89,6 +92,8 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
   envelope,
   envelopeItemId,
   onChanged,
+  onAdded,
+  mode = 'apply',
   disabled = false,
   trigger,
 }: ApplyTemplateToEnvelopeItemDialogProps) => {
@@ -117,7 +122,8 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
 
   const selectedTemplate = templates.find((template) => String(template.id) === selectedTemplateId);
   const templateItemIds = getTemplateItemIds(selectedTemplate);
-  const targetFields = envelope.fields.filter((field) => field.envelopeItemId === envelopeItemId);
+  const targetFields = envelopeItemId ? envelope.fields.filter((field) => field.envelopeItemId === envelopeItemId) : [];
+  const isAddMode = mode === 'add';
   const hasTemplateFields = targetFields.some((field) => field.templateSourceItemId !== null);
   const appliedTemplateSourceItemId =
     targetFields.find((field) => field.templateSourceItemId !== null)?.templateSourceItemId ?? null;
@@ -139,6 +145,7 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
     (teamTemplatesQuery.data?.totalPages ?? 0) > page || (organisationTemplatesQuery.data?.totalPages ?? 0) > page;
 
   const { mutateAsync: applyTemplate, isPending: isApplying } = trpc.envelope.template.apply.useMutation();
+  const { mutateAsync: addTemplate, isPending: isAdding } = trpc.envelope.template.add.useMutation();
   const { mutateAsync: removeTemplate, isPending: isRemoving } = trpc.envelope.template.remove.useMutation();
 
   useEffect(() => {
@@ -209,28 +216,51 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
   }, [selectedTemplate, selectedTemplateItemId, templateItemIds]);
 
   const onApply = async () => {
-    if (!selectedTemplate || !selectedTemplateItemId || sourceFieldCount === 0 || !hasRecipientMapping) {
+    if (
+      !selectedTemplate ||
+      !selectedTemplateItemId ||
+      (!isAddMode && (sourceFieldCount === 0 || !envelopeItemId)) ||
+      !hasRecipientMapping
+    ) {
       return;
     }
 
     try {
-      await applyTemplate({
-        envelopeId: envelope.id,
-        envelopeItemId,
-        templateId: selectedTemplate.id,
-        templateItemId: selectedTemplateItemId,
-        replaceExistingFields: targetFields.length > 0 ? confirmReplacement : false,
-      });
+      if (isAddMode) {
+        const { data } = await addTemplate({
+          envelopeId: envelope.id,
+          templateId: selectedTemplate.id,
+          templateItemId: selectedTemplateItemId,
+        });
 
-      toast({
-        title: _(msg`Template applied`),
-        description: _(msg`The template fields were added to the document.`),
-      });
-      await onChanged();
+        toast({
+          title: _(msg`Document added`),
+          description: _(msg`The template document and its fields were added to the envelope.`),
+        });
+        await onAdded?.(data);
+      } else {
+        if (!envelopeItemId) {
+          return;
+        }
+
+        await applyTemplate({
+          envelopeId: envelope.id,
+          envelopeItemId,
+          templateId: selectedTemplate.id,
+          templateItemId: selectedTemplateItemId,
+          replaceExistingFields: targetFields.length > 0 ? confirmReplacement : false,
+        });
+
+        toast({
+          title: _(msg`Template applied`),
+          description: _(msg`The template fields were added to the document.`),
+        });
+        await onChanged();
+      }
       setOpen(false);
     } catch (error) {
       toast({
-        title: _(msg`Template could not be applied`),
+        title: isAddMode ? _(msg`Document could not be added`) : _(msg`Template could not be applied`),
         description: AppError.parseError(error).userMessage || _(msg`Please review the template and recipients.`),
         variant: 'destructive',
       });
@@ -238,6 +268,10 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
   };
 
   const onRemove = async () => {
+    if (!envelopeItemId) {
+      return;
+    }
+
     try {
       await removeTemplate({ envelopeId: envelope.id, envelopeItemId });
 
@@ -257,8 +291,8 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(value) => !isApplying && !isRemoving && setOpen(value)}>
-      {!trigger && appliedTemplateSourceItemId !== null && (
+    <Dialog open={open} onOpenChange={(value) => !isApplying && !isAdding && !isRemoving && setOpen(value)}>
+      {!isAddMode && !trigger && appliedTemplateSourceItemId !== null && (
         <div className="mt-4 mb-2 space-y-1 text-sm">
           <p className="font-medium text-muted-foreground">
             <Trans>Applied template</Trans>
@@ -291,10 +325,14 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
       <DialogContent className="w-full sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
-            <Trans>Apply template</Trans>
+            {isAddMode ? <Trans>Add document via template</Trans> : <Trans>Apply template</Trans>}
           </DialogTitle>
           <DialogDescription>
-            <Trans>Apply fields from an accessible template to this document.</Trans>
+            {isAddMode ? (
+              <Trans>Add a document and its fields from an accessible template.</Trans>
+            ) : (
+              <Trans>Apply fields from an accessible template to this document.</Trans>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -398,7 +436,7 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
             </Select>
           )}
 
-          {selectedTemplate && (templateItemIds.length === 0 || sourceFieldCount === 0) && (
+          {!isAddMode && selectedTemplate && (templateItemIds.length === 0 || sourceFieldCount === 0) && (
             <Alert variant="warning">
               <AlertTitle>
                 <Trans>This template has no fields</Trans>
@@ -420,13 +458,20 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
             </Alert>
           )}
 
-          {selectedTemplate && sourceFieldCount !== undefined && sourceFieldCount > 0 && hasRecipientMapping && (
-            <p className="text-muted-foreground text-sm">
-              <Trans>{sourceFieldCount} fields will be applied. The uploaded PDF will not be replaced.</Trans>
-            </p>
-          )}
+          {selectedTemplate &&
+            sourceFieldCount !== undefined &&
+            hasRecipientMapping &&
+            (isAddMode || sourceFieldCount > 0) && (
+              <p className="text-muted-foreground text-sm">
+                {isAddMode ? (
+                  <Trans>{sourceFieldCount} fields will be added with the template document.</Trans>
+                ) : (
+                  <Trans>{sourceFieldCount} fields will be applied. The uploaded PDF will not be replaced.</Trans>
+                )}
+              </p>
+            )}
 
-          {targetFields.length > 0 && (
+          {!isAddMode && targetFields.length > 0 && (
             <label className="flex min-w-0 items-start gap-2 text-sm">
               <Checkbox
                 checked={confirmReplacement}
@@ -440,7 +485,7 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
         </div>
 
         <DialogFooter>
-          {hasTemplateFields && (
+          {!isAddMode && hasTemplateFields && (
             <Button type="button" variant="outline" onClick={() => void onRemove()} disabled={isApplying || isRemoving}>
               <XIcon className="mr-2 h-4 w-4" />
               <Trans>Remove Template</Trans>
@@ -451,15 +496,16 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
             onClick={() => void onApply()}
             disabled={
               isApplying ||
+              isAdding ||
               isRemoving ||
               !selectedTemplate ||
               !selectedTemplateItemId ||
-              sourceFieldCount === 0 ||
+              (!isAddMode && sourceFieldCount === 0) ||
               !hasRecipientMapping ||
-              (targetFields.length > 0 && !confirmReplacement)
+              (!isAddMode && targetFields.length > 0 && !confirmReplacement)
             }
           >
-            <Trans>Apply Template</Trans>
+            {isAddMode ? <Trans>Add Document</Trans> : <Trans>Apply Template</Trans>}
           </Button>
         </DialogFooter>
       </DialogContent>
