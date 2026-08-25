@@ -9,6 +9,7 @@ import { megabytesToBytes } from '@documenso/lib/universal/unit-convertions';
 import { PRESIGNED_ENVELOPE_ITEM_ID_PREFIX } from '@documenso/lib/utils/embed-config';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
 import { trpc } from '@documenso/trpc/react';
+import type { TAddTemplateToEnvelopeResponse } from '@documenso/trpc/server/envelope-router/add-template-to-envelope.types';
 import type { TCreateEnvelopeItemsPayload } from '@documenso/trpc/server/envelope-router/create-envelope-items.types';
 import type { TReplaceEnvelopeItemPdfPayload } from '@documenso/trpc/server/envelope-router/replace-envelope-item-pdf.types';
 import { buildDropzoneRejectionDescription } from '@documenso/ui/lib/handle-dropzone-rejection';
@@ -474,6 +475,37 @@ export const EnvelopeEditorUploadPage = () => {
               maxFiles={maximumEnvelopeItemCount - localFiles.length}
               onDropRejected={onFileDropRejected}
             />
+          )}
+
+          {uploadConfig?.allowUpload && (
+            <div className="flex justify-center pt-2">
+              <ApplyTemplateToEnvelopeItemDialog
+                envelope={envelope}
+                mode="add"
+                onChanged={syncEnvelope}
+                onAdded={async (item: TAddTemplateToEnvelopeResponse['data']) => {
+                  setLocalFiles((previousFiles) => [
+                    ...previousFiles,
+                    {
+                      id: item.id,
+                      title: item.title,
+                      envelopeItemId: item.id,
+                      isUploading: false,
+                      isReplacing: false,
+                      isError: false,
+                    },
+                  ]);
+                  await syncEnvelope();
+                }}
+                disabled={dropzoneDisabledMessage !== null}
+                trigger={
+                  <Button type="button" variant="outline" disabled={dropzoneDisabledMessage !== null}>
+                    <LayersIcon className="mr-2 h-4 w-4" />
+                    <Trans>Add a document via Template</Trans>
+                  </Button>
+                }
+              />
+            </div>
           )}
 
           {/* Uploaded Files List */}

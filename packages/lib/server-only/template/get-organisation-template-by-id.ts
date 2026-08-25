@@ -71,6 +71,7 @@ export const getOrganisationTemplateById = async ({ id, userId, teamId }: GetOrg
       fields: {
         include: {
           conditionalChildRule: true,
+          fieldGroup: true,
         },
       },
       team: {

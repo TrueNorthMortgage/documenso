@@ -144,6 +144,10 @@ export const ZTemplateManySchema = TemplateSchema.pick({
     url: true,
     name: true,
   }).nullable(),
+  envelopeItems: EnvelopeItemSchema.pick({
+    id: true,
+    envelopeId: true,
+  }).array(),
   fields: ZFieldSchema.array(),
   recipients: ZRecipientLiteSchema.array(),
   templateMeta: DocumentMetaSchema.pick({
