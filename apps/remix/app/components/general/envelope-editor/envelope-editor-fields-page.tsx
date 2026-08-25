@@ -40,7 +40,7 @@ import { Trans } from '@lingui/react/macro';
 import { DocumentStatus, FieldType, RecipientRole } from '@prisma/client';
 import { AlertCircleIcon, EyeOffIcon, FileTextIcon, PencilIcon, SparklesIcon } from 'lucide-react';
 import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRevalidator, useSearchParams } from 'react-router';
 import { isDeepEqual } from 'remeda';
 import { match } from 'ts-pattern';
@@ -93,64 +93,205 @@ const InvalidFieldPlacementOverlay = ({
 }) => {
   const { editorFields } = useCurrentEnvelopeEditor();
   const { currentEnvelopeItem } = useCurrentEnvelopeRender();
-  const { invalidPlacement, setInvalidPlacement } = useEnvelopeEditorFieldDrag();
+  const { activePlacement, invalidPlacement, setActivePlacement, setInvalidPlacement } = useEnvelopeEditorFieldDrag();
   const { _ } = useLingui();
-  const placementRef = useRef(invalidPlacement);
-  const dragRef = useRef<{ offsetX: number; offsetY: number; pointerId: number; lastMoveAt: number } | null>(null);
+  const placement = invalidPlacement ?? activePlacement;
+  const isInvalidPlacement = Boolean(invalidPlacement);
+  const placementRef = useRef(placement);
+  const dragRef = useRef<{
+    offsetX: number;
+    offsetY: number;
+    pointerId: number | null;
+    lastMoveAt: number;
+  } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
-    placementRef.current = invalidPlacement;
-  }, [invalidPlacement]);
+    placementRef.current = placement;
+  }, [placement]);
 
   useEffect(() => {
-    if (invalidPlacement && !editorFields.getFieldByFormId(invalidPlacement.fieldFormId)) {
+    if (placement && !editorFields.getFieldByFormId(placement.fieldFormId)) {
+      setActivePlacement(null);
       setInvalidPlacement(null);
     }
-  }, [editorFields, invalidPlacement, setInvalidPlacement]);
+  }, [editorFields, placement, setActivePlacement, setInvalidPlacement]);
 
-  if (!invalidPlacement || invalidPlacement.envelopeItemId !== currentEnvelopeItem?.id) {
-    return null;
-  }
+  const activePlacementFieldFormId = activePlacement?.fieldFormId;
 
-  const updatePlacement = (clientX: number, clientY: number) => {
-    const scrollContainer = scrollableContainerRef.current;
-    const placement = placementRef.current;
-    const drag = dragRef.current;
+  const updatePlacement = useCallback(
+    (clientX: number, clientY: number) => {
+      const scrollContainer = scrollableContainerRef.current;
+      const currentPlacement = placementRef.current;
+      const drag = dragRef.current;
 
-    if (!scrollContainer || !placement || !drag) {
+      if (!scrollContainer || !currentPlacement || !drag) {
+        return;
+      }
+
+      const scrollRect = scrollContainer.getBoundingClientRect();
+      const now = performance.now();
+      const elapsedMs = Math.max(0, now - drag.lastMoveAt);
+
+      drag.lastMoveAt = now;
+      scrollContainer.scrollTop += getDragScrollDelta({
+        clientHeight: scrollContainer.clientHeight,
+        containerBottom: scrollRect.bottom,
+        containerTop: scrollRect.top,
+        elapsedMs,
+        pointerY: clientY,
+        scrollHeight: scrollContainer.scrollHeight,
+        scrollTop: scrollContainer.scrollTop,
+      });
+
+      const maxX = Math.max(0, scrollContainer.clientWidth - currentPlacement.width);
+      const maxY = Math.max(
+        scrollContainer.scrollTop + scrollContainer.clientHeight - currentPlacement.height,
+        scrollContainer.scrollHeight - currentPlacement.height,
+      );
+      const nextPlacement = {
+        ...currentPlacement,
+        x: clamp(clientX - scrollRect.left + scrollContainer.scrollLeft - drag.offsetX, 0, maxX),
+        y: clamp(clientY - scrollRect.top + scrollContainer.scrollTop - drag.offsetY, 0, maxY),
+      };
+
+      placementRef.current = nextPlacement;
+
+      if (isInvalidPlacement) {
+        setInvalidPlacement(nextPlacement);
+      } else {
+        setActivePlacement(nextPlacement);
+      }
+    },
+    [isInvalidPlacement, scrollableContainerRef, setActivePlacement, setInvalidPlacement],
+  );
+
+  const completePlacement = useCallback(
+    (clientX: number, clientY: number) => {
+      updatePlacement(clientX, clientY);
+
+      const currentPlacement = placementRef.current;
+      const field = currentPlacement ? editorFields.getFieldByFormId(currentPlacement.fieldFormId) : undefined;
+      const targetPage = getPageAtPoint(clientX, clientY);
+      let placedOnPage = false;
+
+      if (currentPlacement && field && targetPage) {
+        const pageRect = targetPage.getBoundingClientRect();
+        const scrollContainer = scrollableContainerRef.current;
+        const scrollRect = scrollContainer?.getBoundingClientRect();
+        const pageNumber = Number(targetPage.dataset.pageNumber);
+
+        if (
+          scrollContainer &&
+          scrollRect &&
+          Number.isInteger(pageNumber) &&
+          pageRect.width > 0 &&
+          pageRect.height > 0
+        ) {
+          const pageX = pageRect.left - scrollRect.left + scrollContainer.scrollLeft;
+          const pageY = pageRect.top - scrollRect.top + scrollContainer.scrollTop;
+          const maxPositionX = Math.max(0, 100 - field.width);
+          const maxPositionY = Math.max(0, 100 - field.height);
+
+          editorFields.updateFieldByFormId(field.formId, {
+            page: pageNumber,
+            positionX: clamp(((currentPlacement.x - pageX) / pageRect.width) * 100, 0, maxPositionX),
+            positionY: clamp(((currentPlacement.y - pageY) / pageRect.height) * 100, 0, maxPositionY),
+          });
+          editorFields.setSelectedField(field.formId);
+          setActivePlacement(null);
+          setInvalidPlacement(null);
+          placedOnPage = true;
+        }
+      }
+
+      if (currentPlacement && !placedOnPage && !isInvalidPlacement) {
+        setActivePlacement(null);
+        setInvalidPlacement(currentPlacement);
+      }
+
+      dragRef.current = null;
+      setIsDragging(false);
+    },
+    [
+      editorFields,
+      isInvalidPlacement,
+      scrollableContainerRef,
+      setActivePlacement,
+      setInvalidPlacement,
+      updatePlacement,
+    ],
+  );
+
+  useEffect(() => {
+    const currentActivePlacement = placementRef.current;
+
+    if (
+      !activePlacementFieldFormId ||
+      !currentActivePlacement ||
+      currentActivePlacement.fieldFormId !== activePlacementFieldFormId
+    ) {
       return;
     }
 
-    const scrollRect = scrollContainer.getBoundingClientRect();
-    const now = performance.now();
-    const elapsedMs = Math.max(0, now - drag.lastMoveAt);
+    dragRef.current = {
+      lastMoveAt: performance.now(),
+      offsetX: currentActivePlacement.offsetX,
+      offsetY: currentActivePlacement.offsetY,
+      pointerId: null,
+    };
+    setIsDragging(true);
 
-    drag.lastMoveAt = now;
-    scrollContainer.scrollTop += getDragScrollDelta({
-      clientHeight: scrollContainer.clientHeight,
-      containerBottom: scrollRect.bottom,
-      containerTop: scrollRect.top,
-      elapsedMs,
-      pointerY: clientY,
-      scrollHeight: scrollContainer.scrollHeight,
-      scrollTop: scrollContainer.scrollTop,
-    });
-
-    const maxX = Math.max(0, scrollContainer.clientWidth - placement.width);
-    const maxY = Math.max(
-      scrollContainer.scrollTop + scrollContainer.clientHeight - placement.height,
-      scrollContainer.scrollHeight - placement.height,
-    );
-    const nextPlacement = {
-      ...placement,
-      x: clamp(clientX - scrollRect.left + scrollContainer.scrollLeft - drag.offsetX, 0, maxX),
-      y: clamp(clientY - scrollRect.top + scrollContainer.scrollTop - drag.offsetY, 0, maxY),
+    const handleMouseMove = (event: MouseEvent) => {
+      event.preventDefault();
+      updatePlacement(event.clientX, event.clientY);
     };
 
-    placementRef.current = nextPlacement;
-    setInvalidPlacement(nextPlacement);
-  };
+    const handleMouseUp = (event: MouseEvent) => {
+      event.preventDefault();
+      completePlacement(event.clientX, event.clientY);
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0] ?? event.changedTouches[0];
+
+      if (!touch) {
+        return;
+      }
+
+      event.preventDefault();
+      updatePlacement(touch.clientX, touch.clientY);
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      const touch = event.changedTouches[0] ?? event.touches[0];
+
+      if (!touch) {
+        return;
+      }
+
+      event.preventDefault();
+      completePlacement(touch.clientX, touch.clientY);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [activePlacementFieldFormId, completePlacement, updatePlacement]);
+
+  if (!placement || placement.envelopeItemId !== currentEnvelopeItem?.id) {
+    return null;
+  }
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) {
@@ -170,8 +311,8 @@ const InvalidFieldPlacementOverlay = ({
 
     dragRef.current = {
       lastMoveAt: performance.now(),
-      offsetX: event.clientX - scrollRect.left + scrollContainer.scrollLeft - invalidPlacement.x,
-      offsetY: event.clientY - scrollRect.top + scrollContainer.scrollTop - invalidPlacement.y,
+      offsetX: event.clientX - scrollRect.left + scrollContainer.scrollLeft - placement.x,
+      offsetY: event.clientY - scrollRect.top + scrollContainer.scrollTop - placement.y,
       pointerId: event.pointerId,
     };
 
@@ -194,64 +335,47 @@ const InvalidFieldPlacementOverlay = ({
     }
 
     event.preventDefault();
-    updatePlacement(event.clientX, event.clientY);
-
-    const placement = placementRef.current;
-    const field = placement ? editorFields.getFieldByFormId(placement.fieldFormId) : undefined;
-    const targetPage = getPageAtPoint(event.clientX, event.clientY);
-
-    if (placement && field && targetPage) {
-      const pageRect = targetPage.getBoundingClientRect();
-      const scrollContainer = scrollableContainerRef.current;
-      const scrollRect = scrollContainer?.getBoundingClientRect();
-      const pageNumber = Number(targetPage.dataset.pageNumber);
-
-      if (scrollContainer && scrollRect && Number.isInteger(pageNumber) && pageRect.width > 0 && pageRect.height > 0) {
-        const pageX = pageRect.left - scrollRect.left + scrollContainer.scrollLeft;
-        const pageY = pageRect.top - scrollRect.top + scrollContainer.scrollTop;
-        const maxPositionX = Math.max(0, 100 - field.width);
-        const maxPositionY = Math.max(0, 100 - field.height);
-
-        editorFields.updateFieldByFormId(field.formId, {
-          page: pageNumber,
-          positionX: clamp(((placement.x - pageX) / pageRect.width) * 100, 0, maxPositionX),
-          positionY: clamp(((placement.y - pageY) / pageRect.height) * 100, 0, maxPositionY),
-        });
-        editorFields.setSelectedField(field.formId);
-        setInvalidPlacement(null);
-      }
-    }
-
-    dragRef.current = null;
-    setIsDragging(false);
+    completePlacement(event.clientX, event.clientY);
   };
 
-  const field = editorFields.getFieldByFormId(invalidPlacement.fieldFormId);
+  const field = editorFields.getFieldByFormId(placement.fieldFormId);
   const fieldText = field ? field.fieldMeta?.label || _(FRIENDLY_FIELD_TYPE[field.type]) : null;
+  const showInvalidStyle = isInvalidPlacement && !isDragging;
+  const previewDataUrl = showInvalidStyle ? placement.invalidPreviewDataUrl : placement.previewDataUrl;
+  const showFieldPreview = Boolean(previewDataUrl);
 
   return (
     <div
-      className={`absolute z-50 cursor-move ${INVALID_FIELD_PLACEMENT_CLASS_NAME}`}
+      className={cn(
+        'absolute z-50 cursor-move',
+        !showFieldPreview &&
+          (showInvalidStyle
+            ? INVALID_FIELD_PLACEMENT_CLASS_NAME
+            : 'rounded-[2px] border-2 border-gray-400 bg-white/50 text-black'),
+      )}
       onPointerCancel={handlePointerUp}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       style={{
-        height: invalidPlacement.height,
-        left: invalidPlacement.x,
-        opacity: isDragging ? 0.8 : 1,
+        height: placement.height,
+        left: placement.x,
         pointerEvents: 'auto',
-        top: invalidPlacement.y,
-        width: invalidPlacement.width,
+        top: placement.y,
+        width: placement.width,
       }}
       title={field ? `${field.type}: place this field on a document page` : 'Place this field on a document page'}
     >
-      {fieldText && (
+      {showFieldPreview ? (
+        <img alt="" className="block h-full w-full" draggable={false} src={previewDataUrl} />
+      ) : fieldText ? (
         <span className="flex h-full items-center justify-center overflow-hidden px-1 text-center text-xs">
           {fieldText}
         </span>
+      ) : null}
+      {showInvalidStyle && (
+        <AlertCircleIcon className="absolute -top-3 -right-3 h-5 w-5 rounded-full bg-white text-red-600" />
       )}
-      <AlertCircleIcon className="absolute -top-3 -right-3 h-5 w-5 rounded-full bg-white text-red-600" />
     </div>
   );
 };
