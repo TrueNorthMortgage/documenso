@@ -38,6 +38,8 @@ import { useNavigate } from 'react-router';
 import { match } from 'ts-pattern';
 import * as z from 'zod';
 
+import { useEnvelopeEditorFieldDrag } from '~/components/general/envelope-editor/envelope-editor-field-drag-context';
+
 export type EnvelopeDistributeDialogProps = {
   onDistribute?: () => Promise<void>;
   documentRootPath: string;
@@ -64,6 +66,7 @@ export const EnvelopeDistributeDialog = ({
   const organisation = useCurrentOrganisation();
 
   const { envelope, syncEnvelope, isAutosaving, autosaveError } = useCurrentEnvelopeEditor();
+  const { invalidPlacement } = useEnvelopeEditorFieldDrag();
 
   const { toast } = useToast();
   const { t } = useLingui();
@@ -137,6 +140,10 @@ export const EnvelopeDistributeDialog = ({
   }, [recipientsWithIndex, envelope.authOptions]);
 
   const invalidEnvelopeCode = useMemo(() => {
+    if (invalidPlacement) {
+      return 'INVALID_FIELD_PLACEMENT';
+    }
+
     if (recipientsMissingSignatureFields.length > 0) {
       return 'MISSING_SIGNATURES';
     }
@@ -150,7 +157,7 @@ export const EnvelopeDistributeDialog = ({
     }
 
     return null;
-  }, [envelope.recipients, recipientsMissingRequiredEmail, recipientsMissingSignatureFields]);
+  }, [envelope.recipients, invalidPlacement, recipientsMissingRequiredEmail, recipientsMissingSignatureFields]);
 
   const onFormSubmit = async ({ meta }: TEnvelopeDistributeFormSchema) => {
     try {
@@ -430,6 +437,11 @@ export const EnvelopeDistributeDialog = ({
           <>
             <Alert variant="warning">
               {match(invalidEnvelopeCode)
+                .with('INVALID_FIELD_PLACEMENT', () => (
+                  <AlertDescription>
+                    <Trans>Move all fields back onto a document page before sending this document.</Trans>
+                  </AlertDescription>
+                ))
                 .with('MISSING_RECIPIENTS', () => (
                   <AlertDescription>
                     <Trans>You need at least one recipient to send a document</Trans>
