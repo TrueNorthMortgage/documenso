@@ -841,6 +841,7 @@ export const EnvelopeEditorFieldsPage = () => {
                     .with(FieldType.INITIALS, () => (
                       <EditorFieldInitialsForm
                         value={selectedField?.fieldMeta as TInitialsFieldMeta | undefined}
+                        isGrouped={Boolean(selectedField?.fieldGroupId)}
                         onValueChange={(value) => updateSelectedFieldMeta(value)}
                       />
                     ))
@@ -879,6 +880,9 @@ export const EnvelopeEditorFieldsPage = () => {
                     }}
                     onAssignGroup={(group) => {
                       editorFields.assignFieldToGroup(selectedField, group);
+                    }}
+                    onUpdateValidation={(validationRule, validationLength) => {
+                      editorFields.updateFieldGroupValidation(selectedField, validationRule, validationLength);
                     }}
                     onUngroup={() => {
                       editorFields.ungroupField(selectedField);

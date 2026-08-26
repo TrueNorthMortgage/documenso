@@ -23,6 +23,7 @@ import { putNormalizedPdfFileServerSide } from '../../universal/upload/put-file.
 import { isDocumentCompleted } from '../../utils/document';
 import { extractDocumentAuthMethods } from '../../utils/document-auth';
 import { type EnvelopeIdOptions, mapSecondaryIdToDocumentId } from '../../utils/envelope';
+import { getInvalidFieldGroupConfigurations } from '../../utils/field-groups';
 import { getRecipientsWithMissingFields, isRecipientEmailValidForSending } from '../../utils/recipients';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { extractFieldAutoInsertValues } from '../field/extract-field-auto-insert-values';
@@ -51,7 +52,11 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
       recipients: {
         orderBy: [{ signingOrder: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }],
       },
-      fields: true,
+      fields: {
+        include: {
+          fieldGroup: true,
+        },
+      },
       documentMeta: true,
       envelopeItems: {
         select: {
@@ -100,6 +105,16 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
 
   if (envelope.envelopeItems.length === 0) {
     throw new Error('Missing envelope items');
+  }
+
+  const invalidFieldGroupConfigurations = getInvalidFieldGroupConfigurations(envelope.fields);
+
+  if (invalidFieldGroupConfigurations.length > 0) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: `The following validation groups have invalid rules: ${invalidFieldGroupConfigurations
+        .map((group) => group.name)
+        .join(', ')}`,
+    });
   }
 
   if (envelope.formValues) {

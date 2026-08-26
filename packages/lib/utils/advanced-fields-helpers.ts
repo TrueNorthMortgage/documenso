@@ -1,8 +1,15 @@
 import { FieldType } from '@prisma/client';
 
-import { getFieldsRequiringValidation, type TFieldWithGroup } from './field-groups';
+import { getFieldGroupValidationState, getFieldsRequiringValidation, type TFieldWithGroup } from './field-groups';
 
-export { getFieldsRequiringValidation, isFieldUnsignedAndRequired, isRequiredField } from './field-groups';
+export {
+  canInsertFieldIntoValidationGroup,
+  getFieldGroupValidationState,
+  getFieldsRequiringValidation,
+  getInvalidFieldGroupConfigurations,
+  isFieldUnsignedAndRequired,
+  isRequiredField,
+} from './field-groups';
 
 // Field types that expose optional field metadata in the editor.
 export const ADVANCED_FIELD_TYPES_WITH_OPTIONAL_SETTING: FieldType[] = [
@@ -18,4 +25,12 @@ export const ADVANCED_FIELD_TYPES_WITH_OPTIONAL_SETTING: FieldType[] = [
  * Whether the provided fields contains a field that is required to be inserted.
  */
 export const fieldsContainUnsignedRequiredField = <T extends TFieldWithGroup>(fields: T[]) =>
-  getFieldsRequiringValidation(fields).some((field) => !field.inserted);
+  getFieldsRequiringValidation(fields).some((field) => !field.inserted) ||
+  fields.some((field) => {
+    if (!field.fieldGroupId || !field.fieldGroup) {
+      return false;
+    }
+
+    const groupFields = fields.filter((candidate) => candidate.fieldGroupId === field.fieldGroupId);
+    return !getFieldGroupValidationState(groupFields, field.fieldGroup).isSatisfied;
+  });

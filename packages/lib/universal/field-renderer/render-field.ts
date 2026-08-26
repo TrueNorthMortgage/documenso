@@ -1,12 +1,17 @@
 import type { TRecipientColor } from '@documenso/ui/lib/recipient-colors';
 import type { Signature } from '@prisma/client';
-import { type Field, FieldType } from '@prisma/client';
+import { type Field, type FieldGroupType, FieldType } from '@prisma/client';
 import type Konva from 'konva';
 import { match } from 'ts-pattern';
-
 import type { TConditionalFieldRule } from '../../types/conditional-field';
+import { FIELD_GROUP_TYPE } from '../../types/field-group';
 import type { TFieldMetaSchema } from '../../types/field-meta';
-import { upsertConditionalFieldIndicator, upsertConditionalFieldSelectionLabel } from './field-generic-items';
+import {
+  positionFieldIndicators,
+  upsertConditionalFieldIndicator,
+  upsertConditionalFieldSelectionLabel,
+  upsertValidationGroupIndicator,
+} from './field-generic-items';
 import { renderCheckboxFieldElement } from './render-checkbox-field';
 import { renderDropdownFieldElement } from './render-dropdown-field';
 import { renderGenericTextFieldElement } from './render-generic-text-field';
@@ -40,6 +45,8 @@ export type FieldToRender = Pick<
   conditionalChildRule?: TConditionalFieldRule | null;
   isHighlighted?: boolean;
   selectionLabel?: string;
+  fieldGroupType?: FieldGroupType;
+  isValidationGroupInvalid?: boolean;
   signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'> | null;
 };
 
@@ -106,6 +113,14 @@ export const renderField = ({
   } else {
     options.pageLayer.findOne(`#${field.renderId}-conditional-selection-label`)?.destroy();
   }
+
+  if (mode === 'edit' && field.fieldGroupType === FIELD_GROUP_TYPE.VALIDATION_GROUP) {
+    upsertValidationGroupIndicator(field, options);
+  } else {
+    options.pageLayer.findOne(`#${field.renderId}-validation-group-indicator`)?.destroy();
+  }
+
+  positionFieldIndicators(field, options);
 
   return renderedField;
 };

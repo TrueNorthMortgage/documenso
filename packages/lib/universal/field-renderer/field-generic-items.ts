@@ -14,6 +14,8 @@ const CONDITIONAL_FIELD_SELECTION_LABEL_GAP = 4;
 const CONDITIONAL_FIELD_SELECTION_LABEL_HEIGHT = 14;
 const CONDITIONAL_FIELD_SELECTION_LABEL_HORIZONTAL_PADDING = 8;
 const CONDITIONAL_FIELD_SELECTION_LABEL_MIN_WIDTH = 16;
+const VALIDATION_GROUP_INDICATOR_SIZE = 16;
+const VALIDATION_GROUP_INDICATOR_GAP = 4;
 
 export const getFieldRectStyles = (
   field: Pick<FieldToRender, 'conditionalChildRule' | 'isHighlighted'>,
@@ -36,27 +38,101 @@ export const getConditionalFieldIndicatorPosition = ({
   fieldX,
   fieldY,
   fieldWidth,
-  fieldHeight,
   pageWidth,
   pageHeight,
 }: {
   fieldX: number;
   fieldY: number;
   fieldWidth: number;
-  fieldHeight: number;
   pageWidth: number;
   pageHeight: number;
 }) => {
   const maxIndicatorX = Math.max(0, pageWidth - CONDITIONAL_FIELD_INDICATOR_SIZE);
   const x = Math.min(Math.max(0, fieldX + fieldWidth - CONDITIONAL_FIELD_INDICATOR_SIZE), maxIndicatorX);
   const abovePosition = fieldY - CONDITIONAL_FIELD_INDICATOR_SIZE - CONDITIONAL_FIELD_INDICATOR_GAP;
-  const belowPosition = fieldY + fieldHeight + CONDITIONAL_FIELD_INDICATOR_GAP;
-  const fitsAbove = abovePosition >= 0;
+  const y =
+    abovePosition >= 0 ? abovePosition : Math.min(fieldY, Math.max(0, pageHeight - CONDITIONAL_FIELD_INDICATOR_SIZE));
+
+  return { x, y };
+};
+
+export const getFieldIndicatorPosition = ({
+  fieldX,
+  fieldY,
+  fieldWidth,
+  indicatorIndex,
+  indicatorCount,
+  pageWidth,
+  pageHeight,
+}: {
+  fieldX: number;
+  fieldY: number;
+  fieldWidth: number;
+  indicatorIndex: number;
+  indicatorCount: number;
+  pageWidth: number;
+  pageHeight: number;
+}) => {
+  const totalIndicatorWidth =
+    indicatorCount * VALIDATION_GROUP_INDICATOR_SIZE + (indicatorCount - 1) * VALIDATION_GROUP_INDICATOR_GAP;
+  const maxGroupX = Math.max(0, pageWidth - totalIndicatorWidth);
+  const groupX = Math.min(Math.max(0, fieldX + fieldWidth - totalIndicatorWidth), maxGroupX);
+  const abovePosition = fieldY - VALIDATION_GROUP_INDICATOR_SIZE - VALIDATION_GROUP_INDICATOR_GAP;
+  const y =
+    abovePosition >= 0 ? abovePosition : Math.min(fieldY, Math.max(0, pageHeight - VALIDATION_GROUP_INDICATOR_SIZE));
 
   return {
-    x,
-    y: fitsAbove ? abovePosition : Math.min(belowPosition, Math.max(0, pageHeight - CONDITIONAL_FIELD_INDICATOR_SIZE)),
+    x: groupX + indicatorIndex * (VALIDATION_GROUP_INDICATOR_SIZE + VALIDATION_GROUP_INDICATOR_GAP),
+    y,
   };
+};
+
+export const getLiveFieldWidth = (fieldGroup: Konva.Group, fallbackWidth: number) => {
+  const fieldRect = fieldGroup.findOne('.field-rect');
+  const fieldWidth =
+    fieldRect instanceof Konva.Rect
+      ? fieldRect.width()
+      : (getNumericAttr(fieldGroup, 'dragFieldWidth') ?? fieldGroup.width()) || fallbackWidth;
+
+  return fieldWidth * fieldGroup.scaleX();
+};
+
+export const positionFieldIndicators = (
+  field: Pick<FieldToRender, 'renderId' | 'positionX' | 'positionY' | 'width' | 'height'>,
+  options: Pick<RenderFieldElementOptions, 'pageLayer' | 'pageWidth' | 'pageHeight'>,
+) => {
+  const fieldGroup = options.pageLayer.findOne(`#${field.renderId}`);
+  const { fieldX, fieldY, fieldWidth } = calculateFieldPosition(field, options.pageWidth, options.pageHeight);
+  const liveFieldX = fieldGroup instanceof Konva.Group ? fieldGroup.x() : fieldX;
+  const liveFieldY = fieldGroup instanceof Konva.Group ? fieldGroup.y() : fieldY;
+  const liveFieldWidth = fieldGroup instanceof Konva.Group ? getLiveFieldWidth(fieldGroup, fieldWidth) : fieldWidth;
+  const indicatorNodes = [
+    {
+      indicatorIndex: 0,
+      node: options.pageLayer.findOne(`#${field.renderId}-conditional-indicator`),
+    },
+    {
+      indicatorIndex: 1,
+      node: options.pageLayer.findOne(`#${field.renderId}-validation-group-indicator`),
+    },
+  ].filter((indicator): indicator is { indicatorIndex: number; node: Konva.Group } => {
+    return indicator.node instanceof Konva.Group;
+  });
+
+  indicatorNodes.forEach(({ indicatorIndex, node }) => {
+    node.setAttrs(
+      getFieldIndicatorPosition({
+        fieldX: liveFieldX,
+        fieldY: liveFieldY,
+        fieldWidth: liveFieldWidth,
+        indicatorIndex,
+        indicatorCount: indicatorNodes.length,
+        pageWidth: options.pageWidth,
+        pageHeight: options.pageHeight,
+      }),
+    );
+    node.visible(true);
+  });
 };
 
 export const getConditionalFieldSelectionLabelPosition = ({
@@ -203,24 +279,10 @@ export const createConditionalFieldIndicator = (field: FieldToRender) => {
 };
 
 export const upsertConditionalFieldIndicator = (field: FieldToRender, options: RenderFieldElementOptions) => {
-  const { fieldX, fieldY, fieldWidth, fieldHeight } = calculateFieldPosition(
-    field,
-    options.pageWidth,
-    options.pageHeight,
-  );
   const existingIndicator = options.pageLayer.findOne(`#${field.renderId}-conditional-indicator`);
   const indicator =
     existingIndicator instanceof Konva.Group ? existingIndicator : createConditionalFieldIndicator(field);
-  const position = getConditionalFieldIndicatorPosition({
-    fieldX,
-    fieldY,
-    fieldWidth,
-    fieldHeight,
-    pageWidth: options.pageWidth,
-    pageHeight: options.pageHeight,
-  });
-
-  indicator.setAttrs(position);
+  indicator.visible(false);
 
   if (!existingIndicator) {
     options.pageLayer.add(indicator);
@@ -306,6 +368,65 @@ export const upsertConditionalFieldSelectionLabel = (field: FieldToRender, optio
   }
 
   return label;
+};
+
+export const upsertValidationGroupIndicator = (field: FieldToRender, options: RenderFieldElementOptions) => {
+  const existingIndicator = options.pageLayer.findOne(`#${field.renderId}-validation-group-indicator`);
+  const indicator =
+    existingIndicator instanceof Konva.Group
+      ? existingIndicator
+      : new Konva.Group({
+          id: `${field.renderId}-validation-group-indicator`,
+          name: 'validation-group-indicator',
+          listening: false,
+        });
+  const color = field.isValidationGroupInvalid ? '#dc2626' : '#2563eb';
+
+  if (!(existingIndicator instanceof Konva.Group)) {
+    indicator.add(
+      new Konva.Circle({
+        x: VALIDATION_GROUP_INDICATOR_SIZE / 2,
+        y: VALIDATION_GROUP_INDICATOR_SIZE / 2,
+        radius: VALIDATION_GROUP_INDICATOR_SIZE / 2 - 1,
+        listening: false,
+      }),
+      new Konva.Text({
+        name: 'validation-group-indicator-text',
+        width: VALIDATION_GROUP_INDICATOR_SIZE,
+        height: VALIDATION_GROUP_INDICATOR_SIZE,
+        align: 'center',
+        verticalAlign: 'middle',
+        fontFamily: konvaTextFontFamily,
+        fontSize: 11,
+        fontStyle: 'bold',
+        listening: false,
+      }),
+    );
+  }
+
+  const circle = indicator.findOne('Circle');
+  const text = indicator.findOne('.validation-group-indicator-text');
+
+  if (!(circle instanceof Konva.Circle) || !(text instanceof Konva.Text)) {
+    return indicator;
+  }
+
+  circle.setAttrs({
+    fill: field.isValidationGroupInvalid ? 'rgba(220, 38, 38, 0.12)' : 'rgba(37, 99, 235, 0.12)',
+    stroke: color,
+    strokeWidth: 1,
+  });
+  text.setAttrs({
+    fill: color,
+    text: field.isValidationGroupInvalid ? '!' : '≡',
+  });
+  indicator.visible(false);
+
+  if (!(existingIndicator instanceof Konva.Group)) {
+    options.pageLayer.add(indicator);
+  }
+
+  return indicator;
 };
 
 export const createSpinner = ({ fieldWidth, fieldHeight }: { fieldWidth: number; fieldHeight: number }) => {

@@ -12,7 +12,11 @@ import type { TFieldCheckbox, TFieldDate } from '@documenso/lib/types/field';
 import { ZFullFieldSchema } from '@documenso/lib/types/field';
 import { createSpinner } from '@documenso/lib/universal/field-renderer/field-generic-items';
 import { renderField } from '@documenso/lib/universal/field-renderer/render-field';
-import { isFieldUnsignedAndRequired } from '@documenso/lib/utils/advanced-fields-helpers';
+import {
+  canInsertFieldIntoValidationGroup,
+  isFieldUnsignedAndRequired,
+} from '@documenso/lib/utils/advanced-fields-helpers';
+import type { TFieldWithGroup } from '@documenso/lib/utils/field-groups';
 import { getClientSideFieldTranslations } from '@documenso/lib/utils/fields';
 import { extractInitials } from '@documenso/lib/utils/recipient-formatter';
 import type { TSignEnvelopeFieldValue } from '@documenso/trpc/server/envelope-router/sign-envelope-field.types';
@@ -310,6 +314,27 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
          * INITIALS FIELD.
          */
         .with({ type: FieldType.INITIALS }, (field) => {
+          const activeRecipientFields =
+            recipient.role === RecipientRole.ASSISTANT ? selectedAssistantRecipientFields : recipientFields;
+          const groupFields = field.fieldGroupId
+            ? activeRecipientFields
+                .filter((candidate) => candidate.fieldGroupId === field.fieldGroupId)
+                .map((candidate) => ZFullFieldSchema.parse(candidate))
+            : [];
+
+          if (
+            field.fieldGroup &&
+            !canInsertFieldIntoValidationGroup(groupFields as TFieldWithGroup[], field.fieldGroup, field.id)
+          ) {
+            toast({
+              title: t`Selection limit reached`,
+              description: t`This initials group allows a maximum of ${field.fieldGroup.validationLength} fields.`,
+              variant: 'destructive',
+            });
+
+            return;
+          }
+
           const initials = localFullName ? extractInitials(localFullName, Number.POSITIVE_INFINITY) : null;
 
           handleInitialsFieldClick({ field, initials })

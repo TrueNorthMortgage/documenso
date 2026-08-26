@@ -15,7 +15,7 @@ import {
   ZTextFieldMeta,
 } from '@documenso/lib/types/field-meta';
 import { prisma } from '@documenso/prisma';
-import { EnvelopeType, FieldType } from '@prisma/client';
+import { EnvelopeType, FieldGroupType, FieldType } from '@prisma/client';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
@@ -116,7 +116,11 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
     }
 
     if (
-      (field.fieldGroup.type !== FieldType.RADIO && field.fieldGroup.type !== FieldType.CHECKBOX) ||
+      (field.fieldGroup.groupType === FieldGroupType.OPTION_GROUP &&
+        field.fieldGroup.type !== FieldType.RADIO &&
+        field.fieldGroup.type !== FieldType.CHECKBOX) ||
+      (field.fieldGroup.groupType === FieldGroupType.VALIDATION_GROUP &&
+        field.fieldGroup.type !== FieldType.INITIALS) ||
       field.fieldGroup.type !== field.type ||
       field.fieldGroup.envelopeId !== envelope.id ||
       field.fieldGroup.envelopeItemId !== field.envelopeItemId ||
@@ -136,23 +140,25 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
         where: { id: group.id },
         update: {
           name: group.name,
+          groupType: group.groupType,
           required: false,
           readOnly: group.readOnly,
           fontSize: group.fontSize,
           direction: group.direction,
-          validationRule: null,
-          validationLength: null,
+          validationRule: group.groupType === FieldGroupType.VALIDATION_GROUP ? group.validationRule : null,
+          validationLength: group.groupType === FieldGroupType.VALIDATION_GROUP ? group.validationLength : null,
         },
         create: {
           id: group.id,
           name: group.name,
           type: group.type,
+          groupType: group.groupType,
           required: false,
           readOnly: group.readOnly,
           fontSize: group.fontSize,
           direction: group.direction,
-          validationRule: null,
-          validationLength: null,
+          validationRule: group.groupType === FieldGroupType.VALIDATION_GROUP ? group.validationRule : null,
+          validationLength: group.groupType === FieldGroupType.VALIDATION_GROUP ? group.validationLength : null,
           envelopeId: envelope.id,
           envelopeItemId: group.envelopeItemId,
           recipientId: group.recipientId,

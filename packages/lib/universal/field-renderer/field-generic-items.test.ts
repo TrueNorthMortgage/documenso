@@ -4,6 +4,7 @@ import {
   CONDITIONAL_FIELD_SELECTION_STROKE,
   getConditionalFieldIndicatorPosition,
   getConditionalFieldSelectionLabelPosition,
+  getFieldIndicatorPosition,
   getFieldRectStyles,
 } from './field-generic-items';
 
@@ -30,7 +31,6 @@ describe('getFieldRectStyles', () => {
         fieldX: 100,
         fieldY: 50,
         fieldWidth: 40,
-        fieldHeight: 20,
         pageWidth: 600,
         pageHeight: 800,
       }),
@@ -40,20 +40,45 @@ describe('getFieldRectStyles', () => {
     });
   });
 
-  it('places the indicator below fields at the top of the page', () => {
+  it('places the indicator at the field top edge when there is no room above', () => {
     expect(
       getConditionalFieldIndicatorPosition({
         fieldX: 550,
         fieldY: 2,
         fieldWidth: 40,
-        fieldHeight: 20,
         pageWidth: 600,
         pageHeight: 800,
       }),
     ).toEqual({
       x: 574,
-      y: 26,
+      y: 2,
     });
+  });
+
+  it('places multiple indicators side-by-side at the field top right', () => {
+    expect(
+      getFieldIndicatorPosition({
+        fieldX: 100,
+        fieldY: 50,
+        fieldWidth: 100,
+        indicatorIndex: 0,
+        indicatorCount: 2,
+        pageWidth: 600,
+        pageHeight: 800,
+      }),
+    ).toEqual({ x: 164, y: 30 });
+
+    expect(
+      getFieldIndicatorPosition({
+        fieldX: 100,
+        fieldY: 50,
+        fieldWidth: 100,
+        indicatorIndex: 1,
+        indicatorCount: 2,
+        pageWidth: 600,
+        pageHeight: 800,
+      }),
+    ).toEqual({ x: 184, y: 30 });
   });
 
   it('places the compact temporary field name below the field', () => {

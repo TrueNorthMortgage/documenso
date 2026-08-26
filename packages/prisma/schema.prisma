@@ -677,6 +677,11 @@ enum FieldType {
   DROPDOWN
 }
 
+enum FieldGroupType {
+  OPTION_GROUP
+  VALIDATION_GROUP
+}
+
 enum ConditionalFieldRuleOperator {
   EQUALS
   ANY_TEXT
@@ -719,6 +724,7 @@ model FieldGroup {
   id             String   @id
   name           String
   type           FieldType
+  groupType      FieldGroupType @default(OPTION_GROUP)
   required       Boolean  @default(false)
   readOnly       Boolean  @default(false)
   fontSize       Int?

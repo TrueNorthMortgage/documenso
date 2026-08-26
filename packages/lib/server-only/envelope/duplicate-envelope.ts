@@ -202,6 +202,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
                     id: nanoid(12),
                     name: group.name,
                     type: group.type,
+                    groupType: group.groupType,
                     required: group.required,
                     readOnly: group.readOnly,
                     fontSize: group.fontSize,

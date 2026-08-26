@@ -631,6 +631,7 @@ export const createDocumentFromTemplate = async ({
           id,
           name: group.name,
           type: group.type,
+          groupType: group.groupType,
           required: group.required,
           readOnly: group.readOnly,
           fontSize: group.fontSize,

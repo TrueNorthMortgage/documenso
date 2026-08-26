@@ -218,9 +218,11 @@ export const EditorGenericLetterSpacingField = ({
 export const EditorGenericRequiredField = ({
   formControl,
   className,
+  disabled = false,
 }: {
   formControl: FormControlType;
   className?: string;
+  disabled?: boolean;
 }) => {
   const { watch, setValue } = useFormContext();
 
@@ -244,6 +246,7 @@ export const EditorGenericRequiredField = ({
                 data-testid="field-form-required"
                 id="field-required"
                 checked={field.value}
+                disabled={disabled}
                 onCheckedChange={field.onChange}
               />
 
