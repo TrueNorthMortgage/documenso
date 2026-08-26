@@ -1,7 +1,10 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { nanoid } from '@documenso/lib/universal/id';
 import { prisma } from '@documenso/prisma';
 import { expect, type Page, test } from '@playwright/test';
 import { FieldType } from '@prisma/client';
+import type Konva from 'konva';
 
 import {
   addEnvelopeItemPdf,
@@ -9,6 +12,7 @@ import {
   clickAddSignerButton,
   clickEnvelopeEditorStep,
   getEnvelopeEditorSettingsTrigger,
+  getEnvelopeItemReplaceButtons,
   getRecipientEmailInputs,
   getRecipientRemoveButtons,
   openDocumentEnvelopeEditor,
@@ -20,7 +24,7 @@ import {
   type TEnvelopeEditorSurface,
 } from '../fixtures/envelope-editor';
 import { expectToastTextToBeVisible } from '../fixtures/generic';
-import { getKonvaElementCountForPage } from '../fixtures/konva';
+import { getKonvaElementCountForPage, getKonvaTransformerNodeCountForPage } from '../fixtures/konva';
 
 type TFieldFlowResult = {
   externalId: string;
@@ -33,6 +37,8 @@ const TEST_FIELD_VALUES = {
     name: 'Embedded Field Recipient',
   },
 };
+
+const multiPagePdfBuffer = fs.readFileSync(path.join(__dirname, '../../../../assets/field-font-alignment.pdf'));
 
 const openSettingsDialog = async (root: Page) => {
   await getEnvelopeEditorSettingsTrigger(root).click();
@@ -639,6 +645,112 @@ const runKeyboardDeleteFieldFlow = async (surface: TEnvelopeEditorSurface) => {
   await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(0);
 };
 
+const runMultiSelectDuplicateAndCopyPasteFlow = async (surface: TEnvelopeEditorSurface) => {
+  const root = surface.root;
+
+  await updateExternalId(surface, `e2e-multi-select-${nanoid()}`);
+  await setupRecipientsForFieldPlacement(surface);
+  await clickEnvelopeEditorStep(root, 'addFields');
+
+  await placeFieldOnPdf(root, 'Signature', { x: 140, y: 140 });
+  await placeFieldOnPdf(root, 'Text', { x: 260, y: 220 });
+  await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(2);
+
+  const canvas = root.locator('.konva-container canvas').first();
+  const canvasBounds = await canvas.boundingBox();
+
+  if (!canvasBounds) {
+    throw new Error('Could not find the field canvas bounds');
+  }
+
+  await root.mouse.move(canvasBounds.x + 80, canvasBounds.y + 80);
+  await root.mouse.down();
+  await root.mouse.move(canvasBounds.x + 380, canvasBounds.y + 300, { steps: 8 });
+  await root.mouse.up();
+
+  await expect.poll(() => getKonvaTransformerNodeCountForPage(root, 1)).toBe(2);
+  await root.locator('button[title="Duplicate"]').click();
+  await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(4);
+
+  await root.keyboard.press('ControlOrMeta+c');
+  await root.keyboard.press('ControlOrMeta+v');
+  await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(6);
+};
+
+const runCrossPageMultiFieldDragFlow = async (surface: TEnvelopeEditorSurface) => {
+  const root = surface.root;
+  const replaceButton = getEnvelopeItemReplaceButtons(root).first();
+  const [fileChooser] = await Promise.all([root.waitForEvent('filechooser'), replaceButton.click()]);
+
+  await fileChooser.setFiles({
+    name: 'multi-field-drag.pdf',
+    mimeType: 'application/pdf',
+    buffer: multiPagePdfBuffer,
+  });
+  await expect(replaceButton).toBeDisabled({ timeout: 15000 });
+  await expect(replaceButton).toBeEnabled({ timeout: 15000 });
+
+  await updateExternalId(surface, `e2e-multi-field-drag-${nanoid()}`);
+  await setupRecipientsForFieldPlacement(surface);
+  await clickEnvelopeEditorStep(root, 'addFields');
+  await expect(root.locator('[data-pdf-content]').first()).toHaveAttribute('data-page-count', '3', { timeout: 15000 });
+
+  await placeFieldOnPdf(root, 'Signature', { x: 140, y: 140 });
+  await placeFieldOnPdf(root, 'Text', { x: 260, y: 220 });
+  await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(2);
+
+  await root.evaluate(() => {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const konva = (window as unknown as { Konva: typeof Konva }).Konva;
+    const stage = konva.stages.find((candidate) => candidate.attrs.id === 'page-1');
+    const fields = stage?.find('.field-group') ?? [];
+
+    fields[0]?.fire('click', { evt: new MouseEvent('click') }, true);
+    fields[1]?.fire('click', { evt: new MouseEvent('click', { shiftKey: true }) }, true);
+  });
+  await expect.poll(() => getKonvaTransformerNodeCountForPage(root, 1)).toBe(2);
+
+  const pageTwo = root.locator('img[data-page-number="2"]');
+  await pageTwo.scrollIntoViewIfNeeded();
+  await expect(pageTwo).toBeVisible();
+  await root.waitForTimeout(500);
+
+  const targetBounds = await pageTwo.boundingBox();
+
+  if (!targetBounds) {
+    throw new Error('Could not find the second PDF page bounds');
+  }
+
+  await root.evaluate(
+    ({ clientX, clientY }) => {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const konva = (window as unknown as { Konva: typeof Konva }).Konva;
+      const stage = konva.stages.find((candidate) => candidate.attrs.id === 'page-1');
+      const anchor = stage?.find('.field-group')[0];
+      const sourceContainerBounds = stage?.container().getBoundingClientRect();
+
+      if (!stage || !anchor || !sourceContainerBounds) {
+        throw new Error('Could not find the source field');
+      }
+
+      const sourceClientX = sourceContainerBounds.left + anchor.x() * stage.scaleX() + 10;
+      const sourceClientY = sourceContainerBounds.top + anchor.y() * stage.scaleY() + 10;
+
+      anchor.fire(
+        'dragstart',
+        { evt: new MouseEvent('mousedown', { buttons: 1, clientX: sourceClientX, clientY: sourceClientY }) },
+        true,
+      );
+      anchor.fire('dragmove', { evt: new MouseEvent('mousemove', { buttons: 1, clientX, clientY }) }, true);
+      anchor.fire('dragend', { evt: new MouseEvent('mouseup', { buttons: 0, clientX, clientY }) }, true);
+    },
+    { clientX: targetBounds.x + 180, clientY: targetBounds.y + 180 },
+  );
+
+  await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(0);
+  await expect.poll(() => getKonvaElementCountForPage(root, 2, '.field-group')).toBe(2);
+};
+
 // --- Test describe blocks ---
 
 test.describe('document editor', () => {
@@ -675,6 +787,16 @@ test.describe('document editor', () => {
   test('delete a selected field with the keyboard Delete key', async ({ page }) => {
     const surface = await openDocumentEnvelopeEditor(page);
     await runKeyboardDeleteFieldFlow(surface);
+  });
+
+  test('marquee-select, duplicate, and copy/paste multiple fields', async ({ page }) => {
+    const surface = await openDocumentEnvelopeEditor(page);
+    await runMultiSelectDuplicateAndCopyPasteFlow(surface);
+  });
+
+  test('drag multiple selected fields to another page', async ({ page }) => {
+    const surface = await openDocumentEnvelopeEditor(page);
+    await runCrossPageMultiFieldDragFlow(surface);
   });
 
   test('place and configure all 10 field types', async ({ page }) => {

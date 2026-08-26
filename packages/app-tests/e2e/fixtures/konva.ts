@@ -16,3 +16,16 @@ export const getKonvaElementCountForPage = async (page: Page, pageNumber: number
     { pageNumber, elementSelector },
   );
 };
+
+export const getKonvaTransformerNodeCountForPage = async (page: Page, pageNumber: number) => {
+  await page.locator('.konva-container canvas').first().waitFor({ state: 'visible' });
+
+  return await page.evaluate((pageNumber) => {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const konva: typeof Konva = (window as unknown as { Konva: typeof Konva }).Konva;
+    const stage = konva.stages.find((candidate) => candidate.attrs.id === `page-${pageNumber}`);
+    const transformer = stage?.findOne('Transformer');
+
+    return transformer?.nodes().length ?? 0;
+  }, pageNumber);
+};
