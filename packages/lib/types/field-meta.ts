@@ -19,6 +19,10 @@ export const DEFAULT_FIELD_FONT_SIZE = 12;
 export const DEFAULT_SIGNATURE_OVERFLOW_MODE = 'auto';
 export const DEFAULT_DATE_OVERFLOW_MODE = 'auto';
 export const DEFAULT_EMAIL_OVERFLOW_MODE = 'auto';
+export const DEFAULT_INITIALS_OVERFLOW_MODE = 'auto';
+export const DEFAULT_NAME_OVERFLOW_MODE = 'auto';
+export const DEFAULT_NUMBER_OVERFLOW_MODE = 'auto';
+export const DEFAULT_TEXT_OVERFLOW_MODE = 'auto';
 
 /**
  * The overflow mode for a field.
@@ -36,10 +40,47 @@ export type TFieldOverflowMode = z.infer<typeof ZFieldOverflowMode>;
 /**
  * Resolves the overflow mode for a field.
  *
- * Returns 'crop' when undefined (the default for most fields).
+ * Returns the field-type default when no overflow mode is configured.
  */
-export const resolveFieldOverflowMode = (fieldMeta?: { overflow?: TFieldOverflowMode } | null): TFieldOverflowMode => {
-  return fieldMeta?.overflow ?? 'crop';
+export const resolveFieldOverflowMode = (
+  fieldMeta?: { type?: string; overflow?: TFieldOverflowMode } | null,
+  fieldType?: string,
+): TFieldOverflowMode => {
+  if (fieldMeta?.overflow) {
+    return fieldMeta.overflow;
+  }
+
+  const type = (fieldMeta?.type ?? fieldType)?.toLowerCase();
+
+  if (type === 'name') {
+    return DEFAULT_NAME_OVERFLOW_MODE;
+  }
+
+  if (type === 'initials') {
+    return DEFAULT_INITIALS_OVERFLOW_MODE;
+  }
+
+  if (type === 'number') {
+    return DEFAULT_NUMBER_OVERFLOW_MODE;
+  }
+
+  if (type === 'text') {
+    return DEFAULT_TEXT_OVERFLOW_MODE;
+  }
+
+  if (type === 'date') {
+    return DEFAULT_DATE_OVERFLOW_MODE;
+  }
+
+  if (type === 'email') {
+    return DEFAULT_EMAIL_OVERFLOW_MODE;
+  }
+
+  if (type === 'signature') {
+    return DEFAULT_SIGNATURE_OVERFLOW_MODE;
+  }
+
+  return 'crop';
 };
 
 /**
@@ -322,6 +363,7 @@ export const FIELD_TEXT_META_DEFAULT_VALUES: TTextFieldMeta = {
   text: '',
   required: false,
   readOnly: false,
+  overflow: DEFAULT_TEXT_OVERFLOW_MODE,
 };
 
 export const FIELD_NUMBER_META_DEFAULT_VALUES: TNumberFieldMeta = {
@@ -332,6 +374,7 @@ export const FIELD_NUMBER_META_DEFAULT_VALUES: TNumberFieldMeta = {
   placeholder: '',
   required: false,
   readOnly: false,
+  overflow: DEFAULT_NUMBER_OVERFLOW_MODE,
 };
 
 export const FIELD_INITIALS_META_DEFAULT_VALUES: TInitialsFieldMeta = {
@@ -339,12 +382,14 @@ export const FIELD_INITIALS_META_DEFAULT_VALUES: TInitialsFieldMeta = {
   fontSize: DEFAULT_FIELD_FONT_SIZE,
   required: true,
   textAlign: 'left',
+  overflow: DEFAULT_INITIALS_OVERFLOW_MODE,
 };
 
 export const FIELD_NAME_META_DEFAULT_VALUES: TNameFieldMeta = {
   type: 'name',
   fontSize: DEFAULT_FIELD_FONT_SIZE,
   textAlign: 'left',
+  overflow: DEFAULT_NAME_OVERFLOW_MODE,
 };
 
 export const FIELD_EMAIL_META_DEFAULT_VALUES: TEmailFieldMeta = {

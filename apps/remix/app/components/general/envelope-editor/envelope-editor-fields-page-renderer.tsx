@@ -9,6 +9,7 @@ import { PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
 import { FIELD_GROUP_TYPE } from '@documenso/lib/types/field-group';
 import { FIELD_META_DEFAULT_VALUES } from '@documenso/lib/types/field-meta';
 import {
+  getFieldIndicatorNodes,
   getFieldIndicatorPosition,
   getLiveFieldWidth,
 } from '@documenso/lib/universal/field-renderer/field-generic-items';
@@ -103,18 +104,7 @@ type PageRenderer = {
 const pageRendererRegistry = new Map<number, PageRenderer>();
 
 const syncFieldIndicators = (fieldGroup: Konva.Group, targetPage: PageRenderer, sourceLayer: Konva.Layer | null) => {
-  const indicatorNodes = [
-    {
-      indicatorIndex: 0,
-      node: sourceLayer?.findOne(`#${fieldGroup.id()}-conditional-indicator`),
-    },
-    {
-      indicatorIndex: 1,
-      node: sourceLayer?.findOne(`#${fieldGroup.id()}-validation-group-indicator`),
-    },
-  ].filter((indicator): indicator is { indicatorIndex: number; node: Konva.Group } => {
-    return indicator.node instanceof Konva.Group;
-  });
+  const indicatorNodes = getFieldIndicatorNodes(fieldGroup.id(), sourceLayer);
 
   if (indicatorNodes.length === 0) {
     return;
@@ -122,7 +112,7 @@ const syncFieldIndicators = (fieldGroup: Konva.Group, targetPage: PageRenderer, 
 
   const fieldWidth = getLiveFieldWidth(fieldGroup, getNumericAttr(fieldGroup, 'dragFieldWidth') ?? fieldGroup.width());
 
-  indicatorNodes.forEach(({ indicatorIndex, node }) => {
+  indicatorNodes.forEach((node, indicatorIndex) => {
     node.moveTo(targetPage.pageLayer);
     node.setAttrs(
       getFieldIndicatorPosition({

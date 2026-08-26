@@ -4,7 +4,7 @@ import { seedTeam, seedTeamMember } from '@documenso/prisma/seed/teams';
 import { seedBlankTemplate } from '@documenso/prisma/seed/templates';
 import { seedUser } from '@documenso/prisma/seed/users';
 import { expect, test } from '@playwright/test';
-import { DocumentDataType, TeamMemberRole } from '@prisma/client';
+import { DocumentDataType, DocumentVisibility, TeamMemberRole } from '@prisma/client';
 import path from 'path';
 
 import { apiSignin } from '../fixtures/authentication';
@@ -490,12 +490,21 @@ test('[TEMPLATE]: should create a document from a template using template docume
   expect(firstDocumentData.type).toEqual(templateWithData.envelopeItems[0].documentData.type);
 });
 
-test('[TEMPLATE]: should persist document visibility when creating from template', async ({ page }) => {
+test('[TEMPLATE]: should use team default visibility when creating from template', async ({ page }) => {
   const { team, owner, organisation } = await seedTeam({
     createTeamMembers: 2,
   });
 
   const template = await seedBlankTemplate(owner, team.id);
+
+  await prisma.teamGlobalSettings.update({
+    where: {
+      id: team.teamGlobalSettings.id,
+    },
+    data: {
+      documentVisibility: DocumentVisibility.MANAGER_AND_ABOVE,
+    },
+  });
 
   await apiSignin({
     page,
@@ -503,11 +512,9 @@ test('[TEMPLATE]: should persist document visibility when creating from template
     redirectPath: `/t/${team.url}/templates/${template.id}/edit`,
   });
 
-  // Set template title and visibility
+  // Keep the template visible to everyone so regular members can use it.
   await page.getByLabel('Title').fill('TEMPLATE_WITH_VISIBILITY');
-  await page.getByTestId('documentVisibilitySelectValue').click();
-  await page.getByLabel('Managers and above').click();
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toContainText('Managers and above');
+  await expect(page.getByTestId('documentVisibilitySelectValue')).toContainText('Everyone');
 
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByRole('heading', { name: 'Add Placeholder' })).toBeVisible();
@@ -521,22 +528,22 @@ test('[TEMPLATE]: should persist document visibility when creating from template
 
   await page.getByRole('button', { name: 'Save template' }).click();
 
-  // Test creating document as team manager
-  const managerUser = await seedTeamMember({
+  // Create the document as a regular member.
+  const memberUser = await seedTeamMember({
     teamId: team.id,
-    role: TeamMemberRole.MANAGER,
+    role: TeamMemberRole.MEMBER,
   });
 
   await apiSignin({
     page,
-    email: managerUser.email,
+    email: memberUser.email,
     redirectPath: `/t/${team.url}/templates`,
   });
 
   await page.getByRole('button', { name: 'Use Template' }).click();
   await page.getByRole('button', { name: 'Create as draft' }).click();
 
-  // Review that the document was created with the correct visibility
+  // The document should use the team default, not the template visibility.
   await page.waitForURL(new RegExp(`/t/${team.url}/documents/envelope_.*`));
 
   const documentId = page.url().split('/').pop();
@@ -555,21 +562,6 @@ test('[TEMPLATE]: should persist document visibility when creating from template
   });
 
   expect(document.title).toEqual('TEMPLATE_WITH_VISIBILITY');
-  expect(document.visibility).toEqual('MANAGER_AND_ABOVE');
+  expect(document.visibility).toEqual(DocumentVisibility.MANAGER_AND_ABOVE);
   expect(document.teamId).toEqual(team.id);
-
-  // Test that regular member cannot create document from restricted template
-  const memberUser = await seedTeamMember({
-    teamId: team.id,
-    role: TeamMemberRole.MEMBER,
-  });
-
-  await apiSignin({
-    page,
-    email: memberUser.email,
-    redirectPath: `/t/${team.url}/templates`,
-  });
-
-  // Template should not be visible to regular member
-  await expect(page.getByRole('button', { name: 'Use Template' })).not.toBeVisible();
 });

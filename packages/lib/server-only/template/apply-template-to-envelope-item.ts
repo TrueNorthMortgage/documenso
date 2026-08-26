@@ -1,9 +1,20 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
+import { ZRecipientAuthOptionsSchema } from '@documenso/lib/types/document-auth';
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
+import { nanoid } from '@documenso/lib/universal/id';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { prisma } from '@documenso/prisma';
-import { DocumentStatus, EnvelopeType, type Recipient } from '@prisma/client';
+import {
+  DocumentStatus,
+  EnvelopeType,
+  type FieldGroup,
+  type Prisma,
+  type Recipient,
+  RecipientRole,
+  SendStatus,
+  SigningStatus,
+} from '@prisma/client';
 
 import { canRecipientFieldsBeModified } from '../../utils/recipients';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
@@ -30,6 +41,41 @@ export type RemoveTemplateFromEnvelopeItemOptions = {
 };
 
 type TemplateRecipientReference = Pick<Recipient, 'id' | 'role' | 'signingOrder'>;
+type TemplateRecipientToCreate = Pick<Recipient, 'id' | 'name' | 'email' | 'role' | 'signingOrder' | 'authOptions'>;
+type TemplateFieldGroup = Pick<
+  FieldGroup,
+  | 'id'
+  | 'name'
+  | 'type'
+  | 'groupType'
+  | 'required'
+  | 'readOnly'
+  | 'fontSize'
+  | 'direction'
+  | 'validationRule'
+  | 'validationLength'
+  | 'envelopeItemId'
+  | 'recipientId'
+>;
+type TemplateFieldWithGroup = {
+  fieldGroupId: string | null;
+  fieldGroup: TemplateFieldGroup | null;
+};
+
+const getTemplateRecipientCandidates = <T extends TemplateRecipientReference>({
+  templateRecipient,
+  recipients,
+}: {
+  templateRecipient: TemplateRecipientReference;
+  recipients: T[];
+}) => {
+  const compatibleRecipients = recipients.filter((recipient) => recipient.role === templateRecipient.role);
+  const sameSigningOrder = compatibleRecipients.filter(
+    (recipient) => recipient.signingOrder === templateRecipient.signingOrder,
+  );
+
+  return sameSigningOrder.length > 0 ? sameSigningOrder : compatibleRecipients;
+};
 
 export const getAccessibleTemplate = async ({
   templateId,
@@ -64,11 +110,7 @@ export const resolveTemplateRecipient = <T extends TemplateRecipientReference>({
   templateRecipient: TemplateRecipientReference;
   recipients: T[];
 }): T => {
-  const compatibleRecipients = recipients.filter((recipient) => recipient.role === templateRecipient.role);
-  const sameSigningOrder = compatibleRecipients.filter(
-    (recipient) => recipient.signingOrder === templateRecipient.signingOrder,
-  );
-  const candidates = sameSigningOrder.length > 0 ? sameSigningOrder : compatibleRecipients;
+  const candidates = getTemplateRecipientCandidates({ templateRecipient, recipients });
 
   if (candidates.length !== 1) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
@@ -78,6 +120,149 @@ export const resolveTemplateRecipient = <T extends TemplateRecipientReference>({
   }
 
   return candidates[0];
+};
+
+export const resolveTemplateRecipients = <T extends TemplateRecipientReference>({
+  templateRecipients,
+  recipients,
+}: {
+  templateRecipients: TemplateRecipientReference[];
+  recipients: T[];
+}) => {
+  const availableRecipients = [...recipients];
+  const recipientMap = new Map<number, number>();
+  const unmappedTemplateRecipientIds: number[] = [];
+
+  for (const templateRecipient of templateRecipients) {
+    const candidates = getTemplateRecipientCandidates({
+      templateRecipient,
+      recipients: availableRecipients,
+    });
+
+    if (candidates.length > 1) {
+      throw new AppError(AppErrorCode.INVALID_REQUEST, {
+        message: `Could not uniquely map template recipient ${templateRecipient.id}`,
+        userMessage: 'The template recipients do not match the recipients on this document.',
+      });
+    }
+
+    const recipient = candidates[0];
+
+    if (!recipient) {
+      unmappedTemplateRecipientIds.push(templateRecipient.id);
+      continue;
+    }
+
+    recipientMap.set(templateRecipient.id, recipient.id);
+    availableRecipients.splice(availableRecipients.indexOf(recipient), 1);
+  }
+
+  return {
+    recipientMap,
+    unmappedTemplateRecipientIds,
+  };
+};
+
+export const createTemplateRecipients = async ({
+  tx,
+  envelopeId,
+  templateRecipients,
+  requestMetadata,
+}: {
+  tx: Prisma.TransactionClient;
+  envelopeId: string;
+  templateRecipients: TemplateRecipientToCreate[];
+  requestMetadata: ApiRequestMetadata;
+}) => {
+  return await Promise.all(
+    templateRecipients.map(async (templateRecipient) => {
+      const authOptions = ZRecipientAuthOptionsSchema.parse(templateRecipient.authOptions);
+      const recipient = await tx.recipient.create({
+        data: {
+          envelopeId,
+          name: templateRecipient.name,
+          email: templateRecipient.email,
+          role: templateRecipient.role,
+          signingOrder: templateRecipient.signingOrder,
+          token: nanoid(),
+          authOptions,
+          sendStatus: templateRecipient.role === RecipientRole.CC ? SendStatus.SENT : SendStatus.NOT_SENT,
+          signingStatus: templateRecipient.role === RecipientRole.CC ? SigningStatus.SIGNED : SigningStatus.NOT_SIGNED,
+        },
+      });
+
+      await tx.documentAuditLog.create({
+        data: createDocumentAuditLogData({
+          type: DOCUMENT_AUDIT_LOG_TYPE.RECIPIENT_CREATED,
+          envelopeId,
+          metadata: requestMetadata,
+          data: {
+            recipientEmail: recipient.email,
+            recipientName: recipient.name,
+            recipientId: recipient.id,
+            recipientRole: recipient.role,
+            accessAuth: authOptions.accessAuth,
+            actionAuth: authOptions.actionAuth,
+          },
+        }),
+      });
+
+      return recipient;
+    }),
+  );
+};
+
+export const createTemplateFieldGroups = async ({
+  tx,
+  envelopeId,
+  envelopeItemId,
+  sourceFields,
+  recipientMap,
+}: {
+  tx: Prisma.TransactionClient;
+  envelopeId: string;
+  envelopeItemId: string;
+  sourceFields: TemplateFieldWithGroup[];
+  recipientMap: Map<number, number>;
+}) => {
+  const fieldGroupIdMap = new Map<string, string>();
+
+  for (const sourceField of sourceFields) {
+    if (!sourceField.fieldGroupId || !sourceField.fieldGroup || fieldGroupIdMap.has(sourceField.fieldGroupId)) {
+      continue;
+    }
+
+    const recipientId = recipientMap.get(sourceField.fieldGroup.recipientId);
+
+    if (!recipientId) {
+      throw new AppError(AppErrorCode.INVALID_REQUEST, {
+        message: `Could not map template field group recipient ${sourceField.fieldGroup.recipientId}`,
+      });
+    }
+
+    const fieldGroupId = nanoid(12);
+    fieldGroupIdMap.set(sourceField.fieldGroupId, fieldGroupId);
+
+    await tx.fieldGroup.create({
+      data: {
+        id: fieldGroupId,
+        name: sourceField.fieldGroup.name,
+        type: sourceField.fieldGroup.type,
+        groupType: sourceField.fieldGroup.groupType,
+        required: sourceField.fieldGroup.required,
+        readOnly: sourceField.fieldGroup.readOnly,
+        fontSize: sourceField.fieldGroup.fontSize,
+        direction: sourceField.fieldGroup.direction,
+        validationRule: sourceField.fieldGroup.validationRule,
+        validationLength: sourceField.fieldGroup.validationLength,
+        envelopeId,
+        envelopeItemId,
+        recipientId,
+      },
+    });
+  }
+
+  return fieldGroupIdMap;
 };
 
 const getEnvelopeForTemplateAction = async ({
@@ -158,9 +343,7 @@ export const applyTemplateToEnvelopeItem = async ({
   }
 
   const templateRecipientIds = [...new Set(sourceFields.map((field) => field.recipientId))];
-  const recipientMap = new Map<number, number>();
-
-  for (const templateRecipientId of templateRecipientIds) {
+  const templateRecipients = templateRecipientIds.map((templateRecipientId) => {
     const templateRecipient = template.recipients.find((recipient) => recipient.id === templateRecipientId);
 
     if (!templateRecipient) {
@@ -169,22 +352,52 @@ export const applyTemplateToEnvelopeItem = async ({
       });
     }
 
-    const recipient = resolveTemplateRecipient({
-      templateRecipient,
-      recipients: envelope.recipients,
-    });
+    return templateRecipient;
+  });
 
-    if (!canRecipientFieldsBeModified(recipient, envelope.fields)) {
+  const { recipientMap, unmappedTemplateRecipientIds } = resolveTemplateRecipients({
+    templateRecipients,
+    recipients: envelope.recipients,
+  });
+
+  for (const recipientId of recipientMap.values()) {
+    const recipient = envelope.recipients.find((candidate) => candidate.id === recipientId);
+
+    if (recipient && !canRecipientFieldsBeModified(recipient, envelope.fields)) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: `Recipient ${recipient.id} cannot be modified`,
         userMessage: 'One of the recipients can no longer have fields modified.',
       });
     }
-
-    recipientMap.set(templateRecipientId, recipient.id);
   }
 
   const createdFields = await prisma.$transaction(async (tx) => {
+    const unmappedTemplateRecipients = templateRecipients.filter((recipient) =>
+      unmappedTemplateRecipientIds.includes(recipient.id),
+    );
+    const createdRecipients = await createTemplateRecipients({
+      tx,
+      envelopeId,
+      templateRecipients: unmappedTemplateRecipients,
+      requestMetadata,
+    });
+
+    createdRecipients.forEach((recipient, index) => {
+      const templateRecipient = unmappedTemplateRecipients[index];
+
+      if (templateRecipient) {
+        recipientMap.set(templateRecipient.id, recipient.id);
+      }
+    });
+
+    const fieldGroupIdMap = await createTemplateFieldGroups({
+      tx,
+      envelopeId,
+      envelopeItemId,
+      sourceFields,
+      recipientMap,
+    });
+
     if (targetFields.length > 0) {
       await tx.field.deleteMany({
         where: {
@@ -235,6 +448,7 @@ export const applyTemplateToEnvelopeItem = async ({
             inserted: false,
             fieldMeta: field.fieldMeta ?? undefined,
             templateSourceItemId: templateItemId,
+            fieldGroupId: field.fieldGroupId ? (fieldGroupIdMap.get(field.fieldGroupId) ?? null) : null,
           },
         });
       }),

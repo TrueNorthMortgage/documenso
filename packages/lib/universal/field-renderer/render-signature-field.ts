@@ -182,7 +182,7 @@ const createFieldSignature = (field: FieldToRender, options: RenderFieldElementO
   const isLabel = !signature?.typedSignature;
 
   const overflowLayout = calculateOverflowLayout({
-    overflowMode: resolveFieldOverflowMode(fieldMeta),
+    overflowMode: resolveFieldOverflowMode(fieldMeta, field.type),
     isLabel,
     textToRender,
     fontSize,
@@ -275,7 +275,7 @@ export const renderSignatureFieldElement = (field: FieldToRender, options: Rende
       const fieldMeta = field.fieldMeta as TSignatureFieldMeta | undefined;
 
       const newOverflowLayout = calculateOverflowLayout({
-        overflowMode: resolveFieldOverflowMode(fieldMeta),
+        overflowMode: resolveFieldOverflowMode(fieldMeta, field.type),
         isLabel,
         textToRender: fieldSignature.text(),
         fontSize: fieldSignature.fontSize(),
