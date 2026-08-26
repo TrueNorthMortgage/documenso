@@ -20,6 +20,40 @@ export const DocumentEmailCheckboxes = ({ value, onChange, className }: Document
     <div className={cn('space-y-3', className)}>
       <div className="flex flex-row items-center">
         <Checkbox
+          id={DocumentEmailEvents.RecipientOpened}
+          className="h-5 w-5"
+          checked={value.recipientOpened}
+          onCheckedChange={(checked) => onChange({ ...value, [DocumentEmailEvents.RecipientOpened]: Boolean(checked) })}
+        />
+
+        <label
+          className="ml-2 flex flex-row items-center text-muted-foreground text-sm"
+          htmlFor={DocumentEmailEvents.RecipientOpened}
+        >
+          <Trans>Email the owner when a recipient opens the document</Trans>
+
+          <Tooltip>
+            <TooltipTrigger>
+              <InfoIcon className="mx-2 h-4 w-4" />
+            </TooltipTrigger>
+
+            <TooltipContent className="max-w-md space-y-2 p-4 text-foreground">
+              <h2>
+                <strong>
+                  <Trans>Recipient opened email</Trans>
+                </strong>
+              </h2>
+
+              <p>
+                <Trans>This email is sent to the document owner when a recipient first opens the document.</Trans>
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </label>
+      </div>
+
+      <div className="flex flex-row items-center">
+        <Checkbox
           id={DocumentEmailEvents.RecipientSigned}
           className="h-5 w-5"
           checked={value.recipientSigned}
