@@ -1,7 +1,7 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
-import { nanoid, prefixedId } from '@documenso/lib/universal/id';
+import { prefixedId } from '@documenso/lib/universal/id';
 import { getFileServerSide } from '@documenso/lib/universal/upload/get-file.server';
 import { putNormalizedPdfFileServerSide } from '@documenso/lib/universal/upload/put-file.server';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
@@ -11,7 +11,12 @@ import { DocumentStatus, EnvelopeType } from '@prisma/client';
 
 import { canRecipientFieldsBeModified } from '../../utils/recipients';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
-import { getAccessibleTemplate, resolveTemplateRecipient } from './apply-template-to-envelope-item';
+import {
+  createTemplateFieldGroups,
+  createTemplateRecipients,
+  getAccessibleTemplate,
+  resolveTemplateRecipients,
+} from './apply-template-to-envelope-item';
 
 export type AddTemplateToEnvelopeOptions = {
   userId: number;
@@ -97,34 +102,33 @@ export const addTemplateToEnvelope = async ({
   }
 
   const sourceFields = template.fields.filter((field) => field.envelopeItemId === templateItemId);
-  const recipientMap = new Map<number, number>();
-
-  for (const sourceField of sourceFields) {
-    if (recipientMap.has(sourceField.recipientId)) {
-      continue;
-    }
-
-    const templateRecipient = template.recipients.find((recipient) => recipient.id === sourceField.recipientId);
+  const templateRecipientIds = [...new Set(sourceFields.map((field) => field.recipientId))];
+  const templateRecipients = templateRecipientIds.map((templateRecipientId) => {
+    const templateRecipient = template.recipients.find((recipient) => recipient.id === templateRecipientId);
 
     if (!templateRecipient) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
-        message: `Template recipient ${sourceField.recipientId} not found`,
+        message: `Template recipient ${templateRecipientId} not found`,
       });
     }
 
-    const recipient = resolveTemplateRecipient({
-      templateRecipient,
-      recipients: envelope.recipients,
-    });
+    return templateRecipient;
+  });
 
-    if (!canRecipientFieldsBeModified(recipient, envelope.fields)) {
+  const { recipientMap, unmappedTemplateRecipientIds } = resolveTemplateRecipients({
+    templateRecipients,
+    recipients: envelope.recipients,
+  });
+
+  for (const recipientId of recipientMap.values()) {
+    const recipient = envelope.recipients.find((candidate) => candidate.id === recipientId);
+
+    if (recipient && !canRecipientFieldsBeModified(recipient, envelope.fields)) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: `Recipient ${recipient.id} cannot be modified`,
         userMessage: 'One of the recipients can no longer have fields modified.',
       });
     }
-
-    recipientMap.set(sourceField.recipientId, recipient.id);
   }
 
   const sourceBuffer = await getFileServerSide(sourceEnvelopeItem.documentData);
@@ -145,6 +149,24 @@ export const addTemplateToEnvelope = async ({
   const order = Math.max(0, ...envelope.envelopeItems.map((item) => item.order)) + 1;
 
   const created = await prisma.$transaction(async (tx) => {
+    const unmappedTemplateRecipients = templateRecipients.filter((recipient) =>
+      unmappedTemplateRecipientIds.includes(recipient.id),
+    );
+    const createdRecipients = await createTemplateRecipients({
+      tx,
+      envelopeId,
+      templateRecipients: unmappedTemplateRecipients,
+      requestMetadata,
+    });
+
+    createdRecipients.forEach((recipient, index) => {
+      const templateRecipient = unmappedTemplateRecipients[index];
+
+      if (templateRecipient) {
+        recipientMap.set(templateRecipient.id, recipient.id);
+      }
+    });
+
     const envelopeItem = await tx.envelopeItem.create({
       data: {
         id: envelopeItemId,
@@ -160,42 +182,13 @@ export const addTemplateToEnvelope = async ({
       },
     });
 
-    const fieldGroupIdMap = new Map<string, string>();
-
-    for (const sourceField of sourceFields) {
-      if (!sourceField.fieldGroupId || !sourceField.fieldGroup || fieldGroupIdMap.has(sourceField.fieldGroupId)) {
-        continue;
-      }
-
-      const recipientId = recipientMap.get(sourceField.fieldGroup.recipientId);
-
-      if (!recipientId) {
-        throw new AppError(AppErrorCode.INVALID_REQUEST, {
-          message: `Could not map template field group recipient ${sourceField.fieldGroup.recipientId}`,
-        });
-      }
-
-      const fieldGroupId = nanoid(12);
-      fieldGroupIdMap.set(sourceField.fieldGroupId, fieldGroupId);
-
-      await tx.fieldGroup.create({
-        data: {
-          id: fieldGroupId,
-          name: sourceField.fieldGroup.name,
-          type: sourceField.fieldGroup.type,
-          groupType: sourceField.fieldGroup.groupType,
-          required: sourceField.fieldGroup.required,
-          readOnly: sourceField.fieldGroup.readOnly,
-          fontSize: sourceField.fieldGroup.fontSize,
-          direction: sourceField.fieldGroup.direction,
-          validationRule: sourceField.fieldGroup.validationRule,
-          validationLength: sourceField.fieldGroup.validationLength,
-          envelopeId,
-          envelopeItemId,
-          recipientId,
-        },
-      });
-    }
+    const fieldGroupIdMap = await createTemplateFieldGroups({
+      tx,
+      envelopeId,
+      envelopeItemId,
+      sourceFields,
+      recipientMap,
+    });
 
     const fields = await Promise.all(
       sourceFields.map((sourceField) => {

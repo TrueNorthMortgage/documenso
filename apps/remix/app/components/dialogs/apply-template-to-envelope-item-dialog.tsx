@@ -72,6 +72,8 @@ const canMapRecipients = ({
   const sourceFields = template.fields.filter((field) => field.envelopeItemId === templateItemId);
   const sourceRecipientIds = [...new Set(sourceFields.map((field) => field.recipientId))];
 
+  const availableRecipients = [...recipients];
+
   return sourceRecipientIds.every((sourceRecipientId) => {
     const sourceRecipient = template.recipients.find((recipient) => recipient.id === sourceRecipientId);
 
@@ -79,12 +81,23 @@ const canMapRecipients = ({
       return false;
     }
 
-    const compatibleRecipients = recipients.filter((recipient) => recipient.role === sourceRecipient.role);
+    const compatibleRecipients = availableRecipients.filter((recipient) => recipient.role === sourceRecipient.role);
     const sameSigningOrder = compatibleRecipients.filter(
       (recipient) => recipient.signingOrder === sourceRecipient.signingOrder,
     );
+    const candidates = sameSigningOrder.length > 0 ? sameSigningOrder : compatibleRecipients;
 
-    return (sameSigningOrder.length > 0 ? sameSigningOrder : compatibleRecipients).length === 1;
+    if (candidates.length > 1) {
+      return false;
+    }
+
+    const matchedRecipient = candidates[0];
+
+    if (matchedRecipient) {
+      availableRecipients.splice(availableRecipients.indexOf(matchedRecipient), 1);
+    }
+
+    return true;
   });
 };
 
@@ -361,13 +374,16 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
               <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[64%]">
+                    <TableHead className="w-[52%]">
                       <Trans>Template</Trans>
                     </TableHead>
-                    <TableHead className="w-[18%] whitespace-nowrap text-right">
+                    <TableHead className="w-[16%] whitespace-nowrap text-right">
                       <Trans>Documents</Trans>
                     </TableHead>
-                    <TableHead className="w-[18%] whitespace-nowrap text-right">
+                    <TableHead className="w-[16%] whitespace-nowrap text-right">
+                      <Trans>Recipients</Trans>
+                    </TableHead>
+                    <TableHead className="w-[16%] whitespace-nowrap text-right">
                       <Trans>Fields</Trans>
                     </TableHead>
                   </TableRow>
@@ -399,6 +415,7 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
                           </Button>
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-right">{documentCount}</TableCell>
+                        <TableCell className="whitespace-nowrap text-right">{template.recipients.length}</TableCell>
                         <TableCell className="whitespace-nowrap text-right">{template.fields.length}</TableCell>
                       </TableRow>
                     );
@@ -453,7 +470,7 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
                 <Trans>Recipients do not match</Trans>
               </AlertTitle>
               <AlertDescription>
-                <Trans>The template recipients must match the document by role and signing order.</Trans>
+                <Trans>Some template recipients cannot be matched uniquely to this document.</Trans>
               </AlertDescription>
             </Alert>
           )}

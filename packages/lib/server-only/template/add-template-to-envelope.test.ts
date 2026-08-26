@@ -15,7 +15,9 @@ const mocks = vi.hoisted(() => ({
   },
   getEnvelopeWhereInput: vi.fn(),
   getAccessibleTemplate: vi.fn(),
-  resolveTemplateRecipient: vi.fn(),
+  resolveTemplateRecipients: vi.fn(),
+  createTemplateRecipients: vi.fn(),
+  createTemplateFieldGroups: vi.fn(),
   getFileServerSide: vi.fn(),
   putNormalizedPdfFileServerSide: vi.fn(),
   getEnvelopeItemPermissions: vi.fn(),
@@ -29,7 +31,9 @@ vi.mock('../envelope/get-envelope-by-id', () => ({
 }));
 vi.mock('./apply-template-to-envelope-item', () => ({
   getAccessibleTemplate: mocks.getAccessibleTemplate,
-  resolveTemplateRecipient: mocks.resolveTemplateRecipient,
+  resolveTemplateRecipients: mocks.resolveTemplateRecipients,
+  createTemplateRecipients: mocks.createTemplateRecipients,
+  createTemplateFieldGroups: mocks.createTemplateFieldGroups,
 }));
 vi.mock('../../utils/recipients', () => ({
   canRecipientFieldsBeModified: mocks.canRecipientFieldsBeModified,
@@ -125,7 +129,14 @@ describe('addTemplateToEnvelope', () => {
       documentData: { id: 'source_data', data: Buffer.from('source') },
     });
     mocks.getEnvelopeItemPermissions.mockReturnValue({ canFileBeChanged: true });
-    mocks.resolveTemplateRecipient.mockImplementation(({ recipients }: { recipients: unknown[] }) => recipients[0]);
+    mocks.resolveTemplateRecipients.mockImplementation(
+      ({ templateRecipients, recipients }: { templateRecipients: { id: number }[]; recipients: { id: number }[] }) => ({
+        recipientMap: new Map(templateRecipients.map((templateRecipient) => [templateRecipient.id, recipients[0].id])),
+        unmappedTemplateRecipientIds: [],
+      }),
+    );
+    mocks.createTemplateRecipients.mockResolvedValue([]);
+    mocks.createTemplateFieldGroups.mockResolvedValue(new Map([['group_1', 'created_group_1']]));
     mocks.canRecipientFieldsBeModified.mockReturnValue(true);
     mocks.getFileServerSide.mockResolvedValue(Buffer.from('source'));
     mocks.putNormalizedPdfFileServerSide.mockResolvedValue({ type: 'application/pdf', data: Buffer.from('copy') });
@@ -182,12 +193,19 @@ describe('addTemplateToEnvelope', () => {
         initialData: Buffer.from('source'),
       },
     });
-    expect(tx.fieldGroup.create).toHaveBeenCalledTimes(1);
+    expect(mocks.createTemplateFieldGroups).toHaveBeenCalledWith(
+      expect.objectContaining({
+        envelopeId: targetEnvelope.id,
+        envelopeItemId: expect.any(String),
+        sourceFields: [sourceField, sourceChildField],
+      }),
+    );
     expect(tx.field.create).toHaveBeenCalledTimes(2);
     expect(tx.field.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           templateSourceItemId: 'template_item_1',
+          fieldGroupId: 'created_group_1',
         }),
       }),
     );
@@ -233,5 +251,99 @@ describe('addTemplateToEnvelope', () => {
 
     expect(result.fields).toEqual([]);
     expect(tx.field.create).not.toHaveBeenCalled();
+  });
+
+  it('creates recipients missing from the envelope before creating template fields', async () => {
+    const secondTemplateRecipient = {
+      id: 2,
+      name: 'Recipient 2',
+      email: 'recipient.2@documenso.com',
+      role: 'SIGNER',
+      signingOrder: 2,
+      authOptions: null,
+    };
+
+    mocks.getAccessibleTemplate.mockResolvedValue({
+      id: 1,
+      envelopeId: 'template_1',
+      recipients: [
+        {
+          id: 1,
+          name: 'Recipient 1',
+          email: 'recipient.1@documenso.com',
+          role: 'SIGNER',
+          signingOrder: 1,
+          authOptions: null,
+        },
+        secondTemplateRecipient,
+      ],
+      fields: [
+        sourceField,
+        {
+          ...sourceField,
+          id: 2,
+          recipientId: secondTemplateRecipient.id,
+          fieldGroupId: null,
+          fieldGroup: null,
+        },
+      ],
+    });
+    mocks.resolveTemplateRecipients.mockReturnValue({
+      recipientMap: new Map([[1, 10]]),
+      unmappedTemplateRecipientIds: [secondTemplateRecipient.id],
+    });
+    mocks.createTemplateRecipients.mockResolvedValue([{ id: 20 }]);
+
+    const tx = {
+      envelopeItem: {
+        create: vi.fn().mockResolvedValue({
+          id: 'new_item',
+          title: 'Agreement',
+          envelopeId: targetEnvelope.id,
+          order: 1,
+          documentDataId: 'new_data',
+        }),
+      },
+      fieldGroup: {
+        create: vi.fn(),
+      },
+      field: {
+        create: vi
+          .fn()
+          .mockImplementation(({ data }: { data: { secondaryId?: string } }) =>
+            Promise.resolve({ ...data, id: Math.random(), secondaryId: data.secondaryId ?? 'field' }),
+          ),
+      },
+      conditionalFieldRule: {
+        createMany: vi.fn(),
+      },
+      documentAuditLog: {
+        create: vi.fn(),
+        createMany: vi.fn(),
+      },
+    };
+
+    mocks.prisma.$transaction.mockImplementation(async (callback: (transaction: typeof tx) => unknown) => callback(tx));
+
+    await addTemplateToEnvelope({
+      userId: 1,
+      teamId: 1,
+      envelopeId: targetEnvelope.id,
+      templateId: 1,
+      templateItemId: 'template_item_1',
+      requestMetadata: {} as never,
+    });
+
+    expect(mocks.createTemplateRecipients).toHaveBeenCalledWith(
+      expect.objectContaining({
+        envelopeId: targetEnvelope.id,
+        templateRecipients: [secondTemplateRecipient],
+      }),
+    );
+    expect(tx.field.create).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ recipientId: 20 }),
+      }),
+    );
   });
 });
