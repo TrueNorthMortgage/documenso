@@ -24,6 +24,7 @@ import {
   type FieldGroupDragPosition,
   getClampedFieldGroupPositions,
   getDragScrollDelta,
+  getFieldNudgeDelta,
 } from '@documenso/lib/utils/field-drag';
 import { getFieldGroupValidationState, type TFieldWithGroup } from '@documenso/lib/utils/field-groups';
 import { getClientSideFieldTranslations } from '@documenso/lib/utils/fields';
@@ -1119,6 +1120,76 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     return true;
   }, [editorFields, fieldClipboard]);
 
+  /**
+   * Moves the current selection by a small offset without dragging, so fields
+   * can be lined up precisely. The selection moves as one unit and stays on
+   * its current page.
+   */
+  const nudgeSelectedFields = useCallback(
+    (deltaX: number, deltaY: number) => {
+      const selectedFieldGroups = selectedKonvaFieldGroupsRef.current;
+      const anchorFieldGroup = selectedFieldGroups[0];
+
+      if (!anchorFieldGroup) {
+        return false;
+      }
+
+      const targetPageNumber = getNumericAttr(anchorFieldGroup, 'dragPageNumber') ?? pageNumber;
+      const targetPage = pageRendererRegistry.get(targetPageNumber);
+
+      // Every mounted page registers its own key listener, so only the page that
+      // actually holds the selection may move it. Without this a selection still
+      // referenced by a previous page would be nudged once per listener.
+      if (!targetPage || targetPage.pageLayer !== pageLayer.current) {
+        return false;
+      }
+
+      const positions = getClampedFieldGroupPositions({
+        anchorFieldFormId: anchorFieldGroup.id(),
+        anchorX: anchorFieldGroup.x() + deltaX,
+        anchorY: anchorFieldGroup.y() + deltaY,
+        fields: selectedFieldGroups.map((fieldGroup) => ({
+          fieldFormId: fieldGroup.id(),
+          height: getNumericAttr(fieldGroup, 'dragFieldHeight') ?? fieldGroup.height(),
+          width: getNumericAttr(fieldGroup, 'dragFieldWidth') ?? fieldGroup.width(),
+          x: fieldGroup.x(),
+          y: fieldGroup.y(),
+        })),
+        pageHeight: targetPage.pageHeight,
+        pageWidth: targetPage.pageWidth,
+      });
+
+      let hasMoved = false;
+
+      for (const position of positions) {
+        const fieldGroup = selectedFieldGroups.find((candidate) => candidate.id() === position.fieldFormId);
+
+        if (!fieldGroup || (position.x === fieldGroup.x() && position.y === fieldGroup.y())) {
+          continue;
+        }
+
+        hasMoved = true;
+        fieldGroup.position({ x: position.x, y: position.y });
+        syncFieldIndicators(fieldGroup, targetPage, fieldGroup.getLayer());
+
+        editorFields.updateFieldByFormId(position.fieldFormId, {
+          positionX: position.positionX * 100,
+          positionY: position.positionY * 100,
+        });
+      }
+
+      if (hasMoved) {
+        interactiveTransformer.current?.forceUpdate();
+        targetPage.pageLayer.batchDraw();
+      }
+
+      // Report handled even when the selection is already flush against the page
+      // edge, so the arrow key does not fall through and scroll the document.
+      return true;
+    },
+    [editorFields, pageLayer, pageNumber],
+  );
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || isFieldChanging) {
@@ -1148,7 +1219,21 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         return;
       }
 
-      if ((event.key !== 'Delete' && event.key !== 'Backspace') || selectedKonvaFieldGroupsRef.current.length === 0) {
+      if (selectedKonvaFieldGroupsRef.current.length === 0) {
+        return;
+      }
+
+      const nudgeDelta = getFieldNudgeDelta({ key: event.key, isLargeStep: event.shiftKey });
+
+      if (nudgeDelta && !isModifierPressed && !event.altKey) {
+        if (nudgeSelectedFields(nudgeDelta.deltaX, nudgeDelta.deltaY)) {
+          event.preventDefault();
+        }
+
+        return;
+      }
+
+      if (event.key !== 'Delete' && event.key !== 'Backspace') {
         return;
       }
 
@@ -1159,7 +1244,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     window.addEventListener('keydown', handleKeyDown);
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySelectedFields, deletedSelectedFields, isFieldChanging, pasteCopiedFields]);
+  }, [copySelectedFields, deletedSelectedFields, isFieldChanging, nudgeSelectedFields, pasteCopiedFields]);
 
   const changeSelectedFieldsRecipients = (recipientId: number) => {
     const fields = selectedKonvaFieldGroups

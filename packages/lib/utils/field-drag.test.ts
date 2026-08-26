@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { getClampedFieldGroupPositions, getClampedFieldPosition, getDragScrollDelta } from './field-drag';
+import {
+  getClampedFieldGroupPositions,
+  getClampedFieldPosition,
+  getDragScrollDelta,
+  getFieldNudgeDelta,
+} from './field-drag';
 
 describe('getDragScrollDelta', () => {
   const baseOptions = {
@@ -98,5 +103,71 @@ describe('getClampedFieldGroupPositions', () => {
         pageHeight: 1200,
       }),
     ).toEqual([]);
+  });
+});
+
+describe('getFieldNudgeDelta', () => {
+  it('maps each arrow key to a single pixel offset', () => {
+    expect(getFieldNudgeDelta({ key: 'ArrowUp' })).toEqual({ deltaX: 0, deltaY: -1 });
+    expect(getFieldNudgeDelta({ key: 'ArrowDown' })).toEqual({ deltaX: 0, deltaY: 1 });
+    expect(getFieldNudgeDelta({ key: 'ArrowLeft' })).toEqual({ deltaX: -1, deltaY: 0 });
+    expect(getFieldNudgeDelta({ key: 'ArrowRight' })).toEqual({ deltaX: 1, deltaY: 0 });
+  });
+
+  it('uses a coarser step while shift is held', () => {
+    expect(getFieldNudgeDelta({ key: 'ArrowRight', isLargeStep: true })).toEqual({ deltaX: 10, deltaY: 0 });
+    expect(getFieldNudgeDelta({ key: 'ArrowUp', isLargeStep: true })).toEqual({ deltaX: 0, deltaY: -10 });
+  });
+
+  it('ignores keys that are not arrow keys', () => {
+    expect(getFieldNudgeDelta({ key: 'a' })).toBeNull();
+    expect(getFieldNudgeDelta({ key: 'Delete' })).toBeNull();
+    expect(getFieldNudgeDelta({ key: 'arrowup' })).toBeNull();
+  });
+});
+
+describe('nudging a multi field selection', () => {
+  const selection = [
+    { fieldFormId: 'a', height: 40, width: 100, x: 100, y: 100 },
+    { fieldFormId: 'b', height: 40, width: 100, x: 300, y: 500 },
+  ];
+
+  it('moves every selected field by the same offset', () => {
+    const nudge = getFieldNudgeDelta({ key: 'ArrowRight' });
+
+    const positions = getClampedFieldGroupPositions({
+      anchorFieldFormId: 'a',
+      anchorX: selection[0].x + (nudge?.deltaX ?? 0),
+      anchorY: selection[0].y + (nudge?.deltaY ?? 0),
+      fields: selection,
+      pageWidth: 1000,
+      pageHeight: 1200,
+    });
+
+    expect(positions.map(({ fieldFormId, x, y }) => ({ fieldFormId, x, y }))).toEqual([
+      { fieldFormId: 'a', x: 101, y: 100 },
+      { fieldFormId: 'b', x: 301, y: 500 },
+    ]);
+  });
+
+  it('holds the whole selection still once any edge is reached', () => {
+    const flushSelection = [
+      { fieldFormId: 'a', height: 40, width: 100, x: 100, y: 100 },
+      { fieldFormId: 'b', height: 40, width: 100, x: 900, y: 500 },
+    ];
+
+    const positions = getClampedFieldGroupPositions({
+      anchorFieldFormId: 'a',
+      anchorX: 101,
+      anchorY: 100,
+      fields: flushSelection,
+      pageWidth: 1000,
+      pageHeight: 1200,
+    });
+
+    expect(positions.map(({ fieldFormId, x, y }) => ({ fieldFormId, x, y }))).toEqual([
+      { fieldFormId: 'a', x: 100, y: 100 },
+      { fieldFormId: 'b', x: 900, y: 500 },
+    ]);
   });
 });

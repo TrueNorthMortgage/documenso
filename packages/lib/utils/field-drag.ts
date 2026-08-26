@@ -56,6 +56,37 @@ export const getDragScrollDelta = ({
   return Math.min(delta, scrollHeight - clientHeight - scrollTop);
 };
 
+export const FIELD_NUDGE_STEP_PX = 1;
+export const FIELD_NUDGE_LARGE_STEP_PX = 10;
+
+const FIELD_NUDGE_DIRECTIONS: Record<string, { x: number; y: number }> = {
+  ArrowUp: { x: 0, y: -1 },
+  ArrowDown: { x: 0, y: 1 },
+  ArrowLeft: { x: -1, y: 0 },
+  ArrowRight: { x: 1, y: 0 },
+};
+
+type FieldNudgeDeltaOptions = {
+  key: string;
+  isLargeStep?: boolean;
+};
+
+/**
+ * Maps an arrow key to a page-space offset so a selection can be nudged into
+ * place instead of dragged. Returns null for any other key.
+ */
+export const getFieldNudgeDelta = ({ key, isLargeStep = false }: FieldNudgeDeltaOptions) => {
+  const direction = FIELD_NUDGE_DIRECTIONS[key];
+
+  if (!direction) {
+    return null;
+  }
+
+  const step = isLargeStep ? FIELD_NUDGE_LARGE_STEP_PX : FIELD_NUDGE_STEP_PX;
+
+  return { deltaX: direction.x * step, deltaY: direction.y * step };
+};
+
 type ClampedFieldPositionOptions = {
   x: number;
   y: number;
