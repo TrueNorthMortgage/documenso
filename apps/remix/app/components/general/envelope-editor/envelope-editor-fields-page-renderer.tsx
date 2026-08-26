@@ -6,7 +6,12 @@ import {
   useCurrentEnvelopeRender,
 } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import { PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
+import { FIELD_GROUP_TYPE } from '@documenso/lib/types/field-group';
 import { FIELD_META_DEFAULT_VALUES } from '@documenso/lib/types/field-meta';
+import {
+  getFieldIndicatorPosition,
+  getLiveFieldWidth,
+} from '@documenso/lib/universal/field-renderer/field-generic-items';
 import {
   convertPixelToPercentage,
   getNumericAttr,
@@ -15,6 +20,7 @@ import {
 } from '@documenso/lib/universal/field-renderer/field-renderer';
 import { renderField } from '@documenso/lib/universal/field-renderer/render-field';
 import { getClampedFieldPosition, getDragScrollDelta } from '@documenso/lib/utils/field-drag';
+import { getFieldGroupValidationState, type TFieldWithGroup } from '@documenso/lib/utils/field-groups';
 import { getClientSideFieldTranslations } from '@documenso/lib/utils/fields';
 import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
 import { CommandDialog } from '@documenso/ui/primitives/command';
@@ -95,6 +101,45 @@ type PageRenderer = {
 };
 
 const pageRendererRegistry = new Map<number, PageRenderer>();
+
+const syncFieldIndicators = (fieldGroup: Konva.Group, targetPage: PageRenderer, sourceLayer: Konva.Layer | null) => {
+  const indicatorNodes = [
+    {
+      indicatorIndex: 0,
+      node: sourceLayer?.findOne(`#${fieldGroup.id()}-conditional-indicator`),
+    },
+    {
+      indicatorIndex: 1,
+      node: sourceLayer?.findOne(`#${fieldGroup.id()}-validation-group-indicator`),
+    },
+  ].filter((indicator): indicator is { indicatorIndex: number; node: Konva.Group } => {
+    return indicator.node instanceof Konva.Group;
+  });
+
+  if (indicatorNodes.length === 0) {
+    return;
+  }
+
+  const fieldWidth = getLiveFieldWidth(fieldGroup, getNumericAttr(fieldGroup, 'dragFieldWidth') ?? fieldGroup.width());
+
+  indicatorNodes.forEach(({ indicatorIndex, node }) => {
+    node.moveTo(targetPage.pageLayer);
+    node.setAttrs(
+      getFieldIndicatorPosition({
+        fieldX: fieldGroup.x(),
+        fieldY: fieldGroup.y(),
+        fieldWidth,
+        indicatorIndex,
+        indicatorCount: indicatorNodes.length,
+        pageWidth: targetPage.pageWidth,
+        pageHeight: targetPage.pageHeight,
+      }),
+    );
+  });
+
+  targetPage.pageLayer.batchDraw();
+  sourceLayer?.batchDraw();
+};
 
 export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageRenderData }) => {
   const { t, i18n } = useLingui();
@@ -331,6 +376,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         dragPageWidth: targetPage.pageWidth,
         dragScale: targetPage.scale,
       });
+      syncFieldIndicators(fieldGroup, targetPage, fieldGroup.getLayer());
 
       editorFields.updateFieldByFormId(fieldFormId, {
         page: targetPageNumber,
@@ -432,6 +478,8 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       return;
     }
 
+    const sourceLayer = fieldGroup.getLayer();
+
     if (fieldGroup.getLayer() !== targetPage.pageLayer) {
       // Keep the drag node mounted while changing page layers. Updating the
       // selection state here would rerender the source page and recreate the
@@ -455,6 +503,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       dragPageWidth: targetPage.pageWidth,
       dragScale: targetPage.scale,
     });
+    syncFieldIndicators(fieldGroup, targetPage, sourceLayer);
 
     targetPage.pageLayer.batchDraw();
   };
@@ -466,6 +515,13 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     const recipient = envelope.recipients.find((r) => r.id === field.recipientId);
     const isFieldEditable = recipient !== undefined && canRecipientFieldsBeModified(recipient, envelope.fields);
+    const groupFields = field.fieldGroupId
+      ? editorFields.localFields.filter((candidate) => candidate.fieldGroupId === field.fieldGroupId)
+      : [];
+    const validationGroupState =
+      field.fieldGroup?.groupType === FIELD_GROUP_TYPE.VALIDATION_GROUP
+        ? getFieldGroupValidationState(groupFields as unknown as TFieldWithGroup[], field.fieldGroup)
+        : null;
 
     const { fieldGroup } = renderField({
       scale,
@@ -479,6 +535,8 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         isHighlighted: field.id !== undefined && highlightedFieldIds.has(field.id),
         selectionLabel:
           field.id !== undefined && selectionFieldIds.has(field.id) ? fieldNames.get(field.id) : undefined,
+        fieldGroupType: field.fieldGroup?.groupType,
+        isValidationGroupInvalid: validationGroupState?.isConfigurationValid === false,
       },
       translations: getClientSideFieldTranslations(i18n),
       pageWidth: unscaledViewport.width,
@@ -821,6 +879,14 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
       if (!localPageFields.some((field) => field.formId === fieldFormId)) {
         label.destroy();
+      }
+    });
+
+    pageLayer.current.find('.validation-group-indicator').forEach((indicator) => {
+      const fieldFormId = indicator.id().replace(/-validation-group-indicator$/, '');
+
+      if (!localPageFields.some((field) => field.formId === fieldFormId)) {
+        indicator.destroy();
       }
     });
 

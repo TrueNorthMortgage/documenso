@@ -183,6 +183,7 @@ export const addTemplateToEnvelope = async ({
           id: fieldGroupId,
           name: sourceField.fieldGroup.name,
           type: sourceField.fieldGroup.type,
+          groupType: sourceField.fieldGroup.groupType,
           required: sourceField.fieldGroup.required,
           readOnly: sourceField.fieldGroup.readOnly,
           fontSize: sourceField.fieldGroup.fontSize,

@@ -1,5 +1,5 @@
 import type { TRecipientColor } from '@documenso/ui/lib/recipient-colors';
-import type { Field, FieldType, Signature } from '@prisma/client';
+import type { Field, FieldGroupType, FieldType, Signature } from '@prisma/client';
 import type Konva from 'konva';
 
 import type { TConditionalFieldRule } from '../../types/conditional-field';
@@ -27,6 +27,8 @@ export type FieldToRender = Pick<
   conditionalChildRule?: TConditionalFieldRule | null;
   isHighlighted?: boolean;
   selectionLabel?: string;
+  fieldGroupType?: FieldGroupType;
+  isValidationGroupInvalid?: boolean;
   signature?: Pick<Signature, 'signatureImageAsBase64' | 'typedSignature' | 'typedSignatureFont'> | null;
 };
 

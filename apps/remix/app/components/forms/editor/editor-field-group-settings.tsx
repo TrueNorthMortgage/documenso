@@ -1,6 +1,10 @@
 import type { TLocalField } from '@documenso/lib/client-only/hooks/use-editor-fields';
-import type { TFieldGroup } from '@documenso/lib/types/field-group';
+import { FIELD_GROUP_TYPE, type TFieldGroup } from '@documenso/lib/types/field-group';
 import { Button } from '@documenso/ui/primitives/button';
+import {
+  checkboxValidationLength,
+  checkboxValidationRules,
+} from '@documenso/ui/primitives/document-flow/field-items-advanced-settings/constants';
 import { Input } from '@documenso/ui/primitives/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
 import { Separator } from '@documenso/ui/primitives/separator';
@@ -13,6 +17,7 @@ type EditorFieldGroupSettingsProps = {
   fields: TLocalField[];
   onCreateGroup: (name: string) => void;
   onAssignGroup: (group: TFieldGroup) => void;
+  onUpdateValidation: (validationRule: string | null, validationLength: number | null) => void;
   onUngroup: () => void;
 };
 
@@ -21,6 +26,7 @@ export const EditorFieldGroupSettings = ({
   fields,
   onCreateGroup,
   onAssignGroup,
+  onUpdateValidation,
   onUngroup,
 }: EditorFieldGroupSettingsProps) => {
   const { _ } = useLingui();
@@ -28,10 +34,13 @@ export const EditorFieldGroupSettings = ({
 
   const compatibleGroups = useMemo(() => {
     const groups = new Map<string, TFieldGroup>();
+    const groupType =
+      field.type === FieldType.INITIALS ? FIELD_GROUP_TYPE.VALIDATION_GROUP : FIELD_GROUP_TYPE.OPTION_GROUP;
 
     for (const candidate of fields) {
       if (
         candidate.fieldGroup &&
+        candidate.fieldGroup.groupType === groupType &&
         candidate.type === field.type &&
         candidate.recipientId === field.recipientId &&
         candidate.envelopeItemId === field.envelopeItemId
@@ -49,10 +58,22 @@ export const EditorFieldGroupSettings = ({
 
   const fieldMeta = field.fieldMeta;
   const fieldValues = fieldMeta && 'values' in fieldMeta ? fieldMeta.values : undefined;
-  const canCreateGroup = Boolean(fieldValues);
+  const canCreateGroup = Boolean(fieldValues) || field.type === FieldType.INITIALS;
   const hasMultipleOptions = Array.isArray(fieldValues) && fieldValues.length > 1;
+  const isValidationGroup = field.fieldGroup?.groupType === FIELD_GROUP_TYPE.VALIDATION_GROUP;
+  const hasInvalidValidationRule =
+    isValidationGroup &&
+    (!field.fieldGroup?.validationRule ||
+      !field.fieldGroup.validationLength ||
+      field.fieldGroup.validationLength > groupMemberCount);
+  const validationLengthOptions = [
+    ...new Set([
+      ...checkboxValidationLength.filter((length) => length <= groupMemberCount),
+      ...(field.fieldGroup?.validationLength ? [field.fieldGroup.validationLength] : []),
+    ]),
+  ];
 
-  if (field.type !== FieldType.RADIO && field.type !== FieldType.CHECKBOX) {
+  if (field.type !== FieldType.RADIO && field.type !== FieldType.CHECKBOX && field.type !== FieldType.INITIALS) {
     return null;
   }
 
@@ -63,7 +84,9 @@ export const EditorFieldGroupSettings = ({
       <div>
         <h4 className="font-medium text-sm">{_('Group')}</h4>
         <p className="mt-1 text-muted-foreground text-xs">
-          {_('Keep radio or checkbox options connected while placing them on different pages.')}
+          {field.type === FieldType.INITIALS
+            ? _('Require a specific number of initials fields in this group.')
+            : _('Keep radio or checkbox options connected while placing them on different pages.')}
         </p>
       </div>
 
@@ -71,8 +94,54 @@ export const EditorFieldGroupSettings = ({
         <div className="rounded-md border border-primary/40 bg-primary/5 p-3">
           <p className="font-medium text-sm">{field.fieldGroup.name}</p>
           <p className="mt-1 text-muted-foreground text-xs">
-            {groupMemberCount} {groupMemberCount === 1 ? _('option') : _('options')}
+            {groupMemberCount} {groupMemberCount === 1 ? _('field') : _('fields')}
           </p>
+          {isValidationGroup && (
+            <div className="mt-3 space-y-2">
+              {hasInvalidValidationRule && (
+                <p className="text-destructive text-xs">
+                  {_('Choose a rule and a number that does not exceed the number of fields in this group.')}
+                </p>
+              )}
+              <Select
+                value={field.fieldGroup.validationRule ?? 'none'}
+                onValueChange={(value) => {
+                  onUpdateValidation(value === 'none' ? null : value, field.fieldGroup?.validationLength ?? null);
+                }}
+              >
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue placeholder={_('Select a rule')} />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectItem value="none">{_('Select a rule')}</SelectItem>
+                  {checkboxValidationRules.map((rule) => (
+                    <SelectItem key={rule} value={rule}>
+                      {rule}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={field.fieldGroup.validationLength?.toString() ?? 'none'}
+                onValueChange={(value) => {
+                  onUpdateValidation(field.fieldGroup?.validationRule ?? null, value === 'none' ? null : Number(value));
+                }}
+              >
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue placeholder={_('Select a number')} />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectItem value="none">{_('Select a number')}</SelectItem>
+                  {validationLengthOptions.map((length) => (
+                    <SelectItem key={length} value={length.toString()}>
+                      {length}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <Button className="mt-3 w-full" type="button" variant="outline" onClick={onUngroup}>
             {_('Remove from group')}
           </Button>
@@ -121,7 +190,12 @@ export const EditorFieldGroupSettings = ({
               disabled={!canCreateGroup}
               onClick={() => {
                 onCreateGroup(
-                  groupName.trim() || (field.type === FieldType.RADIO ? _('Radio group') : _('Checkbox group')),
+                  groupName.trim() ||
+                    (field.type === FieldType.RADIO
+                      ? _('Radio group')
+                      : field.type === FieldType.CHECKBOX
+                        ? _('Checkbox group')
+                        : _('Initials validation group')),
                 );
                 setGroupName('');
               }}

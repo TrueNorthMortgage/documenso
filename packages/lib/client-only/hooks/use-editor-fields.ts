@@ -1,8 +1,7 @@
 import { getPdfPagesCount } from '@documenso/lib/constants/pdf-viewer';
 import { type TConditionalFieldRule, ZConditionalFieldRuleSchema } from '@documenso/lib/types/conditional-field';
 import type { TEditorEnvelope } from '@documenso/lib/types/envelope-editor';
-import type { TFieldGroup } from '@documenso/lib/types/field-group';
-import { ZFieldGroupSchema } from '@documenso/lib/types/field-group';
+import { FIELD_GROUP_TYPE, type TFieldGroup, ZFieldGroupSchema } from '@documenso/lib/types/field-group';
 import { ZFieldMetaSchema } from '@documenso/lib/types/field-meta';
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import { nanoid } from '@documenso/lib/universal/id';
@@ -119,6 +118,11 @@ type UseEditorFieldsResponse = {
   duplicateFieldToAllPages: (field: TLocalField, recipientId?: number) => TLocalField[];
   createFieldGroup: (field: TLocalField, name: string) => TLocalField[];
   assignFieldToGroup: (field: TLocalField, group: TFieldGroup) => void;
+  updateFieldGroupValidation: (
+    field: TLocalField,
+    validationRule: string | null,
+    validationLength: number | null,
+  ) => void;
   ungroupField: (field: TLocalField) => void;
 
   // Field utilities
@@ -287,11 +291,14 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         readOnly: 'readOnly' in fieldMeta ? (fieldMeta.readOnly ?? false) : field.fieldGroup.readOnly,
         fontSize: 'fontSize' in fieldMeta ? (fieldMeta.fontSize ?? null) : field.fieldGroup.fontSize,
         direction: 'direction' in fieldMeta ? (fieldMeta.direction ?? null) : field.fieldGroup.direction,
-        validationRule: null,
-        validationLength: null,
+        validationRule:
+          field.fieldGroup.groupType === FIELD_GROUP_TYPE.VALIDATION_GROUP ? field.fieldGroup.validationRule : null,
+        validationLength:
+          field.fieldGroup.groupType === FIELD_GROUP_TYPE.VALIDATION_GROUP ? field.fieldGroup.validationLength : null,
       };
 
-      const required = fieldMeta.required ?? false;
+      const required =
+        field.fieldGroup.groupType === FIELD_GROUP_TYPE.VALIDATION_GROUP ? false : (fieldMeta.required ?? false);
       const validationRule = fieldMeta.type === 'checkbox' ? fieldMeta.validationRule || undefined : undefined;
       const validationLength = fieldMeta.type === 'checkbox' ? fieldMeta.validationLength || undefined : undefined;
 
@@ -406,6 +413,35 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
 
   const createFieldGroup = useCallback(
     (field: TLocalField, name: string, existingGroup?: TFieldGroup): TLocalField[] => {
+      if (field.type === FieldType.INITIALS) {
+        const group: TFieldGroup = {
+          ...(existingGroup ?? {
+            id: nanoid(12),
+            name,
+            type: FieldType.INITIALS,
+            groupType: FIELD_GROUP_TYPE.VALIDATION_GROUP,
+            readOnly: false,
+            fontSize: null,
+            direction: null,
+            envelopeId: envelope.id,
+            envelopeItemId: field.envelopeItemId,
+            recipientId: field.recipientId,
+            validationRule: 'Select exactly',
+            validationLength: 1,
+          }),
+          required: false,
+        };
+        const updatedField: TLocalField = {
+          ...field,
+          fieldGroupId: group.id,
+          fieldGroup: group,
+          fieldMeta: field.fieldMeta?.type === 'initials' ? { ...field.fieldMeta, required: false } : field.fieldMeta,
+        };
+
+        updateFieldByFormId(field.formId, updatedField);
+        return [updatedField];
+      }
+
       if (field.type !== FieldType.RADIO && field.type !== FieldType.CHECKBOX) {
         return [];
       }
@@ -418,6 +454,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
           id: nanoid(12),
           name,
           type: field.type,
+          groupType: FIELD_GROUP_TYPE.OPTION_GROUP,
           readOnly: fieldMeta?.readOnly ?? false,
           fontSize: fieldMeta?.fontSize ?? null,
           direction: fieldMeta?.direction ?? 'vertical',
@@ -431,6 +468,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
       };
 
       const values = field.fieldMeta && 'values' in field.fieldMeta ? field.fieldMeta.values || [] : [];
+
       const groupValues: Array<{ id: number; checked: boolean; value: string }> =
         values.length > 0
           ? values.map((option, index) => {
@@ -499,7 +537,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
 
       return createdFields;
     },
-    [envelope.id, localFields, replace, triggerFieldsUpdate],
+    [envelope.id, localFields, replace, triggerFieldsUpdate, updateFieldByFormId],
   );
 
   const assignFieldToGroup = useCallback(
@@ -528,19 +566,22 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         field.fieldMeta && values.length === 1
           ? updateSingleFieldOptionId(field, getUnusedFieldOptionId(values[0], existingGroupOptions))
           : field.fieldMeta;
+      const isValidationGroup = group.groupType === FIELD_GROUP_TYPE.VALIDATION_GROUP;
 
       updateFieldByFormId(field.formId, {
         fieldGroupId: group.id,
         fieldGroup: {
           ...group,
           required: false,
-          validationRule: null,
-          validationLength: null,
+          validationRule: isValidationGroup ? group.validationRule : null,
+          validationLength: isValidationGroup ? group.validationLength : null,
         },
         fieldMeta: fieldMetaWithUniqueOptionId
           ? {
               ...fieldMetaWithUniqueOptionId,
-              required: existingGroupMeta?.required ?? fieldMetaWithUniqueOptionId.required ?? false,
+              required: isValidationGroup
+                ? false
+                : (existingGroupMeta?.required ?? fieldMetaWithUniqueOptionId.required ?? false),
               readOnly: false,
               ...(fieldMetaWithUniqueOptionId.type === 'checkbox'
                 ? {
@@ -559,6 +600,41 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
       });
     },
     [createFieldGroup, localFields, updateFieldByFormId],
+  );
+
+  const updateFieldGroupValidation = useCallback(
+    (field: TLocalField, validationRule: string | null, validationLength: number | null) => {
+      if (
+        !field.fieldGroupId ||
+        !field.fieldGroup ||
+        field.fieldGroup.groupType !== FIELD_GROUP_TYPE.VALIDATION_GROUP
+      ) {
+        return;
+      }
+
+      const group = {
+        ...field.fieldGroup,
+        validationRule,
+        validationLength,
+      };
+
+      replace(
+        localFields.map((candidate) =>
+          candidate.fieldGroupId === field.fieldGroupId
+            ? {
+                ...candidate,
+                fieldGroup: group,
+                fieldMeta:
+                  candidate.fieldMeta?.type === 'initials'
+                    ? { ...candidate.fieldMeta, required: false }
+                    : candidate.fieldMeta,
+              }
+            : candidate,
+        ) as never,
+      );
+      triggerFieldsUpdate();
+    },
+    [localFields, replace, triggerFieldsUpdate],
   );
 
   const ungroupField = useCallback(
@@ -642,6 +718,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
     duplicateFieldToAllPages,
     createFieldGroup,
     assignFieldToGroup,
+    updateFieldGroupValidation,
     ungroupField,
 
     // Field utilities

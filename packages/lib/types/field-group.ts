@@ -1,12 +1,18 @@
 import { FieldType } from '@prisma/client';
 import { z } from 'zod';
 
+export const FIELD_GROUP_TYPE = {
+  OPTION_GROUP: 'OPTION_GROUP',
+  VALIDATION_GROUP: 'VALIDATION_GROUP',
+} as const;
+
 export const ZFieldGroupSchema = z.object({
   id: z.string(),
   name: z.string(),
   // The response schema must accept the Prisma relation shape. Group creation
-  // is restricted to radio/checkbox fields by the field mutation validators.
+  // is restricted by the field mutation validators.
   type: z.nativeEnum(FieldType),
+  groupType: z.enum([FIELD_GROUP_TYPE.OPTION_GROUP, FIELD_GROUP_TYPE.VALIDATION_GROUP]),
   required: z.boolean(),
   readOnly: z.boolean(),
   fontSize: z.number().nullable(),

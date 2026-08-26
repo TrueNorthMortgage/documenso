@@ -1,4 +1,4 @@
-import { FieldType } from '@prisma/client';
+import { FieldGroupType, FieldType } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
 import { ConditionalFieldRuleOperator } from '../types/conditional-field';
@@ -6,9 +6,11 @@ import type { TFieldGroup } from '../types/field-group';
 import { getConditionalFieldVisibility } from '../universal/conditional-field-visibility';
 import { fieldsContainUnsignedRequiredField } from './advanced-fields-helpers';
 import {
+  canInsertFieldIntoValidationGroup,
   clearOtherRadioGroupSelections,
   getCheckboxGroupFieldValues,
   getCheckboxGroupOptions,
+  getFieldGroupValidationState,
   getFieldsRequiringValidation,
   type TFieldWithGroup,
 } from './field-groups';
@@ -17,6 +19,7 @@ const group = (type: FieldType, overrides: Partial<TFieldGroup> = {}): TFieldGro
   id: 'group-1',
   name: 'Options',
   type,
+  groupType: FieldGroupType.OPTION_GROUP,
   required: true,
   readOnly: false,
   fontSize: null,
@@ -65,6 +68,67 @@ const checkboxField = (
 });
 
 describe('field groups', () => {
+  it('validates an initials group using the configured member count rule', () => {
+    const initialsGroup = group(FieldType.INITIALS, {
+      groupType: FieldGroupType.VALIDATION_GROUP,
+      validationRule: 'Select exactly',
+      validationLength: 1,
+    });
+    const fields = [
+      { ...radioField(1, true, 'AB', initialsGroup), type: FieldType.INITIALS },
+      { ...radioField(2, false, '', initialsGroup), type: FieldType.INITIALS },
+    ];
+
+    expect(getFieldsRequiringValidation(fields)).toHaveLength(0);
+    expect(fieldsContainUnsignedRequiredField(fields)).toBe(false);
+  });
+
+  it('keeps an incomplete initials validation group in signing validation', () => {
+    const initialsGroup = group(FieldType.INITIALS, {
+      groupType: FieldGroupType.VALIDATION_GROUP,
+      validationRule: 'Select exactly',
+      validationLength: 1,
+    });
+    const fields = [
+      { ...radioField(1, false, '', initialsGroup), type: FieldType.INITIALS },
+      { ...radioField(2, false, '', initialsGroup), type: FieldType.INITIALS },
+    ];
+
+    expect(getFieldsRequiringValidation(fields)).toHaveLength(1);
+    expect(fieldsContainUnsignedRequiredField(fields)).toBe(true);
+  });
+
+  it('rejects a validation rule that is larger than the group', () => {
+    const initialsGroup = group(FieldType.INITIALS, {
+      groupType: FieldGroupType.VALIDATION_GROUP,
+      validationRule: 'Select exactly',
+      validationLength: 3,
+    });
+    const fields = [
+      { ...radioField(1, true, 'AB', initialsGroup), type: FieldType.INITIALS },
+      { ...radioField(2, true, 'CD', initialsGroup), type: FieldType.INITIALS },
+    ];
+
+    expect(getFieldsRequiringValidation(fields)).toHaveLength(0);
+    expect(fieldsContainUnsignedRequiredField(fields)).toBe(true);
+  });
+
+  it('does not navigate to a filled field when a validation group is over-selected', () => {
+    const initialsGroup = group(FieldType.INITIALS, {
+      groupType: FieldGroupType.VALIDATION_GROUP,
+      validationRule: 'Select exactly',
+      validationLength: 1,
+    });
+    const fields = [
+      { ...radioField(1, true, 'AB', initialsGroup), type: FieldType.INITIALS },
+      { ...radioField(2, true, 'CD', initialsGroup), type: FieldType.INITIALS },
+    ];
+
+    expect(getFieldsRequiringValidation(fields)).toHaveLength(0);
+    expect(fieldsContainUnsignedRequiredField(fields)).toBe(true);
+    expect(getFieldGroupValidationState(fields, initialsGroup).selectedCount).toBe(2);
+  });
+
   it('clears other preselected radio options in the same group', () => {
     const radioGroup = group(FieldType.RADIO);
     const fields = [
@@ -135,7 +199,8 @@ describe('field groups', () => {
         {
           ...field,
           fieldMeta: {
-            ...field.fieldMeta,
+            type: 'initials',
+            ...(field.fieldMeta?.type === 'initials' ? field.fieldMeta : {}),
             required: false,
           },
         },
@@ -194,6 +259,27 @@ describe('field groups', () => {
     ];
 
     expect(getFieldsRequiringValidation(fields)).toHaveLength(0);
+  });
+
+  it('blocks initials beyond exactly or at-most validation limits', () => {
+    const validationGroup = group(FieldType.INITIALS, {
+      groupType: FieldGroupType.VALIDATION_GROUP,
+      validationRule: 'Select exactly',
+      validationLength: 2,
+    });
+    const fields = [
+      { ...radioField(1, true, 'AB', validationGroup), type: FieldType.INITIALS },
+      { ...radioField(2, true, 'AB', validationGroup), type: FieldType.INITIALS },
+      { ...radioField(3, false, '', validationGroup), type: FieldType.INITIALS },
+    ];
+
+    expect(canInsertFieldIntoValidationGroup(fields, validationGroup, 3)).toBe(false);
+    expect(canInsertFieldIntoValidationGroup(fields, { ...validationGroup, validationRule: 'Select at most' }, 3)).toBe(
+      false,
+    );
+    expect(
+      canInsertFieldIntoValidationGroup(fields, { ...validationGroup, validationRule: 'Select at least' }, 3),
+    ).toBe(true);
   });
 
   it('uses checkbox validation metadata from group members', () => {

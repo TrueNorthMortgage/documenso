@@ -118,7 +118,7 @@ describe('getConditionalFieldVisibility', () => {
         ],
       }),
       fieldGroupId: 'group-1',
-      fieldGroup: { type: FieldType.CHECKBOX },
+      fieldGroup: { type: FieldType.CHECKBOX, groupType: 'OPTION_GROUP' },
       inserted: true,
     };
     const secondField = {
@@ -128,7 +128,7 @@ describe('getConditionalFieldVisibility', () => {
         values: [{ id: 3, value: 'B1', checked: false }],
       }),
       fieldGroupId: 'group-1',
-      fieldGroup: { type: FieldType.CHECKBOX },
+      fieldGroup: { type: FieldType.CHECKBOX, groupType: 'OPTION_GROUP' },
       inserted: true,
     };
     const child = childWithRule(2, 1);

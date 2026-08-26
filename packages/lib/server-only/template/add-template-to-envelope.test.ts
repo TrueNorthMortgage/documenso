@@ -83,6 +83,7 @@ const sourceField = {
     id: 'group_1',
     name: 'Required fields',
     type: 'TEXT',
+    groupType: 'OPTION_GROUP',
     required: true,
     readOnly: false,
     fontSize: null,

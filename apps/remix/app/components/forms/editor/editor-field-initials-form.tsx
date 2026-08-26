@@ -23,6 +23,7 @@ type TInitialsFieldFormSchema = z.infer<typeof ZInitialsFieldFormSchema>;
 type EditorFieldInitialsFormProps = {
   value: InitialsFieldMeta | undefined;
   onValueChange: (value: InitialsFieldMeta) => void;
+  isGrouped?: boolean;
 };
 
 export const EditorFieldInitialsForm = ({
@@ -31,6 +32,7 @@ export const EditorFieldInitialsForm = ({
     required: true,
   },
   onValueChange,
+  isGrouped = false,
 }: EditorFieldInitialsFormProps) => {
   const form = useForm<TInitialsFieldFormSchema>({
     resolver: zodResolver(ZInitialsFieldFormSchema),
@@ -68,7 +70,7 @@ export const EditorFieldInitialsForm = ({
 
           <EditorGenericTextAlignField formControl={form.control} />
 
-          <EditorGenericRequiredField formControl={form.control} />
+          <EditorGenericRequiredField formControl={form.control} disabled={isGrouped} />
         </fieldset>
       </form>
     </Form>

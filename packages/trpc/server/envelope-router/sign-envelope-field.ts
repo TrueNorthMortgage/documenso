@@ -8,6 +8,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-log
 import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { extractFieldInsertionValues } from '@documenso/lib/utils/envelope-signing';
+import { canInsertFieldIntoValidationGroup } from '@documenso/lib/utils/field-groups';
 import { prisma } from '@documenso/prisma';
 import type { Prisma } from '@prisma/client';
 import { DocumentStatus, FieldType, RecipientRole, SigningStatus } from '@prisma/client';
@@ -244,6 +245,33 @@ export const signEnvelopeFieldRoute = procedure
     }
 
     const insertionValues = extractFieldInsertionValues({ fieldValue, field, documentMeta });
+
+    if (insertionValues.inserted && field.fieldGroupId && field.fieldGroup) {
+      const envelopeItemFields = await prisma.field.findMany({
+        where: {
+          envelopeItemId: field.envelopeItemId,
+        },
+        include: {
+          conditionalChildRule: true,
+          fieldGroup: true,
+        },
+      });
+      const fieldVisibility = getConditionalFieldVisibility(
+        envelopeItemFields.map((candidate) => ({
+          ...candidate,
+          envelopeInternalVersion: envelope.internalVersion,
+        })),
+      );
+      const visibleGroupFields = envelopeItemFields.filter(
+        (candidate) => candidate.fieldGroupId === field.fieldGroupId && (fieldVisibility.get(candidate.id) ?? true),
+      );
+
+      if (!canInsertFieldIntoValidationGroup(visibleGroupFields, field.fieldGroup, field.id)) {
+        throw new AppError(AppErrorCode.INVALID_REQUEST, {
+          message: `The validation group allows a maximum of ${field.fieldGroup.validationLength} fields.`,
+        });
+      }
+    }
 
     // Early return for uninserting fields.
     if (!insertionValues.inserted) {

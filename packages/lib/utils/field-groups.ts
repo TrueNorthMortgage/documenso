@@ -1,7 +1,7 @@
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import { type Field, FieldType } from '@prisma/client';
-
 import type { TFieldGroup } from '../types/field-group';
+import { FIELD_GROUP_TYPE } from '../types/field-group';
 import type { TFieldMetaSchema } from '../types/field-meta';
 
 export type TFieldWithGroup = Pick<Field, 'id' | 'type' | 'fieldGroupId' | 'inserted' | 'customText' | 'fieldMeta'> &
@@ -137,6 +137,15 @@ const getSelectedOptionCount = (fields: TFieldWithGroup[]) => {
   }, 0);
 };
 
+export type TFieldGroupValidationState = {
+  memberCount: number;
+  selectedCount: number;
+  validationRule: string | null;
+  validationLength: number | null;
+  isConfigurationValid: boolean;
+  isSatisfied: boolean;
+};
+
 const getGroupValidation = (fields: TFieldWithGroup[], group: TFieldGroup) => {
   const fieldMetas = fields.flatMap((field) => {
     if (!field.fieldMeta || typeof field.fieldMeta !== 'object' || Array.isArray(field.fieldMeta)) {
@@ -187,6 +196,23 @@ export const isFieldGroupComplete = (fields: TFieldWithGroup[], group: TFieldGro
   const selectedOptionCount = getSelectedOptionCount(fields);
   const { required, validationRule, validationLength } = getGroupValidation(fields, group);
 
+  if (group.groupType === FIELD_GROUP_TYPE.VALIDATION_GROUP) {
+    if (!validationRule || !validationLength || validationLength < 1 || validationLength > fields.length) {
+      return false;
+    }
+
+    switch (validationRule) {
+      case 'Select exactly':
+        return selectedOptionCount === validationLength;
+      case 'Select at least':
+        return selectedOptionCount >= validationLength;
+      case 'Select at most':
+        return selectedOptionCount <= validationLength;
+      default:
+        return false;
+    }
+  }
+
   if (group.type === 'RADIO') {
     return selectedOptionCount <= 1 && (!required || selectedOptionCount > 0);
   }
@@ -211,6 +237,74 @@ export const isFieldGroupComplete = (fields: TFieldWithGroup[], group: TFieldGro
   }
 };
 
+export const getFieldGroupValidationState = (
+  fields: TFieldWithGroup[],
+  group: TFieldGroup,
+): TFieldGroupValidationState => {
+  const { validationRule, validationLength } = getGroupValidation(fields, group);
+  const selectedCount = getSelectedOptionCount(fields);
+  const memberCount = fields.length;
+  const isConfigurationValid =
+    group.groupType !== FIELD_GROUP_TYPE.VALIDATION_GROUP ||
+    (Boolean(validationRule) &&
+      typeof validationLength === 'number' &&
+      validationLength >= 1 &&
+      validationLength <= memberCount &&
+      typeof validationRule === 'string' &&
+      ['Select at least', 'Select exactly', 'Select at most'].includes(validationRule));
+
+  return {
+    memberCount,
+    selectedCount,
+    validationRule,
+    validationLength,
+    isConfigurationValid,
+    isSatisfied: isConfigurationValid && isFieldGroupComplete(fields, group),
+  };
+};
+
+export const canInsertFieldIntoValidationGroup = <T extends TFieldWithGroup>(
+  fields: T[],
+  group: TFieldGroup,
+  fieldId: number,
+) => {
+  if (group.groupType !== FIELD_GROUP_TYPE.VALIDATION_GROUP) {
+    return true;
+  }
+
+  const field = fields.find((candidate) => candidate.id === fieldId);
+
+  if (!field || field.inserted) {
+    return true;
+  }
+
+  const { validationRule, validationLength } = getGroupValidation(fields, group);
+
+  if (!validationLength || !['Select exactly', 'Select at most'].includes(validationRule ?? '')) {
+    return true;
+  }
+
+  return getSelectedOptionCount(fields) < validationLength;
+};
+
+export const getInvalidFieldGroupConfigurations = <T extends TFieldWithGroup>(fields: T[]): TFieldGroup[] => {
+  const groups = new Map<string, { group: TFieldGroup; fields: T[] }>();
+
+  for (const field of fields) {
+    if (!field.fieldGroupId || !field.fieldGroup || field.fieldGroup.groupType !== FIELD_GROUP_TYPE.VALIDATION_GROUP) {
+      continue;
+    }
+
+    const current = groups.get(field.fieldGroupId) ?? { group: field.fieldGroup, fields: [] };
+    current.fields.push(field);
+    groups.set(field.fieldGroupId, current);
+  }
+
+  return [...groups.values()]
+    .filter(({ fields: groupFields, group }) => !getFieldGroupValidationState(groupFields, group).isConfigurationValid)
+    .map(({ group }) => group);
+};
+
 /**
  * Returns one representative field for each incomplete required group. This
  * keeps existing navigation and validation UIs working without showing every
@@ -233,6 +327,18 @@ export const getFieldsRequiringValidation = <T extends TFieldWithGroup>(fields: 
   for (const groupFields of groups.values()) {
     const group = groupFields[0]?.fieldGroup;
     const groupValidation = group ? getGroupValidation(groupFields, group) : null;
+
+    if (group?.groupType === FIELD_GROUP_TYPE.VALIDATION_GROUP) {
+      if (!isFieldGroupComplete(groupFields, group)) {
+        const uninsertedField = sortByDocumentPosition(groupFields.filter((field) => !field.inserted))[0];
+
+        if (uninsertedField) {
+          fieldsToValidate.push(uninsertedField);
+        }
+      }
+
+      continue;
+    }
 
     if (
       group &&
