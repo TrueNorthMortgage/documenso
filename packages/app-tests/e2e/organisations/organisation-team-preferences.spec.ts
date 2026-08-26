@@ -220,6 +220,7 @@ test('[ORGANISATIONS]: manage email preferences', async ({ page }) => {
   expect(teamSettings.emailDocumentSettings).toEqual({
     recipientSigningRequest: true,
     recipientRemoved: true,
+    recipientOpened: true,
     recipientSigned: false, // unchecked
     documentPending: false, // unchecked
     documentCompleted: true,
@@ -255,6 +256,7 @@ test('[ORGANISATIONS]: manage email preferences', async ({ page }) => {
   // Check that the team settings have overridden the organisation values.
   expect(updatedTeamSettings.emailReplyTo).toEqual('team@example.com');
   expect(updatedTeamSettings.emailDocumentSettings).toEqual({
+    recipientOpened: true,
     recipientSigned: true,
     recipientSigningRequest: false,
     recipientRemoved: true,
@@ -277,6 +279,7 @@ test('[ORGANISATIONS]: manage email preferences', async ({ page }) => {
 
   expect(teamOverrideDocumentMeta.emailReplyTo).toEqual('team@example.com');
   expect(teamOverrideDocumentMeta.emailSettings).toEqual({
+    recipientOpened: true,
     recipientSigned: true,
     recipientSigningRequest: false,
     recipientRemoved: true,
@@ -306,6 +309,7 @@ test('[ORGANISATIONS]: manage email preferences', async ({ page }) => {
   expect(inheritedTeamSettings.emailDocumentSettings).toEqual({
     recipientSigningRequest: true,
     recipientRemoved: true,
+    recipientOpened: true,
     recipientSigned: false,
     documentPending: false,
     documentCompleted: true,
@@ -328,6 +332,7 @@ test('[ORGANISATIONS]: manage email preferences', async ({ page }) => {
   expect(documentMeta.emailSettings).toEqual({
     recipientSigningRequest: true,
     recipientRemoved: true,
+    recipientOpened: true,
     recipientSigned: false,
     documentPending: false,
     documentCompleted: true,

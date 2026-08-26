@@ -11,6 +11,7 @@ import { DetailsCard, DetailsValue } from '~/components/general/admin-details';
 const EMAIL_SETTINGS_LABELS: Record<keyof TDocumentEmailSettings, MessageDescriptor> = {
   recipientSigningRequest: msg`Recipient signing request`,
   recipientRemoved: msg`Recipient removed`,
+  recipientOpened: msg`Recipient opened`,
   recipientSigned: msg`Recipient signed`,
   documentPending: msg`Document pending`,
   documentCompleted: msg`Document completed`,

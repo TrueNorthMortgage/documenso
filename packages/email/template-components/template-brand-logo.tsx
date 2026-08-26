@@ -27,14 +27,37 @@ export const TemplateBrandLogo = ({ assetBaseUrl, className }: TemplateBrandLogo
 
   const getAssetUrl = (path: string) => new URL(path, assetBaseUrl).toString();
   const hasCustomBranding = branding.brandingEnabled && branding.brandingLogo;
-  const lightLogo = hasCustomBranding ? branding.brandingLogo : getAssetUrl('/static/brand-logo-light.png');
-  const darkLogo = hasCustomBranding ? branding.brandingLogo : getAssetUrl('/static/brand-logo-dark.png');
   const logoClassName = className ? `brand-logo ${className}` : 'brand-logo';
+  const logoStyle = { height: '24px', maxWidth: '100%', width: 'auto' };
+
+  if (hasCustomBranding) {
+    return (
+      <Img
+        src={branding.brandingLogo}
+        alt={logoAlt}
+        className={logoClassName}
+        height={24}
+        style={{ ...logoStyle, display: 'block' }}
+      />
+    );
+  }
 
   return (
     <>
-      <Img src={lightLogo} alt={logoAlt} className={`brand-logo-light ${logoClassName}`} style={{ display: 'block' }} />
-      <Img src={darkLogo} alt={logoAlt} className={`brand-logo-dark ${logoClassName}`} style={{ display: 'none' }} />
+      <Img
+        src={getAssetUrl('/static/brand-logo-light.png')}
+        alt={logoAlt}
+        className={`brand-logo-light ${logoClassName}`}
+        height={24}
+        style={{ ...logoStyle, display: 'block' }}
+      />
+      <Img
+        src={getAssetUrl('/static/brand-logo-dark.png')}
+        alt={logoAlt}
+        className={`brand-logo-dark ${logoClassName}`}
+        height={24}
+        style={{ ...logoStyle, display: 'none' }}
+      />
     </>
   );
 };

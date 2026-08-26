@@ -55,6 +55,7 @@ const DB_EXPECTED_VALUES = {
   globalAccessAuth: ['ACCOUNT'],
   globalActionAuth: ['PASSWORD'],
   emailSettings: {
+    recipientOpened: false,
     recipientSigned: false,
     recipientSigningRequest: false,
     recipientRemoved: false,
@@ -191,6 +192,7 @@ const runSettingsFlow = async ({ root }: TEnvelopeEditorSurface, { externalId, i
   await clickSettingsDialogHeader(root);
 
   await root.getByRole('button', { name: 'Email' }).click();
+  await root.locator('#recipientOpened').click();
   await root.locator('#recipientSigned').click();
   await root.locator('#recipientSigningRequest').click();
   await root.locator('#recipientRemoved').click();

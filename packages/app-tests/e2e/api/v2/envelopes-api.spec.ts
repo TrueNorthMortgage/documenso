@@ -200,6 +200,7 @@ test.describe('API V2 Envelopes', () => {
           emailSettings: {
             recipientSigningRequest: false,
             recipientRemoved: false,
+            recipientOpened: false,
             recipientSigned: false,
             documentPending: false,
             documentCompleted: false,

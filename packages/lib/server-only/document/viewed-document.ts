@@ -4,6 +4,7 @@ import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-
 import { prisma } from '@documenso/prisma';
 import { EnvelopeType, ReadStatus, SendStatus, WebhookTriggerEvents } from '@prisma/client';
 
+import { jobs } from '../../jobs/client';
 import type { TDocumentAccessAuthTypes } from '../../types/document-auth';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
@@ -52,10 +53,13 @@ export const viewedDocument = async ({ token, recipientAccessAuth, requestMetada
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.recipient.update({
+  const isFirstOpen = await prisma.$transaction(async (tx) => {
+    const { count: openedRecipientCount } = await tx.recipient.updateMany({
       where: {
         id: recipient.id,
+        readStatus: {
+          not: ReadStatus.OPENED,
+        },
       },
       data: {
         // This handles cases where distribution is done manually
@@ -65,6 +69,10 @@ export const viewedDocument = async ({ token, recipientAccessAuth, requestMetada
         ...(!recipient.sentAt ? { sentAt: new Date() } : {}),
       },
     });
+
+    if (openedRecipientCount === 0) {
+      return false;
+    }
 
     await tx.documentAuditLog.create({
       data: createDocumentAuditLogData({
@@ -84,7 +92,14 @@ export const viewedDocument = async ({ token, recipientAccessAuth, requestMetada
         },
       }),
     });
+
+    return true;
   });
+
+  // Another request may have marked the recipient as opened after the initial read.
+  if (!isFirstOpen) {
+    return;
+  }
 
   // Don't schedule reminders for manually distributed documents —
   // there's no email pathway to send them through.
@@ -104,5 +119,13 @@ export const viewedDocument = async ({ token, recipientAccessAuth, requestMetada
     data: ZWebhookDocumentSchema.parse(mapEnvelopeToWebhookDocumentPayload(envelope)),
     userId: envelope.userId,
     teamId: envelope.teamId,
+  });
+
+  await jobs.triggerJob({
+    name: 'send.recipient.opened.email',
+    payload: {
+      envelopeId: envelope.id,
+      recipientId: recipient.id,
+    },
   });
 };

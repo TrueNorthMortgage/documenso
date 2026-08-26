@@ -1,5 +1,6 @@
+import type { TLocalField } from '@documenso/lib/client-only/hooks/use-editor-fields';
 import type React from 'react';
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useRef, useState } from 'react';
 
 export type InvalidFieldPlacement = {
   envelopeItemId: string;
@@ -16,6 +17,7 @@ export type InvalidFieldPlacement = {
 
 type EnvelopeEditorFieldDragContextValue = {
   activePlacement: InvalidFieldPlacement | null;
+  fieldClipboard: React.MutableRefObject<TLocalField[]>;
   invalidPlacement: InvalidFieldPlacement | null;
   setActivePlacement: (placement: InvalidFieldPlacement | null) => void;
   setInvalidPlacement: (placement: InvalidFieldPlacement | null) => void;
@@ -26,15 +28,17 @@ const EnvelopeEditorFieldDragContext = createContext<EnvelopeEditorFieldDragCont
 export const EnvelopeEditorFieldDragProvider = ({ children }: { children: React.ReactNode }) => {
   const [activePlacement, setActivePlacement] = useState<InvalidFieldPlacement | null>(null);
   const [invalidPlacement, setInvalidPlacement] = useState<InvalidFieldPlacement | null>(null);
+  const fieldClipboard = useRef<TLocalField[]>([]);
 
   const value = useMemo(
     () => ({
       activePlacement,
+      fieldClipboard,
       invalidPlacement,
       setActivePlacement,
       setInvalidPlacement,
     }),
-    [activePlacement, invalidPlacement],
+    [activePlacement, fieldClipboard, invalidPlacement],
   );
 
   return <EnvelopeEditorFieldDragContext.Provider value={value}>{children}</EnvelopeEditorFieldDragContext.Provider>;

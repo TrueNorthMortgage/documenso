@@ -5,6 +5,7 @@ import { z } from 'zod';
 export enum DocumentEmailEvents {
   RecipientSigningRequest = 'recipientSigningRequest',
   RecipientRemoved = 'recipientRemoved',
+  RecipientOpened = 'recipientOpened',
   RecipientSigned = 'recipientSigned',
   DocumentPending = 'documentPending',
   DocumentCompleted = 'documentCompleted',
@@ -23,6 +24,10 @@ export const ZDocumentEmailSettingsSchema = z
     recipientRemoved: z
       .boolean()
       .describe('Whether to send an email to the recipient who was removed from a pending document.')
+      .default(true),
+    recipientOpened: z
+      .boolean()
+      .describe('Whether to send an email to the document owner when a recipient opens the document.')
       .default(true),
     recipientSigned: z
       .boolean()
@@ -70,6 +75,7 @@ export const extractDerivedDocumentEmailSettings = (documentMeta?: DocumentMeta 
   return {
     recipientSigningRequest: false,
     recipientRemoved: false,
+    recipientOpened: false,
     recipientSigned: false,
     documentPending: false,
     documentCompleted: false,
@@ -83,6 +89,7 @@ export const extractDerivedDocumentEmailSettings = (documentMeta?: DocumentMeta 
 export const DEFAULT_DOCUMENT_EMAIL_SETTINGS: TDocumentEmailSettings = {
   recipientSigningRequest: true,
   recipientRemoved: true,
+  recipientOpened: true,
   recipientSigned: true,
   documentPending: true,
   documentCompleted: true,

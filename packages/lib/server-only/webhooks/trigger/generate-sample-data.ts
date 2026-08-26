@@ -433,6 +433,7 @@ export const generateSampleWebhookPayload = (event: WebhookTriggerEvents, webhoo
           emailSettings: {
             documentDeleted: true,
             documentPending: true,
+            recipientOpened: true,
             recipientSigned: true,
             recipientRemoved: true,
             documentCompleted: true,
