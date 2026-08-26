@@ -5,6 +5,7 @@ vi.mock('@documenso/prisma', () => ({ prisma: {} }));
 
 import {
   createTemplateFieldGroups,
+  createTemplateRecipients,
   resolveTemplateRecipient,
   resolveTemplateRecipients,
 } from './apply-template-to-envelope-item';
@@ -80,6 +81,70 @@ describe('resolveTemplateRecipients', () => {
         ],
       }),
     ).toThrow('Could not uniquely map template recipient');
+  });
+});
+
+describe('createTemplateRecipients', () => {
+  it('creates blank envelope recipients while preserving template assignment metadata', async () => {
+    const templateRecipient = {
+      id: 2,
+      name: 'Template approver',
+      email: 'approver@example.com',
+      role: RecipientRole.APPROVER,
+      signingOrder: 2,
+      authOptions: {
+        accessAuth: ['ACCOUNT'],
+        actionAuth: ['ACCOUNT'],
+      },
+    };
+    const createdRecipient = {
+      id: 20,
+      name: '',
+      email: '',
+      role: RecipientRole.APPROVER,
+    };
+    const tx = {
+      recipient: {
+        create: vi.fn().mockResolvedValue(createdRecipient),
+      },
+      documentAuditLog: {
+        create: vi.fn().mockResolvedValue({}),
+      },
+    };
+
+    const recipients = await createTemplateRecipients({
+      tx: tx as never,
+      envelopeId: 'envelope_1',
+      templateRecipients: [templateRecipient],
+      requestMetadata: {} as never,
+    });
+
+    expect(recipients).toEqual([createdRecipient]);
+    expect(tx.recipient.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        envelopeId: 'envelope_1',
+        name: '',
+        email: '',
+        role: RecipientRole.APPROVER,
+        signingOrder: 2,
+        authOptions: {
+          accessAuth: [],
+          actionAuth: [],
+        },
+      }),
+    });
+    expect(tx.documentAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        data: expect.objectContaining({
+          recipientEmail: '',
+          recipientName: '',
+          recipientId: 20,
+          recipientRole: RecipientRole.APPROVER,
+          accessAuth: [],
+          actionAuth: [],
+        }),
+      }),
+    });
   });
 });
 

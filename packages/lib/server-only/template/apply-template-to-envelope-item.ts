@@ -1,6 +1,5 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
-import { ZRecipientAuthOptionsSchema } from '@documenso/lib/types/document-auth';
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import { nanoid } from '@documenso/lib/universal/id';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
@@ -41,7 +40,7 @@ export type RemoveTemplateFromEnvelopeItemOptions = {
 };
 
 type TemplateRecipientReference = Pick<Recipient, 'id' | 'role' | 'signingOrder'>;
-type TemplateRecipientToCreate = Pick<Recipient, 'id' | 'name' | 'email' | 'role' | 'signingOrder' | 'authOptions'>;
+type TemplateRecipientToCreate = Pick<Recipient, 'id' | 'role' | 'signingOrder'>;
 type TemplateFieldGroup = Pick<
   FieldGroup,
   | 'id'
@@ -176,12 +175,15 @@ export const createTemplateRecipients = async ({
 }) => {
   return await Promise.all(
     templateRecipients.map(async (templateRecipient) => {
-      const authOptions = ZRecipientAuthOptionsSchema.parse(templateRecipient.authOptions);
+      const authOptions = {
+        accessAuth: [],
+        actionAuth: [],
+      };
       const recipient = await tx.recipient.create({
         data: {
           envelopeId,
-          name: templateRecipient.name,
-          email: templateRecipient.email,
+          name: '',
+          email: '',
           role: templateRecipient.role,
           signingOrder: templateRecipient.signingOrder,
           token: nanoid(),
