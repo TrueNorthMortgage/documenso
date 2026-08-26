@@ -1,9 +1,11 @@
+import Konva from 'konva';
 import { describe, expect, it } from 'vitest';
 
 import {
   CONDITIONAL_FIELD_SELECTION_STROKE,
   getConditionalFieldIndicatorPosition,
   getConditionalFieldSelectionLabelPosition,
+  getFieldIndicatorNodes,
   getFieldIndicatorPosition,
   getFieldRectStyles,
 } from './field-generic-items';
@@ -55,7 +57,7 @@ describe('getFieldRectStyles', () => {
     });
   });
 
-  it('places multiple indicators side-by-side at the field top right', () => {
+  it('places the first indicator at the field top right and additional indicators to its left', () => {
     expect(
       getFieldIndicatorPosition({
         fieldX: 100,
@@ -66,7 +68,7 @@ describe('getFieldRectStyles', () => {
         pageWidth: 600,
         pageHeight: 800,
       }),
-    ).toEqual({ x: 164, y: 30 });
+    ).toEqual({ x: 184, y: 30 });
 
     expect(
       getFieldIndicatorPosition({
@@ -78,7 +80,57 @@ describe('getFieldRectStyles', () => {
         pageWidth: 600,
         pageHeight: 800,
       }),
+    ).toEqual({ x: 164, y: 30 });
+  });
+
+  it('uses the rightmost slot when only one indicator is active', () => {
+    expect(
+      getFieldIndicatorPosition({
+        fieldX: 100,
+        fieldY: 50,
+        fieldWidth: 100,
+        indicatorIndex: 0,
+        indicatorCount: 1,
+        pageWidth: 600,
+        pageHeight: 800,
+      }),
     ).toEqual({ x: 184, y: 30 });
+  });
+
+  it('compacts active indicator nodes when an earlier indicator is absent', () => {
+    const validationIndicator = new Konva.Group({ id: 'field-validation-group-indicator' });
+    const pageLayer = {
+      findOne: (selector: string) =>
+        selector === '#field-validation-group-indicator' ? validationIndicator : undefined,
+    } as unknown as Konva.Layer;
+
+    expect(getFieldIndicatorNodes('field', pageLayer)).toEqual([validationIndicator]);
+  });
+
+  it('supports more than two indicator slots', () => {
+    expect(
+      getFieldIndicatorPosition({
+        fieldX: 100,
+        fieldY: 50,
+        fieldWidth: 100,
+        indicatorIndex: 0,
+        indicatorCount: 3,
+        pageWidth: 600,
+        pageHeight: 800,
+      }),
+    ).toEqual({ x: 184, y: 30 });
+
+    expect(
+      getFieldIndicatorPosition({
+        fieldX: 100,
+        fieldY: 50,
+        fieldWidth: 100,
+        indicatorIndex: 2,
+        indicatorCount: 3,
+        pageWidth: 600,
+        pageHeight: 800,
+      }),
+    ).toEqual({ x: 144, y: 30 });
   });
 
   it('places the compact temporary field name below the field', () => {

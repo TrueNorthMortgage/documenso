@@ -16,6 +16,7 @@ const CONDITIONAL_FIELD_SELECTION_LABEL_HORIZONTAL_PADDING = 8;
 const CONDITIONAL_FIELD_SELECTION_LABEL_MIN_WIDTH = 16;
 const VALIDATION_GROUP_INDICATOR_SIZE = 16;
 const VALIDATION_GROUP_INDICATOR_GAP = 4;
+const FIELD_INDICATOR_SUFFIXES = ['conditional-indicator', 'validation-group-indicator'];
 
 export const getFieldRectStyles = (
   field: Pick<FieldToRender, 'conditionalChildRule' | 'isHighlighted'>,
@@ -82,9 +83,21 @@ export const getFieldIndicatorPosition = ({
     abovePosition >= 0 ? abovePosition : Math.min(fieldY, Math.max(0, pageHeight - VALIDATION_GROUP_INDICATOR_SIZE));
 
   return {
-    x: groupX + indicatorIndex * (VALIDATION_GROUP_INDICATOR_SIZE + VALIDATION_GROUP_INDICATOR_GAP),
+    x:
+      groupX +
+      (indicatorCount - indicatorIndex - 1) * (VALIDATION_GROUP_INDICATOR_SIZE + VALIDATION_GROUP_INDICATOR_GAP),
     y,
   };
+};
+
+export const getFieldIndicatorNodes = (renderId: string, pageLayer: Konva.Layer | null) => {
+  if (!pageLayer) {
+    return [];
+  }
+
+  return FIELD_INDICATOR_SUFFIXES.map((suffix) => pageLayer.findOne(`#${renderId}-${suffix}`)).filter(
+    (indicator): indicator is Konva.Group => indicator instanceof Konva.Group,
+  );
 };
 
 export const getLiveFieldWidth = (fieldGroup: Konva.Group, fallbackWidth: number) => {
@@ -106,20 +119,9 @@ export const positionFieldIndicators = (
   const liveFieldX = fieldGroup instanceof Konva.Group ? fieldGroup.x() : fieldX;
   const liveFieldY = fieldGroup instanceof Konva.Group ? fieldGroup.y() : fieldY;
   const liveFieldWidth = fieldGroup instanceof Konva.Group ? getLiveFieldWidth(fieldGroup, fieldWidth) : fieldWidth;
-  const indicatorNodes = [
-    {
-      indicatorIndex: 0,
-      node: options.pageLayer.findOne(`#${field.renderId}-conditional-indicator`),
-    },
-    {
-      indicatorIndex: 1,
-      node: options.pageLayer.findOne(`#${field.renderId}-validation-group-indicator`),
-    },
-  ].filter((indicator): indicator is { indicatorIndex: number; node: Konva.Group } => {
-    return indicator.node instanceof Konva.Group;
-  });
+  const indicatorNodes = getFieldIndicatorNodes(field.renderId, options.pageLayer);
 
-  indicatorNodes.forEach(({ indicatorIndex, node }) => {
+  indicatorNodes.forEach((node, indicatorIndex) => {
     node.setAttrs(
       getFieldIndicatorPosition({
         fieldX: liveFieldX,
