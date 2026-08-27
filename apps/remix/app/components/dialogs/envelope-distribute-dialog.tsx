@@ -2,7 +2,7 @@ import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/e
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
-import { getInvalidFieldGroupConfigurations } from '@documenso/lib/utils/field-groups';
+import { getInvalidFieldGroupConfigurations, type TFieldWithGroup } from '@documenso/lib/utils/field-groups';
 import { getFieldsOutsideDocument } from '@documenso/lib/utils/field-placements';
 import { getRecipientsWithMissingFields } from '@documenso/lib/utils/recipients';
 import { zEmail } from '@documenso/lib/utils/zod';
@@ -21,6 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@documenso/ui/primitives/dialog';
+import { FRIENDLY_FIELD_TYPE } from '@documenso/ui/primitives/document-flow/types';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
 import { Input } from '@documenso/ui/primitives/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
@@ -68,7 +69,7 @@ export const EnvelopeDistributeDialog = ({
   const organisation = useCurrentOrganisation();
 
   const { envelope, editorFields, syncEnvelope, isAutosaving, autosaveError } = useCurrentEnvelopeEditor();
-  const { invalidPlacement } = useEnvelopeEditorFieldDrag();
+  const { invalidPlacements } = useEnvelopeEditorFieldDrag();
 
   const { toast } = useToast();
   const { t } = useLingui();
@@ -143,8 +144,18 @@ export const EnvelopeDistributeDialog = ({
   );
 
   const invalidFieldGroupConfigurations = useMemo(
-    () => getInvalidFieldGroupConfigurations(editorFields.localFields),
+    () => getInvalidFieldGroupConfigurations(editorFields.localFields as unknown as TFieldWithGroup[]),
     [editorFields.localFields],
+  );
+
+  const invalidFields = useMemo(
+    () =>
+      invalidPlacements.flatMap((placement) => {
+        const field = editorFields.getFieldByFormId(placement.fieldFormId);
+
+        return field ? [field] : [];
+      }),
+    [editorFields, invalidPlacements],
   );
 
   /**
@@ -162,7 +173,7 @@ export const EnvelopeDistributeDialog = ({
   }, [recipientsWithIndex, envelope.authOptions]);
 
   const invalidEnvelopeCode = useMemo(() => {
-    if (invalidPlacement) {
+    if (invalidPlacements.length > 0) {
       return 'INVALID_FIELD_PLACEMENT';
     }
 
@@ -191,7 +202,7 @@ export const EnvelopeDistributeDialog = ({
     envelope.recipients,
     fieldsOutsideDocument,
     invalidFieldGroupConfigurations,
-    invalidPlacement,
+    invalidPlacements,
     recipientsMissingRequiredEmail,
     recipientsMissingSignatureFields,
   ]);
@@ -481,7 +492,23 @@ export const EnvelopeDistributeDialog = ({
               {match(invalidEnvelopeCode)
                 .with('INVALID_FIELD_PLACEMENT', () => (
                   <AlertDescription>
-                    <Trans>Move all fields back onto a document page before sending this document.</Trans>
+                    <Trans>The following fields are outside a document page:</Trans>
+
+                    <ul className="mt-1 ml-2 list-inside list-disc">
+                      {invalidFields.length > 0 ? (
+                        invalidFields.map((field) => (
+                          <li key={field.formId}>{field.fieldMeta?.label || t(FRIENDLY_FIELD_TYPE[field.type])}</li>
+                        ))
+                      ) : (
+                        <li>{t`Unknown field`}</li>
+                      )}
+                    </ul>
+
+                    <p className="mt-1">
+                      <Trans>
+                        Place them on a document page before sending. They may currently be between or beside pages.
+                      </Trans>
+                    </p>
                   </AlertDescription>
                 ))
                 .with('FIELDS_OUTSIDE_DOCUMENT', () => (

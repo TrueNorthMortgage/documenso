@@ -7,6 +7,25 @@ export type TEnvelopeItemPageCount = {
 
 export type TFieldPageReference = Pick<Field, 'envelopeItemId' | 'page'>;
 
+export type TFieldFormReference = {
+  fieldFormId: string;
+};
+
+export const upsertFieldPlacement = <T extends TFieldFormReference>(placements: T[], placement: T): T[] => {
+  const existingPlacementIndex = placements.findIndex(
+    (currentPlacement) => currentPlacement.fieldFormId === placement.fieldFormId,
+  );
+
+  if (existingPlacementIndex === -1) {
+    return [...placements, placement];
+  }
+
+  return placements.map((currentPlacement, index) => (index === existingPlacementIndex ? placement : currentPlacement));
+};
+
+export const removeFieldPlacement = <T extends TFieldFormReference>(placements: T[], fieldFormId: string): T[] =>
+  placements.filter((placement) => placement.fieldFormId !== fieldFormId);
+
 /**
  * Finds fields whose page reference cannot be rendered by the corresponding PDF.
  *

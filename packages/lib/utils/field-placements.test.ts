@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest';
 
-import { getFieldsOutsideDocument } from './field-placements';
+import { getFieldsOutsideDocument, removeFieldPlacement, upsertFieldPlacement } from './field-placements';
+
+describe('field placements', () => {
+  it('keeps invalid placements for multiple fields and replaces only the matching field', () => {
+    const first = { fieldFormId: 'field-1', x: 10 };
+    const second = { fieldFormId: 'field-2', x: 20 };
+
+    expect(upsertFieldPlacement(upsertFieldPlacement([], first), second)).toEqual([first, second]);
+    expect(upsertFieldPlacement([first, second], { ...first, x: 30 })).toEqual([{ ...first, x: 30 }, second]);
+  });
+
+  it('removes only the requested field placement', () => {
+    const placements = [
+      { fieldFormId: 'field-1', x: 10 },
+      { fieldFormId: 'field-2', x: 20 },
+    ];
+
+    expect(removeFieldPlacement(placements, 'field-1')).toEqual([placements[1]]);
+  });
+});
 
 describe('getFieldsOutsideDocument', () => {
   it('returns fields before or after the available document pages', () => {
