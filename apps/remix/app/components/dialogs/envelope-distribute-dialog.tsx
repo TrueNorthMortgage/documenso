@@ -2,6 +2,8 @@ import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/e
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
+import { getInvalidFieldGroupConfigurations } from '@documenso/lib/utils/field-groups';
+import { getFieldsOutsideDocument } from '@documenso/lib/utils/field-placements';
 import { getRecipientsWithMissingFields } from '@documenso/lib/utils/recipients';
 import { zEmail } from '@documenso/lib/utils/zod';
 import { trpc, trpc as trpcReact } from '@documenso/trpc/react';
@@ -28,7 +30,7 @@ import { Textarea } from '@documenso/ui/primitives/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@documenso/ui/primitives/tooltip';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Trans, useLingui } from '@lingui/react/macro';
+import { Plural, Trans, useLingui } from '@lingui/react/macro';
 import { DocumentDistributionMethod, DocumentStatus, EnvelopeType } from '@prisma/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import { InfoIcon } from 'lucide-react';
@@ -65,7 +67,7 @@ export const EnvelopeDistributeDialog = ({
 }: EnvelopeDistributeDialogProps) => {
   const organisation = useCurrentOrganisation();
 
-  const { envelope, syncEnvelope, isAutosaving, autosaveError } = useCurrentEnvelopeEditor();
+  const { envelope, editorFields, syncEnvelope, isAutosaving, autosaveError } = useCurrentEnvelopeEditor();
   const { invalidPlacement } = useEnvelopeEditorFieldDrag();
 
   const { toast } = useToast();
@@ -125,6 +127,26 @@ export const EnvelopeDistributeDialog = ({
     [recipientsWithIndex, envelope.fields],
   );
 
+  const fieldsOutsideDocument = useMemo(
+    () => getFieldsOutsideDocument(editorFields.localFields, envelope.envelopeItems),
+    [editorFields.localFields, envelope.envelopeItems],
+  );
+
+  const fieldsOutsideDocumentByItem = useMemo(
+    () =>
+      envelope.envelopeItems.flatMap((envelopeItem) => {
+        const fieldCount = fieldsOutsideDocument.filter((field) => field.envelopeItemId === envelopeItem.id).length;
+
+        return fieldCount > 0 ? [{ envelopeItem, fieldCount }] : [];
+      }),
+    [envelope.envelopeItems, fieldsOutsideDocument],
+  );
+
+  const invalidFieldGroupConfigurations = useMemo(
+    () => getInvalidFieldGroupConfigurations(editorFields.localFields),
+    [editorFields.localFields],
+  );
+
   /**
    * List of recipients who must have an email due to having auth enabled.
    */
@@ -144,6 +166,14 @@ export const EnvelopeDistributeDialog = ({
       return 'INVALID_FIELD_PLACEMENT';
     }
 
+    if (fieldsOutsideDocument.length > 0) {
+      return 'FIELDS_OUTSIDE_DOCUMENT';
+    }
+
+    if (invalidFieldGroupConfigurations.length > 0) {
+      return 'INVALID_FIELD_GROUP_CONFIGURATION';
+    }
+
     if (recipientsMissingSignatureFields.length > 0) {
       return 'MISSING_SIGNATURES';
     }
@@ -157,7 +187,14 @@ export const EnvelopeDistributeDialog = ({
     }
 
     return null;
-  }, [envelope.recipients, invalidPlacement, recipientsMissingRequiredEmail, recipientsMissingSignatureFields]);
+  }, [
+    envelope.recipients,
+    fieldsOutsideDocument,
+    invalidFieldGroupConfigurations,
+    invalidPlacement,
+    recipientsMissingRequiredEmail,
+    recipientsMissingSignatureFields,
+  ]);
 
   const onFormSubmit = async ({ meta }: TEnvelopeDistributeFormSchema) => {
     try {
@@ -188,6 +225,11 @@ export const EnvelopeDistributeDialog = ({
         duration: 7500,
       });
     }
+  };
+
+  const removeFieldsOutsideDocument = async () => {
+    editorFields.removeFieldsByFormId(fieldsOutsideDocument.map((field) => field.formId));
+    await handleSync();
   };
 
   const handleSync = async () => {
@@ -440,6 +482,41 @@ export const EnvelopeDistributeDialog = ({
                 .with('INVALID_FIELD_PLACEMENT', () => (
                   <AlertDescription>
                     <Trans>Move all fields back onto a document page before sending this document.</Trans>
+                  </AlertDescription>
+                ))
+                .with('FIELDS_OUTSIDE_DOCUMENT', () => (
+                  <AlertDescription>
+                    <Trans>The following documents have fields assigned to pages that do not exist:</Trans>
+
+                    <ul className="mt-1 ml-2 list-inside list-disc">
+                      {fieldsOutsideDocumentByItem.map(({ envelopeItem, fieldCount }) => {
+                        return (
+                          <li key={envelopeItem.id}>
+                            {envelopeItem.title} ( <Plural value={fieldCount} one="# field" other="# fields" />)
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="mt-3"
+                      onClick={() => void removeFieldsOutsideDocument()}
+                    >
+                      <Trans>Remove all fields outside the document</Trans>
+                    </Button>
+                  </AlertDescription>
+                ))
+                .with('INVALID_FIELD_GROUP_CONFIGURATION', () => (
+                  <AlertDescription>
+                    <Trans>Fix the validation rules for the following groups before sending this document:</Trans>
+
+                    <ul className="mt-1 ml-2 list-inside list-disc">
+                      {invalidFieldGroupConfigurations.map((group) => (
+                        <li key={group.id}>{group.name}</li>
+                      ))}
+                    </ul>
                   </AlertDescription>
                 ))
                 .with('MISSING_RECIPIENTS', () => (

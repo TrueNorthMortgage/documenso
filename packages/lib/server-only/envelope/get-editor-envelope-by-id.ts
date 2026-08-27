@@ -1,4 +1,5 @@
 import { getEnvelopeWhereInput } from '@documenso/lib/server-only/envelope/get-envelope-by-id';
+import { getEnvelopeItemPageCounts } from '@documenso/lib/server-only/pdf/get-envelope-item-page-counts';
 import { prisma } from '@documenso/prisma';
 import type { EnvelopeType } from '@prisma/client';
 
@@ -98,8 +99,18 @@ export const getEditorEnvelopeById = async ({ id, userId, teamId, type }: GetEdi
     });
   }
 
+  const pageCounts = await getEnvelopeItemPageCounts(envelope.envelopeItems).catch((error) => {
+    console.error('Unable to determine envelope item page counts', error);
+
+    return new Map<string, number>();
+  });
+
   return {
     ...envelope,
+    envelopeItems: envelope.envelopeItems.map((envelopeItem) => ({
+      ...envelopeItem,
+      pageCount: pageCounts.get(envelopeItem.id),
+    })),
     attachments: envelope.envelopeAttachments,
     user: {
       id: envelope.user.id,

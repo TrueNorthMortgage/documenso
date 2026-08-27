@@ -12,6 +12,7 @@ import {
   getCheckboxGroupOptions,
   getFieldGroupValidationState,
   getFieldsRequiringValidation,
+  getInvalidFieldGroupConfigurations,
   type TFieldWithGroup,
 } from './field-groups';
 
@@ -111,6 +112,7 @@ describe('field groups', () => {
 
     expect(getFieldsRequiringValidation(fields)).toHaveLength(0);
     expect(fieldsContainUnsignedRequiredField(fields)).toBe(true);
+    expect(getInvalidFieldGroupConfigurations(fields)).toHaveLength(1);
   });
 
   it('does not navigate to a filled field when a validation group is over-selected', () => {
