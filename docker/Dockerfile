@@ -87,7 +87,8 @@ COPY turbo.json turbo.json
 
 RUN npm install -g "turbo@^1.9.3"
 
-RUN turbo run build --filter=@documenso/remix...
+# Keep the build-only heap increase scoped to the image build.
+RUN NODE_OPTIONS=--max-old-space-size=4096 turbo run build --filter=@documenso/remix...
 
 ###########################
 #     RUNNER CONTAINER    #
