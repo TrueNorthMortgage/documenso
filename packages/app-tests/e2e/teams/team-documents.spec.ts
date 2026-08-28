@@ -754,7 +754,7 @@ test('[TEAMS]: check that MEMBER role cannot change visibility of EVERYONE docum
   await expect(page.getByTestId('documentVisibilitySelectValue')).toBeDisabled();
 });
 
-test('[TEAMS]: check that MEMBER role cannot change visibility of MANAGER_AND_ABOVE documents', async ({ page }) => {
+test('[TEAMS]: check that MEMBER role can change visibility of MANAGER_AND_ABOVE documents', async ({ page }) => {
   const { team, owner } = await seedTeam();
 
   const teamMember = await seedTeamMember({
@@ -775,7 +775,15 @@ test('[TEAMS]: check that MEMBER role cannot change visibility of MANAGER_AND_AB
   });
 
   await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveText('Managers and above');
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toBeDisabled();
+  await page.getByTestId('documentVisibilitySelectValue').click();
+  await page.getByLabel('Everyone').click();
+
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByRole('heading', { name: 'Add Signers' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Go Back' }).click();
+  await expect(page.getByRole('heading', { name: 'General' })).toBeVisible();
+  await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveText('Everyone');
 });
 
 test('[TEAMS]: check that MEMBER role cannot change visibility of ADMIN documents', async ({ page }) => {

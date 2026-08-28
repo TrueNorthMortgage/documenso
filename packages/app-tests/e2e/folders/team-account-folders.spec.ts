@@ -383,6 +383,34 @@ test('[TEAMS]: a folder owner can create a subfolder despite restricted folder v
   await expect(page.getByText('Member-owned subfolder')).toBeVisible();
 });
 
+test('[TEAMS]: a folder owner can update restricted folder visibility', async ({ page }) => {
+  const { team } = await seedTeamDocuments();
+  const teamMember = await seedTeamMember({ teamId: team.id, role: TeamMemberRole.MEMBER });
+
+  await seedBlankFolder(teamMember, team.id, {
+    createFolderOptions: {
+      name: 'Member-owned folder',
+      visibility: DocumentVisibility.MANAGER_AND_ABOVE,
+    },
+  });
+
+  await apiSignin({
+    page,
+    email: teamMember.email,
+    redirectPath: `/t/${team.url}/documents`,
+  });
+
+  const folderCard = page.locator('[data-folder-name="Member-owned folder"]');
+  await openDropdownMenu(page, folderCard.getByTestId('folder-card-more-button'));
+  await page.getByRole('menuitem', { name: 'Settings' }).click();
+
+  await page.getByRole('combobox', { name: 'Visibility' }).click();
+  await page.getByRole('option', { name: 'Everyone' }).click();
+  await page.getByRole('button', { name: 'Update' }).click();
+
+  await expect(page.getByText('Member-owned folder')).toBeVisible();
+});
+
 test('[TEAMS]: can create a template inside a template folder', async ({ page }) => {
   const { team, teamOwner } = await seedTeamDocuments();
 

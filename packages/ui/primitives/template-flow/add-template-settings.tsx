@@ -9,7 +9,7 @@ import type { TDocumentMetaDateFormat } from '@documenso/lib/types/document-meta
 import type { TRecipientLite } from '@documenso/lib/types/recipient';
 import type { TTemplate } from '@documenso/lib/types/template';
 import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
-import { extractTeamSignatureSettings } from '@documenso/lib/utils/teams';
+import { canUpdateTeamDocumentVisibility, extractTeamSignatureSettings } from '@documenso/lib/utils/teams';
 import { trpc } from '@documenso/trpc/react';
 import {
   DocumentGlobalAuthAccessSelect,
@@ -29,17 +29,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@d
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
-import {
-  DocumentDistributionMethod,
-  DocumentVisibility,
-  type Field,
-  TeamMemberRole,
-  TemplateType,
-} from '@prisma/client';
+import { DocumentDistributionMethod, type Field, type TeamMemberRole, TemplateType } from '@prisma/client';
 import { InfoIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { match } from 'ts-pattern';
 
 import { DocumentEmailCheckboxes } from '../../components/document/document-email-checkboxes';
 import { DocumentReadOnlyFields, mapFieldsWithRecipients } from '../../components/document/document-read-only-fields';
@@ -129,15 +122,8 @@ export const AddTemplateSettingsFormPartial = ({
 
   const emails = emailData?.data || [];
 
-  const canUpdateVisibility = match(currentTeamMemberRole)
-    .with(TeamMemberRole.ADMIN, () => true)
-    .with(
-      TeamMemberRole.MANAGER,
-      () =>
-        template.visibility === DocumentVisibility.EVERYONE ||
-        template.visibility === DocumentVisibility.MANAGER_AND_ABOVE,
-    )
-    .otherwise(() => false);
+  const canUpdateVisibility =
+    currentTeamMemberRole !== undefined && canUpdateTeamDocumentVisibility(currentTeamMemberRole, template.visibility);
 
   // We almost always want to set the timezone to the user's local timezone to avoid confusion
   // when the document is signed.
