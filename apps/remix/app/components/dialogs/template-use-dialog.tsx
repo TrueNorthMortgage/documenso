@@ -280,25 +280,6 @@ export function TemplateUseDialog({
 
                     <FormField
                       control={form.control}
-                      name={`recipients.${index}.email`}
-                      render={({ field }) => (
-                        <FormItem className="w-full">
-                          {index === 0 && (
-                            <FormLabel required>
-                              <Trans>Email</Trans>
-                            </FormLabel>
-                          )}
-
-                          <FormControl>
-                            <Input {...field} aria-label="Email" placeholder={_(msg`Email`)} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
                       name={`recipients.${index}.name`}
                       render={({ field }) => (
                         <FormItem className="w-full">
@@ -314,6 +295,25 @@ export function TemplateUseDialog({
                               aria-label="Name"
                               placeholder={recipients[index].name || _(msg`Recipient ${index + 1}`)}
                             />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`recipients.${index}.email`}
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          {index === 0 && (
+                            <FormLabel required>
+                              <Trans>Email</Trans>
+                            </FormLabel>
+                          )}
+
+                          <FormControl>
+                            <Input {...field} aria-label="Email" placeholder={_(msg`Email`)} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
