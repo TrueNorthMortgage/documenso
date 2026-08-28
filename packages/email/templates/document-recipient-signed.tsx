@@ -21,7 +21,8 @@ export const DocumentRecipientSignedEmailTemplate = ({
 }: DocumentRecipientSignedEmailTemplateProps) => {
   const { _ } = useLingui();
 
-  const recipientReference = recipientName || recipientEmail;
+  const recipientReference =
+    recipientName && recipientEmail ? `${recipientName} (${recipientEmail})` : recipientName || recipientEmail;
 
   const previewText = msg`${recipientReference} has signed ${documentName}`;
 

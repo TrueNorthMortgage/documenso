@@ -20,7 +20,8 @@ export const TemplateDocumentRecipientSigned = ({
     return new URL(path, assetBaseUrl).toString();
   };
 
-  const recipientReference = recipientName || recipientEmail;
+  const recipientReference =
+    recipientName && recipientEmail ? `${recipientName} (${recipientEmail})` : recipientName || recipientEmail;
 
   return (
     <>

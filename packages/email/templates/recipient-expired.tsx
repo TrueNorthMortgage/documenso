@@ -18,7 +18,9 @@ export const RecipientExpiredTemplate = ({
 }: RecipientExpiredEmailTemplateProps) => {
   const { _ } = useLingui();
 
-  const previewText = msg`The signing window for "${recipientName}" on document "${documentName}" has expired.`;
+  const recipientReference =
+    recipientName && recipientEmail ? `${recipientName} (${recipientEmail})` : recipientName || recipientEmail;
+  const previewText = msg`The signing window for "${recipientReference}" on document "${documentName}" has expired.`;
 
   return (
     <Html>

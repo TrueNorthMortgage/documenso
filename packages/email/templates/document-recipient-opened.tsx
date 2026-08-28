@@ -20,7 +20,8 @@ export const DocumentRecipientOpenedEmailTemplate = ({
   assetBaseUrl = 'http://localhost:3002',
 }: DocumentRecipientOpenedEmailTemplateProps) => {
   const { _ } = useLingui();
-  const recipientReference = recipientName || recipientEmail;
+  const recipientReference =
+    recipientName && recipientEmail ? `${recipientName} (${recipientEmail})` : recipientName || recipientEmail;
   const previewText = msg`${recipientReference} has opened ${documentName}`;
 
   return (

@@ -16,7 +16,8 @@ export const TemplateDocumentRecipientOpened = ({
   recipientEmail,
   assetBaseUrl,
 }: TemplateDocumentRecipientOpenedProps) => {
-  const recipientReference = recipientName || recipientEmail;
+  const recipientReference =
+    recipientName && recipientEmail ? `${recipientName} (${recipientEmail})` : recipientName || recipientEmail;
   const mailOpenImageUrl = new URL('/static/mail-open.png', assetBaseUrl).toString();
 
   return (
