@@ -58,6 +58,7 @@ export type AddSettingsFormProps = {
   isDocumentPdfLoaded: boolean;
   document: TDocument;
   currentTeamMemberRole?: TeamMemberRole;
+  isOwner: boolean;
   onSubmit: (_data: TAddSettingsFormSchema) => void;
   onAutoSave: (_data: TAddSettingsFormSchema) => Promise<void>;
 };
@@ -69,6 +70,7 @@ export const AddSettingsFormPartial = ({
   isDocumentPdfLoaded,
   document,
   currentTeamMemberRole,
+  isOwner,
   onSubmit,
   onAutoSave,
 }: AddSettingsFormProps) => {
@@ -107,7 +109,8 @@ export const AddSettingsFormPartial = ({
   const documentHasBeenSent = recipients.some((recipient) => recipient.sendStatus === SendStatus.SENT);
 
   const canUpdateVisibility =
-    currentTeamMemberRole !== undefined && canUpdateTeamDocumentVisibility(currentTeamMemberRole, document.visibility);
+    currentTeamMemberRole !== undefined &&
+    canUpdateTeamDocumentVisibility(currentTeamMemberRole, document.visibility, isOwner);
 
   const onFormSubmit = form.handleSubmit(onSubmit);
 
@@ -278,6 +281,7 @@ export const AddSettingsFormPartial = ({
                       <DocumentVisibilitySelect
                         canUpdateVisibility={canUpdateVisibility}
                         currentTeamMemberRole={currentTeamMemberRole}
+                        isOwner={isOwner}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);

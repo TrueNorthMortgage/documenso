@@ -62,6 +62,7 @@ export type AddTemplateSettingsFormProps = {
   isDocumentPdfLoaded: boolean;
   template: TTemplate;
   currentTeamMemberRole?: TeamMemberRole;
+  isOwner: boolean;
   onSubmit: (_data: TAddTemplateSettingsFormSchema) => void;
   onAutoSave: (_data: TAddTemplateSettingsFormSchema) => Promise<void>;
 };
@@ -73,6 +74,7 @@ export const AddTemplateSettingsFormPartial = ({
   isDocumentPdfLoaded,
   template,
   currentTeamMemberRole,
+  isOwner,
   onSubmit,
   onAutoSave,
 }: AddTemplateSettingsFormProps) => {
@@ -123,7 +125,8 @@ export const AddTemplateSettingsFormPartial = ({
   const emails = emailData?.data || [];
 
   const canUpdateVisibility =
-    currentTeamMemberRole !== undefined && canUpdateTeamDocumentVisibility(currentTeamMemberRole, template.visibility);
+    currentTeamMemberRole !== undefined &&
+    canUpdateTeamDocumentVisibility(currentTeamMemberRole, template.visibility, isOwner);
 
   // We almost always want to set the timezone to the user's local timezone to avoid confusion
   // when the document is signed.
@@ -272,6 +275,7 @@ export const AddTemplateSettingsFormPartial = ({
                       <DocumentVisibilitySelect
                         canUpdateVisibility={canUpdateVisibility}
                         currentTeamMemberRole={currentTeamMemberRole}
+                        isOwner={isOwner}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);

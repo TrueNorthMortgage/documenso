@@ -8,6 +8,14 @@ describe('canUpdateTeamDocumentVisibility', () => {
     expect(canUpdateTeamDocumentVisibility(TeamMemberRole.MEMBER, DocumentVisibility.MANAGER_AND_ABOVE)).toBe(true);
   });
 
+  it('allows owners to update visibility to any level', () => {
+    expect(canUpdateTeamDocumentVisibility(TeamMemberRole.MEMBER, DocumentVisibility.EVERYONE, true)).toBe(true);
+    expect(canUpdateTeamDocumentVisibility(TeamMemberRole.MEMBER, DocumentVisibility.MANAGER_AND_ABOVE, true)).toBe(
+      true,
+    );
+    expect(canUpdateTeamDocumentVisibility(TeamMemberRole.MEMBER, DocumentVisibility.ADMIN, true)).toBe(true);
+  });
+
   it('preserves the existing role restrictions for other visibility levels', () => {
     expect(canUpdateTeamDocumentVisibility(TeamMemberRole.MEMBER, DocumentVisibility.EVERYONE)).toBe(false);
     expect(canUpdateTeamDocumentVisibility(TeamMemberRole.MEMBER, DocumentVisibility.ADMIN)).toBe(false);

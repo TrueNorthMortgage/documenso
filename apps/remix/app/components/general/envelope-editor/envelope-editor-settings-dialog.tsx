@@ -1,5 +1,6 @@
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
+import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
 import { DATE_FORMATS, DEFAULT_DOCUMENT_DATE_FORMAT } from '@documenso/lib/constants/date-formats';
 import { DOCUMENT_DISTRIBUTION_METHODS, DOCUMENT_SIGNATURE_TYPES } from '@documenso/lib/constants/document';
 import { ZEnvelopeExpirationPeriod } from '@documenso/lib/constants/envelope-expiration';
@@ -162,6 +163,7 @@ export const EnvelopeEditorSettingsDialog = ({ trigger, ...props }: EnvelopeEdit
   const { settings } = editorConfig;
 
   const team = useCurrentTeam();
+  const { sessionData } = useOptionalSession();
   const organisation = useCurrentOrganisation();
 
   const [open, setOpen] = useState(false);
@@ -223,7 +225,8 @@ export const EnvelopeEditorSettingsDialog = ({ trigger, ...props }: EnvelopeEdit
 
   const emails = emailData?.data || organisationEmails || [];
 
-  const canUpdateVisibility = canUpdateTeamDocumentVisibility(team.currentTeamRole, envelope.visibility);
+  const isOwner = sessionData?.user.id === envelope.userId;
+  const canUpdateVisibility = canUpdateTeamDocumentVisibility(team.currentTeamRole, envelope.visibility, isOwner);
 
   const onFormSubmit = async (data: TAddSettingsFormSchema) => {
     const {
@@ -911,6 +914,7 @@ export const EnvelopeEditorSettingsDialog = ({ trigger, ...props }: EnvelopeEdit
                                 <DocumentVisibilitySelect
                                   canUpdateVisibility={canUpdateVisibility}
                                   currentTeamMemberRole={team.currentTeamRole}
+                                  isOwner={isOwner}
                                   {...field}
                                   onValueChange={field.onChange}
                                 />

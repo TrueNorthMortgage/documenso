@@ -64,8 +64,13 @@ export const canAccessTeamDocument = (role: TeamMemberRole, visibility: Document
  * Members may make a manager-and-above envelope less restrictive, while the
  * existing access rules continue to control which envelopes they can view.
  */
-export const canUpdateTeamDocumentVisibility = (role: TeamMemberRole, visibility: DocumentVisibility) => {
+export const canUpdateTeamDocumentVisibility = (
+  role: TeamMemberRole,
+  visibility: DocumentVisibility,
+  isOwner = false,
+) => {
   return (
+    isOwner ||
     role === TeamMemberRole.ADMIN ||
     visibility === DocumentVisibility.MANAGER_AND_ABOVE ||
     (role === TeamMemberRole.MANAGER && visibility === DocumentVisibility.EVERYONE)
