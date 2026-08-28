@@ -149,9 +149,7 @@ export const updateEnvelope = async ({
           userId,
         }),
         type: envelope.type === EnvelopeType.TEMPLATE ? FolderType.TEMPLATE : FolderType.DOCUMENT,
-        visibility: {
-          in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole],
-        },
+        OR: [{ visibility: { in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole] } }, { userId }],
       },
     });
 
