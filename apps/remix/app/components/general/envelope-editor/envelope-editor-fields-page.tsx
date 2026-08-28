@@ -63,7 +63,7 @@ import { EnvelopePdfViewer } from '~/components/general/pdf-viewer/envelope-pdf-
 import { useCurrentTeam } from '~/providers/team';
 
 import { ConditionalFieldHighlightContext } from './conditional-field-highlight-context';
-import { useEnvelopeEditorFieldDrag } from './envelope-editor-field-drag-context';
+import { type InvalidFieldPlacement, useEnvelopeEditorFieldDrag } from './envelope-editor-field-drag-context';
 import { EnvelopeEditorFieldDragDrop } from './envelope-editor-fields-drag-drop';
 import { EnvelopeEditorFieldsPageRenderer, getPageAtPoint } from './envelope-editor-fields-page-renderer';
 import { EnvelopeRendererFileSelector } from './envelope-file-selector';
@@ -87,16 +87,34 @@ const clamp = (value: number, min: number, max: number) => Math.max(min, Math.mi
 export const INVALID_FIELD_PLACEMENT_CLASS_NAME = 'rounded-[2px] border-2 border-red-500 bg-white text-red-600';
 
 const InvalidFieldPlacementOverlay = ({
+  isInteractive = true,
+  isInvalidPlacement,
+  isPlacementDragging = false,
+  isPrimary = true,
+  placement,
   scrollableContainerRef,
 }: {
+  isInteractive?: boolean;
+  isInvalidPlacement: boolean;
+  isPlacementDragging?: boolean;
+  isPrimary?: boolean;
+  placement: InvalidFieldPlacement;
   scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
 }) => {
   const { editorFields } = useCurrentEnvelopeEditor();
-  const { currentEnvelopeItem } = useCurrentEnvelopeRender();
-  const { activePlacement, invalidPlacement, setActivePlacement, setInvalidPlacement } = useEnvelopeEditorFieldDrag();
+  const {
+    activeGroupPlacements,
+    activePlacement,
+    clearInvalidPlacement,
+    invalidPlacements,
+    selectedInvalidFieldFormIds,
+    setActiveGroupPlacements,
+    setActivePlacement,
+    setPendingSelectionFieldFormIds,
+    setSelectedInvalidFieldFormIds,
+    setInvalidPlacement,
+  } = useEnvelopeEditorFieldDrag();
   const { _ } = useLingui();
-  const placement = invalidPlacement ?? activePlacement;
-  const isInvalidPlacement = Boolean(invalidPlacement);
   const placementRef = useRef(placement);
   const dragRef = useRef<{
     offsetX: number;
@@ -105,19 +123,31 @@ const InvalidFieldPlacementOverlay = ({
     lastMoveAt: number;
   } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const activeGroupPlacementsRef = useRef(activeGroupPlacements);
 
   useEffect(() => {
     placementRef.current = placement;
   }, [placement]);
 
   useEffect(() => {
-    if (placement && !editorFields.getFieldByFormId(placement.fieldFormId)) {
-      setActivePlacement(null);
-      setInvalidPlacement(null);
-    }
-  }, [editorFields, placement, setActivePlacement, setInvalidPlacement]);
+    activeGroupPlacementsRef.current = activeGroupPlacements;
+  }, [activeGroupPlacements]);
 
-  const activePlacementFieldFormId = activePlacement?.fieldFormId;
+  useEffect(() => {
+    if (!isPrimary) {
+      return;
+    }
+
+    if (!editorFields.getFieldByFormId(placement.fieldFormId)) {
+      if (isInvalidPlacement) {
+        clearInvalidPlacement(placement.fieldFormId);
+      } else {
+        setActivePlacement(null);
+      }
+    }
+  }, [clearInvalidPlacement, editorFields, isInvalidPlacement, isPrimary, placement.fieldFormId, setActivePlacement]);
+
+  const isActivePlacement = !isInvalidPlacement && activePlacement?.fieldFormId === placement.fieldFormId;
 
   const updatePlacement = useCallback(
     (clientX: number, clientY: number) => {
@@ -157,13 +187,30 @@ const InvalidFieldPlacementOverlay = ({
 
       placementRef.current = nextPlacement;
 
+      const deltaX = nextPlacement.x - currentPlacement.x;
+      const deltaY = nextPlacement.y - currentPlacement.y;
+      const nextGroupPlacements = activeGroupPlacementsRef.current.map((groupPlacement) => ({
+        ...groupPlacement,
+        x: groupPlacement.x + deltaX,
+        y: groupPlacement.y + deltaY,
+      }));
+
       if (isInvalidPlacement) {
-        setInvalidPlacement(nextPlacement);
+        const placements = nextGroupPlacements.length > 0 ? nextGroupPlacements : [nextPlacement];
+
+        placements.forEach(setInvalidPlacement);
+        activeGroupPlacementsRef.current = nextGroupPlacements;
+        setActiveGroupPlacements(nextGroupPlacements);
       } else {
-        setActivePlacement(nextPlacement);
+        if (nextGroupPlacements.length > 0) {
+          activeGroupPlacementsRef.current = nextGroupPlacements;
+          setActiveGroupPlacements(nextGroupPlacements);
+        }
       }
+
+      setActivePlacement(nextPlacement);
     },
-    [isInvalidPlacement, scrollableContainerRef, setActivePlacement, setInvalidPlacement],
+    [isInvalidPlacement, scrollableContainerRef, setActiveGroupPlacements, setActivePlacement, setInvalidPlacement],
   );
 
   const completePlacement = useCallback(
@@ -171,11 +218,16 @@ const InvalidFieldPlacementOverlay = ({
       updatePlacement(clientX, clientY);
 
       const currentPlacement = placementRef.current;
-      const field = currentPlacement ? editorFields.getFieldByFormId(currentPlacement.fieldFormId) : undefined;
+      const placements =
+        activeGroupPlacementsRef.current.length > 0
+          ? activeGroupPlacementsRef.current
+          : currentPlacement
+            ? [currentPlacement]
+            : [];
       const targetPage = getPageAtPoint(clientX, clientY);
       let placedOnPage = false;
 
-      if (currentPlacement && field && targetPage) {
+      if (currentPlacement && targetPage) {
         const pageRect = targetPage.getBoundingClientRect();
         const scrollContainer = scrollableContainerRef.current;
         const scrollRect = scrollContainer?.getBoundingClientRect();
@@ -190,24 +242,51 @@ const InvalidFieldPlacementOverlay = ({
         ) {
           const pageX = pageRect.left - scrollRect.left + scrollContainer.scrollLeft;
           const pageY = pageRect.top - scrollRect.top + scrollContainer.scrollTop;
-          const maxPositionX = Math.max(0, 100 - field.width);
-          const maxPositionY = Math.max(0, 100 - field.height);
+          for (const groupPlacement of placements) {
+            const field = editorFields.getFieldByFormId(groupPlacement.fieldFormId);
 
-          editorFields.updateFieldByFormId(field.formId, {
-            page: pageNumber,
-            positionX: clamp(((currentPlacement.x - pageX) / pageRect.width) * 100, 0, maxPositionX),
-            positionY: clamp(((currentPlacement.y - pageY) / pageRect.height) * 100, 0, maxPositionY),
-          });
-          editorFields.setSelectedField(field.formId);
+            if (!field) {
+              continue;
+            }
+
+            const maxPositionX = Math.max(0, 100 - field.width);
+            const maxPositionY = Math.max(0, 100 - field.height);
+
+            editorFields.updateFieldByFormId(field.formId, {
+              page: pageNumber,
+              positionX: clamp(((groupPlacement.x - pageX) / pageRect.width) * 100, 0, maxPositionX),
+              positionY: clamp(((groupPlacement.y - pageY) / pageRect.height) * 100, 0, maxPositionY),
+            });
+          }
+
+          if (currentPlacement) {
+            editorFields.setSelectedField(currentPlacement.fieldFormId);
+          }
           setActivePlacement(null);
-          setInvalidPlacement(null);
+          activeGroupPlacementsRef.current = [];
+          setActiveGroupPlacements([]);
+          if (placements.length > 1) {
+            setPendingSelectionFieldFormIds(placements.map((groupPlacement) => groupPlacement.fieldFormId));
+          }
+          if (isInvalidPlacement) {
+            placements.forEach((groupPlacement) => {
+              clearInvalidPlacement(groupPlacement.fieldFormId);
+            });
+            setSelectedInvalidFieldFormIds([]);
+          }
           placedOnPage = true;
         }
       }
 
-      if (currentPlacement && !placedOnPage && !isInvalidPlacement) {
+      if (currentPlacement && !placedOnPage) {
         setActivePlacement(null);
-        setInvalidPlacement(currentPlacement);
+        activeGroupPlacementsRef.current = [];
+        setActiveGroupPlacements([]);
+        setSelectedInvalidFieldFormIds(placements.map((groupPlacement) => groupPlacement.fieldFormId));
+
+        if (!isInvalidPlacement) {
+          placements.forEach(setInvalidPlacement);
+        }
       }
 
       dragRef.current = null;
@@ -215,10 +294,13 @@ const InvalidFieldPlacementOverlay = ({
     },
     [
       editorFields,
+      clearInvalidPlacement,
       isInvalidPlacement,
       scrollableContainerRef,
+      setActiveGroupPlacements,
       setActivePlacement,
-      setInvalidPlacement,
+      setPendingSelectionFieldFormIds,
+      setSelectedInvalidFieldFormIds,
       updatePlacement,
     ],
   );
@@ -226,11 +308,7 @@ const InvalidFieldPlacementOverlay = ({
   useEffect(() => {
     const currentActivePlacement = placementRef.current;
 
-    if (
-      !activePlacementFieldFormId ||
-      !currentActivePlacement ||
-      currentActivePlacement.fieldFormId !== activePlacementFieldFormId
-    ) {
+    if (!isActivePlacement || !currentActivePlacement || currentActivePlacement.fieldFormId !== placement.fieldFormId) {
       return;
     }
 
@@ -287,11 +365,7 @@ const InvalidFieldPlacementOverlay = ({
       window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [activePlacementFieldFormId, completePlacement, updatePlacement]);
-
-  if (!placement || placement.envelopeItemId !== currentEnvelopeItem?.id) {
-    return null;
-  }
+  }, [completePlacement, isActivePlacement, placement.fieldFormId, updatePlacement]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) {
@@ -304,8 +378,38 @@ const InvalidFieldPlacementOverlay = ({
       return;
     }
 
+    const isModifierPressed = event.shiftKey || event.ctrlKey || event.metaKey;
+
+    if (isInvalidPlacement && isModifierPressed) {
+      event.preventDefault();
+      event.stopPropagation();
+      setSelectedInvalidFieldFormIds(
+        selectedInvalidFieldFormIds.includes(placement.fieldFormId)
+          ? selectedInvalidFieldFormIds.filter((fieldFormId) => fieldFormId !== placement.fieldFormId)
+          : [...selectedInvalidFieldFormIds, placement.fieldFormId],
+      );
+      return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
+
+    if (isInvalidPlacement) {
+      const selectedFieldFormIds = selectedInvalidFieldFormIds.includes(placement.fieldFormId)
+        ? selectedInvalidFieldFormIds
+        : [placement.fieldFormId];
+      const selectedPlacements = invalidPlacements.filter(
+        (invalidPlacement) =>
+          invalidPlacement.envelopeItemId === placement.envelopeItemId &&
+          selectedFieldFormIds.includes(invalidPlacement.fieldFormId),
+      );
+      const nextGroupPlacements = selectedPlacements.length > 1 ? selectedPlacements : [];
+
+      activeGroupPlacementsRef.current = nextGroupPlacements;
+      setActiveGroupPlacements(nextGroupPlacements);
+      setActivePlacement(placement);
+      setSelectedInvalidFieldFormIds(selectedFieldFormIds);
+    }
 
     const scrollRect = scrollContainer.getBoundingClientRect();
 
@@ -340,12 +444,13 @@ const InvalidFieldPlacementOverlay = ({
 
   const field = editorFields.getFieldByFormId(placement.fieldFormId);
   const fieldText = field ? field.fieldMeta?.label || _(FRIENDLY_FIELD_TYPE[field.type]) : null;
-  const showInvalidStyle = isInvalidPlacement && !isDragging;
+  const showInvalidStyle = isInvalidPlacement && !isDragging && !isPlacementDragging;
   const previewDataUrl = showInvalidStyle ? placement.invalidPreviewDataUrl : placement.previewDataUrl;
   const showFieldPreview = Boolean(previewDataUrl);
 
   return (
     <div
+      data-invalid-field-placement
       className={cn(
         'absolute z-50 cursor-move',
         !showFieldPreview &&
@@ -360,7 +465,7 @@ const InvalidFieldPlacementOverlay = ({
       style={{
         height: placement.height,
         left: placement.x,
-        pointerEvents: 'auto',
+        pointerEvents: isInteractive ? 'auto' : 'none',
         top: placement.y,
         width: placement.width,
       }}
@@ -377,6 +482,319 @@ const InvalidFieldPlacementOverlay = ({
         <AlertCircleIcon className="absolute -top-3 -right-3 h-5 w-5 rounded-full bg-white text-red-600" />
       )}
     </div>
+  );
+};
+
+const ActiveFieldSelectionOverlay = () => {
+  const { currentEnvelopeItem } = useCurrentEnvelopeRender();
+  const { activeGroupPlacements, activePlacement, invalidPlacements, selectedInvalidFieldFormIds } =
+    useEnvelopeEditorFieldDrag();
+
+  if (!currentEnvelopeItem) {
+    return null;
+  }
+
+  const placements =
+    activeGroupPlacements.length > 0
+      ? activeGroupPlacements
+      : activePlacement
+        ? [activePlacement]
+        : invalidPlacements.filter(
+            (placement) =>
+              placement.envelopeItemId === currentEnvelopeItem.id &&
+              selectedInvalidFieldFormIds.includes(placement.fieldFormId),
+          );
+  const currentPlacements = placements.filter((placement) => placement.envelopeItemId === currentEnvelopeItem.id);
+
+  if (currentPlacements.length === 0) {
+    return null;
+  }
+
+  const left = Math.min(...currentPlacements.map((placement) => placement.x));
+  const top = Math.min(...currentPlacements.map((placement) => placement.y));
+  const right = Math.max(...currentPlacements.map((placement) => placement.x + placement.width));
+  const bottom = Math.max(...currentPlacements.map((placement) => placement.y + placement.height));
+  const handleClassName = 'absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 border bg-white';
+  const handleStyle = { borderColor: 'rgb(0, 161, 255)' };
+
+  return (
+    <div
+      className="pointer-events-none absolute z-[51] border"
+      data-active-field-selection
+      style={{
+        borderColor: 'rgb(0, 161, 255)',
+        height: bottom - top,
+        left,
+        top,
+        width: right - left,
+      }}
+    >
+      <span className={handleClassName} style={{ ...handleStyle, left: 0, top: 0 }} />
+      <span className={handleClassName} style={{ ...handleStyle, left: '50%', top: 0 }} />
+      <span className={handleClassName} style={{ ...handleStyle, left: '100%', top: 0 }} />
+      <span className={handleClassName} style={{ ...handleStyle, left: 0, top: '50%' }} />
+      <span className={handleClassName} style={{ ...handleStyle, left: '100%', top: '50%' }} />
+      <span className={handleClassName} style={{ ...handleStyle, left: 0, top: '100%' }} />
+      <span className={handleClassName} style={{ ...handleStyle, left: '50%', top: '100%' }} />
+      <span className={handleClassName} style={{ ...handleStyle, left: '100%', top: '100%' }} />
+    </div>
+  );
+};
+
+const InvalidFieldPlacementSelection = ({
+  scrollableContainerRef,
+}: {
+  scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
+}) => {
+  const { currentEnvelopeItem } = useCurrentEnvelopeRender();
+  const { invalidPlacements, selectedInvalidFieldFormIds, setSelectedInvalidFieldFormIds } =
+    useEnvelopeEditorFieldDrag();
+  const [selection, setSelection] = useState<{
+    height: number;
+    width: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const dragRef = useRef<{
+    additive: boolean;
+    pointerId: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+
+  const getRelativePoint = (clientX: number, clientY: number) => {
+    const scrollContainer = scrollableContainerRef.current;
+
+    if (!scrollContainer) {
+      return null;
+    }
+
+    const scrollRect = scrollContainer.getBoundingClientRect();
+
+    return {
+      x: clientX - scrollRect.left + scrollContainer.scrollLeft,
+      y: clientY - scrollRect.top + scrollContainer.scrollTop,
+    };
+  };
+
+  const updateSelection = (clientX: number, clientY: number) => {
+    const drag = dragRef.current;
+    const point = getRelativePoint(clientX, clientY);
+
+    if (!drag || !point) {
+      return;
+    }
+
+    setSelection({
+      height: Math.abs(point.y - drag.startY),
+      width: Math.abs(point.x - drag.startX),
+      x: Math.min(drag.startX, point.x),
+      y: Math.min(drag.startY, point.y),
+    });
+  };
+
+  const completeSelection = (clientX: number, clientY: number) => {
+    const drag = dragRef.current;
+    const point = getRelativePoint(clientX, clientY);
+
+    if (!drag || !point) {
+      return;
+    }
+
+    const selectionRect = {
+      height: Math.abs(point.y - drag.startY),
+      width: Math.abs(point.x - drag.startX),
+      x: Math.min(drag.startX, point.x),
+      y: Math.min(drag.startY, point.y),
+    };
+    const selectedFieldFormIds = invalidPlacements
+      .filter((placement) => {
+        if (placement.envelopeItemId !== currentEnvelopeItem?.id) {
+          return false;
+        }
+
+        return (
+          selectionRect.x < placement.x + placement.width &&
+          selectionRect.x + selectionRect.width > placement.x &&
+          selectionRect.y < placement.y + placement.height &&
+          selectionRect.y + selectionRect.height > placement.y
+        );
+      })
+      .map((placement) => placement.fieldFormId);
+
+    setSelectedInvalidFieldFormIds(
+      drag.additive ? [...new Set([...selectedInvalidFieldFormIds, ...selectedFieldFormIds])] : selectedFieldFormIds,
+    );
+    dragRef.current = null;
+    setSelection(null);
+  };
+
+  useEffect(() => {
+    const scrollContainer = scrollableContainerRef.current;
+
+    if (!scrollContainer) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || getPageAtPoint(event.clientX, event.clientY)) {
+        return;
+      }
+
+      const target = event.target;
+
+      if (
+        !(target instanceof HTMLElement) ||
+        target.closest('[data-invalid-field-placement], button, a, input, select, textarea, [role="button"]')
+      ) {
+        return;
+      }
+
+      const point = getRelativePoint(event.clientX, event.clientY);
+
+      if (!point) {
+        return;
+      }
+
+      event.preventDefault();
+      dragRef.current = {
+        additive: event.shiftKey || event.ctrlKey || event.metaKey,
+        pointerId: event.pointerId,
+        startX: point.x,
+        startY: point.y,
+      };
+      setSelection({ height: 0, width: 0, x: point.x, y: point.y });
+      scrollContainer.setPointerCapture(event.pointerId);
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (dragRef.current?.pointerId !== event.pointerId) {
+        return;
+      }
+
+      event.preventDefault();
+      updateSelection(event.clientX, event.clientY);
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      if (dragRef.current?.pointerId !== event.pointerId) {
+        return;
+      }
+
+      event.preventDefault();
+      completeSelection(event.clientX, event.clientY);
+    };
+
+    scrollContainer.addEventListener('pointerdown', handlePointerDown);
+    scrollContainer.addEventListener('pointermove', handlePointerMove);
+    scrollContainer.addEventListener('pointerup', handlePointerUp);
+    scrollContainer.addEventListener('pointercancel', handlePointerUp);
+
+    return () => {
+      scrollContainer.removeEventListener('pointerdown', handlePointerDown);
+      scrollContainer.removeEventListener('pointermove', handlePointerMove);
+      scrollContainer.removeEventListener('pointerup', handlePointerUp);
+      scrollContainer.removeEventListener('pointercancel', handlePointerUp);
+    };
+  }, [completeSelection, getRelativePoint, scrollableContainerRef, updateSelection]);
+
+  return selection ? (
+    <div
+      className="pointer-events-none absolute z-40 border-2 border-sky-500 bg-sky-500/10"
+      style={{
+        height: selection.height,
+        left: selection.x,
+        top: selection.y,
+        width: selection.width,
+      }}
+    />
+  ) : null;
+};
+
+const InvalidFieldPlacementOverlays = ({
+  scrollableContainerRef,
+}: {
+  scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
+}) => {
+  const { currentEnvelopeItem } = useCurrentEnvelopeRender();
+  const { activeGroupPlacements, activePlacement, invalidPlacements } = useEnvelopeEditorFieldDrag();
+
+  if (!currentEnvelopeItem) {
+    return null;
+  }
+
+  type PlacementOverlay = {
+    isInteractive: boolean;
+    isInvalidPlacement: boolean;
+    isPlacementDragging?: boolean;
+    isPrimary: boolean;
+    placement: InvalidFieldPlacement;
+  };
+
+  const overlays = new Map<string, PlacementOverlay>();
+  const activePlacementIsInvalid = activePlacement
+    ? invalidPlacements.some((placement) => placement.fieldFormId === activePlacement.fieldFormId)
+    : false;
+
+  if (activePlacement?.envelopeItemId === currentEnvelopeItem.id) {
+    overlays.set(activePlacement.fieldFormId, {
+      isInteractive: true,
+      isInvalidPlacement: activePlacementIsInvalid,
+      isPlacementDragging: activePlacementIsInvalid,
+      isPrimary: true,
+      placement: activePlacement,
+    });
+  }
+
+  activeGroupPlacements
+    .filter(
+      (placement) =>
+        placement.envelopeItemId === currentEnvelopeItem.id && placement.fieldFormId !== activePlacement?.fieldFormId,
+    )
+    .forEach((placement) => {
+      overlays.set(placement.fieldFormId, {
+        isInteractive: false,
+        isInvalidPlacement: activePlacementIsInvalid,
+        isPlacementDragging: activePlacementIsInvalid,
+        isPrimary: false,
+        placement,
+      });
+    });
+
+  const activeFieldFormIds = new Set([
+    ...activeGroupPlacements.map((placement) => placement.fieldFormId),
+    ...(activePlacement ? [activePlacement.fieldFormId] : []),
+  ]);
+
+  invalidPlacements
+    .filter(
+      (placement) =>
+        placement.envelopeItemId === currentEnvelopeItem.id && !activeFieldFormIds.has(placement.fieldFormId),
+    )
+    .forEach((placement) => {
+      overlays.set(placement.fieldFormId, {
+        isInteractive: true,
+        isInvalidPlacement: true,
+        isPrimary: true,
+        placement,
+      });
+    });
+
+  return (
+    <>
+      <ActiveFieldSelectionOverlay />
+      {Array.from(overlays.values()).map((overlay) => (
+        <InvalidFieldPlacementOverlay
+          key={overlay.placement.fieldFormId}
+          isInteractive={overlay.isInteractive}
+          isInvalidPlacement={overlay.isInvalidPlacement}
+          isPlacementDragging={overlay.isPlacementDragging}
+          isPrimary={overlay.isPrimary}
+          placement={overlay.placement}
+          scrollableContainerRef={scrollableContainerRef}
+        />
+      ))}
+    </>
   );
 };
 
@@ -636,7 +1054,8 @@ export const EnvelopeEditorFieldsPage = () => {
           )}
         </div>
 
-        <InvalidFieldPlacementOverlay scrollableContainerRef={scrollableContainerRef} />
+        <InvalidFieldPlacementSelection scrollableContainerRef={scrollableContainerRef} />
+        <InvalidFieldPlacementOverlays scrollableContainerRef={scrollableContainerRef} />
       </div>
 
       {/* Right Section - Form Fields Panel */}

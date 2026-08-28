@@ -299,6 +299,8 @@ export const ZEditorEnvelopeSchema = EnvelopeSchema.pick({
     .extend({
       // Only used for embedded.
       data: z.instanceof(Uint8Array).optional(),
+      // Computed from the PDF and not persisted in the database.
+      pageCount: z.number().int().positive().optional(),
     })
     .array(),
   directLink: TemplateDirectLinkSchema.pick({

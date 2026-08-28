@@ -266,7 +266,9 @@ export const EnvelopeEditorUploadPage = () => {
         );
 
         setLocalEnvelope({
-          envelopeItems: envelope.envelopeItems.map((item) => (item.id === envelopeItemId ? { ...item, data } : item)),
+          envelopeItems: envelope.envelopeItems.map((item) =>
+            item.id === envelopeItemId ? { ...item, data, pageCount: newPageCount } : item,
+          ),
           fields: remainingFields,
         });
 

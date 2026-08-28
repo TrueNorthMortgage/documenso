@@ -24,9 +24,11 @@ import { isDocumentCompleted } from '../../utils/document';
 import { extractDocumentAuthMethods } from '../../utils/document-auth';
 import { type EnvelopeIdOptions, mapSecondaryIdToDocumentId } from '../../utils/envelope';
 import { getInvalidFieldGroupConfigurations } from '../../utils/field-groups';
+import { getFieldsOutsideDocument } from '../../utils/field-placements';
 import { getRecipientsWithMissingFields, isRecipientEmailValidForSending } from '../../utils/recipients';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { extractFieldAutoInsertValues } from '../field/extract-field-auto-insert-values';
+import { getEnvelopeItemPageCounts } from '../pdf/get-envelope-item-page-counts';
 import { insertFormValuesInPdf } from '../pdf/insert-form-values-in-pdf';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
 
@@ -107,6 +109,22 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
     throw new Error('Missing envelope items');
   }
 
+  const envelopeItemPageCounts = await getEnvelopeItemPageCounts(envelope.envelopeItems);
+  const fieldsOutsideDocument = getFieldsOutsideDocument(
+    envelope.fields,
+    envelope.envelopeItems.map((envelopeItem) => ({
+      id: envelopeItem.id,
+      pageCount: envelopeItemPageCounts.get(envelopeItem.id),
+    })),
+  );
+
+  if (fieldsOutsideDocument.length > 0) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: `The document has ${fieldsOutsideDocument.length} field(s) outside the available PDF pages.`,
+      userMessage: 'Move or remove all fields that are outside the document before sending it.',
+    });
+  }
+
   const invalidFieldGroupConfigurations = getInvalidFieldGroupConfigurations(envelope.fields);
 
   if (invalidFieldGroupConfigurations.length > 0) {
@@ -114,6 +132,7 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
       message: `The following validation groups have invalid rules: ${invalidFieldGroupConfigurations
         .map((group) => group.name)
         .join(', ')}`,
+      userMessage: 'Fix the validation rules for all groups before sending this document.',
     });
   }
 
