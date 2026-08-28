@@ -1,7 +1,18 @@
 import type { DocumentDataVersion } from '@documenso/lib/types/document';
+import { env } from '@documenso/lib/utils/env';
 import type { EnvelopeItem } from '@prisma/client';
 
 import { NEXT_PUBLIC_WEBAPP_URL } from '../constants/app';
+
+const localPdfFixtureCacheKey = typeof window === 'undefined' ? null : Date.now().toString();
+
+const appendLocalPdfFixtureCacheKey = (url: string) => {
+  if (env('NEXT_PUBLIC_LOCAL_PDF_FIXTURE_ENABLED') !== 'true' || !localPdfFixtureCacheKey) {
+    return url;
+  }
+
+  return `${url}${url.includes('?') ? '&' : '?'}localPdfFixture=${localPdfFixtureCacheKey}`;
+};
 
 /**
  * `pending` is only supported when there is no recipient token (team/owner-side downloads
@@ -30,14 +41,18 @@ export const getEnvelopeItemPdfUrl = (options: EnvelopeItemPdfUrlOptions) => {
   if (type === 'download') {
     const version = options.version;
 
-    return token
-      ? `${NEXT_PUBLIC_WEBAPP_URL()}/api/files/token/${token}/envelopeItem/${id}/download/${version}${presignToken ? `?presignToken=${presignToken}` : ''}`
-      : `${NEXT_PUBLIC_WEBAPP_URL()}/api/files/envelope/${envelopeId}/envelopeItem/${id}/download/${version}`;
+    return appendLocalPdfFixtureCacheKey(
+      token
+        ? `${NEXT_PUBLIC_WEBAPP_URL()}/api/files/token/${token}/envelopeItem/${id}/download/${version}${presignToken ? `?presignToken=${presignToken}` : ''}`
+        : `${NEXT_PUBLIC_WEBAPP_URL()}/api/files/envelope/${envelopeId}/envelopeItem/${id}/download/${version}`,
+    );
   }
 
-  return token
-    ? `${NEXT_PUBLIC_WEBAPP_URL()}/api/files/token/${token}/envelopeItem/${id}${presignToken ? `?presignToken=${presignToken}` : ''}`
-    : `${NEXT_PUBLIC_WEBAPP_URL()}/api/files/envelope/${envelopeId}/envelopeItem/${id}${presignToken ? `?token=${presignToken}` : ''}`;
+  return appendLocalPdfFixtureCacheKey(
+    token
+      ? `${NEXT_PUBLIC_WEBAPP_URL()}/api/files/token/${token}/envelopeItem/${id}${presignToken ? `?presignToken=${presignToken}` : ''}`
+      : `${NEXT_PUBLIC_WEBAPP_URL()}/api/files/envelope/${envelopeId}/envelopeItem/${id}${presignToken ? `?token=${presignToken}` : ''}`,
+  );
 };
 
 export type DocumentDataUrlOptions = {
@@ -63,17 +78,13 @@ export const getDocumentDataUrl = (options: DocumentDataUrlOptions) => {
 
   // Recipient token endpoint.
   if (token) {
-    return `${NEXT_PUBLIC_WEBAPP_URL()}/api/files/token/${token}/${partialUrl}`;
+    return appendLocalPdfFixtureCacheKey(`${NEXT_PUBLIC_WEBAPP_URL()}/api/files/token/${token}/${partialUrl}`);
   }
 
   // Endpoint authenticated by session or presigned token.
   const baseUrl = `${NEXT_PUBLIC_WEBAPP_URL()}/api/files/${partialUrl}`;
 
-  if (presignToken) {
-    return `${baseUrl}?presignToken=${presignToken}`;
-  }
-
-  return baseUrl;
+  return appendLocalPdfFixtureCacheKey(presignToken ? `${baseUrl}?presignToken=${presignToken}` : baseUrl);
 };
 
 /**

@@ -23,8 +23,10 @@ import {
 } from './files.types';
 import getEnvelopeItemPdfRoute from './routes/get-envelope-item-pdf';
 import getEnvelopeItemPdfByTokenRoute from './routes/get-envelope-item-pdf-by-token';
+import localPdfFixtureRoute from './routes/local-pdf-fixture';
 
 export const filesRoute = new Hono<HonoEnv>()
+  .route('/local-pdf-fixture', localPdfFixtureRoute)
   /**
    * Uploads a document file to the appropriate storage location and creates
    * a document data record.

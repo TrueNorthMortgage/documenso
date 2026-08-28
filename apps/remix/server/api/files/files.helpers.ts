@@ -1,5 +1,6 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { generatePartialSignedPdf } from '@documenso/lib/server-only/pdf/generate-partial-signed-pdf';
+import { getLocalPdfFixture } from '@documenso/lib/server-only/pdf/local-pdf-fixture';
 import { getTeamById } from '@documenso/lib/server-only/team/get-team';
 import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import { sha256 } from '@documenso/lib/universal/crypto';
@@ -87,30 +88,35 @@ const handleStaticFileRequest = async ({
 }: StaticFileRequestOptions) => {
   const documentDataToUse = version === 'signed' ? documentData.data : documentData.initialData;
 
-  const etag = Buffer.from(sha256(documentDataToUse)).toString('hex');
+  const localPdfFixture = await getLocalPdfFixture();
+  const file =
+    localPdfFixture?.data ??
+    (await getFileServerSide({
+      type: documentData.type,
+      data: documentDataToUse,
+    }).catch((error) => {
+      console.error(error);
 
-  if (c.req.header('If-None-Match') === etag && !isDownload) {
-    return c.body(null, 304);
-  }
-
-  const file = await getFileServerSide({
-    type: documentData.type,
-    data: documentDataToUse,
-  }).catch((error) => {
-    console.error(error);
-
-    return null;
-  });
+      return null;
+    }));
 
   if (!file) {
     return c.json({ error: 'File not found' }, 404);
+  }
+
+  const etag = Buffer.from(sha256(file)).toString('hex');
+
+  if (c.req.header('If-None-Match') === etag && !isDownload) {
+    return c.body(null, 304);
   }
 
   c.header('Content-Type', 'application/pdf');
   c.header('ETag', etag);
 
   if (!isDownload) {
-    if (status === DocumentStatus.COMPLETED) {
+    if (localPdfFixture) {
+      c.header('Cache-Control', 'no-store');
+    } else if (status === DocumentStatus.COMPLETED) {
       c.header('Cache-Control', 'public, max-age=31536000, immutable');
     } else {
       c.header('Cache-Control', 'public, max-age=0, must-revalidate');

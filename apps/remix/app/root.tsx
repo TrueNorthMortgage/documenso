@@ -24,6 +24,7 @@ import { PreventFlashOnWrongTheme, ThemeProvider, useTheme } from 'remix-themes'
 import type { Route } from './+types/root';
 import stylesheet from './app.css?url';
 import { GenericErrorLayout } from './components/general/generic-error-layout';
+import { LocalPdfFixtureMenu } from './components/general/local-pdf-fixture-menu';
 import { langCookie } from './storage/lang-cookie.server';
 import { themeSessionResolver } from './storage/theme-session.server';
 import { appMetaTags } from './utils/meta';
@@ -72,6 +73,7 @@ export async function loader({ context, request }: Route.LoaderArgs) {
       // SSR-rendered <script>/<style> elements in this layout (and child
       // routes that need it) can carry the matching nonce attribute.
       nonce: context.nonce,
+      localPdfFixtureEnabled: process.env.NODE_ENV === 'development',
       session: session.isAuthenticated
         ? {
             user: session.user,
@@ -105,6 +107,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
     session,
     lang,
     disableAnimations,
+    localPdfFixtureEnabled,
     nonce: cspNonce,
     ...data
   } = useLoaderData<typeof loader>() || {};
@@ -146,6 +149,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
         <script nonce={nonce(cspNonce)}>0</script>
       </head>
       <body className={isRecipientRoute ? 'documenso-branded' : undefined}>
+        {localPdfFixtureEnabled && <LocalPdfFixtureMenu />}
         {/* Global license banner currently disabled. Need to wait until after a few releases. */}
         {/* {licenseStatus === '?' && (
           <div className="bg-destructive text-destructive-foreground">

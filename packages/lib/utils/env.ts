@@ -22,6 +22,7 @@ export const env = <K extends EnvKey>(variable: K): EnvValue<K> => {
 
 export const createPublicEnv = () => ({
   ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key.startsWith('NEXT_PUBLIC_'))),
+  NEXT_PUBLIC_LOCAL_PDF_FIXTURE_ENABLED: process.env.NODE_ENV === 'development' ? 'true' : 'false',
   // Expose only the derived availability flag, not the private Vertex credentials.
   NEXT_PUBLIC_AI_FEATURES_CONFIGURED:
     process.env.GOOGLE_VERTEX_PROJECT_ID && process.env.GOOGLE_VERTEX_API_KEY ? 'true' : 'false',

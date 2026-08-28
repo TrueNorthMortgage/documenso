@@ -13,6 +13,12 @@ export const ZUploadPdfResponseSchema = DocumentDataSchema.pick({
 export type TUploadPdfRequest = z.infer<typeof ZUploadPdfRequestSchema>;
 export type TUploadPdfResponse = z.infer<typeof ZUploadPdfResponseSchema>;
 
+export const ZLocalPdfFixturePageRequestSchema = z.object({
+  pageCount: z.coerce.number().int().min(1).max(100),
+});
+
+export type TLocalPdfFixturePageRequest = z.infer<typeof ZLocalPdfFixturePageRequestSchema>;
+
 export const ZGetPresignedPostUrlRequestSchema = z.object({
   fileName: z.string().min(1),
   contentType: z.string().min(1),

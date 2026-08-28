@@ -2,6 +2,8 @@ import { getFileServerSide } from '@documenso/lib/universal/upload/get-file.serv
 import { PDF } from '@libpdf/core';
 import type { DocumentDataType } from '@prisma/client';
 
+import { getLocalPdfFixture } from './local-pdf-fixture';
+
 type EnvelopeItemWithDocumentData = {
   id: string;
   documentData: {
@@ -13,10 +15,13 @@ type EnvelopeItemWithDocumentData = {
 export const getEnvelopeItemPageCounts = async (envelopeItems: EnvelopeItemWithDocumentData[]) => {
   const pageCounts = await Promise.all(
     envelopeItems.map(async (envelopeItem) => {
-      const file = await getFileServerSide({
-        type: envelopeItem.documentData.type,
-        data: envelopeItem.documentData.data,
-      });
+      const localPdfFixture = await getLocalPdfFixture();
+      const file =
+        localPdfFixture?.data ??
+        (await getFileServerSide({
+          type: envelopeItem.documentData.type,
+          data: envelopeItem.documentData.data,
+        }));
       const pdf = await PDF.load(file);
 
       return [envelopeItem.id, pdf.getPageCount()] as const;
