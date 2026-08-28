@@ -5,7 +5,6 @@ import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
 import { findRecipientByEmail } from '@documenso/lib/utils/recipients';
 import { formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { trpc as trpcReact } from '@documenso/trpc/react';
-import { DocumentShareButton } from '@documenso/ui/components/document/document-share-button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,10 +24,8 @@ import {
   EyeIcon,
   FileOutputIcon,
   FolderInput,
-  Loader,
   MoreHorizontal,
   Pencil,
-  Share,
   Trash2,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -225,19 +222,6 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
         )}
 
         <DocumentResendDialog document={row} recipients={nonSignedRecipients} />
-
-        <DocumentShareButton
-          documentId={row.id}
-          token={isOwner ? undefined : recipient?.token}
-          trigger={({ loading, disabled }) => (
-            <DropdownMenuItem disabled={disabled || isDraft} onSelect={(e) => e.preventDefault()}>
-              <div className="flex items-center">
-                {loading ? <Loader className="mr-2 h-4 w-4" /> : <Share className="mr-2 h-4 w-4" />}
-                <Trans>Share Signing Card</Trans>
-              </div>
-            </DropdownMenuItem>
-          )}
-        />
       </DropdownMenuContent>
 
       <EnvelopeSaveAsTemplateDialog

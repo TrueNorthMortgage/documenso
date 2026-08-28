@@ -7,7 +7,7 @@ import { DEFAULT_DOCUMENT_TIME_ZONE, TIME_ZONES } from '@documenso/lib/constants
 import type { TDocument } from '@documenso/lib/types/document';
 import type { TRecipientLite } from '@documenso/lib/types/recipient';
 import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
-import { extractTeamSignatureSettings } from '@documenso/lib/utils/teams';
+import { canUpdateTeamDocumentVisibility, extractTeamSignatureSettings } from '@documenso/lib/utils/teams';
 import {
   DocumentGlobalAuthAccessSelect,
   DocumentGlobalAuthAccessTooltip,
@@ -29,11 +29,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { MultiSelectCombobox } from '@documenso/ui/primitives/multi-select-combobox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { DocumentStatus, DocumentVisibility, type Field, SendStatus, TeamMemberRole } from '@prisma/client';
+import { DocumentStatus, type Field, SendStatus, type TeamMemberRole } from '@prisma/client';
 import { InfoIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { match } from 'ts-pattern';
 
 import { DocumentSignatureSettingsTooltip } from '../../components/document/document-signature-settings-tooltip';
 import { Combobox } from '../combobox';
@@ -59,6 +58,7 @@ export type AddSettingsFormProps = {
   isDocumentPdfLoaded: boolean;
   document: TDocument;
   currentTeamMemberRole?: TeamMemberRole;
+  isOwner: boolean;
   onSubmit: (_data: TAddSettingsFormSchema) => void;
   onAutoSave: (_data: TAddSettingsFormSchema) => Promise<void>;
 };
@@ -70,6 +70,7 @@ export const AddSettingsFormPartial = ({
   isDocumentPdfLoaded,
   document,
   currentTeamMemberRole,
+  isOwner,
   onSubmit,
   onAutoSave,
 }: AddSettingsFormProps) => {
@@ -107,15 +108,9 @@ export const AddSettingsFormPartial = ({
 
   const documentHasBeenSent = recipients.some((recipient) => recipient.sendStatus === SendStatus.SENT);
 
-  const canUpdateVisibility = match(currentTeamMemberRole)
-    .with(TeamMemberRole.ADMIN, () => true)
-    .with(
-      TeamMemberRole.MANAGER,
-      () =>
-        document.visibility === DocumentVisibility.EVERYONE ||
-        document.visibility === DocumentVisibility.MANAGER_AND_ABOVE,
-    )
-    .otherwise(() => false);
+  const canUpdateVisibility =
+    currentTeamMemberRole !== undefined &&
+    canUpdateTeamDocumentVisibility(currentTeamMemberRole, document.visibility, isOwner);
 
   const onFormSubmit = form.handleSubmit(onSubmit);
 
@@ -286,6 +281,7 @@ export const AddSettingsFormPartial = ({
                       <DocumentVisibilitySelect
                         canUpdateVisibility={canUpdateVisibility}
                         currentTeamMemberRole={currentTeamMemberRole}
+                        isOwner={isOwner}
                         {...field}
                         onValueChange={(value) => {
                           field.onChange(value);

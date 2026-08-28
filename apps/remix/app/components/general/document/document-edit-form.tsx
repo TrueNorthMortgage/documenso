@@ -1,3 +1,4 @@
+import { useSession } from '@documenso/lib/client-only/providers/session';
 import { DocumentSignatureType } from '@documenso/lib/constants/document';
 import { isValidLanguageCode } from '@documenso/lib/constants/i18n';
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION, SKIP_QUERY_BATCH_META } from '@documenso/lib/constants/trpc';
@@ -46,6 +47,7 @@ export const DocumentEditForm = ({ className, initialDocument, documentRootPath 
   const navigate = useNavigate();
 
   const [searchParams] = useSearchParams();
+  const { user } = useSession();
   const team = useCurrentTeam();
 
   const [isDocumentPdfLoaded, setIsDocumentPdfLoaded] = useState(false);
@@ -460,6 +462,7 @@ export const DocumentEditForm = ({ className, initialDocument, documentRootPath 
               documentFlow={documentFlow.settings}
               document={document}
               currentTeamMemberRole={team.currentTeamRole}
+              isOwner={document.userId === user.id}
               recipients={recipients}
               fields={fields}
               isDocumentPdfLoaded={isDocumentPdfLoaded}

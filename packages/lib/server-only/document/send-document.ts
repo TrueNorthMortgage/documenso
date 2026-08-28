@@ -21,11 +21,10 @@ import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../
 import { getFileServerSide } from '../../universal/upload/get-file.server';
 import { putNormalizedPdfFileServerSide } from '../../universal/upload/put-file.server';
 import { isDocumentCompleted } from '../../utils/document';
-import { extractDocumentAuthMethods } from '../../utils/document-auth';
 import { type EnvelopeIdOptions, mapSecondaryIdToDocumentId } from '../../utils/envelope';
 import { getInvalidFieldGroupConfigurations } from '../../utils/field-groups';
 import { getFieldsOutsideDocument } from '../../utils/field-placements';
-import { getRecipientsWithMissingFields, isRecipientEmailValidForSending } from '../../utils/recipients';
+import { getRecipientsWithInvalidEmails, getRecipientsWithMissingFields } from '../../utils/recipients';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { extractFieldAutoInsertValues } from '../field/extract-field-auto-insert-values';
 import { getEnvelopeItemPageCounts } from '../pdf/get-envelope-item-page-counts';
@@ -82,6 +81,19 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
 
   if (envelope.recipients.length === 0) {
     throw new Error('Document has no recipients');
+  }
+
+  const recipientsWithInvalidEmails = getRecipientsWithInvalidEmails(envelope.recipients);
+
+  if (recipientsWithInvalidEmails.length > 0) {
+    const invalidRecipientDescriptions = recipientsWithInvalidEmails
+      .map((recipient) => (recipient.name ? `${recipient.name} (id: ${recipient.id})` : `id: ${recipient.id}`))
+      .join(', ');
+
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: `The following recipients have missing or invalid email addresses: ${invalidRecipientDescriptions}.`,
+      userMessage: 'Add a valid email address for every recipient before sending the document.',
+    });
   }
 
   if (isDocumentCompleted(envelope.status)) {
@@ -143,24 +155,6 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
       }),
     );
   }
-
-  // Validate that recipients with auth requirements have a valid email.
-  envelope.recipients.forEach((recipient) => {
-    const auth = extractDocumentAuthMethods({
-      documentAuth: envelope.authOptions,
-      recipientAuth: recipient.authOptions,
-    });
-
-    if (
-      recipient.role !== RecipientRole.CC &&
-      (auth.recipientAccessAuthRequired || auth.recipientActionAuthRequired) &&
-      !isRecipientEmailValidForSending(recipient)
-    ) {
-      throw new AppError(AppErrorCode.INVALID_REQUEST, {
-        message: `Recipient ${recipient.id} requires an email because they have auth requirements.`,
-      });
-    }
-  });
 
   // Validate that recipients who require fields (e.g., signers need signature fields) have them.
   const recipientsWithMissingFields = getRecipientsWithMissingFields(envelope.recipients, envelope.fields);

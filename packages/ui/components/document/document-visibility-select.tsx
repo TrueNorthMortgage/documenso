@@ -15,15 +15,19 @@ export type DocumentVisibilitySelectType = SelectProps & {
   isTeamSettings?: boolean;
   disabled?: boolean;
   canUpdateVisibility?: boolean;
+  isOwner?: boolean;
 };
 
 export const DocumentVisibilitySelect = forwardRef<HTMLButtonElement, DocumentVisibilitySelectType>(
-  ({ currentTeamMemberRole, isTeamSettings = false, disabled, canUpdateVisibility, ...props }, ref) => {
+  (
+    { currentTeamMemberRole, isTeamSettings = false, disabled, canUpdateVisibility, isOwner = false, ...props },
+    ref,
+  ) => {
     const { _ } = useLingui();
 
     const isAdmin = currentTeamMemberRole === TeamMemberRole.ADMIN;
     const isManager = currentTeamMemberRole === TeamMemberRole.MANAGER;
-    const canEdit = isTeamSettings || canUpdateVisibility;
+    const canEdit = isTeamSettings || canUpdateVisibility || isOwner;
 
     return (
       <Select {...props} disabled={!canEdit || disabled}>
@@ -33,10 +37,10 @@ export const DocumentVisibilitySelect = forwardRef<HTMLButtonElement, DocumentVi
 
         <SelectContent position="popper">
           <SelectItem value={DocumentVisibility.EVERYONE}>{_(DOCUMENT_VISIBILITY.EVERYONE.value)}</SelectItem>
-          <SelectItem value={DocumentVisibility.MANAGER_AND_ABOVE} disabled={!isAdmin && !isManager}>
+          <SelectItem value={DocumentVisibility.MANAGER_AND_ABOVE} disabled={!isOwner && !isAdmin && !isManager}>
             {_(DOCUMENT_VISIBILITY.MANAGER_AND_ABOVE.value)}
           </SelectItem>
-          <SelectItem value={DocumentVisibility.ADMIN} disabled={!isAdmin}>
+          <SelectItem value={DocumentVisibility.ADMIN} disabled={!isOwner && !isAdmin}>
             {_(DOCUMENT_VISIBILITY.ADMIN.value)}
           </SelectItem>
         </SelectContent>

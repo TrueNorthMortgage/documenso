@@ -30,9 +30,14 @@ export const updateFolder = async ({ userId, teamId, folderId, data }: UpdateFol
         teamId,
         userId,
       }),
-      visibility: {
-        in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole],
-      },
+      OR: [
+        {
+          visibility: {
+            in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole],
+          },
+        },
+        { userId },
+      ],
     },
   });
 

@@ -23,9 +23,7 @@ export const findFolders = async ({ userId, teamId, parentId, type, page = 1, pe
     parentId,
     team: buildTeamWhereQuery({ teamId, userId }),
     type,
-    visibility: {
-      in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole],
-    },
+    OR: [{ visibility: { in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole] } }, { userId }],
   };
 
   const [data, count] = await Promise.all([

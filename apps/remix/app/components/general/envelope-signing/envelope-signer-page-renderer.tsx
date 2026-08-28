@@ -488,7 +488,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     // Render other recipient signed and inserted fields.
     for (const field of localPageOtherRecipientFields) {
       try {
-        renderField({
+        const { fieldGroup } = renderField({
           scale,
           pageLayer: pageLayer.current,
           field: {
@@ -507,6 +507,8 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
           editable: false,
           mode: 'sign',
         });
+
+        fieldGroup.listening(false);
       } catch (err) {
         console.error('Unable to render one or more fields belonging to other recipients.');
         console.error(err);

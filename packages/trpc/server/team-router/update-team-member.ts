@@ -70,13 +70,6 @@ export const updateTeamMemberRoute = authenticatedProcedure
       throw new AppError(AppErrorCode.NOT_FOUND, { message: 'Team not found' });
     }
 
-    const internalTeamGroupToRemoveMemberFrom = team.teamGroups.find(
-      (group) =>
-        group.organisationGroup.type === OrganisationGroupType.INTERNAL_TEAM &&
-        group.teamId === teamId &&
-        group.organisationGroup.organisationGroupMembers.some((member) => member.organisationMemberId === memberId),
-    );
-
     const teamMemberGroup = team.teamGroups.find(
       (group) =>
         group.organisationGroup.type === OrganisationGroupType.INTERNAL_TEAM &&
@@ -140,28 +133,44 @@ export const updateTeamMemberRoute = authenticatedProcedure
       });
     }
 
+    const teamRoleGroupId = match(data.role)
+      .with(TeamMemberRole.MEMBER, () => teamMemberGroup.organisationGroupId)
+      .with(TeamMemberRole.MANAGER, () => teamManagerGroup.organisationGroupId)
+      .with(TeamMemberRole.ADMIN, () => teamAdminGroup.organisationGroupId)
+      .exhaustive();
+
+    const internalTeamRoleGroupIds = [
+      teamMemberGroup.organisationGroupId,
+      teamManagerGroup.organisationGroupId,
+      teamAdminGroup.organisationGroupId,
+    ];
+
     // Switch member to new internal team group role.
     await prisma.$transaction(async (tx) => {
-      if (internalTeamGroupToRemoveMemberFrom) {
-        await tx.organisationGroupMember.delete({
-          where: {
-            organisationMemberId_groupId: {
-              organisationMemberId: memberId,
-              groupId: internalTeamGroupToRemoveMemberFrom.organisationGroupId,
-            },
+      // Remove stale memberships in other internal team role groups while
+      // preserving the selected role membership for an idempotent update.
+      await tx.organisationGroupMember.deleteMany({
+        where: {
+          organisationMemberId: memberId,
+          groupId: {
+            in: internalTeamRoleGroupIds,
+            not: teamRoleGroupId,
           },
-        });
-      }
+        },
+      });
 
-      await tx.organisationGroupMember.create({
-        data: {
+      await tx.organisationGroupMember.upsert({
+        where: {
+          organisationMemberId_groupId: {
+            organisationMemberId: memberId,
+            groupId: teamRoleGroupId,
+          },
+        },
+        update: {},
+        create: {
           id: generateDatabaseId('group_member'),
           organisationMemberId: memberId,
-          groupId: match(data.role)
-            .with(TeamMemberRole.MEMBER, () => teamMemberGroup.organisationGroupId)
-            .with(TeamMemberRole.MANAGER, () => teamManagerGroup.organisationGroupId)
-            .with(TeamMemberRole.ADMIN, () => teamAdminGroup.organisationGroupId)
-            .exhaustive(),
+          groupId: teamRoleGroupId,
         },
       });
     });

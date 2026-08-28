@@ -4,7 +4,6 @@ import { isDocumentCompleted } from '@documenso/lib/utils/document';
 import { getEnvelopeItemPermissions, mapSecondaryIdToDocumentId } from '@documenso/lib/utils/envelope';
 import { formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { trpc as trpcReact } from '@documenso/trpc/react';
-import { DocumentShareButton } from '@documenso/ui/components/document/document-share-button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,18 +13,7 @@ import {
 } from '@documenso/ui/primitives/dropdown-menu';
 import { Trans } from '@lingui/react/macro';
 import { DocumentStatus, EnvelopeType } from '@prisma/client';
-import {
-  Copy,
-  Download,
-  Edit,
-  FileOutputIcon,
-  Loader,
-  MoreHorizontal,
-  Pencil,
-  ScrollTextIcon,
-  Share,
-  Trash2,
-} from 'lucide-react';
+import { Copy, Download, Edit, FileOutputIcon, MoreHorizontal, Pencil, ScrollTextIcon, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
@@ -178,19 +166,6 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
             id: mapSecondaryIdToDocumentId(envelope.secondaryId),
           }}
           recipients={nonSignedRecipients}
-        />
-
-        <DocumentShareButton
-          documentId={mapSecondaryIdToDocumentId(envelope.secondaryId)}
-          token={isOwner ? undefined : recipient?.token}
-          trigger={({ loading, disabled }) => (
-            <DropdownMenuItem disabled={disabled || isDraft} onSelect={(e) => e.preventDefault()}>
-              <div className="flex items-center">
-                {loading ? <Loader className="mr-2 h-4 w-4" /> : <Share className="mr-2 h-4 w-4" />}
-                <Trans>Share Signing Card</Trans>
-              </div>
-            </DropdownMenuItem>
-          )}
         />
       </DropdownMenuContent>
 

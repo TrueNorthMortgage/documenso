@@ -1,5 +1,6 @@
-import type { TeamGroup, TeamMemberRole } from '@documenso/prisma/generated/types';
-import type { DocumentVisibility, OrganisationGlobalSettings, Prisma, TeamGlobalSettings } from '@prisma/client';
+import type { TeamGroup } from '@documenso/prisma/generated/types';
+import type { OrganisationGlobalSettings, Prisma, TeamGlobalSettings } from '@prisma/client';
+import { DocumentVisibility, TeamMemberRole } from '@prisma/client';
 
 import { NEXT_PUBLIC_WEBAPP_URL } from '../constants/app';
 import {
@@ -56,6 +57,24 @@ export const canExecuteTeamAction = (
  */
 export const canAccessTeamDocument = (role: TeamMemberRole, visibility: DocumentVisibility) => {
   return TEAM_DOCUMENT_VISIBILITY_MAP[role].some((i) => i === visibility);
+};
+
+/**
+ * Determines whether a team member can update an envelope's visibility.
+ * Members may make a manager-and-above envelope less restrictive, while the
+ * existing access rules continue to control which envelopes they can view.
+ */
+export const canUpdateTeamDocumentVisibility = (
+  role: TeamMemberRole,
+  visibility: DocumentVisibility,
+  isOwner = false,
+) => {
+  return (
+    isOwner ||
+    role === TeamMemberRole.ADMIN ||
+    visibility === DocumentVisibility.MANAGER_AND_ABOVE ||
+    (role === TeamMemberRole.MANAGER && visibility === DocumentVisibility.EVERYONE)
+  );
 };
 
 /**

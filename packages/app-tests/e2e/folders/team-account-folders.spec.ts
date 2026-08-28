@@ -383,6 +383,34 @@ test('[TEAMS]: a folder owner can create a subfolder despite restricted folder v
   await expect(page.getByText('Member-owned subfolder')).toBeVisible();
 });
 
+test('[TEAMS]: a folder owner can update restricted folder visibility', async ({ page }) => {
+  const { team } = await seedTeamDocuments();
+  const teamMember = await seedTeamMember({ teamId: team.id, role: TeamMemberRole.MEMBER });
+
+  await seedBlankFolder(teamMember, team.id, {
+    createFolderOptions: {
+      name: 'Member-owned folder',
+      visibility: DocumentVisibility.MANAGER_AND_ABOVE,
+    },
+  });
+
+  await apiSignin({
+    page,
+    email: teamMember.email,
+    redirectPath: `/t/${team.url}/documents`,
+  });
+
+  const folderCard = page.locator('[data-folder-name="Member-owned folder"]');
+  await openDropdownMenu(page, folderCard.getByTestId('folder-card-more-button'));
+  await page.getByRole('menuitem', { name: 'Settings' }).click();
+
+  await page.getByRole('combobox', { name: 'Visibility' }).click();
+  await page.getByRole('option', { name: 'Everyone' }).click();
+  await page.getByRole('button', { name: 'Update' }).click();
+
+  await expect(page.getByText('Member-owned folder')).toBeVisible();
+});
+
 test('[TEAMS]: can create a template inside a template folder', async ({ page }) => {
   const { team, teamOwner } = await seedTeamDocuments();
 
@@ -1042,6 +1070,50 @@ test('[TEAMS]: team member can move documents to everyone folder', async ({ page
   await page.waitForTimeout(3000);
 
   await expect(page.getByText('[TEST] Everyone Document')).not.toBeVisible();
+});
+
+test('[TEAMS]: a document owner can move a document to their restricted folder', async ({ page }) => {
+  const { team } = await seedTeamDocuments();
+
+  const teamMember = await seedTeamMember({
+    teamId: team.id,
+    name: 'Team Member',
+    role: TeamMemberRole.MEMBER,
+  });
+
+  const folder = await seedBlankFolder(teamMember, team.id, {
+    createFolderOptions: {
+      name: 'Member-owned restricted folder',
+      visibility: DocumentVisibility.MANAGER_AND_ABOVE,
+      type: FolderType.DOCUMENT,
+    },
+  });
+
+  const document = await seedBlankDocument(teamMember, team.id, {
+    createDocumentOptions: {
+      title: '[TEST] Member-owned document',
+      visibility: DocumentVisibility.EVERYONE,
+    },
+  });
+
+  await apiSignin({
+    page,
+    email: teamMember.email,
+    redirectPath: `/t/${team.url}/documents`,
+  });
+
+  await expect(page.getByText(folder.name)).toBeVisible();
+
+  const documentRow = page.getByRole('row', { name: document.title });
+  await openDropdownMenu(page, documentRow.getByTestId('document-table-action-btn'));
+  await page.getByRole('menuitem', { name: /Move/ }).click();
+
+  await expect(page.getByRole('button', { name: folder.name })).toBeVisible();
+  await page.getByRole('button', { name: folder.name }).click();
+  await page.getByRole('button', { name: 'Move' }).click();
+
+  await page.waitForURL(new RegExp(`/t/${team.url}/documents/f/${folder.id}`));
+  await expect(page.getByText(document.title)).toBeVisible();
 });
 
 test('[TEAMS]: team manager can move manager document to manager folder', async ({ page }) => {

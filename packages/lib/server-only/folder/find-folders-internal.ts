@@ -50,7 +50,7 @@ export const findFoldersInternal = async ({ userId, teamId, parentId, type }: Fi
               where: {
                 parentId: folder.id,
                 teamId,
-                ...visibilityFilters,
+                OR: [visibilityFilters, { userId }],
               },
               orderBy: {
                 createdAt: 'desc',
@@ -74,7 +74,7 @@ export const findFoldersInternal = async ({ userId, teamId, parentId, type }: Fi
               where: {
                 parentId: folder.id,
                 teamId,
-                ...visibilityFilters,
+                OR: [visibilityFilters, { userId }],
               },
             }),
           ]);

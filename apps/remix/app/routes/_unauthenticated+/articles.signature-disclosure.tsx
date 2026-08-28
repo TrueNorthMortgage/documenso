@@ -1,4 +1,3 @@
-import { SUPPORT_EMAIL } from '@documenso/lib/constants/app';
 import { Button } from '@documenso/ui/primitives/button';
 import { Trans } from '@lingui/react/macro';
 import { Link } from 'react-router';
@@ -7,140 +6,187 @@ export default function SignatureDisclosure() {
   return (
     <div>
       <article className="prose dark:prose-invert">
+        <p className="font-semibold">
+          <Trans>TRUE NORTH MORTGAGE</Trans>
+        </p>
         <h1>
-          <Trans>Electronic Signature Disclosure</Trans>
+          <Trans>Electronic Record and Signature Disclosure</Trans>
         </h1>
 
         <h2>
-          <Trans>Welcome</Trans>
+          <Trans>1. Overview and Purpose</Trans>
         </h2>
         <p>
           <Trans>
-            Thank you for using Documenso to perform your electronic document signing. The purpose of this disclosure is
-            to inform you about the process, legality, and your rights regarding the use of electronic signatures on our
-            platform. By opting to use an electronic signature, you are agreeing to the terms and conditions outlined
-            below.
+            True North Mortgage, Inc. (along with our affiliates and related entities, including THINK Financial, and
+            Morcado Trust, collectively "True North Mortgage", "we", "us", or "our") provides this secure electronic
+            document signing platform to streamline your mortgage application, approval, and closing process. This
+            Disclosure explains your rights, the legal validity of electronic signatures, and how documents and notices
+            are delivered electronically. By proceeding and signing your documents electronically through this platform,
+            you agree to the terms outlined below.
           </Trans>
         </p>
 
         <h2>
-          <Trans>Acceptance and Consent</Trans>
+          <Trans>2. Consent to Electronic Transactions and Signatures</Trans>
         </h2>
         <p>
           <Trans>
-            When you use our platform to affix your electronic signature to documents, you are consenting to do so under
-            the Electronic Signatures in Global and National Commerce Act (E-Sign Act) and other applicable laws. This
-            action indicates your agreement to use electronic means to sign documents and receive notifications.
+            By clicking to view, complete, or electronically sign documents on our platform, you consent to conduct
+            transactions electronically. You agree that your electronic signature—whether entered, drawn, or applied via
+            click-to-sign—carries the same legal weight, effect, and enforceability as a physical handwritten signature
+            in ink, in accordance with applicable Canadian federal and provincial legislation, including the Personal
+            Information Protection and Electronic Documents Act (PIPEDA) and provincial Electronic Commerce / Electronic
+            Transactions Acts.
           </Trans>
         </p>
 
         <h2>
-          <Trans>Legality of Electronic Signatures</Trans>
+          <Trans>3. Scope of Electronic Delivery</Trans>
         </h2>
         <p>
           <Trans>
-            An electronic signature provided by you on our platform, achieved through clicking through to a document and
-            entering your name, or any other electronic signing method we provide, is legally binding. It carries the
-            same weight and enforceability as a manual signature written with ink on paper.
+            This consent applies to all documents, disclosures, mortgage applications, rate commitments, lender
+            agreements, borrower declarations, notices, and related communications delivered through this platform or
+            sent to your designated email address during the course of your transaction with True North Mortgage.
           </Trans>
         </p>
 
         <h2>
-          <Trans>System Requirements</Trans>
+          <Trans>4. Hardware and System Requirements</Trans>
         </h2>
         <p>
-          <Trans>To use our electronic signature service, you must have access to:</Trans>
+          <Trans>To access, review, sign, and retain electronic records, you must have:</Trans>
         </p>
         <ul>
           <li>
-            <Trans>A stable internet connection</Trans>
+            <Trans>A device with active internet access (computer, tablet, or smartphone).</Trans>
           </li>
           <li>
-            <Trans>An email account</Trans>
+            <Trans>
+              An up-to-date web browser (such as Google Chrome, Apple Safari, Microsoft Edge, or Mozilla Firefox).
+            </Trans>
           </li>
           <li>
-            <Trans>A device capable of accessing, opening, and reading documents</Trans>
+            <Trans>An active, secure personal email address capable of receiving document notifications.</Trans>
           </li>
           <li>
-            <Trans>A means to print or download documents for your records</Trans>
+            <Trans>
+              Software capable of opening and viewing PDF files (e.g., Adobe Acrobat Reader or a standard PDF-compatible
+              browser).
+            </Trans>
+          </li>
+          <li>
+            <Trans>
+              Storage capacity or access to a printer if you wish to retain digital copies or print physical records.
+            </Trans>
           </li>
         </ul>
 
         <h2>
-          <Trans>Electronic Delivery of Documents</Trans>
+          <Trans>5. Right to Withdraw Consent</Trans>
         </h2>
         <p>
           <Trans>
-            All documents related to the electronic signing process will be provided to you electronically through our
-            platform or via email. It is your responsibility to ensure that your email address is current and that you
-            can receive and open our emails.
+            You have the right to withdraw your consent to use electronic signatures at any time prior to completing the
+            signing process.
+          </Trans>
+        </p>
+        <p>
+          <strong>
+            <Trans>How to withdraw:</Trans>
+          </strong>{' '}
+          <Trans>Notify your assigned True North Mortgage broker or specialist directly.</Trans>
+        </p>
+        <p>
+          <strong>
+            <Trans>Consequences of withdrawal:</Trans>
+          </strong>{' '}
+          <Trans>
+            Because our underwriting and lender submission workflows rely on digital processing, withdrawing consent may
+            require transitioning to paper-based signing, which may result in delays to your mortgage approval or
+            closing schedule.
           </Trans>
         </p>
 
         <h2>
-          <Trans>Consent to Electronic Transactions</Trans>
+          <Trans>6. Accessing and Retaining Your Documents</Trans>
         </h2>
         <p>
           <Trans>
-            By using the electronic signature feature, you are consenting to conduct transactions and receive
-            disclosures electronically. You acknowledge that your electronic signature on documents is binding and that
-            you accept the terms outlined in the documents you are signing.
+            Once all required parties have completed signing, you will receive an electronic confirmation with access to
+            view, download, and save a completed copy of your signed document package (in PDF format) for your personal
+            records. We strongly recommend downloading and saving a copy immediately upon receipt.
+          </Trans>
+        </p>
+        <p>
+          <Trans>
+            True North Mortgage retains records of signed documents in accordance with our{' '}
+            <a href="https://truenorthmortgage.ca/privacy-policy">Privacy Policy</a> and Canadian regulatory and
+            mortgage retention obligations.
           </Trans>
         </p>
 
         <h2>
-          <Trans>Withdrawing Consent</Trans>
+          <Trans>7. Keeping Your Contact Information Current</Trans>
         </h2>
         <p>
           <Trans>
-            You have the right to withdraw your consent to use electronic signatures at any time before completing the
-            signing process. To withdraw your consent, please contact the sender of the document. In failing to contact
-            the sender you may reach out to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> for assistance. Be
-            aware that withdrawing consent may delay or halt the completion of the related transaction or service.
+            You are responsible for ensuring that the contact information and email address provided to True North
+            Mortgage remain accurate and current. If your email address, legal name, or phone number changes, please
+            notify your True North Mortgage broker or representative immediately to avoid delays in receiving critical
+            documents.
           </Trans>
         </p>
 
         <h2>
-          <Trans>Updating Your Information</Trans>
+          <Trans>8. Privacy and Data Security</Trans>
         </h2>
         <p>
           <Trans>
-            It is crucial to keep your contact information, especially your email address, up to date with us. Please
-            notify us immediately of any changes to ensure that you continue to receive all necessary communications.
+            All documents, identity verification checks, and signatures collected on this platform are encrypted and
+            handled in compliance with Canadian privacy legislation (including PIPEDA) and the True North Mortgage
+            Privacy Policy (available at{' '}
+            <a href="https://truenorthmortgage.ca/privacy-policy">truenorthmortgage.ca/privacy-policy</a>).
           </Trans>
         </p>
 
         <h2>
-          <Trans>Retention of Documents</Trans>
+          <Trans>9. Contact Information and Support</Trans>
         </h2>
         <p>
           <Trans>
-            After signing a document electronically, you will be provided the opportunity to view, download, and print
-            the document for your records. It is highly recommended that you retain a copy of all electronically signed
-            documents for your personal records. We will also retain a copy of the signed document for our records
-            however we may not be able to provide you with a copy of the signed document after a certain period of time.
+            If you have any questions regarding this disclosure, encounter technical issues during signing, or wish to
+            request a paper copy of a document, please reach out to us:
           </Trans>
         </p>
-
-        <h2>
-          <Trans>Acknowledgment</Trans>
-        </h2>
         <p>
-          <Trans>
-            By proceeding to use the electronic signature service provided by Documenso, you affirm that you have read
-            and understood this disclosure. You agree to all terms and conditions related to the use of electronic
-            signatures and electronic transactions as outlined herein.
-          </Trans>
+          <strong>
+            <Trans>Dedicated Broker / Agent</Trans>
+          </strong>
+          <br />
+          <Trans>Contact directly via your mortgage application file</Trans>
         </p>
-
-        <h2>
-          <Trans>Contact Information</Trans>
-        </h2>
         <p>
-          <Trans>
-            For any questions regarding this disclosure, electronic signatures, or any related process, please contact
-            us at: <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
-          </Trans>
+          <strong>
+            <Trans>Toll-Free Client Support</Trans>
+          </strong>
+          <br />
+          <a href="tel:18777784772">1-877-778-4772</a>
+        </p>
+        <p>
+          <strong>
+            <Trans>Privacy Office</Trans>
+          </strong>
+          <br />
+          <a href="mailto:privacy@truenorthmortgage.ca">privacy@truenorthmortgage.ca</a>
+        </p>
+        <p>
+          <strong>
+            <Trans>Website</Trans>
+          </strong>
+          <br />
+          <a href="https://www.truenorthmortgage.ca">www.truenorthmortgage.ca</a>
         </p>
       </article>
 

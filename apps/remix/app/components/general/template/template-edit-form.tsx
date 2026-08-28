@@ -1,3 +1,4 @@
+import { useSession } from '@documenso/lib/client-only/providers/session';
 import { DocumentSignatureType } from '@documenso/lib/constants/document';
 import { isValidLanguageCode } from '@documenso/lib/constants/i18n';
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION, SKIP_QUERY_BATCH_META } from '@documenso/lib/constants/trpc';
@@ -41,6 +42,7 @@ export const TemplateEditForm = ({ initialTemplate, className, templateRootPath 
   const { toast } = useToast();
 
   const navigate = useNavigate();
+  const { user } = useSession();
   const team = useCurrentTeam();
 
   const [step, setStep] = useState<EditTemplateStep>('settings');
@@ -328,6 +330,7 @@ export const TemplateEditForm = ({ initialTemplate, className, templateRootPath 
               key={recipients.length}
               template={template}
               currentTeamMemberRole={team.currentTeamRole}
+              isOwner={template.userId === user.id}
               documentFlow={documentFlow.settings}
               recipients={recipients}
               fields={fields}
