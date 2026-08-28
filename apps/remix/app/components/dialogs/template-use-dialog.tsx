@@ -7,6 +7,7 @@ import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION, SKIP_QUERY_BATCH_META } from '@doc
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { type TRecipientLite, ZRecipientEmailSchema } from '@documenso/lib/types/recipient';
 import { putPdfFile } from '@documenso/lib/universal/upload/put-file';
+import { isRecipientEmailValidForSending } from '@documenso/lib/utils/recipients';
 import { trpc } from '@documenso/trpc/react';
 import { cn } from '@documenso/ui/lib/utils';
 import { Button } from '@documenso/ui/primitives/button';
@@ -38,27 +39,43 @@ import { useNavigate } from 'react-router';
 import { match } from 'ts-pattern';
 import * as z from 'zod';
 
-const ZAddRecipientsForNewDocumentSchema = z.object({
-  distributeDocument: z.boolean(),
-  useCustomDocument: z.boolean().default(false),
-  customDocumentData: z
-    .array(
+const ZAddRecipientsForNewDocumentSchema = z
+  .object({
+    distributeDocument: z.boolean(),
+    useCustomDocument: z.boolean().default(false),
+    customDocumentData: z
+      .array(
+        z.object({
+          title: z.string(),
+          data: z.instanceof(File).optional(),
+          envelopeItemId: z.string(),
+        }),
+      )
+      .optional(),
+    recipients: z.array(
       z.object({
-        title: z.string(),
-        data: z.instanceof(File).optional(),
-        envelopeItemId: z.string(),
+        id: z.number(),
+        email: ZRecipientEmailSchema,
+        name: z.string(),
+        signingOrder: z.number().optional(),
       }),
-    )
-    .optional(),
-  recipients: z.array(
-    z.object({
-      id: z.number(),
-      email: ZRecipientEmailSchema,
-      name: z.string(),
-      signingOrder: z.number().optional(),
-    }),
-  ),
-});
+    ),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.distributeDocument) {
+      return;
+    }
+
+    data.recipients.forEach((recipient, index) => {
+      if (!isRecipientEmailValidForSending(recipient)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['recipients', index, 'email'],
+          message: 'Email is required when sending the document',
+        });
+      }
+    });
+  });
 
 type TAddRecipientsForNewDocumentSchema = z.infer<typeof ZAddRecipientsForNewDocumentSchema>;
 

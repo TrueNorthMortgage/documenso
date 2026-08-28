@@ -112,6 +112,14 @@ export const isRecipientEmailValidForSending = (recipient: Pick<TRecipientLite, 
   return zEmail().safeParse(recipient.email).success;
 };
 
+export const getRecipientsWithInvalidEmails = <T extends Pick<TRecipientLite, 'email' | 'role'>>(
+  recipients: T[],
+): T[] => {
+  return recipients.filter(
+    (recipient) => recipient.role !== RecipientRole.CC && !isRecipientEmailValidForSending(recipient),
+  );
+};
+
 /**
  * Whether the recipient's signing window has expired.
  */
