@@ -139,6 +139,7 @@ const upsertFieldText = (field: FieldToRender, options: RenderFieldElementOption
     fill: konvaTextFill,
     width: overflowLayout.width,
     height: overflowLayout.height,
+    listening: false,
   } satisfies Partial<Konva.TextConfig>);
 
   return {

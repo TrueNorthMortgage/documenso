@@ -1,10 +1,10 @@
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
-import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
+import { AppError } from '@documenso/lib/errors/app-error';
 import { getInvalidFieldGroupConfigurations, type TFieldWithGroup } from '@documenso/lib/utils/field-groups';
 import { getFieldsOutsideDocument } from '@documenso/lib/utils/field-placements';
-import { getRecipientsWithMissingFields } from '@documenso/lib/utils/recipients';
+import { getRecipientsWithInvalidEmails, getRecipientsWithMissingFields } from '@documenso/lib/utils/recipients';
 import { zEmail } from '@documenso/lib/utils/zod';
 import { trpc, trpc as trpcReact } from '@documenso/trpc/react';
 import { DocumentSendEmailMessageHelper } from '@documenso/ui/components/document/document-send-email-message-helper';
@@ -158,19 +158,10 @@ export const EnvelopeDistributeDialog = ({
     [editorFields, invalidPlacements],
   );
 
-  /**
-   * List of recipients who must have an email due to having auth enabled.
-   */
-  const recipientsMissingRequiredEmail = useMemo(() => {
-    return recipientsWithIndex.filter((recipient) => {
-      const auth = extractDocumentAuthMethods({
-        documentAuth: envelope.authOptions,
-        recipientAuth: recipient.authOptions,
-      });
-
-      return (auth.recipientAccessAuthRequired || auth.recipientActionAuthRequired) && !recipient.email;
-    });
-  }, [recipientsWithIndex, envelope.authOptions]);
+  const recipientsWithInvalidEmails = useMemo(
+    () => getRecipientsWithInvalidEmails(recipientsWithIndex),
+    [recipientsWithIndex],
+  );
 
   const invalidEnvelopeCode = useMemo(() => {
     if (invalidPlacements.length > 0) {
@@ -193,8 +184,8 @@ export const EnvelopeDistributeDialog = ({
       return 'MISSING_RECIPIENTS';
     }
 
-    if (recipientsMissingRequiredEmail.length > 0) {
-      return 'MISSING_REQUIRED_EMAIL';
+    if (recipientsWithInvalidEmails.length > 0) {
+      return 'INVALID_RECIPIENT_EMAILS';
     }
 
     return null;
@@ -203,7 +194,7 @@ export const EnvelopeDistributeDialog = ({
     fieldsOutsideDocument,
     invalidFieldGroupConfigurations,
     invalidPlacements,
-    recipientsMissingRequiredEmail,
+    recipientsWithInvalidEmails,
     recipientsMissingSignatureFields,
   ]);
 
@@ -229,9 +220,11 @@ export const EnvelopeDistributeDialog = ({
 
       setIsOpen(false);
     } catch (err) {
+      const error = AppError.parseError(err);
+
       toast({
         title: t`Something went wrong`,
-        description: t`This envelope could not be distributed at this time. Please try again.`,
+        description: error.userMessage || t`This envelope could not be distributed at this time. Please try again.`,
         variant: 'destructive',
         duration: 7500,
       });
@@ -564,12 +557,12 @@ export const EnvelopeDistributeDialog = ({
                     </ul>
                   </AlertDescription>
                 ))
-                .with('MISSING_REQUIRED_EMAIL', () => (
+                .with('INVALID_RECIPIENT_EMAILS', () => (
                   <AlertDescription>
-                    <Trans>The following recipients require an email address:</Trans>
+                    <Trans>The following recipients have missing or invalid email addresses:</Trans>
 
                     <ul className="mt-1 ml-2 list-inside list-disc">
-                      {recipientsMissingRequiredEmail.map((recipient) => (
+                      {recipientsWithInvalidEmails.map((recipient) => (
                         <li key={recipient.id}>
                           {recipient.email || recipient.name || t`Recipient ${recipient.index + 1}`}
                         </li>

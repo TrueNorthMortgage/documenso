@@ -30,6 +30,9 @@ export type EnvelopeSigningContextValue = {
   showPendingFieldTooltip: boolean;
   setShowPendingFieldTooltip: (_value: boolean) => void;
 
+  inlineFieldId: number | null;
+  setInlineFieldId: (_value: number | null) => void;
+
   envelopeData: EnvelopeForSigningResponse;
   envelope: EnvelopeForSigningResponse['envelope'];
 
@@ -159,6 +162,7 @@ export const EnvelopeSigningProvider = ({
   });
 
   const [showPendingFieldTooltip, setShowPendingFieldTooltip] = useState(false);
+  const [inlineFieldId, setInlineFieldId] = useState<number | null>(null);
 
   const isDirectTemplate = envelope.type === EnvelopeType.TEMPLATE;
 
@@ -462,6 +466,8 @@ export const EnvelopeSigningProvider = ({
 
         showPendingFieldTooltip,
         setShowPendingFieldTooltip,
+        inlineFieldId,
+        setInlineFieldId,
 
         recipient,
         recipientFieldsRemaining,
