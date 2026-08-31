@@ -1,4 +1,4 @@
-import { DEFAULT_RECT_BACKGROUND, getRecipientColorStyles } from '@documenso/ui/lib/recipient-colors';
+import { getRecipientColorStyles } from '@documenso/ui/lib/recipient-colors';
 import Konva from 'konva';
 
 import type { FieldToRender, RenderFieldElementOptions } from './field-renderer';
@@ -7,6 +7,7 @@ import { calculateFieldPosition, getNumericAttr } from './field-renderer';
 export const konvaTextFontFamily =
   '"Noto Sans", "Noto Sans Japanese", "Noto Sans Chinese", "Noto Sans Korean", sans-serif';
 export const konvaTextFill = 'black';
+const FIELD_HIT_AREA_FILL = 'rgba(255, 255, 255, 0.001)';
 export const CONDITIONAL_FIELD_SELECTION_STROKE = '#ef4444';
 const CONDITIONAL_FIELD_INDICATOR_SIZE = 16;
 const CONDITIONAL_FIELD_INDICATOR_GAP = 4;
@@ -226,7 +227,15 @@ export const upsertFieldRect = (field: FieldToRender, options: RenderFieldElemen
   fieldRect.setAttrs({
     width: fieldWidth,
     height: fieldHeight,
-    fill: DEFAULT_RECT_BACKGROUND,
+    // Keep the hit area inside the field bounds while allowing the field to look transparent.
+    fill: FIELD_HIT_AREA_FILL,
+    listening: true,
+    hitFunc: (context, shape) => {
+      context.beginPath();
+      context.rect(0, 0, shape.width(), shape.height());
+      context.closePath();
+      context.fillStrokeShape(shape);
+    },
     ...getFieldRectStyles(field, { color, mode }),
     cornerRadius: 2,
     strokeScaleEnabled: false,
@@ -512,7 +521,7 @@ export const createFieldHoverInteraction = ({ options, fieldGroup, fieldRect }: 
     new Konva.Tween({
       node: fieldRect,
       duration: 0.3,
-      fill: DEFAULT_RECT_BACKGROUND,
+      fill: FIELD_HIT_AREA_FILL,
     }).play();
   });
 
@@ -538,7 +547,7 @@ export const createFieldHoverInteraction = ({ options, fieldGroup, fieldRect }: 
     new Konva.Tween({
       node: fieldRect,
       duration: 0.3,
-      fill: DEFAULT_RECT_BACKGROUND,
+      fill: FIELD_HIT_AREA_FILL,
     }).play();
   });
 };

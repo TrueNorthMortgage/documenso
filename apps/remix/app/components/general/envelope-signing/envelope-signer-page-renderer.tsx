@@ -5,10 +5,11 @@ import {
 } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
 import { DIRECT_TEMPLATE_RECIPIENT_EMAIL } from '@documenso/lib/constants/direct-templates';
+import { PDF_VIEWER_CONTENT_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
 import { isBase64Image } from '@documenso/lib/constants/signatures';
 import type { TRecipientActionAuth } from '@documenso/lib/types/document-auth';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
-import type { TFieldCheckbox, TFieldDate } from '@documenso/lib/types/field';
+import type { TFieldCheckbox, TFieldDate, TFieldNumber, TFieldText } from '@documenso/lib/types/field';
 import { ZFullFieldSchema } from '@documenso/lib/types/field';
 import { createSpinner } from '@documenso/lib/universal/field-renderer/field-generic-items';
 import { renderField } from '@documenso/lib/universal/field-renderer/render-field';
@@ -27,7 +28,7 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { type Field, FieldType, type Recipient, RecipientRole, type Signature, SigningStatus } from '@prisma/client';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { match } from 'ts-pattern';
 
 import { useEmbedSigningContext } from '~/components/embed/embed-signing-context';
@@ -43,6 +44,7 @@ import { handleTextFieldClick } from '~/utils/field-signing/text-field';
 
 import { useRequiredDocumentSigningAuthContext } from '../document-signing/document-signing-auth-provider';
 import { useRequiredEnvelopeSigningContext } from '../document-signing/envelope-signing-provider';
+import { InlineFieldEditor } from './inline-field-editor';
 
 type GenericLocalField = TEnvelope['fields'][number] & {
   recipient: Pick<Recipient, 'id' | 'name' | 'email' | 'signingStatus'>;
@@ -50,7 +52,7 @@ type GenericLocalField = TEnvelope['fields'][number] & {
 
 export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderData }) => {
   const { t, i18n } = useLingui();
-  const { currentEnvelopeItem, setRenderError } = useCurrentEnvelopeRender();
+  const { currentEnvelopeItem, setCurrentEnvelopeItem, setRenderError } = useCurrentEnvelopeRender();
   const { sessionData } = useOptionalSession();
 
   const { executeActionAuthProcedure } = useRequiredDocumentSigningAuthContext();
@@ -74,9 +76,15 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     selectedAssistantRecipientFields,
     selectedAssistantRecipient,
     isDirectTemplate,
+    inlineFieldId,
+    setInlineFieldId,
   } = useRequiredEnvelopeSigningContext();
 
   const { onFieldSigned, onFieldUnsigned } = useEmbedSigningContext() || {};
+  const inlineFieldIdRef = useRef(inlineFieldId);
+  const inlineFieldValidationErrorRef = useRef(false);
+
+  inlineFieldIdRef.current = inlineFieldId;
 
   const { stage, pageLayer, konvaContainer, unscaledViewport } = usePageRenderer(
     ({ stage, pageLayer }) => createPageCanvas(stage, pageLayer),
@@ -94,9 +102,9 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
       fieldsToRender = selectedAssistantRecipientFields;
     }
 
-    return fieldsToRender.filter(
-      (field) => field.page === pageNumber && field.envelopeItemId === currentEnvelopeItem?.id,
-    );
+    return fieldsToRender
+      .filter((field) => field.page === pageNumber && field.envelopeItemId === currentEnvelopeItem?.id)
+      .sort((a, b) => Number(b.width) * Number(b.height) - Number(a.width) * Number(a.height));
   }, [recipientFields, selectedAssistantRecipientFields, pageNumber, currentEnvelopeItem?.id]);
 
   /**
@@ -128,6 +136,49 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
         }));
     });
   }, [envelope.recipients, pageNumber, currentEnvelopeItem?.id]);
+
+  const inlineEditableFields = useMemo((): (TFieldText | TFieldNumber)[] => {
+    const fields = recipient.role === RecipientRole.ASSISTANT ? selectedAssistantRecipientFields : recipientFields;
+    const envelopeItemOrder = new Map(envelope.envelopeItems.map((item) => [item.id, item.order]));
+
+    return fields
+      .filter(
+        (field) => (field.type === FieldType.TEXT || field.type === FieldType.NUMBER) && !field.fieldMeta?.readOnly,
+      )
+      .map((field) => ZFullFieldSchema.parse(field))
+      .filter(
+        (field): field is TFieldText | TFieldNumber => field.type === FieldType.TEXT || field.type === FieldType.NUMBER,
+      )
+      .sort((a, b) => {
+        const itemOrderDifference =
+          (envelopeItemOrder.get(a.envelopeItemId) ?? 0) - (envelopeItemOrder.get(b.envelopeItemId) ?? 0);
+
+        if (itemOrderDifference !== 0) {
+          return itemOrderDifference;
+        }
+
+        if (a.page !== b.page) {
+          return a.page - b.page;
+        }
+
+        if (Number(a.positionY) !== Number(b.positionY)) {
+          return Number(a.positionY) - Number(b.positionY);
+        }
+
+        return Number(a.positionX) - Number(b.positionX);
+      });
+  }, [envelope.envelopeItems, recipient.role, recipientFields, selectedAssistantRecipientFields]);
+
+  const localInlineField = useMemo(() => {
+    if (inlineFieldId === null) {
+      return null;
+    }
+
+    return inlineEditableFields.find(
+      (field) =>
+        field.id === inlineFieldId && field.envelopeItemId === currentEnvelopeItem?.id && field.page === pageNumber,
+    );
+  }, [currentEnvelopeItem?.id, inlineEditableFields, inlineFieldId, pageNumber]);
 
   const unsafeRenderFieldOnLayer = (unparsedField: Field & { signature?: Signature | null }) => {
     if (!pageLayer.current) {
@@ -174,6 +225,10 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
       const foundLoadingGroup = currentTarget.findOne('.loading-spinner-group');
 
       if (!foundField || foundLoadingGroup || foundField.fieldMeta?.readOnly) {
+        return;
+      }
+
+      if (inlineFieldValidationErrorRef.current) {
         return;
       }
 
@@ -265,6 +320,11 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
          * NUMBER FIELD.
          */
         .with({ type: FieldType.NUMBER }, (field) => {
+          if (window.matchMedia('(min-width: 1024px)').matches && !field.fieldMeta?.readOnly) {
+            setInlineFieldId(field.id);
+            return;
+          }
+
           handleNumberFieldClick({ field, number: null })
             .then(async (payload) => {
               if (payload) {
@@ -280,6 +340,11 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
          * TEXT FIELD.
          */
         .with({ type: FieldType.TEXT }, (field) => {
+          if (window.matchMedia('(min-width: 1024px)').matches && !field.fieldMeta?.readOnly) {
+            setInlineFieldId(field.id);
+            return;
+          }
+
           handleTextFieldClick({ field, text: null })
             .then(async (payload) => {
               if (payload) {
@@ -453,7 +518,17 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     };
 
     fieldGroup.off('pointerdown');
-    fieldGroup.on('pointerdown', handleFieldGroupClick);
+    fieldGroup.off('click');
+
+    const supportsInlineEditing =
+      window.matchMedia('(min-width: 1024px)').matches &&
+      (unparsedField.type === FieldType.TEXT || unparsedField.type === FieldType.NUMBER);
+
+    if (supportsInlineEditing) {
+      fieldGroup.on('click', handleFieldGroupClick);
+    } else {
+      fieldGroup.on('pointerdown', handleFieldGroupClick);
+    }
   };
 
   const renderFieldOnLayer = (unparsedField: Field & { signature?: Signature | null }) => {
@@ -544,6 +619,56 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     }
   };
 
+  const handleInlineFieldCommit = async (
+    field: TFieldText | TFieldNumber,
+    value: string,
+    direction: 'next' | 'previous' | null,
+  ) => {
+    await signField(field.id, {
+      type: field.type,
+      value: value || null,
+    });
+
+    inlineFieldValidationErrorRef.current = false;
+
+    if (inlineFieldIdRef.current !== field.id) {
+      return;
+    }
+
+    if (!direction) {
+      setInlineFieldId(null);
+      return;
+    }
+
+    const currentIndex = inlineEditableFields.findIndex((candidate) => candidate.id === field.id);
+    const directionOffset = direction === 'next' ? 1 : -1;
+    const nextField = inlineEditableFields[currentIndex + directionOffset];
+
+    if (!nextField) {
+      setInlineFieldId(null);
+      return;
+    }
+
+    const isEnvelopeItemSwitch = nextField.envelopeItemId !== currentEnvelopeItem?.id;
+
+    if (isEnvelopeItemSwitch) {
+      setCurrentEnvelopeItem(nextField.envelopeItemId);
+    }
+
+    setInlineFieldId(nextField.id);
+
+    setTimeout(
+      () => {
+        const pdfContent = document.querySelector(PDF_VIEWER_CONTENT_SELECTOR);
+
+        if (pdfContent) {
+          pdfContent.setAttribute('data-scroll-to-page', String(nextField.page));
+        }
+      },
+      isEnvelopeItemSwitch ? 150 : 50,
+    );
+  };
+
   /**
    * Initialize the Konva page canvas and all fields and interactions.
    */
@@ -608,6 +733,26 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
           showRecipientTooltip={true}
         />
       ))}
+
+      {localInlineField && (
+        <div className="pointer-events-none absolute inset-0 z-20">
+          <InlineFieldEditor
+            key={localInlineField.id}
+            field={localInlineField}
+            pageHeight={unscaledViewport.height}
+            pageWidth={unscaledViewport.width}
+            scale={scale}
+            onCancel={() => {
+              inlineFieldValidationErrorRef.current = false;
+              setInlineFieldId(null);
+            }}
+            onValidationError={(hasError) => {
+              inlineFieldValidationErrorRef.current = hasError;
+            }}
+            onCommit={(value, direction) => handleInlineFieldCommit(localInlineField, value, direction)}
+          />
+        </div>
+      )}
 
       {/* The element Konva will inject it's canvas into. */}
       <div className="konva-container absolute inset-0 z-10 w-full" ref={konvaContainer}></div>
