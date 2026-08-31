@@ -520,7 +520,11 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     fieldGroup.off('pointerdown');
     fieldGroup.off('click');
 
-    if (unparsedField.type === FieldType.TEXT || unparsedField.type === FieldType.NUMBER) {
+    const supportsInlineEditing =
+      window.matchMedia('(min-width: 1024px)').matches &&
+      (unparsedField.type === FieldType.TEXT || unparsedField.type === FieldType.NUMBER);
+
+    if (supportsInlineEditing) {
       fieldGroup.on('click', handleFieldGroupClick);
     } else {
       fieldGroup.on('pointerdown', handleFieldGroupClick);
