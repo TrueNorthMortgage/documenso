@@ -976,41 +976,65 @@ export const EnvelopeEditorFieldsPage = () => {
     });
   };
 
+  const renderEnvelopeItemAction =
+    editorConfig.envelopeItems?.allowReplace && envelopeItemPermissions.canFileBeChanged
+      ? (item: { id: string; title: string }) => (
+          <div className="relative flex h-5 w-5 flex-shrink-0 items-center justify-center">
+            <div
+              className={cn('h-2 w-2 rounded-full transition-opacity duration-150 group-hover:opacity-0', {
+                'bg-green-500': currentEnvelopeItem?.id === item.id,
+              })}
+            />
+            <EnvelopeItemEditDialog
+              envelopeItem={item}
+              allowConfigureTitle={editorConfig.envelopeItems?.allowConfigureTitle ?? false}
+              trigger={
+                // biome-ignore lint/a11y/useSemanticElements: This trigger is rendered inside the selector button.
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="absolute inset-0 flex cursor-pointer items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget.click();
+                    }
+                  }}
+                  data-testid={`envelope-item-edit-button-${item.id}`}
+                >
+                  <PencilIcon className="h-3.5 w-3.5" />
+                </span>
+              }
+            />
+          </div>
+        )
+      : undefined;
+
   const pageContent = (
     <div className="relative flex h-full">
+      {envelope.envelopeItems.length > 1 && (
+        <aside className="hidden w-64 flex-shrink-0 flex-col border-border border-r bg-background px-4 py-4 lg:flex">
+          <h3 className="mb-3 font-semibold text-foreground text-sm">
+            <Trans>Documents</Trans>
+          </h3>
+
+          <EnvelopeRendererFileSelector
+            orientation="vertical"
+            className="min-h-0 flex-1 p-0"
+            fields={editorFields.localFields}
+            renderItemAction={renderEnvelopeItemAction}
+          />
+        </aside>
+      )}
+
       <div className="relative flex h-full w-full flex-col overflow-y-auto px-2" ref={scrollableContainerRef}>
-        {/* Horizontal envelope item selector */}
+        {/* Keep document navigation horizontal on smaller screens. */}
         <EnvelopeRendererFileSelector
-          className="px-0"
+          className="px-0 lg:hidden"
           fields={editorFields.localFields}
-          renderItemAction={
-            editorConfig.envelopeItems !== null &&
-            editorConfig.envelopeItems.allowReplace &&
-            envelopeItemPermissions.canFileBeChanged
-              ? (item) => (
-                  <div className="relative flex h-5 w-5 flex-shrink-0 items-center justify-center">
-                    <div
-                      className={cn('h-2 w-2 rounded-full transition-opacity duration-150 group-hover:opacity-0', {
-                        'bg-green-500': currentEnvelopeItem?.id === item.id,
-                      })}
-                    />
-                    <EnvelopeItemEditDialog
-                      envelopeItem={item}
-                      allowConfigureTitle={editorConfig.envelopeItems?.allowConfigureTitle ?? false}
-                      trigger={
-                        <span
-                          className="absolute inset-0 flex cursor-pointer items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-                          onClick={(e) => e.stopPropagation()}
-                          data-testid={`envelope-item-edit-button-${item.id}`}
-                        >
-                          <PencilIcon className="h-3.5 w-3.5" />
-                        </span>
-                      }
-                    />
-                  </div>
-                )
-              : undefined
-          }
+          renderItemAction={renderEnvelopeItemAction}
         />
 
         {/* Document View */}

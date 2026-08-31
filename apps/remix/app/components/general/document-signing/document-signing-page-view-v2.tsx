@@ -35,7 +35,7 @@ import { EnvelopePdfViewer } from '~/components/general/pdf-viewer/envelope-pdf-
 
 import { BrandingLogo } from '../branding-logo';
 import { DocumentSigningAttachmentsPopover } from '../document-signing/document-signing-attachments-popover';
-import { EnvelopeItemSelector } from '../envelope-editor/envelope-file-selector';
+import { EnvelopeRendererFileSelector } from '../envelope-editor/envelope-file-selector';
 import EnvelopeSignerForm from '../envelope-signing/envelope-signer-form';
 import { EnvelopeSignerHeader } from '../envelope-signing/envelope-signer-header';
 import { DocumentSigningMobileWidget } from './document-signing-mobile-widget';
@@ -43,7 +43,7 @@ import { DocumentSigningRejectDialog } from './document-signing-reject-dialog';
 import { useRequiredEnvelopeSigningContext } from './envelope-signing-provider';
 
 export const DocumentSigningPageViewV2 = () => {
-  const { envelopeItems, currentEnvelopeItem, setCurrentEnvelopeItem } = useCurrentEnvelopeRender();
+  const { envelopeItems, currentEnvelopeItem } = useCurrentEnvelopeRender();
 
   const scrollableContainerRef = useRef<HTMLDivElement>(null);
 
@@ -157,6 +157,24 @@ export const DocumentSigningPageViewV2 = () => {
                 />
               </div>
 
+              {envelopeItems.length > 1 && (
+                <>
+                  <Separator className="my-4" />
+
+                  <section>
+                    <h4 className="font-semibold text-foreground text-sm">
+                      <Trans>Documents</Trans>
+                    </h4>
+
+                    <EnvelopeRendererFileSelector
+                      orientation="vertical"
+                      className="mt-3 p-0"
+                      fields={remainingFields}
+                    />
+                  </section>
+                </>
+              )}
+
               <div className="embed--DocumentWidgetContent mt-6 space-y-3">
                 <EnvelopeSignerForm />
               </div>
@@ -239,26 +257,9 @@ export const DocumentSigningPageViewV2 = () => {
 
         <div className="embed--DocumentContainer min-w-0 flex-1 overflow-y-auto" ref={scrollableContainerRef}>
           <div className="flex flex-col">
-            {/* Horizontal envelope item selector */}
+            {/* Keep document navigation horizontal on smaller screens. */}
             {envelopeItems.length > 1 && (
-              <div className="flex h-fit space-x-2 overflow-x-auto p-2 pt-4 sm:p-4">
-                {envelopeItems.map((doc, i) => (
-                  <EnvelopeItemSelector
-                    key={doc.id}
-                    number={i + 1}
-                    primaryText={doc.title}
-                    secondaryText={
-                      <Plural
-                        one="1 Field"
-                        other="# Fields"
-                        value={remainingFields.filter((field) => field.envelopeItemId === doc.id).length}
-                      />
-                    }
-                    isSelected={currentEnvelopeItem?.id === doc.id}
-                    buttonProps={{ onClick: () => setCurrentEnvelopeItem(doc.id) }}
-                  />
-                ))}
-              </div>
+              <EnvelopeRendererFileSelector className="lg:hidden" fields={remainingFields} />
             )}
 
             {/* Document View */}

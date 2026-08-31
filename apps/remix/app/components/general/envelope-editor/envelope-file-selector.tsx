@@ -9,6 +9,7 @@ type EnvelopeItemSelectorProps = {
   isSelected: boolean;
   buttonProps: React.ButtonHTMLAttributes<HTMLButtonElement>;
   actionSlot?: React.ReactNode;
+  orientation?: 'horizontal' | 'vertical';
 };
 
 export const EnvelopeItemSelector = ({
@@ -18,15 +19,19 @@ export const EnvelopeItemSelector = ({
   isSelected,
   buttonProps,
   actionSlot,
+  orientation = 'horizontal',
 }: EnvelopeItemSelectorProps) => {
   return (
     <button
       title={typeof primaryText === 'string' ? primaryText : undefined}
-      className={`group flex h-fit max-w-72 flex-shrink-0 cursor-pointer items-center space-x-3 rounded-lg border px-4 py-3 transition-colors ${
+      className={cn(
+        'group flex h-fit cursor-pointer items-center rounded-lg border transition-colors',
+        orientation === 'horizontal' ? 'max-w-72 flex-shrink-0' : 'w-full',
+        'space-x-3 px-4 py-3',
         isSelected
           ? 'border-green-200 bg-green-50 text-green-900 dark:border-green-400/30 dark:bg-green-400/10 dark:text-green-400'
-          : 'border-border bg-muted/50 hover:bg-muted/70'
-      }`}
+          : 'border-border bg-muted/50 hover:bg-muted/70',
+      )}
       {...buttonProps}
     >
       <div
@@ -54,6 +59,7 @@ export const EnvelopeItemSelector = ({
 type EnvelopeRendererFileSelectorProps = {
   fields: { envelopeItemId: string }[];
   className?: string;
+  orientation?: 'horizontal' | 'vertical';
   secondaryOverride?: React.ReactNode;
   renderItemAction?: (item: { id: string; title: string }) => React.ReactNode;
 };
@@ -61,13 +67,20 @@ type EnvelopeRendererFileSelectorProps = {
 export const EnvelopeRendererFileSelector = ({
   fields,
   className,
+  orientation = 'horizontal',
   secondaryOverride,
   renderItemAction,
 }: EnvelopeRendererFileSelectorProps) => {
   const { envelopeItems, currentEnvelopeItem, setCurrentEnvelopeItem } = useCurrentEnvelopeRender();
 
   return (
-    <div className={cn('scrollbar-hidden flex h-fit flex-shrink-0 space-x-2 overflow-x-auto p-4', className)}>
+    <div
+      className={cn(
+        'scrollbar-hidden flex h-fit flex-shrink-0',
+        orientation === 'horizontal' ? 'space-x-2 overflow-x-auto p-4' : 'w-full flex-col space-y-2 overflow-y-auto',
+        className,
+      )}
+    >
       {envelopeItems.map((doc, i) => (
         <EnvelopeItemSelector
           key={doc.id}
@@ -86,6 +99,7 @@ export const EnvelopeRendererFileSelector = ({
           buttonProps={{
             onClick: () => setCurrentEnvelopeItem(doc.id),
           }}
+          orientation={orientation}
           actionSlot={renderItemAction?.(doc)}
         />
       ))}

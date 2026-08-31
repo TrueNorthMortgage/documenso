@@ -67,6 +67,18 @@ export const EnvelopeItemEditDialog = ({
     },
   });
 
+  const { mutateAsync: updateEnvelopeItems } = trpc.envelope.item.updateMany.useMutation({
+    onSuccess: ({ data }) => {
+      setLocalEnvelope({
+        envelopeItems: envelope.envelopeItems.map((originalItem) => {
+          const updatedItem = data.find((item) => item.id === originalItem.id);
+
+          return updatedItem ? { ...originalItem, ...updatedItem } : originalItem;
+        }),
+      });
+    },
+  });
+
   const { mutateAsync: replaceEnvelopeItemPdf } = trpc.envelope.item.replacePdf.useMutation({
     onSuccess: ({ data, fields }) => {
       setLocalEnvelope({
@@ -140,11 +152,29 @@ export const EnvelopeItemEditDialog = ({
   });
 
   const onSubmit = async (data: TEditEnvelopeItemFormSchema) => {
-    if (isDropping || !replacementFile) {
+    if (isDropping) {
       return;
     }
 
     try {
+      if (!replacementFile) {
+        if (isEmbedded) {
+          setLocalEnvelope({
+            envelopeItems: envelope.envelopeItems.map((item) =>
+              item.id === envelopeItem.id ? { ...item, title: data.title } : item,
+            ),
+          });
+        } else {
+          await updateEnvelopeItems({
+            envelopeId: envelope.id,
+            data: [{ envelopeItemId: envelopeItem.id, title: data.title }],
+          });
+        }
+
+        setIsOpen(false);
+        return;
+      }
+
       const { file, pageCount } = replacementFile;
 
       if (isEmbedded) {
@@ -329,7 +359,7 @@ export const EnvelopeItemEditDialog = ({
                 <Button
                   type="submit"
                   loading={form.formState.isSubmitting}
-                  disabled={isDropping || !replacementFile}
+                  disabled={isDropping || (!replacementFile && !form.formState.isDirty)}
                   data-testid="envelope-item-edit-update-button"
                 >
                   <Trans>Update</Trans>
