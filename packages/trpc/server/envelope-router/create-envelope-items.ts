@@ -93,6 +93,7 @@ export const createEnvelopeItemsRoute = authenticatedProcedure
         email: user.email,
       },
       apiRequestMetadata: metadata,
+      logger: ctx.logger,
     });
 
     return {

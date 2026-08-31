@@ -1,3 +1,4 @@
+import { convertToPdf } from '@documenso/lib/server-only/document-conversion';
 import {
   convertPlaceholdersToFieldInputs,
   extractPdfPlaceholders,
@@ -12,6 +13,7 @@ import { putPdfFileServerSide } from '@documenso/lib/universal/upload/put-file.s
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { prisma } from '@documenso/prisma';
 import type { Envelope, EnvelopeItem, Recipient } from '@prisma/client';
+import type { Logger } from 'pino';
 
 type UnsafeCreateEnvelopeItemsOptions = {
   files: {
@@ -29,6 +31,7 @@ type UnsafeCreateEnvelopeItemsOptions = {
     email: string;
   };
   apiRequestMetadata: ApiRequestMetadata;
+  logger?: Logger;
 };
 
 /**
@@ -41,13 +44,14 @@ export const UNSAFE_createEnvelopeItems = async ({
   envelope,
   user,
   apiRequestMetadata,
+  logger,
 }: UnsafeCreateEnvelopeItemsOptions) => {
   const currentHighestOrderValue = envelope.envelopeItems[envelope.envelopeItems.length - 1]?.order ?? 1;
 
   // For each file: normalize, extract & clean placeholders, then upload.
   const envelopeItemsToCreate = await Promise.all(
     files.map(async ({ file, orderOverride, clientId }, index) => {
-      let buffer = Buffer.from(await file.arrayBuffer());
+      let buffer = await convertToPdf(file, logger);
 
       if (envelope.formValues) {
         buffer = await insertFormValuesInPdf({ pdf: buffer, formValues: envelope.formValues });
