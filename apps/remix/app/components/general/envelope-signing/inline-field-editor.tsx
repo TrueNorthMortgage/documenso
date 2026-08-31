@@ -14,6 +14,7 @@ type InlineFieldEditorProps = {
   pageHeight: number;
   pageWidth: number;
   onCancel: () => void;
+  onValidationError: (hasError: boolean) => void;
   onCommit: (value: string, direction: InlineFieldDirection) => Promise<void>;
 };
 
@@ -32,6 +33,7 @@ export const InlineFieldEditor = ({
   pageWidth,
   scale,
   onCancel,
+  onValidationError,
   onCommit,
 }: InlineFieldEditorProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +61,7 @@ export const InlineFieldEditor = ({
 
     if (errors.length > 0) {
       setError(errors[0] ?? null);
+      onValidationError(true);
       inputRef.current?.focus();
       return;
     }
@@ -111,6 +114,7 @@ export const InlineFieldEditor = ({
         onChange={(event) => {
           setValue(event.target.value);
           setError(null);
+          onValidationError(false);
         }}
         onKeyDown={(event) => {
           if (event.key === 'Tab') {

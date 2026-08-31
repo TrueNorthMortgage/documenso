@@ -82,6 +82,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
 
   const { onFieldSigned, onFieldUnsigned } = useEmbedSigningContext() || {};
   const inlineFieldIdRef = useRef(inlineFieldId);
+  const inlineFieldValidationErrorRef = useRef(false);
 
   inlineFieldIdRef.current = inlineFieldId;
 
@@ -224,6 +225,10 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
       const foundLoadingGroup = currentTarget.findOne('.loading-spinner-group');
 
       if (!foundField || foundLoadingGroup || foundField.fieldMeta?.readOnly) {
+        return;
+      }
+
+      if (inlineFieldValidationErrorRef.current) {
         return;
       }
 
@@ -620,6 +625,8 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
       value: value || null,
     });
 
+    inlineFieldValidationErrorRef.current = false;
+
     if (inlineFieldIdRef.current !== field.id) {
       return;
     }
@@ -731,7 +738,13 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
             pageHeight={unscaledViewport.height}
             pageWidth={unscaledViewport.width}
             scale={scale}
-            onCancel={() => setInlineFieldId(null)}
+            onCancel={() => {
+              inlineFieldValidationErrorRef.current = false;
+              setInlineFieldId(null);
+            }}
+            onValidationError={(hasError) => {
+              inlineFieldValidationErrorRef.current = hasError;
+            }}
             onCommit={(value, direction) => handleInlineFieldCommit(localInlineField, value, direction)}
           />
         </div>
