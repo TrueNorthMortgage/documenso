@@ -59,6 +59,7 @@ export const EnvelopeItemSelector = ({
 type EnvelopeRendererFileSelectorProps = {
   fields: { envelopeItemId: string }[];
   className?: string;
+  hideScrollbar?: boolean;
   orientation?: 'horizontal' | 'vertical';
   secondaryOverride?: React.ReactNode;
   renderItemAction?: (item: { id: string; title: string }) => React.ReactNode;
@@ -67,6 +68,7 @@ type EnvelopeRendererFileSelectorProps = {
 export const EnvelopeRendererFileSelector = ({
   fields,
   className,
+  hideScrollbar = true,
   orientation = 'horizontal',
   secondaryOverride,
   renderItemAction,
@@ -76,7 +78,8 @@ export const EnvelopeRendererFileSelector = ({
   return (
     <div
       className={cn(
-        'scrollbar-hidden flex h-fit flex-shrink-0',
+        'flex h-fit flex-shrink-0',
+        hideScrollbar && 'scrollbar-hidden',
         orientation === 'horizontal' ? 'space-x-2 overflow-x-auto p-4' : 'w-full flex-col space-y-2 overflow-y-auto',
         className,
       )}
