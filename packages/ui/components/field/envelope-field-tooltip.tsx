@@ -110,7 +110,11 @@ export function EnvelopeFieldToolTip({ children, color, className = '', field }:
         <Tooltip delayDuration={0} open={!field.inserted || !field.fieldMeta}>
           <TooltipTrigger className="absolute inset-0 w-full"></TooltipTrigger>
 
-          <TooltipContent className={tooltipVariants({ color, className: cn(className, 'z-40') })} sideOffset={2}>
+          <TooltipContent
+            className={tooltipVariants({ color, className: cn(className, 'z-40') })}
+            side="bottom"
+            sideOffset={2}
+          >
             {children}
             <TooltipArrow />
           </TooltipContent>
