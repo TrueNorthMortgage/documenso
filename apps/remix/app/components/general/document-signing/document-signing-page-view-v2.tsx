@@ -157,24 +157,6 @@ export const DocumentSigningPageViewV2 = () => {
                 />
               </div>
 
-              {envelopeItems.length > 1 && (
-                <>
-                  <Separator className="my-4" />
-
-                  <section>
-                    <h4 className="font-semibold text-foreground text-sm">
-                      <Trans>Documents</Trans>
-                    </h4>
-
-                    <EnvelopeRendererFileSelector
-                      orientation="vertical"
-                      className="mt-3 p-0"
-                      fields={remainingFields}
-                    />
-                  </section>
-                </>
-              )}
-
               <div className="embed--DocumentWidgetContent mt-6 space-y-3">
                 <EnvelopeSignerForm />
               </div>
@@ -257,6 +239,20 @@ export const DocumentSigningPageViewV2 = () => {
 
         <div className="embed--DocumentContainer min-w-0 flex-1 overflow-y-auto" ref={scrollableContainerRef}>
           <div className="flex flex-col">
+            {envelopeItems.length > 1 && (
+              <div className="hidden min-w-0 flex-shrink-0 items-center gap-4 border-border border-b bg-background px-4 py-2 lg:flex">
+                <h3 className="flex-shrink-0 font-semibold text-foreground text-sm">
+                  <Trans>Documents</Trans>
+                </h3>
+
+                <EnvelopeRendererFileSelector
+                  className="document-selector-scrollbar min-w-0 flex-1 p-0"
+                  fields={remainingFields}
+                  hideScrollbar={false}
+                />
+              </div>
+            )}
+
             {/* Keep document navigation horizontal on smaller screens. */}
             {envelopeItems.length > 1 && (
               <EnvelopeRendererFileSelector className="lg:hidden" fields={remainingFields} />
