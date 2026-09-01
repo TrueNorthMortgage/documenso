@@ -24,7 +24,11 @@ import {
   type TEnvelopeEditorSurface,
 } from '../fixtures/envelope-editor';
 import { expectToastTextToBeVisible } from '../fixtures/generic';
-import { getKonvaElementCountForPage, getKonvaTransformerNodeCountForPage } from '../fixtures/konva';
+import {
+  getKonvaElementCountForPage,
+  getKonvaFieldPositionsForPage,
+  getKonvaTransformerNodeCountForPage,
+} from '../fixtures/konva';
 
 type TFieldFlowResult = {
   externalId: string;
@@ -672,9 +676,32 @@ const runMultiSelectDuplicateAndCopyPasteFlow = async (surface: TEnvelopeEditorS
   await root.locator('button[title="Duplicate"]').click();
   await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(4);
 
+  const positionsBeforePaste = await getKonvaFieldPositionsForPage(root, 1);
   await root.keyboard.press('ControlOrMeta+c');
   await root.keyboard.press('ControlOrMeta+v');
   await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(6);
+  await expect.poll(() => getKonvaTransformerNodeCountForPage(root, 1)).toBe(2);
+
+  const positionsAfterPaste = await getKonvaFieldPositionsForPage(root, 1);
+  const existingPositions = new Set(positionsBeforePaste.map(({ x, y }) => `${x}:${y}`));
+  const pastedPositions = positionsAfterPaste.slice(positionsBeforePaste.length);
+
+  expect(pastedPositions).toHaveLength(2);
+  expect(pastedPositions.every(({ x, y }) => !existingPositions.has(`${x}:${y}`))).toBe(true);
+
+  // Pasting again at the same pointer location should keep the second copy
+  // from landing at the exact same coordinates as the first copy.
+  await root.keyboard.press('ControlOrMeta+c');
+  await root.keyboard.press('ControlOrMeta+v');
+  await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(8);
+  await expect.poll(() => getKonvaTransformerNodeCountForPage(root, 1)).toBe(2);
+
+  const positionsAfterSecondPaste = await getKonvaFieldPositionsForPage(root, 1);
+  const allPreviousPositions = new Set(positionsAfterPaste.map(({ x, y }) => `${x}:${y}`));
+  const secondPastedPositions = positionsAfterSecondPaste.slice(positionsAfterPaste.length);
+
+  expect(secondPastedPositions).toHaveLength(2);
+  expect(secondPastedPositions.every(({ x, y }) => !allPreviousPositions.has(`${x}:${y}`))).toBe(true);
 };
 
 const runCrossPageMultiFieldDragFlow = async (surface: TEnvelopeEditorSurface) => {
@@ -850,6 +877,11 @@ test.describe('template editor', () => {
       ...result,
     });
   });
+
+  test('paste multiple fields at the pointer without exact overlap', async ({ page }) => {
+    const surface = await openTemplateEnvelopeEditor(page);
+    await runMultiSelectDuplicateAndCopyPasteFlow(surface);
+  });
 });
 
 test.describe('embedded create', () => {
@@ -911,6 +943,15 @@ test.describe('embedded create', () => {
       surface,
       ...result,
     });
+  });
+
+  test('paste multiple fields at the pointer without exact overlap', async ({ page }) => {
+    const surface = await openEmbeddedEnvelopeEditor(page, {
+      envelopeType: 'DOCUMENT',
+      tokenNamePrefix: 'e2e-embed-paste-fields',
+    });
+    await runMultiSelectDuplicateAndCopyPasteFlow(surface);
+    await persistEmbeddedEnvelope(surface);
   });
 });
 
@@ -977,5 +1018,15 @@ test.describe('embedded edit', () => {
       surface,
       ...result,
     });
+  });
+
+  test('paste multiple fields at the pointer without exact overlap', async ({ page }) => {
+    const surface = await openEmbeddedEnvelopeEditor(page, {
+      envelopeType: 'TEMPLATE',
+      mode: 'edit',
+      tokenNamePrefix: 'e2e-embed-edit-paste-fields',
+    });
+    await runMultiSelectDuplicateAndCopyPasteFlow(surface);
+    await persistEmbeddedEnvelope(surface);
   });
 });

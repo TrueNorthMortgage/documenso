@@ -167,7 +167,13 @@ export default function DocumentPage({ params }: Route.ComponentProps) {
                 showRecipientTooltip: true,
               }}
             >
-              {isMultiEnvelopeItem && <EnvelopeRendererFileSelector fields={envelope.fields} className="mb-4 p-0" />}
+              {isMultiEnvelopeItem && (
+                <EnvelopeRendererFileSelector
+                  fields={envelope.fields}
+                  className="document-selector-scrollbar mb-4 min-w-0 p-0"
+                  hideScrollbar={false}
+                />
+              )}
 
               <Card className="rounded-xl before:rounded-xl" gradient>
                 <CardContent className="p-2">

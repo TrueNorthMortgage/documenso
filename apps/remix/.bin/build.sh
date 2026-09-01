@@ -16,14 +16,26 @@ cd "$WEB_APP_DIR"
 
 start_time=$(date +%s)
 
-echo "[Build]: Extracting and compiling translations"
-npm run translate --prefix ../../
+node --input-type=module -e 'import os from "node:os"; console.log(`[Build]: Node ${process.version}, arch ${process.arch}, CPUs ${os.cpus().length}, memory ${Math.round(os.totalmem() / 1024 / 1024)} MiB`)'
 
-echo "[Build]: Building app"
-npm run build:app
+run_build_step() {
+  local label="$1"
+  shift
+  local step_start_time
+  local step_end_time
 
-echo "[Build]: Building server"
-npm run build:server
+  step_start_time=$(date +%s)
+  echo "[Build]: ${label}"
+  "$@"
+  step_end_time=$(date +%s)
+  echo "[Build]: ${label} done in $((step_end_time - step_start_time)) seconds"
+}
+
+run_build_step "Extracting and compiling translations" npm run translate --prefix ../../
+
+run_build_step "Building app" npm run build:app
+
+run_build_step "Building server" npm run build:server
 
 # Copy over the entry point for the server.
 cp server/main.js build/server/main.js

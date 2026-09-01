@@ -157,24 +157,6 @@ export const DocumentSigningPageViewV2 = () => {
                 />
               </div>
 
-              {envelopeItems.length > 1 && (
-                <>
-                  <Separator className="my-4" />
-
-                  <section>
-                    <h4 className="font-semibold text-foreground text-sm">
-                      <Trans>Documents</Trans>
-                    </h4>
-
-                    <EnvelopeRendererFileSelector
-                      orientation="vertical"
-                      className="mt-3 p-0"
-                      fields={remainingFields}
-                    />
-                  </section>
-                </>
-              )}
-
               <div className="embed--DocumentWidgetContent mt-6 space-y-3">
                 <EnvelopeSignerForm />
               </div>
@@ -255,48 +237,64 @@ export const DocumentSigningPageViewV2 = () => {
           </div>
         </div>
 
-        <div className="embed--DocumentContainer min-w-0 flex-1 overflow-y-auto" ref={scrollableContainerRef}>
-          <div className="flex flex-col">
-            {/* Keep document navigation horizontal on smaller screens. */}
-            {envelopeItems.length > 1 && (
-              <EnvelopeRendererFileSelector className="lg:hidden" fields={remainingFields} />
-            )}
+        <div className="embed--DocumentContainer flex min-w-0 flex-1 flex-col overflow-hidden">
+          {envelopeItems.length > 1 && (
+            <div className="hidden min-w-0 flex-shrink-0 items-center gap-4 border-border border-b bg-background px-4 py-2 lg:flex">
+              <h3 className="flex-shrink-0 font-semibold text-foreground text-sm">
+                <Trans>Documents</Trans>
+              </h3>
 
-            {/* Document View */}
-            <div className="embed--DocumentViewer flex flex-col items-center justify-center p-2 sm:mt-4 sm:p-4">
-              {currentEnvelopeItem ? (
-                <EnvelopePdfViewer
-                  key={currentEnvelopeItem.id}
-                  customPageRenderer={EnvelopeSignerPageRenderer}
-                  scrollParentRef={scrollableContainerRef}
-                  errorMessage={PDF_VIEWER_ERROR_MESSAGES.signing}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center py-32">
-                  <p className="text-foreground text-sm">
-                    <Trans>No document selected</Trans>
-                  </p>
+              <EnvelopeRendererFileSelector
+                className="document-selector-scrollbar min-w-0 flex-1 p-0"
+                fields={remainingFields}
+                hideScrollbar={false}
+              />
+            </div>
+          )}
+
+          {/* Keep document navigation horizontal on smaller screens. */}
+          {envelopeItems.length > 1 && (
+            <EnvelopeRendererFileSelector className="bg-background lg:hidden" fields={remainingFields} />
+          )}
+
+          <div className="min-h-0 flex-1 overflow-y-auto" ref={scrollableContainerRef}>
+            <div className="flex flex-col">
+              {/* Document View */}
+              <div className="embed--DocumentViewer flex flex-col items-center justify-center p-2 sm:mt-4 sm:p-4">
+                {currentEnvelopeItem ? (
+                  <EnvelopePdfViewer
+                    key={currentEnvelopeItem.id}
+                    customPageRenderer={EnvelopeSignerPageRenderer}
+                    scrollParentRef={scrollableContainerRef}
+                    errorMessage={PDF_VIEWER_ERROR_MESSAGES.signing}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-32">
+                    <p className="text-foreground text-sm">
+                      <Trans>No document selected</Trans>
+                    </p>
+                  </div>
+                )}
+
+                {/* Mobile widget - Additional padding to allow users to scroll */}
+                <div className="block pb-28 lg:hidden">
+                  <DocumentSigningMobileWidget />
                 </div>
-              )}
 
-              {/* Mobile widget - Additional padding to allow users to scroll */}
-              <div className="block pb-28 lg:hidden">
-                <DocumentSigningMobileWidget />
+                {!hidePoweredBy && (
+                  <a
+                    href="https://documenso.com"
+                    target="_blank"
+                    className="fixed right-0 bottom-0 z-40 hidden cursor-pointer rounded-tl bg-primary px-2 py-1 font-medium text-primary-foreground text-xs opacity-60 hover:opacity-100 lg:block"
+                    rel="noopener"
+                  >
+                    <span>
+                      <Trans>Powered by</Trans>
+                    </span>
+                    <BrandingLogo className="ml-2 inline-block h-[14px]" />
+                  </a>
+                )}
               </div>
-
-              {!hidePoweredBy && (
-                <a
-                  href="https://documenso.com"
-                  target="_blank"
-                  className="fixed right-0 bottom-0 z-40 hidden cursor-pointer rounded-tl bg-primary px-2 py-1 font-medium text-primary-foreground text-xs opacity-60 hover:opacity-100 lg:block"
-                  rel="noopener"
-                >
-                  <span>
-                    <Trans>Powered by</Trans>
-                  </span>
-                  <BrandingLogo className="ml-2 inline-block h-[14px]" />
-                </a>
-              )}
             </div>
           </div>
         </div>
