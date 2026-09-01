@@ -29,3 +29,18 @@ export const getKonvaTransformerNodeCountForPage = async (page: Page, pageNumber
     return transformer?.nodes().length ?? 0;
   }, pageNumber);
 };
+
+export const getKonvaFieldPositionsForPage = async (page: Page, pageNumber: number) => {
+  await page.locator('.konva-container canvas').first().waitFor({ state: 'visible' });
+
+  return await page.evaluate((pageNumber) => {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const konva: typeof Konva = (window as unknown as { Konva: typeof Konva }).Konva;
+    const stage = konva.stages.find((candidate) => candidate.attrs.id === `page-${pageNumber}`);
+
+    return (stage?.find('.field-group') ?? []).map((fieldGroup) => ({
+      x: fieldGroup.x(),
+      y: fieldGroup.y(),
+    }));
+  }, pageNumber);
+};

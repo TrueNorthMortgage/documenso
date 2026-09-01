@@ -101,6 +101,14 @@ type TEditorField = Omit<Field, 'templateSourceItemId'> & {
   conditionalParentRules?: TConditionalFieldRule[];
 };
 
+type TDuplicateFieldOptions = {
+  envelopeItemId?: string;
+  page?: number;
+  positionX?: number;
+  positionY?: number;
+  recipientId?: number;
+};
+
 type UseEditorFieldsResponse = {
   localFields: TLocalField[];
 
@@ -114,7 +122,7 @@ type UseEditorFieldsResponse = {
   removeFieldsByFormId: (formIds: string[]) => void;
   updateFieldByFormId: (formId: string, updates: Partial<TLocalField>) => void;
   updateFieldGroupMeta: (field: TLocalField, fieldMeta: TLocalField['fieldMeta']) => void;
-  duplicateField: (field: TLocalField, recipientId?: number) => TLocalField;
+  duplicateField: (field: TLocalField, options?: TDuplicateFieldOptions | number) => TLocalField;
   duplicateFieldToAllPages: (field: TLocalField, recipientId?: number) => TLocalField[];
   createFieldGroup: (field: TLocalField, name: string) => TLocalField[];
   assignFieldToGroup: (field: TLocalField, group: TFieldGroup) => void;
@@ -344,7 +352,9 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
   );
 
   const duplicateField = useCallback(
-    (field: TLocalField): TLocalField => {
+    (field: TLocalField, optionsOrRecipientId: TDuplicateFieldOptions | number = {}): TLocalField => {
+      const options =
+        typeof optionsOrRecipientId === 'number' ? { recipientId: optionsOrRecipientId } : optionsOrRecipientId;
       const existingGroupOptions = field.fieldGroupId
         ? localFields.filter((candidate) => candidate.fieldGroupId === field.fieldGroupId).flatMap(getFieldOptions)
         : [];
@@ -356,9 +366,11 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         ...structuredClone(field),
         id: undefined,
         formId: nanoid(12),
-        recipientId: field.recipientId,
-        positionX: field.positionX + 3,
-        positionY: field.positionY + 3,
+        envelopeItemId: options.envelopeItemId ?? field.envelopeItemId,
+        page: options.page ?? field.page,
+        positionX: options.positionX ?? field.positionX + 3,
+        positionY: options.positionY ?? field.positionY + 3,
+        recipientId: options.recipientId ?? field.recipientId,
         fieldMeta,
       };
 
