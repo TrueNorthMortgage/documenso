@@ -120,12 +120,120 @@ type PageRenderer = {
   setSelection: (nodes: Konva.Node[], clearOtherPages?: boolean) => void;
 };
 
+type PastePointer = {
+  clientX: number;
+  clientY: number;
+  pageNumber: number;
+};
+
 type FieldDragState = {
   anchorFieldFormId: string;
   fields: Array<FieldGroupDragPosition & { fieldGroup: Konva.Group; pageNumber: number }>;
 };
 
 const pageRendererRegistry = new Map<number, PageRenderer>();
+let lastPastePointer: PastePointer | null = null;
+
+const getVisiblePage = (currentPage: PageRenderer) => {
+  const scrollContainer = getScrollableParent(currentPage.container);
+
+  if (!scrollContainer) {
+    return currentPage;
+  }
+
+  const scrollRect = scrollContainer.getBoundingClientRect();
+  const viewportCenterX = scrollRect.left + scrollRect.width / 2;
+  const viewportCenterY = scrollRect.top + scrollRect.height / 2;
+  const pageAtCenter = getPageAtPoint(viewportCenterX, viewportCenterY);
+  const pageAtCenterRenderer = pageAtCenter
+    ? pageRendererRegistry.get(Number(pageAtCenter.dataset.pageNumber))
+    : undefined;
+
+  if (pageAtCenterRenderer) {
+    return pageAtCenterRenderer;
+  }
+
+  return Array.from(pageRendererRegistry.values()).reduce((closestPage, page) => {
+    const pageRect = page.container.getBoundingClientRect();
+    const pageCenterX = pageRect.left + pageRect.width / 2;
+    const pageCenterY = pageRect.top + pageRect.height / 2;
+    const pageDistance = Math.hypot(pageCenterX - viewportCenterX, pageCenterY - viewportCenterY);
+    const closestPageRect = closestPage.container.getBoundingClientRect();
+    const closestPageCenterX = closestPageRect.left + closestPageRect.width / 2;
+    const closestPageCenterY = closestPageRect.top + closestPageRect.height / 2;
+    const closestPageDistance = Math.hypot(closestPageCenterX - viewportCenterX, closestPageCenterY - viewportCenterY);
+
+    return pageDistance < closestPageDistance ? page : closestPage;
+  }, currentPage);
+};
+
+const getPasteTarget = (currentPage: PageRenderer) => {
+  if (lastPastePointer) {
+    const pointerPageElement = getPageAtPoint(lastPastePointer.clientX, lastPastePointer.clientY);
+    const pointerPage = pointerPageElement
+      ? pageRendererRegistry.get(Number(pointerPageElement.dataset.pageNumber))
+      : undefined;
+
+    if (pointerPage) {
+      const pageRect = pointerPage.container.getBoundingClientRect();
+
+      return {
+        page: pointerPage,
+        x: (lastPastePointer.clientX - pageRect.left) / pointerPage.scale,
+        y: (lastPastePointer.clientY - pageRect.top) / pointerPage.scale,
+      };
+    }
+  }
+
+  const page = getVisiblePage(currentPage);
+
+  return {
+    page,
+    x: page.pageWidth / 2,
+    y: page.pageHeight / 2,
+  };
+};
+
+const getPastePositions = ({
+  fields,
+  page,
+  x,
+  y,
+}: {
+  fields: TLocalField[];
+  page: PageRenderer;
+  x: number;
+  y: number;
+}) => {
+  const minX = Math.min(...fields.map((field) => field.positionX));
+  const minY = Math.min(...fields.map((field) => field.positionY));
+  const maxX = Math.max(...fields.map((field) => field.positionX + field.width));
+  const maxY = Math.max(...fields.map((field) => field.positionY + field.height));
+  const groupWidth = maxX - minX;
+  const groupHeight = maxY - minY;
+  const targetGroupWidth = (groupWidth / 100) * page.pageWidth;
+  const targetGroupHeight = (groupHeight / 100) * page.pageHeight;
+  const maxPositionX = Math.max(0, 100 - groupWidth);
+  const maxPositionY = Math.max(0, 100 - groupHeight);
+  let targetMinX = Math.max(0, Math.min(maxPositionX, ((x - targetGroupWidth / 2) / page.pageWidth) * 100));
+  let targetMinY = Math.max(0, Math.min(maxPositionY, ((y - targetGroupHeight / 2) / page.pageHeight) * 100));
+
+  const matchesCopiedPositions = fields.every(
+    (field) =>
+      field.page === page.pageNumber && Math.abs(targetMinX - minX) < 0.01 && Math.abs(targetMinY - minY) < 0.01,
+  );
+
+  if (matchesCopiedPositions) {
+    targetMinX = targetMinX + 3 <= maxPositionX ? targetMinX + 3 : Math.max(0, targetMinX - 3);
+    targetMinY = targetMinY + 3 <= maxPositionY ? targetMinY + 3 : Math.max(0, targetMinY - 3);
+  }
+
+  return fields.map((field) => ({
+    field,
+    positionX: targetMinX + field.positionX - minX,
+    positionY: targetMinY + field.positionY - minY,
+  }));
+};
 
 const isFieldRenderedOnAnotherPage = (fieldFormId: string, currentPageLayer: Konva.Layer) =>
   Array.from(pageRendererRegistry.values()).some(
@@ -175,6 +283,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     setActiveGroupPlacements,
     setActivePlacement,
     setInvalidPlacement,
+    setPendingSelectionFieldFormIds,
   } = useEnvelopeEditorFieldDrag();
 
   const interactiveTransformer = useRef<Transformer | null>(null);
@@ -201,6 +310,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
       if (registeredPage?.container === konvaContainer.current) {
         pageRendererRegistry.delete(pageNumber);
+      }
+
+      if (lastPastePointer?.pageNumber === pageNumber) {
+        lastPastePointer = null;
       }
     };
   }, [pageNumber, konvaContainer]);
@@ -861,6 +974,30 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       setSelection: setSelectedFields,
     });
 
+    const updatePastePointer = (event: KonvaEventObject<Event>) => {
+      const clientPoint = getClientPoint(event);
+      const pointerPosition = currentStage.getPointerPosition();
+
+      if (!clientPoint || !pointerPosition) {
+        return;
+      }
+
+      lastPastePointer = {
+        clientX: clientPoint.x,
+        clientY: clientPoint.y,
+        pageNumber,
+      };
+    };
+
+    const clearPastePointer = () => {
+      if (lastPastePointer?.pageNumber === pageNumber) {
+        lastPastePointer = null;
+      }
+    };
+
+    currentStage.on('mousemove touchmove', updatePastePointer);
+    currentStage.on('mouseleave', clearPastePointer);
+
     for (const field of localPageFields) {
       renderFieldOnLayer(field);
     }
@@ -1285,9 +1422,42 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       return false;
     }
 
-    fieldClipboard.current = fieldClipboard.current.map((field) => editorFields.duplicateField(field));
+    const currentPage = pageRendererRegistry.get(pageNumber);
+
+    if (!currentPage) {
+      return false;
+    }
+
+    const pasteTarget = getPasteTarget(currentPage);
+
+    // Every mounted page registers its own key listener. Only the renderer for
+    // the page under the pointer (or the visible page fallback) may paste.
+    if (pasteTarget.page.pageLayer !== pageLayer.current) {
+      return false;
+    }
+
+    const pastePositions = getPastePositions({
+      fields: fieldClipboard.current,
+      page: pasteTarget.page,
+      x: pasteTarget.x,
+      y: pasteTarget.y,
+    });
+
+    setSelectedFields([], true);
+
+    const newFields = pastePositions.map(({ field, positionX, positionY }) =>
+      editorFields.duplicateField(field, {
+        envelopeItemId: currentEnvelopeItem?.id,
+        page: pasteTarget.page.pageNumber,
+        positionX,
+        positionY,
+      }),
+    );
+
+    fieldClipboard.current = newFields;
+    setPendingSelectionFieldFormIds(newFields.map((field) => field.formId));
     return true;
-  }, [editorFields, fieldClipboard]);
+  }, [currentEnvelopeItem?.id, editorFields, fieldClipboard, pageLayer, pageNumber, setPendingSelectionFieldFormIds]);
 
   /**
    * Moves the current selection by a small offset without dragging, so fields
