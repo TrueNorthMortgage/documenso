@@ -257,6 +257,7 @@ export const updateEmbeddingEnvelopeRoute = procedure
           email: apiToken.user.email,
         },
         apiRequestMetadata: ctx.metadata,
+        logger: ctx.logger,
       });
 
       // Build the map from the envelope item order.
