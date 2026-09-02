@@ -116,7 +116,11 @@ describe('createTemplateRecipients', () => {
       tx: tx as never,
       envelopeId: 'envelope_1',
       templateRecipients: [templateRecipient],
-      requestMetadata: {} as never,
+      requestMetadata: {
+        requestMetadata: {},
+        source: 'app',
+        auth: 'session',
+      },
     });
 
     expect(recipients).toEqual([createdRecipient]);
