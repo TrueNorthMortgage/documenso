@@ -2,6 +2,8 @@ import { buildTeamWhereQuery } from '@documenso/lib/utils/teams';
 import { prisma } from '@documenso/prisma';
 import { EnvelopeType, Prisma } from '@prisma/client';
 
+import { getTeamById } from '../team/get-team';
+
 export type GetRecipientSuggestionsOptions = {
   userId: number;
   teamId: number;
@@ -30,50 +32,43 @@ export const getRecipientSuggestions = async ({ userId, teamId, query }: GetReci
       }
     : {};
 
-  const recipients = await prisma.recipient.findMany({
-    where: {
-      envelope: {
-        type: EnvelopeType.DOCUMENT,
-        team: buildTeamWhereQuery({ teamId, userId }),
-      },
-      ...nameEmailFilter,
-    },
-    select: {
-      name: true,
-      email: true,
-      envelope: {
-        select: {
-          createdAt: true,
-        },
-      },
-    },
-    distinct: ['email'],
-    orderBy: {
-      envelope: {
-        createdAt: 'desc',
-      },
-    },
-    take: 5,
-  });
+  const team = await getTeamById({ teamId, userId });
 
-  if (teamId) {
-    const teamMembers = await prisma.organisationMember.findMany({
+  const [recipients, organisationMembers] = await Promise.all([
+    prisma.recipient.findMany({
       where: {
-        user: {
-          ...nameEmailFilter,
-          NOT: { id: userId },
+        envelope: {
+          type: EnvelopeType.DOCUMENT,
+          userId,
+          team: buildTeamWhereQuery({ teamId, userId }),
         },
-        organisationGroupMembers: {
-          some: {
-            group: {
-              teamGroups: {
-                some: { teamId },
-              },
-            },
+        ...nameEmailFilter,
+      },
+      select: {
+        name: true,
+        email: true,
+        envelope: {
+          select: {
+            createdAt: true,
           },
         },
       },
-      include: {
+      distinct: ['email'],
+      orderBy: {
+        envelope: {
+          createdAt: 'desc',
+        },
+      },
+      take: 5,
+    }),
+    prisma.organisationMember.findMany({
+      where: {
+        organisationId: team.organisationId,
+        user: {
+          ...nameEmailFilter,
+        },
+      },
+      select: {
         user: {
           select: {
             email: true,
@@ -82,21 +77,20 @@ export const getRecipientSuggestions = async ({ userId, teamId, query }: GetReci
         },
       },
       take: 5,
-    });
+    }),
+  ]);
 
-    const uniqueTeamMember = teamMembers.find((member) => !recipients.some((r) => r.email === member.user.email));
+  const suggestions = [
+    ...recipients.map(({ name, email }) => ({ name, email })),
+    ...organisationMembers.map(({ user }) => user),
+  ];
 
-    if (uniqueTeamMember) {
-      const teamMemberSuggestion = {
-        email: uniqueTeamMember.user.email,
-        name: uniqueTeamMember.user.name,
-      };
-
-      const allSuggestions = [...recipients.slice(0, 4), teamMemberSuggestion];
-
-      return allSuggestions;
-    }
-  }
-
-  return recipients;
+  return suggestions
+    .filter((suggestion, index, allSuggestions) => {
+      return (
+        allSuggestions.findIndex((candidate) => candidate.email.toLowerCase() === suggestion.email.toLowerCase()) ===
+        index
+      );
+    })
+    .slice(0, 5);
 };
