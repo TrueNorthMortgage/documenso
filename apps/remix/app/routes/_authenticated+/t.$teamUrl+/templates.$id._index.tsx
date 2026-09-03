@@ -3,7 +3,7 @@ import { useSession } from '@documenso/lib/client-only/providers/session';
 import { PDF_VIEWER_ERROR_MESSAGES } from '@documenso/lib/constants/pdf-viewer-i18n';
 import { mapSecondaryIdToTemplateId } from '@documenso/lib/utils/envelope';
 import { getDocumentDataUrlForPdfViewer } from '@documenso/lib/utils/envelope-download';
-import { formatDocumentsPath, formatTemplatesPath } from '@documenso/lib/utils/teams';
+import { canManageTemplate, formatDocumentsPath, formatTemplatesPath } from '@documenso/lib/utils/teams';
 import { trpc } from '@documenso/trpc/react';
 import { DocumentReadOnlyFields } from '@documenso/ui/components/document/document-read-only-fields';
 import { cn } from '@documenso/ui/lib/utils';
@@ -88,7 +88,14 @@ export default function TemplatePage({ params }: Route.ComponentProps) {
 
   const documentRootPath = formatDocumentsPath(team.url);
   const templateRootPath = formatTemplatesPath(team.url);
-  const isOwnTeamTemplate = envelope.teamId === team?.id;
+  const canManage =
+    envelope.userId === user.id ||
+    (envelope.teamId === team.id &&
+      canManageTemplate({
+        userId: user.id,
+        templateOwnerId: envelope.userId,
+        currentTeamRole: team.currentTeamRole,
+      }));
 
   // Remap to fit the DocumentReadOnlyFields component.
   const readOnlyFields = envelope.fields.map((field) => {
@@ -124,7 +131,7 @@ export default function TemplatePage({ params }: Route.ComponentProps) {
         </Link>
 
         <div className="flex shrink-0 flex-row space-x-4">
-          {isOwnTeamTemplate && (
+          {canManage && (
             <>
               <TemplateDirectLinkDialog
                 templateId={mapSecondaryIdToTemplateId(envelope.secondaryId)}
@@ -237,7 +244,6 @@ export default function TemplatePage({ params }: Route.ComponentProps) {
                       id: mapSecondaryIdToTemplateId(envelope.secondaryId),
                       envelopeId: envelope.id,
                     }}
-                    teamId={team?.id}
                     templateRootPath={templateRootPath}
                     onDelete={async () => navigate(templateRootPath)}
                   />
@@ -245,11 +251,7 @@ export default function TemplatePage({ params }: Route.ComponentProps) {
               </div>
 
               <p className="mt-2 px-4 text-muted-foreground text-sm">
-                {isOwnTeamTemplate ? (
-                  <Trans>Manage and view template</Trans>
-                ) : (
-                  <Trans>View organisation template</Trans>
-                )}
+                {canManage ? <Trans>Manage and view template</Trans> : <Trans>View organisation template</Trans>}
               </p>
 
               <div className="mt-4 border-t px-4 pt-4">
@@ -276,7 +278,7 @@ export default function TemplatePage({ params }: Route.ComponentProps) {
               recipients={envelope.recipients}
               envelopeId={envelope.id}
               templateRootPath={templateRootPath}
-              readOnly={!isOwnTeamTemplate}
+              readOnly={!canManage}
             />
 
             {/* Recent activity section. */}

@@ -21,6 +21,7 @@ import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapFieldToLegacyField } from '../../utils/fields';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 
 export type SetFieldsForTemplateOptions = {
   userId: number;
@@ -43,7 +44,7 @@ export type SetFieldsForTemplateOptions = {
 };
 
 export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFieldsForTemplateOptions) => {
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id,
     type: EnvelopeType.TEMPLATE,
     userId,
@@ -73,6 +74,13 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
       message: 'Document not found',
     });
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   const existingFields = envelope.fields;
 

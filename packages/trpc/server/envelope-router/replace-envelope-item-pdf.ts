@@ -1,6 +1,7 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { getEnvelopeWhereInput } from '@documenso/lib/server-only/envelope/get-envelope-by-id';
 import { UNSAFE_replaceEnvelopeItemPdf } from '@documenso/lib/server-only/envelope-item/replace-envelope-item-pdf';
+import { assertCanManageTemplate } from '@documenso/lib/server-only/template/validate-template-access';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
 import { prisma } from '@documenso/prisma';
 
@@ -31,7 +32,7 @@ export const replaceEnvelopeItemPdfRoute = authenticatedProcedure
       },
     });
 
-    const { envelopeWhereInput } = await getEnvelopeWhereInput({
+    const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
       id: {
         type: 'envelopeId',
         id: envelopeId,
@@ -58,6 +59,13 @@ export const replaceEnvelopeItemPdfRoute = authenticatedProcedure
         message: 'Envelope not found',
       });
     }
+
+    assertCanManageTemplate({
+      envelopeType: envelope.type,
+      templateOwnerId: envelope.userId,
+      currentTeamRole: team.currentTeamRole,
+      userId: user.id,
+    });
 
     if (envelope.internalVersion !== 2) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {

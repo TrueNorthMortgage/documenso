@@ -15,6 +15,7 @@ import { createDocumentAuthOptions, extractDocumentAuthMethods } from '../../uti
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { buildTeamWhereQuery, canAccessTeamDocument } from '../../utils/teams';
 import { recomputeNextReminderForEnvelope } from '../recipient/update-recipient-next-reminder';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
 import { getEnvelopeWhereInput } from './get-envelope-by-id';
 
@@ -75,6 +76,13 @@ export const updateEnvelope = async ({
       message: 'Envelope not found',
     });
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   if (envelope.type !== EnvelopeType.TEMPLATE && (data.publicTitle || data.publicDescription || data.templateType)) {
     throw new AppError(AppErrorCode.INVALID_BODY, {

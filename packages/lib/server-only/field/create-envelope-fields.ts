@@ -14,6 +14,7 @@ import { mapFieldToLegacyField } from '../../utils/fields';
 import { canRecipientFieldsBeModified } from '../../utils/recipients';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { type BoundingBox, whiteoutRegions } from '../pdf/auto-place-fields';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 
 type CoordinatePosition = {
   page: number;
@@ -67,7 +68,7 @@ export const createEnvelopeFields = async ({
   fields,
   requestMetadata,
 }: CreateEnvelopeFieldsOptions) => {
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id,
     type: null, // Null to allow any type of envelope.
     userId,
@@ -92,6 +93,13 @@ export const createEnvelopeFields = async ({
       message: 'Envelope not found',
     });
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   if (envelope.type === EnvelopeType.DOCUMENT && envelope.completedAt) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {

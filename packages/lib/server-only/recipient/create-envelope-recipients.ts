@@ -11,6 +11,7 @@ import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapRecipientToLegacyRecipient } from '../../utils/recipients';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 
 export interface CreateEnvelopeRecipientsOptions {
   userId: number;
@@ -34,7 +35,7 @@ export const createEnvelopeRecipients = async ({
   recipients: recipientsToCreate,
   requestMetadata,
 }: CreateEnvelopeRecipientsOptions) => {
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id,
     type: null,
     userId,
@@ -62,6 +63,13 @@ export const createEnvelopeRecipients = async ({
       message: 'Envelope not found',
     });
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   if (envelope.completedAt) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {

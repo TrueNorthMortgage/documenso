@@ -4,6 +4,7 @@ import { EnvelopeType } from '@prisma/client';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from './validate-template-access';
 
 export type DeleteTemplateDirectLinkOptions = {
   templateId: number;
@@ -16,7 +17,7 @@ export const deleteTemplateDirectLink = async ({
   userId,
   teamId,
 }: DeleteTemplateDirectLinkOptions): Promise<void> => {
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id: {
       type: 'templateId',
       id: templateId,
@@ -39,6 +40,13 @@ export const deleteTemplateDirectLink = async ({
       message: 'Template not found',
     });
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   const { directLink } = envelope;
 

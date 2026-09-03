@@ -1,4 +1,6 @@
+import { useSession } from '@documenso/lib/client-only/providers/session';
 import type { TRecipientLite } from '@documenso/lib/types/recipient';
+import { canManageTemplate } from '@documenso/lib/utils/teams';
 import { trpc as trpcReact } from '@documenso/trpc/react';
 import {
   DropdownMenu,
@@ -12,6 +14,8 @@ import { DocumentStatus, EnvelopeType, type TemplateDirectLink } from '@prisma/c
 import { Copy, Download, Edit, FolderIcon, MoreHorizontal, Pencil, Share2Icon, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
+
+import { useCurrentTeam } from '~/providers/team';
 
 import { EnvelopeDeleteDialog } from '../dialogs/envelope-delete-dialog';
 import { EnvelopeDownloadDialog } from '../dialogs/envelope-download-dialog';
@@ -33,23 +37,29 @@ export type TemplatesTableActionDropdownProps = {
     recipients: TRecipientLite[];
   };
   templateRootPath: string;
-  teamId: number;
   onDelete?: () => Promise<void> | void;
 };
 
 export const TemplatesTableActionDropdown = ({
   row,
   templateRootPath,
-  teamId,
   onDelete,
 }: TemplatesTableActionDropdownProps) => {
+  const { user } = useSession();
+  const team = useCurrentTeam();
   const trpcUtils = trpcReact.useUtils();
 
   const [isRenameDialogOpen, setRenameDialogOpen] = useState(false);
   const [isMoveToFolderDialogOpen, setMoveToFolderDialogOpen] = useState(false);
 
-  const isTeamTemplate = row.teamId === teamId;
-  const canMutate = isTeamTemplate;
+  const canMutate =
+    row.userId === user.id ||
+    (row.teamId === team.id &&
+      canManageTemplate({
+        userId: user.id,
+        templateOwnerId: row.userId,
+        currentTeamRole: team.currentTeamRole,
+      }));
 
   const formatPath = `${templateRootPath}/${row.envelopeId}/edit`;
 
@@ -75,6 +85,19 @@ export const TemplatesTableActionDropdown = ({
           }
         />
 
+        <EnvelopeDuplicateDialog
+          envelopeId={row.envelopeId}
+          envelopeType={EnvelopeType.TEMPLATE}
+          trigger={
+            <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
+              <div>
+                <Copy className="mr-2 h-4 w-4" />
+                <Trans>Duplicate</Trans>
+              </div>
+            </DropdownMenuItem>
+          }
+        />
+
         {canMutate && (
           <>
             <DropdownMenuItem asChild>
@@ -88,19 +111,6 @@ export const TemplatesTableActionDropdown = ({
               <Pencil className="mr-2 h-4 w-4" />
               <Trans>Rename</Trans>
             </DropdownMenuItem>
-
-            <EnvelopeDuplicateDialog
-              envelopeId={row.envelopeId}
-              envelopeType={EnvelopeType.TEMPLATE}
-              trigger={
-                <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
-                  <div>
-                    <Copy className="mr-2 h-4 w-4" />
-                    <Trans>Duplicate</Trans>
-                  </div>
-                </DropdownMenuItem>
-              }
-            />
 
             <TemplateDirectLinkDialog
               templateId={row.id}

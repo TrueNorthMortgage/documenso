@@ -216,7 +216,7 @@ export const TemplatesTable = ({
                 documentRootPath={documentRootPath}
               />
 
-              <TemplatesTableActionDropdown row={row.original} teamId={team?.id} templateRootPath={templateRootPath} />
+              <TemplatesTableActionDropdown row={row.original} templateRootPath={templateRootPath} />
             </div>
           );
         },

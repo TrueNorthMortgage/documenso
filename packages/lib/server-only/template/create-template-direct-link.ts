@@ -9,6 +9,7 @@ import { nanoid } from 'nanoid';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { type EnvelopeIdOptions, mapSecondaryIdToTemplateId } from '../../utils/envelope';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from './validate-template-access';
 
 export type CreateTemplateDirectLinkOptions = {
   id: EnvelopeIdOptions;
@@ -23,7 +24,7 @@ export const createTemplateDirectLink = async ({
   teamId,
   directRecipientId,
 }: CreateTemplateDirectLinkOptions) => {
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id,
     type: EnvelopeType.TEMPLATE,
     userId,
@@ -41,6 +42,13 @@ export const createTemplateDirectLink = async ({
   if (!envelope) {
     throw new AppError(AppErrorCode.NOT_FOUND, { message: 'Template not found' });
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   if (envelope.directLink) {
     throw new AppError(AppErrorCode.ALREADY_EXISTS, { message: 'Direct template already exists' });

@@ -78,6 +78,46 @@ export const canUpdateTeamDocumentVisibility = (
 };
 
 /**
+ * Determines whether a team member can modify a template.
+ *
+ * Templates shared with a team remain readable by members, but only the
+ * original owner or a manager/admin can change them.
+ */
+export const canManageTemplate = ({
+  userId,
+  templateOwnerId,
+  currentTeamRole,
+}: {
+  userId: number;
+  templateOwnerId: number;
+  currentTeamRole: TeamMemberRole;
+}) => {
+  return (
+    userId === templateOwnerId || currentTeamRole === TeamMemberRole.ADMIN || currentTeamRole === TeamMemberRole.MANAGER
+  );
+};
+
+/**
+ * Determines whether a team member can delete a folder.
+ *
+ * Folders may be visible to members based on their visibility, but deletion is
+ * limited to the owner and manager/admin roles.
+ */
+export const canManageFolder = ({
+  userId,
+  folderOwnerId,
+  currentTeamRole,
+}: {
+  userId: number;
+  folderOwnerId: number;
+  currentTeamRole: TeamMemberRole;
+}) => {
+  return (
+    userId === folderOwnerId || currentTeamRole === TeamMemberRole.ADMIN || currentTeamRole === TeamMemberRole.MANAGER
+  );
+};
+
+/**
  * Compares the provided `currentUserRole` with the provided `roleToCheck` to determine
  * whether the `currentUserRole` has permission to modify the `roleToCheck`.
  *

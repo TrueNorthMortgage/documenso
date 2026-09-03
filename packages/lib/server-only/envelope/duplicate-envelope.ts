@@ -9,6 +9,7 @@ import { nanoid, prefixedId } from '../../universal/id';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { incrementDocumentId, incrementTemplateId } from '../envelope/increment-id';
+import { getOrganisationTemplateWhereInput } from '../template/get-organisation-template-by-id';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
 
 export interface DuplicateEnvelopeOptions {
@@ -25,54 +26,67 @@ export interface DuplicateEnvelopeOptions {
 export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: DuplicateEnvelopeOptions) => {
   const { duplicateAsTemplate = false, includeRecipients = true, includeFields = true } = overrides ?? {};
 
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id,
     type: null,
     userId,
     teamId,
   });
 
-  const envelope = await prisma.envelope.findFirst({
-    where: envelopeWhereInput,
-    select: {
-      type: true,
-      title: true,
-      userId: true,
-      internalVersion: true,
-      templateType: true,
-      publicTitle: true,
-      publicDescription: true,
-      envelopeItems: {
-        include: {
-          documentData: {
-            select: {
-              data: true,
-              initialData: true,
-              type: true,
-            },
+  const envelopeSelect = {
+    type: true,
+    title: true,
+    userId: true,
+    internalVersion: true,
+    templateType: true,
+    publicTitle: true,
+    publicDescription: true,
+    envelopeItems: {
+      include: {
+        documentData: {
+          select: {
+            data: true,
+            initialData: true,
+            type: true,
           },
         },
       },
-      authOptions: true,
-      visibility: true,
-      documentMeta: true,
-      recipients: {
-        select: {
-          email: true,
-          name: true,
-          role: true,
-          signingOrder: true,
-          fields: {
-            include: {
-              conditionalChildRule: true,
-              fieldGroup: true,
-            },
-          },
-        },
-      },
-      teamId: true,
     },
+    authOptions: true,
+    visibility: true,
+    documentMeta: true,
+    recipients: {
+      select: {
+        email: true,
+        name: true,
+        role: true,
+        signingOrder: true,
+        fields: {
+          include: {
+            conditionalChildRule: true,
+            fieldGroup: true,
+          },
+        },
+      },
+    },
+    teamId: true,
+  } as const;
+
+  let envelope = await prisma.envelope.findFirst({
+    where: envelopeWhereInput,
+    select: envelopeSelect,
   });
+
+  if (!envelope) {
+    envelope = await prisma.envelope.findFirst({
+      where: getOrganisationTemplateWhereInput({
+        id,
+        organisationId: team.organisationId,
+        teamRole: team.currentTeamRole,
+      }),
+      select: envelopeSelect,
+    });
+  }
 
   if (!envelope) {
     throw new AppError(AppErrorCode.NOT_FOUND, {
@@ -119,7 +133,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
       internalVersion: envelope.internalVersion,
       userId,
       teamId,
-      title: envelope.title + ' (copy)',
+      title: `${envelope.title} (copy)`,
       documentMetaId: createdDocumentMeta.id,
       authOptions: envelope.authOptions || undefined,
       visibility: envelope.visibility,

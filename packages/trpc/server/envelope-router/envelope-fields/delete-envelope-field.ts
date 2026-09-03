@@ -1,5 +1,6 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { getEnvelopeWhereInput } from '@documenso/lib/server-only/envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from '@documenso/lib/server-only/template/validate-template-access';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
@@ -43,7 +44,7 @@ export const deleteEnvelopeFieldRoute = authenticatedProcedure
       });
     }
 
-    const { envelopeWhereInput } = await getEnvelopeWhereInput({
+    const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
       id: {
         type: 'envelopeId',
         id: unsafeField.envelopeId,
@@ -74,6 +75,13 @@ export const deleteEnvelopeFieldRoute = authenticatedProcedure
         message: 'Field not found',
       });
     }
+
+    assertCanManageTemplate({
+      envelopeType: envelope.type,
+      templateOwnerId: envelope.userId,
+      currentTeamRole: team.currentTeamRole,
+      userId: user.id,
+    });
 
     if (envelope.completedAt) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {

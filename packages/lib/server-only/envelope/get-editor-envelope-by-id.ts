@@ -5,6 +5,7 @@ import type { EnvelopeType } from '@prisma/client';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 
 export type GetEditorEnvelopeByIdOptions = {
   id: EnvelopeIdOptions;
@@ -28,7 +29,7 @@ export type GetEditorEnvelopeByIdOptions = {
 };
 
 export const getEditorEnvelopeById = async ({ id, userId, teamId, type }: GetEditorEnvelopeByIdOptions) => {
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id,
     userId,
     teamId,
@@ -98,6 +99,13 @@ export const getEditorEnvelopeById = async ({ id, userId, teamId, type }: GetEdi
       message: 'Envelope could not be found',
     });
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   const pageCounts = await getEnvelopeItemPageCounts(envelope.envelopeItems).catch((error) => {
     console.error('Unable to determine envelope item page counts', error);

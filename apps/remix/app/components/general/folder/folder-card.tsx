@@ -1,4 +1,5 @@
-import { formatDocumentsPath, formatTemplatesPath } from '@documenso/lib/utils/teams';
+import { useSession } from '@documenso/lib/client-only/providers/session';
+import { canManageFolder, formatDocumentsPath, formatTemplatesPath } from '@documenso/lib/utils/teams';
 import { trpc } from '@documenso/trpc/react';
 import type { TFolderWithSubfolders } from '@documenso/trpc/server/folder-router/schema';
 import { Button } from '@documenso/ui/primitives/button';
@@ -33,6 +34,7 @@ export type FolderCardProps = {
 };
 
 export const FolderCard = ({ folder, onMove, onSettings, onDelete }: FolderCardProps) => {
+  const { user } = useSession();
   const team = useCurrentTeam();
 
   const { mutateAsync: updateFolderMutation } = trpc.folder.updateFolder.useMutation();
@@ -52,6 +54,12 @@ export const FolderCard = ({ folder, onMove, onSettings, onDelete }: FolderCardP
       },
     });
   };
+
+  const canManage = canManageFolder({
+    userId: user.id,
+    folderOwnerId: folder.userId,
+    currentTeamRole: team.currentTeamRole,
+  });
 
   return (
     <Link to={formatPath()} data-folder-id={folder.id} data-folder-name={folder.name}>
@@ -94,37 +102,39 @@ export const FolderCard = ({ folder, onMove, onSettings, onDelete }: FolderCardP
                 </div>
               </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid="folder-card-more-button">
-                    <MoreVerticalIcon className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
+              {canManage && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" data-testid="folder-card-more-button">
+                      <MoreVerticalIcon className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
 
-                <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="end">
-                  <DropdownMenuItem onClick={() => onMove(folder)}>
-                    <ArrowRightIcon className="mr-2 h-4 w-4" />
-                    <Trans>Move</Trans>
-                  </DropdownMenuItem>
+                  <DropdownMenuContent onClick={(e) => e.stopPropagation()} align="end">
+                    <DropdownMenuItem onClick={() => onMove(folder)}>
+                      <ArrowRightIcon className="mr-2 h-4 w-4" />
+                      <Trans>Move</Trans>
+                    </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={async () => updateFolder({ pinned: !folder.pinned })}>
-                    <PinIcon className="mr-2 h-4 w-4" />
-                    {folder.pinned ? <Trans>Unpin</Trans> : <Trans>Pin</Trans>}
-                  </DropdownMenuItem>
+                    <DropdownMenuItem onClick={async () => updateFolder({ pinned: !folder.pinned })}>
+                      <PinIcon className="mr-2 h-4 w-4" />
+                      {folder.pinned ? <Trans>Unpin</Trans> : <Trans>Pin</Trans>}
+                    </DropdownMenuItem>
 
-                  <DropdownMenuItem onClick={() => onSettings(folder)}>
-                    <SettingsIcon className="mr-2 h-4 w-4" />
-                    <Trans>Settings</Trans>
-                  </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onSettings(folder)}>
+                      <SettingsIcon className="mr-2 h-4 w-4" />
+                      <Trans>Settings</Trans>
+                    </DropdownMenuItem>
 
-                  <DropdownMenuSeparator />
+                    <DropdownMenuSeparator />
 
-                  <DropdownMenuItem onClick={() => onDelete(folder)}>
-                    <TrashIcon className="mr-2 h-4 w-4" />
-                    <Trans>Delete</Trans>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuItem onClick={() => onDelete(folder)}>
+                      <TrashIcon className="mr-2 h-4 w-4" />
+                      <Trans>Delete</Trans>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
         </CardContent>

@@ -12,6 +12,7 @@ import { nanoid } from '../../universal/id';
 import { createRecipientAuthOptions } from '../../utils/document-auth';
 import { type EnvelopeIdOptions, mapSecondaryIdToTemplateId } from '../../utils/envelope';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 
 export type SetTemplateRecipientsOptions = {
   userId: number;
@@ -21,7 +22,7 @@ export type SetTemplateRecipientsOptions = {
 };
 
 export const setTemplateRecipients = async ({ userId, teamId, id, recipients }: SetTemplateRecipientsOptions) => {
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id,
     type: EnvelopeType.TEMPLATE,
     userId,
@@ -48,6 +49,13 @@ export const setTemplateRecipients = async ({ userId, teamId, id, recipients }: 
   if (!envelope) {
     throw new Error('Template not found');
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   const recipientsHaveActionAuth = recipients.some(
     (recipient) => recipient.actionAuth && recipient.actionAuth.length > 0,

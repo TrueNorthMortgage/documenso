@@ -10,6 +10,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  unit_tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: ./.github/actions/node-install
+
+      - name: Run unit tests
+        run: npm run test -w @documenso/lib
+
   build_app:
     name: Build App
     runs-on: ubuntu-latest

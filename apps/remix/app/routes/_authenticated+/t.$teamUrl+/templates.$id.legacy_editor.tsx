@@ -1,7 +1,7 @@
 import { getSession } from '@documenso/auth/server/lib/utils/get-session';
 import { getTeamByUrl } from '@documenso/lib/server-only/team/get-team';
 import { getTemplateById } from '@documenso/lib/server-only/template/get-template-by-id';
-import { formatTemplatesPath } from '@documenso/lib/utils/teams';
+import { canManageTemplate, formatTemplatesPath } from '@documenso/lib/utils/teams';
 import { Trans } from '@lingui/react/macro';
 import { ChevronLeft } from 'lucide-react';
 import { Link, redirect } from 'react-router';
@@ -39,6 +39,16 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   }).catch(() => null);
 
   if (!template || !template.templateDocumentData) {
+    throw redirect(templateRootPath);
+  }
+
+  if (
+    !canManageTemplate({
+      userId: user.id,
+      templateOwnerId: template.userId,
+      currentTeamRole: team.currentTeamRole,
+    })
+  ) {
     throw redirect(templateRootPath);
   }
 

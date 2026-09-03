@@ -5,6 +5,7 @@ import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
+import { assertCanManageTemplate } from './validate-template-access';
 
 export type DeleteTemplateOptions = {
   id: EnvelopeIdOptions;
@@ -13,7 +14,7 @@ export type DeleteTemplateOptions = {
 };
 
 export const deleteTemplate = async ({ id, userId, teamId }: DeleteTemplateOptions) => {
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id,
     type: EnvelopeType.TEMPLATE,
     userId,
@@ -23,6 +24,13 @@ export const deleteTemplate = async ({ id, userId, teamId }: DeleteTemplateOptio
   const templateToDelete = await prisma.envelope.findUniqueOrThrow({
     where: envelopeWhereInput,
     include: { documentMeta: true, recipients: true },
+  });
+
+  assertCanManageTemplate({
+    envelopeType: templateToDelete.type,
+    templateOwnerId: templateToDelete.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
   });
 
   const deletedTemplate = await prisma.envelope.delete({
