@@ -2,7 +2,7 @@ import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { EnvelopeType, TeamMemberRole } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
-import { assertCanManageTemplate } from './validate-template-access';
+import { assertCanManageTemplate, assertCanManageTemplates } from './validate-template-access';
 
 describe('assertCanManageTemplate', () => {
   it("rejects a member modifying another user's template", () => {
@@ -58,6 +58,26 @@ describe('assertCanManageTemplate', () => {
         templateOwnerId: 1,
         currentTeamRole: TeamMemberRole.MEMBER,
         userId: 2,
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects a batch containing a template owned by another member', () => {
+    expect(() =>
+      assertCanManageTemplates({
+        templateOwnerIds: [1, 2],
+        currentTeamRole: TeamMemberRole.MEMBER,
+        userId: 1,
+      }),
+    ).toThrowError(AppError);
+  });
+
+  it('allows managers to modify a batch of templates', () => {
+    expect(() =>
+      assertCanManageTemplates({
+        templateOwnerIds: [1, 2],
+        currentTeamRole: TeamMemberRole.MANAGER,
+        userId: 3,
       }),
     ).not.toThrow();
   });

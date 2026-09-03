@@ -34,51 +34,63 @@ export const getRecipientSuggestions = async ({ userId, teamId, query }: GetReci
 
   const team = await getTeamById({ teamId, userId });
 
-  const [recipients, organisationMembers] = await Promise.all([
-    prisma.recipient.findMany({
-      where: {
-        envelope: {
-          type: EnvelopeType.DOCUMENT,
-          userId,
-          team: buildTeamWhereQuery({ teamId, userId }),
+  const recipients = await prisma.recipient.findMany({
+    where: {
+      envelope: {
+        type: EnvelopeType.DOCUMENT,
+        userId,
+        team: buildTeamWhereQuery({ teamId, userId }),
+      },
+      ...nameEmailFilter,
+    },
+    select: {
+      name: true,
+      email: true,
+      envelope: {
+        select: {
+          createdAt: true,
         },
+      },
+    },
+    distinct: ['email'],
+    orderBy: {
+      envelope: {
+        createdAt: 'desc',
+      },
+    },
+    take: 5,
+  });
+
+  const organisationMembers = await prisma.organisationMember.findMany({
+    where: {
+      organisationId: team.organisationId,
+      user: {
         ...nameEmailFilter,
+        ...(recipients.length > 0
+          ? {
+              email: {
+                notIn: recipients.map(({ email }) => email),
+                mode: Prisma.QueryMode.insensitive,
+              },
+            }
+          : {}),
       },
-      select: {
-        name: true,
-        email: true,
-        envelope: {
-          select: {
-            createdAt: true,
-          },
+    },
+    select: {
+      user: {
+        select: {
+          email: true,
+          name: true,
         },
       },
-      distinct: ['email'],
-      orderBy: {
-        envelope: {
-          createdAt: 'desc',
-        },
+    },
+    orderBy: {
+      user: {
+        name: 'asc',
       },
-      take: 5,
-    }),
-    prisma.organisationMember.findMany({
-      where: {
-        organisationId: team.organisationId,
-        user: {
-          ...nameEmailFilter,
-        },
-      },
-      select: {
-        user: {
-          select: {
-            email: true,
-            name: true,
-          },
-        },
-      },
-      take: 5,
-    }),
-  ]);
+    },
+    take: 5,
+  });
 
   const suggestions = [
     ...recipients.map(({ name, email }) => ({ name, email })),

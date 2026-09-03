@@ -21,3 +21,22 @@ export const assertCanManageTemplate = ({
     });
   }
 };
+
+export const assertCanManageTemplates = ({
+  templateOwnerIds,
+  currentTeamRole,
+  userId,
+}: {
+  templateOwnerIds: number[];
+  currentTeamRole: TeamMemberRole;
+  userId: number;
+}) => {
+  for (const templateOwnerId of templateOwnerIds) {
+    assertCanManageTemplate({
+      envelopeType: EnvelopeType.TEMPLATE,
+      templateOwnerId,
+      currentTeamRole,
+      userId,
+    });
+  }
+};

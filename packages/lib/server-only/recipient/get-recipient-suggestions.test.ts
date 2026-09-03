@@ -79,8 +79,54 @@ describe('getRecipientSuggestions', () => {
           },
         },
       },
+      orderBy: {
+        user: {
+          name: 'asc',
+        },
+      },
       take: 5,
     });
+  });
+
+  it('does not use previous recipients to consume organisation suggestion slots', async () => {
+    mocks.prisma.recipient.findMany.mockResolvedValue([
+      {
+        email: 'member@example.com',
+        name: 'Organisation Member',
+      },
+    ]);
+    mocks.prisma.organisationMember.findMany.mockResolvedValue([
+      {
+        user: {
+          email: 'member@example.com',
+          name: 'Organisation Member',
+        },
+      },
+      {
+        user: {
+          email: 'second@example.com',
+          name: 'Second Member',
+        },
+      },
+    ]);
+
+    await expect(getRecipientSuggestions({ userId: 10, teamId: 1, query: 'member' })).resolves.toEqual([
+      { email: 'member@example.com', name: 'Organisation Member' },
+      { email: 'second@example.com', name: 'Second Member' },
+    ]);
+
+    expect(mocks.prisma.organisationMember.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          user: expect.objectContaining({
+            email: {
+              notIn: ['member@example.com'],
+              mode: 'insensitive',
+            },
+          }),
+        }),
+      }),
+    );
   });
 
   it('does not exclude the current user from organisation suggestions', async () => {
