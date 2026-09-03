@@ -1,5 +1,7 @@
-import { seedDraftDocument } from '@documenso/prisma/seed/documents';
+import { DocumentVisibility, FolderType, TeamMemberRole } from '@documenso/prisma/client';
+import { seedDraftDocument, seedTeamDocuments } from '@documenso/prisma/seed/documents';
 import { seedBlankFolder } from '@documenso/prisma/seed/folders';
+import { seedTeamMember } from '@documenso/prisma/seed/teams';
 import { seedUser } from '@documenso/prisma/seed/users';
 import { expect, test } from '@playwright/test';
 
@@ -108,6 +110,49 @@ test('[BULK_ACTIONS]: can move multiple documents to a folder', async ({ page })
   await page.goto(`/t/${sender.team.url}/documents/f/${folder.id}`);
   await expect(page.getByRole('link', { name: 'Bulk Test Doc 1' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Bulk Test Doc 2' })).toBeVisible();
+});
+
+test('[BULK_ACTIONS]: team member can bulk move documents to their own restricted folder', async ({ page }) => {
+  const { team } = await seedTeamDocuments();
+  const teamMember = await seedTeamMember({
+    teamId: team.id,
+    name: 'Bulk Move Team Member',
+    role: TeamMemberRole.MEMBER,
+  });
+
+  const folder = await seedBlankFolder(teamMember, team.id, {
+    createFolderOptions: {
+      name: 'Member-owned restricted folder',
+      visibility: DocumentVisibility.MANAGER_AND_ABOVE,
+      type: FolderType.DOCUMENT,
+    },
+  });
+
+  const documents = await Promise.all([
+    seedDraftDocument(teamMember, team.id, [], { createDocumentOptions: { title: 'Bulk Member Document 1' } }),
+    seedDraftDocument(teamMember, team.id, [], { createDocumentOptions: { title: 'Bulk Member Document 2' } }),
+  ]);
+
+  await apiSignin({
+    page,
+    email: teamMember.email,
+    redirectPath: `/t/${team.url}/documents`,
+  });
+
+  for (const document of documents) {
+    await page.locator('tr', { hasText: document.title }).getByRole('checkbox').click();
+  }
+
+  await page.getByRole('button', { name: 'Move to Folder' }).click();
+  await expect(page.getByRole('button', { name: folder.name })).toBeVisible();
+  await page.getByRole('button', { name: folder.name }).click();
+  await page.getByRole('button', { name: 'Move' }).click();
+
+  await expectToastTextToBeVisible(page, 'Selected items have been moved.');
+
+  await page.goto(`/t/${team.url}/documents/f/${folder.id}`);
+  await expect(page.getByRole('link', { name: 'Bulk Member Document 1' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Bulk Member Document 2' })).toBeVisible();
 });
 
 test('[BULK_ACTIONS]: can delete multiple draft documents', async ({ page }) => {

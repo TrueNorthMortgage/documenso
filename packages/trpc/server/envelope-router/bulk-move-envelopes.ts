@@ -46,9 +46,14 @@ export const bulkMoveEnvelopesRoute = authenticatedProcedure
             userId: user.id,
           }),
           type: envelopeType,
-          visibility: {
-            in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole],
-          },
+          OR: [
+            {
+              visibility: {
+                in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole],
+              },
+            },
+            { userId: user.id },
+          ],
         },
       });
 
