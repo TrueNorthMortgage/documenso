@@ -4,6 +4,7 @@ import { EnvelopeType } from '@prisma/client';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { mapSecondaryIdToTemplateId } from '../../utils/envelope';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from './validate-template-access';
 
 export type ToggleTemplateDirectLinkOptions = {
   templateId: number;
@@ -18,7 +19,7 @@ export const toggleTemplateDirectLink = async ({
   teamId,
   enabled,
 }: ToggleTemplateDirectLinkOptions) => {
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     type: EnvelopeType.TEMPLATE,
     id: {
       type: 'templateId',
@@ -41,6 +42,13 @@ export const toggleTemplateDirectLink = async ({
       message: 'Template not found',
     });
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   const { directLink } = envelope;
 

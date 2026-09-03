@@ -10,6 +10,7 @@ import { setFieldsForDocument } from '@documenso/lib/server-only/field/set-field
 import { setFieldsForTemplate } from '@documenso/lib/server-only/field/set-fields-for-template';
 import { setDocumentRecipients } from '@documenso/lib/server-only/recipient/set-document-recipients';
 import { setTemplateRecipients } from '@documenso/lib/server-only/recipient/set-template-recipients';
+import { assertCanManageTemplate } from '@documenso/lib/server-only/template/validate-template-access';
 import { nanoid } from '@documenso/lib/universal/id';
 import { PRESIGNED_ENVELOPE_ITEM_ID_PREFIX } from '@documenso/lib/utils/embed-config';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
@@ -52,7 +53,7 @@ export const updateEmbeddingEnvelopeRoute = procedure
       scope: `envelopeId:${envelopeId}`,
     });
 
-    const { envelopeWhereInput } = await getEnvelopeWhereInput({
+    const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
       id: {
         type: 'envelopeId',
         id: envelopeId,
@@ -85,6 +86,13 @@ export const updateEmbeddingEnvelopeRoute = procedure
         message: 'Envelope not found',
       });
     }
+
+    assertCanManageTemplate({
+      envelopeType: envelope.type,
+      templateOwnerId: envelope.userId,
+      currentTeamRole: team.currentTeamRole,
+      userId: apiToken.userId,
+    });
 
     if (envelope.status === DocumentStatus.COMPLETED) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {

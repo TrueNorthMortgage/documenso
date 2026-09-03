@@ -3,7 +3,7 @@ import { prisma } from '@documenso/prisma';
 import type { DocumentVisibility } from '@documenso/prisma/generated/types';
 
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
-import { buildTeamWhereQuery } from '../../utils/teams';
+import { buildTeamWhereQuery, canManageFolder } from '../../utils/teams';
 import { getTeamById } from '../team/get-team';
 
 export interface UpdateFolderOptions {
@@ -44,6 +44,19 @@ export const updateFolder = async ({ userId, teamId, folderId, data }: UpdateFol
   if (!folder) {
     throw new AppError(AppErrorCode.NOT_FOUND, {
       message: 'Folder not found',
+    });
+  }
+
+  if (
+    !canManageFolder({
+      userId,
+      folderOwnerId: folder.userId,
+      currentTeamRole: team.currentTeamRole,
+    })
+  ) {
+    throw new AppError(AppErrorCode.FORBIDDEN, {
+      message: 'Only the folder owner or a manager can modify this folder',
+      userMessage: 'Only the folder owner or a manager can modify this folder.',
     });
   }
 

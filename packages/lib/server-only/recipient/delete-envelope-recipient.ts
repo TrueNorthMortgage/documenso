@@ -17,6 +17,7 @@ import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { buildTeamWhereQuery } from '../../utils/teams';
 import { getEmailContext } from '../email/get-email-context';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 
 export interface DeleteEnvelopeRecipientOptions {
   userId: number;
@@ -97,7 +98,7 @@ export const deleteEnvelopeRecipient = async ({
     });
   }
 
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id: {
       type: 'envelopeId',
       id: envelope.id,
@@ -105,6 +106,13 @@ export const deleteEnvelopeRecipient = async ({
     type: null,
     userId,
     teamId,
+  });
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
   });
 
   const deletedRecipient = await prisma.$transaction(async (tx) => {

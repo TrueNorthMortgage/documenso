@@ -9,6 +9,7 @@ import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { TDocumentEmailSettings } from '../../types/document-email';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 
 export type CreateDocumentMetaOptions = {
   userId: number;
@@ -72,6 +73,13 @@ export const updateDocumentMeta = async ({
       message: 'Document not found',
     });
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   const { documentMeta: originalDocumentMeta } = envelope;
 

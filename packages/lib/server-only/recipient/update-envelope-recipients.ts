@@ -13,6 +13,7 @@ import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapFieldToLegacyField } from '../../utils/fields';
 import { canRecipientBeModified } from '../../utils/recipients';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 
 export interface UpdateEnvelopeRecipientsOptions {
   userId: number;
@@ -37,7 +38,7 @@ export const updateEnvelopeRecipients = async ({
   recipients,
   requestMetadata,
 }: UpdateEnvelopeRecipientsOptions) => {
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id,
     type: null,
     userId,
@@ -66,6 +67,13 @@ export const updateEnvelopeRecipients = async ({
       message: 'Envelope not found',
     });
   }
+
+  assertCanManageTemplate({
+    envelopeType: envelope.type,
+    templateOwnerId: envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   if (envelope.completedAt) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {

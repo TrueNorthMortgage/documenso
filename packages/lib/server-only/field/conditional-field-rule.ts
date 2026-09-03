@@ -8,6 +8,8 @@ import {
 } from '../../types/conditional-field';
 import { getFieldOptionValue } from '../../utils/field-option-values';
 import { buildTeamWhereQuery } from '../../utils/teams';
+import { getTeamById } from '../team/get-team';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 
 const CONDITIONAL_PARENT_TYPES = new Set<FieldType>([
   FieldType.CHECKBOX,
@@ -45,6 +47,15 @@ const getAuthorizedField = async ({ fieldId, userId, teamId }: { fieldId: number
       message: `Field with id ${fieldId} not found`,
     });
   }
+
+  const team = await getTeamById({ teamId, userId });
+
+  assertCanManageTemplate({
+    envelopeType: field.envelope.type,
+    templateOwnerId: field.envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
+  });
 
   return field;
 };

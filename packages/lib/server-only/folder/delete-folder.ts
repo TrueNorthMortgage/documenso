@@ -2,7 +2,7 @@ import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { prisma } from '@documenso/prisma';
 
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
-import { buildTeamWhereQuery, canAccessTeamDocument } from '../../utils/teams';
+import { buildTeamWhereQuery, canManageFolder } from '../../utils/teams';
 import { getTeamById } from '../team/get-team';
 
 export interface DeleteFolderOptions {
@@ -21,9 +21,7 @@ export const deleteFolder = async ({ userId, teamId, folderId }: DeleteFolderOpt
         teamId,
         userId,
       }),
-      visibility: {
-        in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole],
-      },
+      OR: [{ visibility: { in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole] } }, { userId }],
     },
   });
 
@@ -33,11 +31,16 @@ export const deleteFolder = async ({ userId, teamId, folderId }: DeleteFolderOpt
     });
   }
 
-  const hasPermission = canAccessTeamDocument(team.currentTeamRole, folder.visibility);
-
-  if (!hasPermission) {
-    throw new AppError(AppErrorCode.UNAUTHORIZED, {
-      message: 'You do not have permission to delete this folder',
+  if (
+    !canManageFolder({
+      userId,
+      folderOwnerId: folder.userId,
+      currentTeamRole: team.currentTeamRole,
+    })
+  ) {
+    throw new AppError(AppErrorCode.FORBIDDEN, {
+      message: 'Only the folder owner or a manager can delete this folder',
+      userMessage: 'Only the folder owner or a manager can delete this folder.',
     });
   }
 

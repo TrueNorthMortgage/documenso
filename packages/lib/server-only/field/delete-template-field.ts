@@ -4,6 +4,7 @@ import { EnvelopeType } from '@prisma/client';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { buildTeamWhereQuery } from '../../utils/teams';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { assertCanManageTemplate } from '../template/validate-template-access';
 
 export interface DeleteTemplateFieldOptions {
   userId: number;
@@ -20,6 +21,14 @@ export const deleteTemplateField = async ({ userId, teamId, fieldId }: DeleteTem
         team: buildTeamWhereQuery({ teamId, userId }),
       },
     },
+    include: {
+      envelope: {
+        select: {
+          type: true,
+          userId: true,
+        },
+      },
+    },
   });
 
   if (!field) {
@@ -29,7 +38,7 @@ export const deleteTemplateField = async ({ userId, teamId, fieldId }: DeleteTem
   }
 
   // Additional validation to check visibility.
-  const { envelopeWhereInput } = await getEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
     id: {
       type: 'envelopeId',
       id: field.envelopeId,
@@ -37,6 +46,13 @@ export const deleteTemplateField = async ({ userId, teamId, fieldId }: DeleteTem
     type: EnvelopeType.TEMPLATE,
     userId,
     teamId,
+  });
+
+  assertCanManageTemplate({
+    envelopeType: field.envelope.type,
+    templateOwnerId: field.envelope.userId,
+    currentTeamRole: team.currentTeamRole,
+    userId,
   });
 
   await prisma.field.delete({
