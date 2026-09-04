@@ -11,7 +11,7 @@ import type {
   TCreateEnvelopePayload,
   TCreateEnvelopeResponse,
 } from '@documenso/trpc/server/envelope-router/create-envelope.types';
-import { PDF } from '@libpdf/core';
+import { PDF, PdfDict, PdfRef } from '@libpdf/core';
 import { expect, test } from '@playwright/test';
 
 const WEBAPP_BASE_URL = NEXT_PUBLIC_WEBAPP_URL();
@@ -42,11 +42,28 @@ async function pdfHasFormFields(pdfBuffer: Uint8Array): Promise<boolean> {
 
   const form = await pdfDoc.getForm();
 
-  if (!form) {
-    return false;
+  if (form && form.fieldCount > 0) {
+    return true;
   }
 
-  return form.fieldCount > 0;
+  return pdfDoc.getPages().some((page) => {
+    const annotations = page.dict.getArray('Annots');
+
+    if (!annotations) {
+      return false;
+    }
+
+    for (let index = 0; index < annotations.length; index++) {
+      const annotation = annotations.at(index);
+      const annotationDict = annotation instanceof PdfRef ? pdfDoc.getObject(annotation) : annotation;
+
+      if (annotationDict instanceof PdfDict && annotationDict.getName('Subtype')?.value === 'Widget') {
+        return true;
+      }
+    }
+
+    return false;
+  });
 }
 
 /**

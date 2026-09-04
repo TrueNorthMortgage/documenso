@@ -40,6 +40,16 @@ type LocalFile = {
   isError: boolean;
 };
 
+const AppliedTemplateName = ({ sourceItemId }: { sourceItemId: string }) => {
+  const { data, isLoading } = trpc.template.getTemplateBySourceItemId.useQuery({ envelopeItemId: sourceItemId });
+
+  if (isLoading) {
+    return <Trans>Loading template...</Trans>;
+  }
+
+  return data?.title ?? <Trans>Template unavailable</Trans>;
+};
+
 export const EnvelopeEditorUploadPage = () => {
   const organisation = useCurrentOrganisation();
 
@@ -60,6 +70,16 @@ export const EnvelopeEditorUploadPage = () => {
   } = useCurrentEnvelopeEditor();
 
   const { envelopeItems: uploadConfig } = editorConfig;
+
+  const appliedTemplateSourceItemIdByEnvelopeItemId = useMemo(
+    () =>
+      new Map(
+        envelope.fields
+          .filter((field) => field.envelopeItemId !== null && field.templateSourceItemId !== null)
+          .map((field) => [field.envelopeItemId, field.templateSourceItemId]),
+      ),
+    [envelope.fields],
+  );
 
   const [localFiles, setLocalFiles] = useState<LocalFile[]>(
     envelope.envelopeItems
@@ -574,6 +594,19 @@ export const EnvelopeEditorUploadPage = () => {
                                 )}
 
                                 <div className="text-muted-foreground text-xs">
+                                  {localFile.envelopeItemId !== null &&
+                                    appliedTemplateSourceItemIdByEnvelopeItemId.has(localFile.envelopeItemId) && (
+                                      <>
+                                        <Trans>Template Applied:</Trans>{' '}
+                                        <AppliedTemplateName
+                                          sourceItemId={
+                                            appliedTemplateSourceItemIdByEnvelopeItemId.get(localFile.envelopeItemId) ??
+                                            ''
+                                          }
+                                        />
+                                      </>
+                                    )}
+
                                   {localFile.isUploading ? (
                                     <Trans>Uploading</Trans>
                                   ) : localFile.isError ? (
