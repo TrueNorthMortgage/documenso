@@ -1,5 +1,6 @@
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
+import { useSession } from '@documenso/lib/client-only/providers/session';
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import { AppError } from '@documenso/lib/errors/app-error';
 import { getInvalidFieldGroupConfigurations, type TFieldWithGroup } from '@documenso/lib/utils/field-groups';
@@ -66,6 +67,7 @@ export const EnvelopeDistributeDialog = ({
   documentRootPath,
   onDistribute,
 }: EnvelopeDistributeDialogProps) => {
+  const { user } = useSession();
   const organisation = useCurrentOrganisation();
 
   const { envelope, editorFields, syncEnvelope, isAutosaving, autosaveError } = useCurrentEnvelopeEditor();
@@ -368,9 +370,14 @@ export const EnvelopeDistributeDialog = ({
                                     </Trans>
                                   </FormLabel>
 
-                                  <FormControl>
-                                    <Input {...field} maxLength={254} />
-                                  </FormControl>
+                                  <div className="flex gap-2">
+                                    <FormControl>
+                                      <Input {...field} className="min-w-0 flex-1" maxLength={254} />
+                                    </FormControl>
+                                    <Button type="button" variant="outline" onClick={() => field.onChange(user.email)}>
+                                      <Trans>Add Myself</Trans>
+                                    </Button>
+                                  </div>
 
                                   <FormMessage />
                                 </FormItem>
