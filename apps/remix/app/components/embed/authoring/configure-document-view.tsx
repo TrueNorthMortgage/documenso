@@ -53,7 +53,7 @@ export const ConfigureDocumentView = ({
       meta: {
         subject: defaultValues?.meta?.subject || '',
         message: defaultValues?.meta?.message || '',
-        distributionMethod: defaultValues?.meta?.distributionMethod || DocumentDistributionMethod.EMAIL,
+        distributionMethod: DocumentDistributionMethod.EMAIL,
         emailSettings: defaultValues?.meta?.emailSettings || ZDocumentEmailSettingsSchema.parse({}),
         dateFormat: defaultValues?.meta?.dateFormat || DEFAULT_DOCUMENT_DATE_FORMAT,
         timezone: defaultValues?.meta?.timezone || DEFAULT_DOCUMENT_TIME_ZONE,

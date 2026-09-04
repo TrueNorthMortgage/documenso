@@ -2,7 +2,12 @@ import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-log
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import { createDocumentAuditLogData, diffDocumentMetaChanges } from '@documenso/lib/utils/document-audit-logs';
 import { prisma } from '@documenso/prisma';
-import { type DocumentDistributionMethod, type DocumentSigningOrder, EnvelopeType } from '@prisma/client';
+import {
+  DocumentDistributionMethod,
+  type DocumentDistributionMethod as DocumentDistributionMethodType,
+  type DocumentSigningOrder,
+  EnvelopeType,
+} from '@prisma/client';
 
 import type { SupportedLanguageCodes } from '../../constants/i18n';
 import { AppError, AppErrorCode } from '../../errors/app-error';
@@ -25,7 +30,7 @@ export type CreateDocumentMetaOptions = {
   emailSettings?: TDocumentEmailSettings;
   signingOrder?: DocumentSigningOrder;
   allowDictateNextSigner?: boolean;
-  distributionMethod?: DocumentDistributionMethod;
+  distributionMethod?: DocumentDistributionMethodType;
   typedSignatureEnabled?: boolean;
   uploadSignatureEnabled?: boolean;
   drawSignatureEnabled?: boolean;
@@ -115,7 +120,10 @@ export const updateDocumentMeta = async ({
         emailId,
         emailReplyTo,
         emailSettings,
-        distributionMethod,
+        distributionMethod:
+          distributionMethod === DocumentDistributionMethod.NONE
+            ? DocumentDistributionMethod.EMAIL
+            : distributionMethod,
         typedSignatureEnabled,
         uploadSignatureEnabled,
         drawSignatureEnabled,

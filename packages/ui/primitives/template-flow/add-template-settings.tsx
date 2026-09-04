@@ -101,7 +101,7 @@ export const AddTemplateSettingsFormPartial = ({
         timezone: template.templateMeta?.timezone ?? DEFAULT_DOCUMENT_TIME_ZONE,
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         dateFormat: (template.templateMeta?.dateFormat ?? DEFAULT_DOCUMENT_DATE_FORMAT) as TDocumentMetaDateFormat,
-        distributionMethod: template.templateMeta?.distributionMethod || DocumentDistributionMethod.EMAIL,
+        distributionMethod: DocumentDistributionMethod.EMAIL,
         redirectUrl: template.templateMeta?.redirectUrl ?? '',
         language: template.templateMeta?.language ?? 'en',
         emailId: template.templateMeta?.emailId ?? null,
@@ -342,18 +342,9 @@ export const AddTemplateSettingsFormPartial = ({
                               <strong>Email</strong> - The recipient will be emailed the document to sign, approve, etc.
                             </Trans>
                           </li>
-                          <li>
-                            <Trans>
-                              <strong>None</strong> - We will generate links which you can send to the recipients
-                              manually.
-                            </Trans>
-                          </li>
                         </ul>
 
-                        <Trans>
-                          <strong>Note</strong> - If you use Links in combination with direct templates, you will need
-                          to manually send the links to the remaining recipients.
-                        </Trans>
+                        <Trans>Recipients will be emailed the document when it is ready for signing.</Trans>
                       </TooltipContent>
                     </Tooltip>
                   </FormLabel>

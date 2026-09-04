@@ -186,7 +186,7 @@ export const EnvelopeEditorSettingsDialog = ({ trigger, ...props }: EnvelopeEdit
         timezone: envelope.documentMeta.timezone ?? DEFAULT_DOCUMENT_TIME_ZONE,
         // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         dateFormat: (envelope.documentMeta.dateFormat ?? DEFAULT_DOCUMENT_DATE_FORMAT) as TDocumentMetaDateFormat,
-        distributionMethod: envelope.documentMeta.distributionMethod || DocumentDistributionMethod.EMAIL,
+        distributionMethod: DocumentDistributionMethod.EMAIL,
         redirectUrl: envelope.documentMeta.redirectUrl ?? '',
         language: envelope.documentMeta.language ?? 'en',
         emailId: envelope.documentMeta.emailId ?? null,
@@ -633,18 +633,9 @@ export const EnvelopeEditorSettingsDialog = ({ trigger, ...props }: EnvelopeEdit
                                           approve, etc.
                                         </Trans>
                                       </li>
-                                      <li>
-                                        <Trans>
-                                          <strong>None</strong> - We will generate links which you can send to the
-                                          recipients manually.
-                                        </Trans>
-                                      </li>
                                     </ul>
 
-                                    <Trans>
-                                      <strong>Note</strong> - If you use Links in combination with direct templates, you
-                                      will need to manually send the links to the remaining recipients.
-                                    </Trans>
+                                    <Trans>Recipients will be emailed the document when it is ready for signing.</Trans>
                                   </TooltipContent>
                                 </Tooltip>
                               </FormLabel>

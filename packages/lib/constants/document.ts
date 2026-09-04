@@ -41,11 +41,7 @@ export const DOCUMENT_DISTRIBUTION_METHODS: Record<string, DocumentDistributionM
     value: DocumentDistributionMethod.EMAIL,
     description: msg`Email`,
   },
-  [DocumentDistributionMethod.NONE]: {
-    value: DocumentDistributionMethod.NONE,
-    description: msg`None`,
-  },
-} satisfies Record<DocumentDistributionMethod, DocumentDistributionMethodTypeData>;
+};
 
 type DocumentSignatureTypeData = {
   label: MessageDescriptor;

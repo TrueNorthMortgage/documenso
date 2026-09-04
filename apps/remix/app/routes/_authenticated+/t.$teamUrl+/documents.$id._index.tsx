@@ -4,7 +4,7 @@ import { PDF_VIEWER_ERROR_MESSAGES } from '@documenso/lib/constants/pdf-viewer-i
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import { mapSecondaryIdToDocumentId } from '@documenso/lib/utils/envelope';
 import { getDocumentDataUrlForPdfViewer } from '@documenso/lib/utils/envelope-download';
-import { formatDocumentsPath } from '@documenso/lib/utils/teams';
+import { canExecuteTeamAction, formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { trpc } from '@documenso/trpc/react';
 import {
   DocumentReadOnlyFields,
@@ -108,7 +108,7 @@ export default function DocumentPage({ params }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto -mt-4 w-full max-w-screen-xl px-4 md:px-8">
-      {envelope.status === DocumentStatus.PENDING && (
+      {envelope.status === DocumentStatus.PENDING && canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole) && (
         <DocumentRecipientLinkCopyDialog recipients={envelope.recipients} />
       )}
 

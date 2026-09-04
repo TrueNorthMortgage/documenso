@@ -87,7 +87,7 @@ export const EnvelopeDistributeDialog = ({
         emailReplyTo: envelope.documentMeta?.emailReplyTo || undefined,
         subject: envelope.documentMeta?.subject ?? '',
         message: envelope.documentMeta?.message ?? '',
-        distributionMethod: envelope.documentMeta?.distributionMethod || DocumentDistributionMethod.EMAIL,
+        distributionMethod: DocumentDistributionMethod.EMAIL,
       },
     },
     resolver: zodResolver(ZEnvelopeDistributeFormSchema),
@@ -204,11 +204,7 @@ export const EnvelopeDistributeDialog = ({
 
       await onDistribute?.();
 
-      let redirectPath = `${documentRootPath}/${envelope.id}`;
-
-      if (meta.distributionMethod === DocumentDistributionMethod.NONE) {
-        redirectPath += '?action=copy-links';
-      }
+      const redirectPath = `${documentRootPath}/${envelope.id}`;
 
       await navigate(redirectPath);
 
@@ -293,9 +289,6 @@ export const EnvelopeDistributeDialog = ({
                   <TabsList className="w-full">
                     <TabsTrigger className="w-full" value={DocumentDistributionMethod.EMAIL}>
                       <Trans>Email</Trans>
-                    </TabsTrigger>
-                    <TabsTrigger className="w-full" value={DocumentDistributionMethod.NONE}>
-                      <Trans>None</Trans>
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -436,27 +429,6 @@ export const EnvelopeDistributeDialog = ({
                           </fieldset>
                         </Form>
                       </motion.div>
-                    ) : distributionMethod === DocumentDistributionMethod.NONE ? (
-                      <motion.div
-                        key={'Links'}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0, transition: { duration: 0.3 } }}
-                        exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                        className="min-h-60 rounded-lg border"
-                      >
-                        <div className="py-24 text-center text-muted-foreground text-sm">
-                          <p>
-                            <Trans>We won't send anything to notify recipients.</Trans>
-                          </p>
-
-                          <p className="mt-2">
-                            <Trans>
-                              We will generate signing links for you, which you can send to the recipients through your
-                              method of choice.
-                            </Trans>
-                          </p>
-                        </div>
-                      </motion.div>
                     ) : null}
                   </AnimatePresence>
                 </div>
@@ -469,11 +441,7 @@ export const EnvelopeDistributeDialog = ({
                   </DialogClose>
 
                   <Button loading={isSubmitting} disabled={isSyncing} type="submit">
-                    {distributionMethod === DocumentDistributionMethod.EMAIL ? (
-                      <Trans>Send</Trans>
-                    ) : (
-                      <Trans>Generate Links</Trans>
-                    )}
+                    <Trans>Send</Trans>
                   </Button>
                 </DialogFooter>
               </fieldset>

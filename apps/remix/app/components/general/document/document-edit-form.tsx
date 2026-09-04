@@ -23,7 +23,6 @@ import { Stepper } from '@documenso/ui/primitives/stepper';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { DocumentDistributionMethod, DocumentStatus } from '@prisma/client';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { z } from 'zod';
@@ -377,23 +376,13 @@ export const DocumentEditForm = ({ className, initialDocument, documentRootPath 
     try {
       await sendDocumentWithSubject(data);
 
-      if (data.meta.distributionMethod === DocumentDistributionMethod.EMAIL) {
-        toast({
-          title: _(msg`Document sent`),
-          description: _(msg`Your document has been sent successfully.`),
-          duration: 5000,
-        });
+      toast({
+        title: _(msg`Document sent`),
+        description: _(msg`Your document has been sent successfully.`),
+        duration: 5000,
+      });
 
-        await navigate(documentRootPath);
-      } else if (document.status === DocumentStatus.DRAFT) {
-        toast({
-          title: _(msg`Links Generated`),
-          description: _(msg`Signing links have been generated for this document.`),
-          duration: 5000,
-        });
-      } else {
-        await navigate(`${documentRootPath}/${document.envelopeId}`);
-      }
+      await navigate(documentRootPath);
     } catch (err) {
       console.error(err);
 

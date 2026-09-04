@@ -1,19 +1,22 @@
 import type { EnvelopeWithRecipients } from '@documenso/prisma/types/document-with-recipient';
 import type { User } from '@prisma/client';
+import { TeamMemberRole } from '@prisma/client';
 
 export type MaskRecipientTokensForDocumentOptions<T extends EnvelopeWithRecipients> = {
   document: T;
   user?: Pick<User, 'id' | 'email'>;
   token?: string;
+  currentTeamRole?: TeamMemberRole;
 };
 
 export const maskRecipientTokensForDocument = <T extends EnvelopeWithRecipients>({
   document,
   user,
   token,
+  currentTeamRole,
 }: MaskRecipientTokensForDocumentOptions<T>) => {
   const maskedRecipients = document.recipients.map((recipient) => {
-    if (document.userId === user?.id) {
+    if (currentTeamRole === TeamMemberRole.ADMIN || currentTeamRole === TeamMemberRole.MANAGER) {
       return recipient;
     }
 
@@ -33,6 +36,6 @@ export const maskRecipientTokensForDocument = <T extends EnvelopeWithRecipients>
 
   return {
     ...document,
-    Recipient: maskedRecipients,
+    recipients: maskedRecipients,
   };
 };

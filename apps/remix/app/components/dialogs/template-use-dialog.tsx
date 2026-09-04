@@ -101,6 +101,11 @@ export function TemplateUseDialog({
   const { toast } = useToast();
   const { _ } = useLingui();
 
+  const effectiveDocumentDistributionMethod =
+    documentDistributionMethod === DocumentDistributionMethod.NONE
+      ? DocumentDistributionMethod.EMAIL
+      : documentDistributionMethod;
+
   const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
@@ -188,11 +193,7 @@ export function TemplateUseDialog({
         duration: 5000,
       });
 
-      let documentPath = `${documentRootPath}/${envelopeId}`;
-
-      if (data.distributeDocument && documentDistributionMethod === DocumentDistributionMethod.NONE) {
-        documentPath += '?action=view-signing-links';
-      }
+      const documentPath = `${documentRootPath}/${envelopeId}`;
 
       await navigate(documentPath);
     } catch (err) {
@@ -354,7 +355,7 @@ export function TemplateUseDialog({
                               onCheckedChange={field.onChange}
                             />
 
-                            {documentDistributionMethod === DocumentDistributionMethod.EMAIL && (
+                            {effectiveDocumentDistributionMethod === DocumentDistributionMethod.EMAIL && (
                               <label
                                 className="ml-2 flex items-center text-muted-foreground text-sm"
                                 htmlFor="distributeDocument"
@@ -374,36 +375,6 @@ export function TemplateUseDialog({
 
                                     <p>
                                       <Trans>Otherwise, the document will be created as a draft.</Trans>
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </label>
-                            )}
-
-                            {documentDistributionMethod === DocumentDistributionMethod.NONE && (
-                              <label
-                                className="ml-2 flex items-center text-muted-foreground text-sm"
-                                htmlFor="distributeDocument"
-                              >
-                                <Trans>Create as pending</Trans>
-                                <Tooltip>
-                                  <TooltipTrigger type="button">
-                                    <InfoIcon className="mx-1 h-4 w-4" />
-                                  </TooltipTrigger>
-                                  <TooltipContent className="z-[99999] max-w-md space-y-2 p-4 text-muted-foreground">
-                                    <p>
-                                      <Trans>Create the document as pending and ready to sign.</Trans>
-                                    </p>
-
-                                    <p>
-                                      <Trans>We won't send anything to notify recipients.</Trans>
-                                    </p>
-
-                                    <p className="mt-2">
-                                      <Trans>
-                                        We will generate signing links for you, which you can send to the recipients
-                                        through your method of choice.
-                                      </Trans>
                                     </p>
                                   </TooltipContent>
                                 </Tooltip>
@@ -590,11 +561,9 @@ export function TemplateUseDialog({
                 <Button type="submit" loading={form.formState.isSubmitting}>
                   {!form.getValues('distributeDocument') ? (
                     <Trans>Create as draft</Trans>
-                  ) : documentDistributionMethod === DocumentDistributionMethod.EMAIL ? (
+                  ) : effectiveDocumentDistributionMethod === DocumentDistributionMethod.EMAIL ? (
                     <Trans>Create and send</Trans>
-                  ) : (
-                    <Trans>Create signing links</Trans>
-                  )}
+                  ) : null}
                 </Button>
               </DialogFooter>
             </fieldset>

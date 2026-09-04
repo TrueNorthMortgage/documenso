@@ -2,6 +2,7 @@ import { RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-
 import type { TEnvelope } from '@documenso/lib/types/envelope';
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
 import { formatSigningLink, isRecipientExpired } from '@documenso/lib/utils/recipients';
+import { canExecuteTeamAction } from '@documenso/lib/utils/teams';
 import { CopyTextButton } from '@documenso/ui/components/common/copy-text-button';
 import { SignatureIcon } from '@documenso/ui/icons/signature';
 import { AvatarWithText } from '@documenso/ui/primitives/avatar';
@@ -30,6 +31,8 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { match } from 'ts-pattern';
 
+import { useCurrentTeam } from '~/providers/team';
+
 export type DocumentPageViewRecipientsProps = {
   envelope: TEnvelope;
   documentRootPath: string;
@@ -39,6 +42,8 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
   const { _, i18n } = useLingui();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
+  const team = useCurrentTeam();
+  const canManageSigningLinks = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
 
   const recipients = envelope.recipients;
   const [shouldHighlightCopyButtons, setShouldHighlightCopyButtons] = useState(false);
@@ -48,14 +53,16 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
     const hasViewTokensAction = searchParams.get('action') === 'copy-links';
 
     if (hasViewTokensAction) {
-      setShouldHighlightCopyButtons(true);
+      if (canManageSigningLinks) {
+        setShouldHighlightCopyButtons(true);
+      }
 
       // Remove the query parameter immediately
       const params = new URLSearchParams(searchParams);
       params.delete('action');
       setSearchParams(params);
     }
-  }, [searchParams, setSearchParams]);
+  }, [canManageSigningLinks, searchParams, setSearchParams]);
 
   return (
     <section className="flex flex-col rounded-xl border border-border bg-widget dark:bg-background">
@@ -191,7 +198,8 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
                 </PopoverHover>
               )}
 
-              {envelope.status === DocumentStatus.PENDING &&
+              {canManageSigningLinks &&
+                envelope.status === DocumentStatus.PENDING &&
                 recipient.signingStatus === SigningStatus.NOT_SIGNED &&
                 recipient.role !== RecipientRole.CC &&
                 !isRecipientExpired(recipient) && (

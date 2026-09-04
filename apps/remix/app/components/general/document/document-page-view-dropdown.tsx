@@ -2,7 +2,7 @@ import { useSession } from '@documenso/lib/client-only/providers/session';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
 import { getEnvelopeItemPermissions, mapSecondaryIdToDocumentId } from '@documenso/lib/utils/envelope';
-import { formatDocumentsPath } from '@documenso/lib/utils/teams';
+import { canExecuteTeamAction, formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { trpc as trpcReact } from '@documenso/trpc/react';
 import {
   DropdownMenu,
@@ -50,6 +50,7 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
   const isComplete = isDocumentCompleted(envelope);
   const isCurrentTeamDocument = team && envelope.teamId === team.id;
   const canManageDocument = Boolean(isOwner || isCurrentTeamDocument);
+  const canManageSigningLinks = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
 
   const { canTitleBeChanged } = getEnvelopeItemPermissions(envelope, []);
 
@@ -148,7 +149,7 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
           <Trans>Share</Trans>
         </DropdownMenuLabel>
 
-        {canManageDocument && (
+        {canManageSigningLinks && (
           <DocumentRecipientLinkCopyDialog
             recipients={envelope.recipients}
             trigger={

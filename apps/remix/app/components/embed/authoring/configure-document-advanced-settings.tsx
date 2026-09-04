@@ -234,18 +234,12 @@ export const ConfigureDocumentAdvancedSettings = ({
                           <SelectItem value={DocumentDistributionMethod.EMAIL}>
                             <Trans>Email</Trans>
                           </SelectItem>
-                          <SelectItem value={DocumentDistributionMethod.NONE}>
-                            <Trans>None</Trans>
-                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </FormControl>
 
                     <FormDescription>
-                      <Trans>
-                        Choose how to distribute your document to recipients. Email will send notifications, None will
-                        generate signing links for manual distribution.
-                      </Trans>
+                      <Trans>The recipient will be emailed the document to sign, approve, or view.</Trans>
                     </FormDescription>
 
                     <FormMessage />
