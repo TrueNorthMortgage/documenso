@@ -3,8 +3,8 @@ import type { EnvelopeType, Prisma } from '@prisma/client';
 
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import { AppError, AppErrorCode } from '../../errors/app-error';
-import type { EnvelopeIdsOptions } from '../../utils/envelope';
-import { unsafeBuildEnvelopeIdsQuery } from '../../utils/envelope';
+import { type EnvelopeIdsOptions, unsafeBuildEnvelopeIdsQuery } from '../../utils/envelope';
+import { maskRecipientTokensForDocument } from '../../utils/mask-recipient-tokens-for-document';
 import { getTeamById } from '../team/get-team';
 
 export type GetEnvelopesByIdsOptions = {
@@ -42,11 +42,16 @@ export type GetEnvelopesByIdsOptions = {
  * NOTE: Be extremely careful when modifying this function. Needs at minimum two reviewers to approve any changes.
  */
 export const getEnvelopesByIds = async ({ ids, userId, teamId, type }: GetEnvelopesByIdsOptions) => {
-  const { envelopeWhereInput } = await getMultipleEnvelopeWhereInput({
+  const { envelopeWhereInput, team } = await getMultipleEnvelopeWhereInput({
     ids,
     userId,
     teamId,
     type,
+  });
+
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { id: true, email: true },
   });
 
   const envelopes = await prisma.envelope.findMany({
@@ -92,14 +97,23 @@ export const getEnvelopesByIds = async ({ ids, userId, teamId, type }: GetEnvelo
     },
   });
 
-  return envelopes.map((envelope) => ({
-    ...envelope,
-    user: {
-      id: envelope.user.id,
-      name: envelope.user.name || '',
-      email: envelope.user.email,
-    },
-  }));
+  return envelopes.map((envelope) => {
+    const maskedEnvelope = maskRecipientTokensForDocument({
+      document: envelope,
+      user,
+      currentTeamRole: team.currentTeamRole,
+    });
+
+    return {
+      ...maskedEnvelope,
+      recipients: maskedEnvelope.recipients,
+      user: {
+        id: envelope.user.id,
+        name: envelope.user.name || '',
+        email: envelope.user.email,
+      },
+    };
+  });
 };
 
 export type GetEnvelopesByIdsResponse = Awaited<ReturnType<typeof getEnvelopesByIds>>;

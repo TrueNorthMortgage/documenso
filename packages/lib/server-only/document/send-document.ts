@@ -5,6 +5,7 @@ import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-
 import { prisma } from '@documenso/prisma';
 import type { DocumentData, Envelope, EnvelopeItem } from '@prisma/client';
 import {
+  DocumentDistributionMethod,
   DocumentSigningOrder,
   DocumentStatus,
   EnvelopeType,
@@ -102,7 +103,15 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
 
   const legacyDocumentId = mapSecondaryIdToDocumentId(envelope.secondaryId);
 
-  const signingOrder = envelope.documentMeta?.signingOrder || DocumentSigningOrder.PARALLEL;
+  const documentMeta =
+    envelope.documentMeta?.distributionMethod === DocumentDistributionMethod.NONE
+      ? await prisma.documentMeta.update({
+          where: { id: envelope.documentMeta.id },
+          data: { distributionMethod: DocumentDistributionMethod.EMAIL },
+        })
+      : envelope.documentMeta;
+
+  const signingOrder = documentMeta?.signingOrder || DocumentSigningOrder.PARALLEL;
 
   let recipientsToNotify = envelope.recipients;
 
@@ -296,9 +305,8 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
     });
   });
 
-  const isRecipientSigningRequestEmailEnabled = extractDerivedDocumentEmailSettings(
-    envelope.documentMeta,
-  ).recipientSigningRequest;
+  const isRecipientSigningRequestEmailEnabled =
+    extractDerivedDocumentEmailSettings(documentMeta).recipientSigningRequest;
 
   // Only send email if one of the following is true:
   // - It is explicitly set

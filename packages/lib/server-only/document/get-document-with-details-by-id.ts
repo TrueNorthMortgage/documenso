@@ -1,7 +1,10 @@
+import { prisma } from '@documenso/prisma';
 import { EnvelopeType } from '@prisma/client';
 
 import { type EnvelopeIdOptions, mapSecondaryIdToDocumentId } from '../../utils/envelope';
+import { maskRecipientTokensForDocument } from '../../utils/mask-recipient-tokens-for-document';
 import { getEnvelopeById } from '../envelope/get-envelope-by-id';
+import { getTeamById } from '../team/get-team';
 
 export type GetDocumentWithDetailsByIdOptions = {
   id: EnvelopeIdOptions;
@@ -17,49 +20,63 @@ export const getDocumentWithDetailsById = async ({ id, userId, teamId }: GetDocu
     teamId,
   });
 
-  const legacyDocumentId = mapSecondaryIdToDocumentId(envelope.secondaryId);
+  const [team, user] = await Promise.all([
+    getTeamById({ userId, teamId }),
+    prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { id: true, email: true },
+    }),
+  ]);
 
-  const firstDocumentData = envelope.envelopeItems[0].documentData;
+  const maskedEnvelope = maskRecipientTokensForDocument({
+    document: envelope,
+    user,
+    currentTeamRole: team.currentTeamRole,
+  });
+
+  const legacyDocumentId = mapSecondaryIdToDocumentId(maskedEnvelope.secondaryId);
+
+  const firstDocumentData = maskedEnvelope.envelopeItems[0].documentData;
 
   if (!firstDocumentData) {
     throw new Error('Document data not found');
   }
 
   return {
-    ...envelope,
-    envelopeId: envelope.id,
-    internalVersion: envelope.internalVersion,
+    ...maskedEnvelope,
+    envelopeId: maskedEnvelope.id,
+    internalVersion: maskedEnvelope.internalVersion,
     documentData: {
       ...firstDocumentData,
-      envelopeItemId: envelope.envelopeItems[0].id,
+      envelopeItemId: maskedEnvelope.envelopeItems[0].id,
     },
     id: legacyDocumentId,
-    fields: envelope.fields.map((field) => ({
+    fields: maskedEnvelope.fields.map((field) => ({
       ...field,
       documentId: legacyDocumentId,
       templateId: null,
     })),
     user: {
-      id: envelope.userId,
-      name: envelope.user.name,
-      email: envelope.user.email,
+      id: maskedEnvelope.userId,
+      name: maskedEnvelope.user.name,
+      email: maskedEnvelope.user.email,
     },
     team: {
-      id: envelope.teamId,
-      url: envelope.team.url,
+      id: maskedEnvelope.teamId,
+      url: maskedEnvelope.team.url,
     },
-    recipients: envelope.recipients.map((recipient) => ({
+    recipients: maskedEnvelope.recipients.map((recipient) => ({
       ...recipient,
       documentId: legacyDocumentId,
       templateId: null,
     })),
     documentDataId: firstDocumentData.id,
     documentMeta: {
-      ...envelope.documentMeta,
+      ...maskedEnvelope.documentMeta,
       documentId: legacyDocumentId,
       password: null,
     },
-    envelopeItems: envelope.envelopeItems.map((envelopeItem) => ({
+    envelopeItems: maskedEnvelope.envelopeItems.map((envelopeItem) => ({
       ...envelopeItem,
     })),
   };

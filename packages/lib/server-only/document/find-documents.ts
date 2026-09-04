@@ -501,7 +501,13 @@ export const findDocuments = async ({
   const idOrder = new Map(ids.map((id, index) => [id, index]));
   data.sort((a, b) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0));
 
-  const maskedData = data.map((document) => maskRecipientTokensForDocument({ document, user }));
+  const maskedData = data.map((document) =>
+    maskRecipientTokensForDocument({
+      document,
+      user,
+      currentTeamRole: team?.currentTeamRole,
+    }),
+  );
 
   return {
     data: maskedData,

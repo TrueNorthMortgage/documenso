@@ -3,7 +3,7 @@ import type { TDocumentMany as TDocumentRow } from '@documenso/lib/types/documen
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
 import { findRecipientByEmail } from '@documenso/lib/utils/recipients';
-import { formatDocumentsPath } from '@documenso/lib/utils/teams';
+import { canExecuteTeamAction, formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { trpc as trpcReact } from '@documenso/trpc/react';
 import {
   DropdownMenu,
@@ -70,6 +70,7 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
   // const isSigned = recipient?.signingStatus === SigningStatus.SIGNED;
   const isCurrentTeamDocument = team && row.team?.url === team.url;
   const canManageDocument = Boolean(isOwner || isCurrentTeamDocument);
+  const canManageSigningLinks = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
 
   const { canTitleBeChanged } = getEnvelopeItemPermissions(
     {
@@ -207,7 +208,7 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
           <Trans>Share</Trans>
         </DropdownMenuLabel>
 
-        {canManageDocument && (
+        {canManageSigningLinks && (
           <DocumentRecipientLinkCopyDialog
             recipients={row.recipients}
             trigger={

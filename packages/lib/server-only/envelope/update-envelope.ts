@@ -4,7 +4,13 @@ import type { CreateDocumentAuditLogDataResponse } from '@documenso/lib/utils/do
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { prisma } from '@documenso/prisma';
 import type { DocumentMeta, DocumentVisibility, Prisma, TemplateType } from '@prisma/client';
-import { DocumentStatus, EnvelopeType, FolderType, WebhookTriggerEvents } from '@prisma/client';
+import {
+  DocumentDistributionMethod,
+  DocumentStatus,
+  EnvelopeType,
+  FolderType,
+  WebhookTriggerEvents,
+} from '@prisma/client';
 import { isDeepEqual } from 'remeda';
 
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
@@ -320,6 +326,10 @@ export const updateEnvelope = async ({
         documentMeta: {
           update: {
             ...meta,
+            distributionMethod:
+              meta.distributionMethod === DocumentDistributionMethod.NONE
+                ? DocumentDistributionMethod.EMAIL
+                : meta.distributionMethod,
             emailSettings: meta?.emailSettings || undefined,
           },
         },

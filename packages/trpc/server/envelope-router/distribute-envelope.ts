@@ -1,5 +1,7 @@
 import { sendDocument } from '@documenso/lib/server-only/document/send-document';
 import { updateDocumentMeta } from '@documenso/lib/server-only/document-meta/upsert-document-meta';
+import { getTeamById } from '@documenso/lib/server-only/team/get-team';
+import { maskRecipientTokensForDocument } from '@documenso/lib/utils/mask-recipient-tokens-for-document';
 import { formatSigningLink } from '@documenso/lib/utils/recipients';
 
 import { authenticatedProcedure } from '../trpc';
@@ -55,17 +57,24 @@ export const distributeEnvelopeRoute = authenticatedProcedure
       requestMetadata: ctx.metadata,
     });
 
+    const team = await getTeamById({ userId: ctx.user.id, teamId });
+    const maskedEnvelope = maskRecipientTokensForDocument({
+      document: envelope,
+      user: ctx.user,
+      currentTeamRole: team.currentTeamRole,
+    });
+
     return {
       success: true,
       id: envelope.id,
-      recipients: envelope.recipients.map((recipient) => ({
+      recipients: maskedEnvelope.recipients.map((recipient) => ({
         id: recipient.id,
         name: recipient.name,
         email: recipient.email,
         token: recipient.token,
         role: recipient.role,
         signingOrder: recipient.signingOrder,
-        signingUrl: formatSigningLink(recipient.token),
+        signingUrl: recipient.token ? formatSigningLink(recipient.token) : '',
       })),
     };
   });

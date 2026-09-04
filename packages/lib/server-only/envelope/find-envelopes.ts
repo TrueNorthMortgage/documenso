@@ -271,12 +271,13 @@ export const findEnvelopes = async ({
     maskRecipientTokensForDocument({
       document: envelope,
       user,
+      currentTeamRole: team.currentTeamRole,
     }),
   );
 
   const mappedData = maskedData.map((envelope) => ({
     ...envelope,
-    recipients: envelope.Recipient,
+    recipients: envelope.recipients,
     user: {
       id: envelope.user.id,
       name: envelope.user.name || '',

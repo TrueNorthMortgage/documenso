@@ -5,6 +5,7 @@ import type { EnvelopeType } from '@prisma/client';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
+import { maskRecipientTokensForDocument } from '../../utils/mask-recipient-tokens-for-document';
 import { assertCanManageTemplate } from '../template/validate-template-access';
 
 export type GetEditorEnvelopeByIdOptions = {
@@ -100,6 +101,17 @@ export const getEditorEnvelopeById = async ({ id, userId, teamId, type }: GetEdi
     });
   }
 
+  const user = await prisma.user.findFirstOrThrow({
+    where: { id: userId },
+    select: { id: true, email: true },
+  });
+
+  const maskedEnvelope = maskRecipientTokensForDocument({
+    document: envelope,
+    user,
+    currentTeamRole: team.currentTeamRole,
+  });
+
   assertCanManageTemplate({
     envelopeType: envelope.type,
     templateOwnerId: envelope.userId,
@@ -107,23 +119,23 @@ export const getEditorEnvelopeById = async ({ id, userId, teamId, type }: GetEdi
     userId,
   });
 
-  const pageCounts = await getEnvelopeItemPageCounts(envelope.envelopeItems).catch((error) => {
+  const pageCounts = await getEnvelopeItemPageCounts(maskedEnvelope.envelopeItems).catch((error) => {
     console.error('Unable to determine envelope item page counts', error);
 
     return new Map<string, number>();
   });
 
   return {
-    ...envelope,
-    envelopeItems: envelope.envelopeItems.map((envelopeItem) => ({
+    ...maskedEnvelope,
+    envelopeItems: maskedEnvelope.envelopeItems.map((envelopeItem) => ({
       ...envelopeItem,
       pageCount: pageCounts.get(envelopeItem.id),
     })),
     attachments: envelope.envelopeAttachments,
     user: {
-      id: envelope.user.id,
-      name: envelope.user.name || '',
-      email: envelope.user.email,
+      id: maskedEnvelope.user.id,
+      name: maskedEnvelope.user.name || '',
+      email: maskedEnvelope.user.email,
     },
   };
 };

@@ -1,10 +1,8 @@
 import { useAutoSave } from '@documenso/lib/client-only/hooks/use-autosave';
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
-import { RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-roles';
 import type { TDocument } from '@documenso/lib/types/document';
 import { ZDocumentEmailSettingsSchema } from '@documenso/lib/types/document-email';
 import type { TRecipientLite } from '@documenso/lib/types/recipient';
-import { formatSigningLink } from '@documenso/lib/utils/recipients';
 import { trpc } from '@documenso/trpc/react';
 import { DocumentSendEmailMessageHelper } from '@documenso/ui/components/document/document-send-email-message-helper';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
@@ -15,21 +13,18 @@ import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import type { Field } from '@prisma/client';
-import { DocumentDistributionMethod, DocumentStatus, RecipientRole } from '@prisma/client';
+import { DocumentDistributionMethod, DocumentStatus } from '@prisma/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import { InfoIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { CopyTextButton } from '../../components/common/copy-text-button';
 import { DocumentEmailCheckboxes } from '../../components/document/document-email-checkboxes';
 import { DocumentReadOnlyFields, mapFieldsWithRecipients } from '../../components/document/document-read-only-fields';
-import { AvatarWithText } from '../avatar';
 import { Input } from '../input';
 import { useStep } from '../stepper';
 import { Textarea } from '../textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../tooltip';
-import { toast } from '../use-toast';
 import { type TAddSubjectFormSchema, ZAddSubjectFormSchema } from './add-subject.types';
 import {
   DocumentFlowFormContainerActions,
@@ -71,7 +66,7 @@ export const AddSubjectFormPartial = ({
         // emailReplyName: document.documentMeta?.emailReplyName || undefined,
         subject: document.documentMeta?.subject ?? '',
         message: document.documentMeta?.message ?? '',
-        distributionMethod: document.documentMeta?.distributionMethod || DocumentDistributionMethod.EMAIL,
+        distributionMethod: DocumentDistributionMethod.EMAIL,
         emailSettings: ZDocumentEmailSettingsSchema.parse(document?.documentMeta?.emailSettings),
       },
     },
@@ -94,7 +89,7 @@ export const AddSubjectFormPartial = ({
 
   const emails = emailData?.data || [];
 
-  const GoNextLabel = {
+  const goNextLabel = {
     [DocumentDistributionMethod.EMAIL]: {
       [DocumentStatus.DRAFT]: msg`Send`,
       [DocumentStatus.PENDING]: recipients.some((recipient) => recipient.sendStatus === 'SENT')
@@ -102,12 +97,6 @@ export const AddSubjectFormPartial = ({
         : msg`Send`,
       [DocumentStatus.COMPLETED]: msg`Update`,
       [DocumentStatus.REJECTED]: msg`Update`,
-    },
-    [DocumentDistributionMethod.NONE]: {
-      [DocumentStatus.DRAFT]: msg`Generate Links`,
-      [DocumentStatus.PENDING]: msg`View Document`,
-      [DocumentStatus.COMPLETED]: msg`View Document`,
-      [DocumentStatus.REJECTED]: msg`View Document`,
     },
   };
 
@@ -170,9 +159,6 @@ export const AddSubjectFormPartial = ({
             <TabsList className="w-full">
               <TabsTrigger className="w-full" value={DocumentDistributionMethod.EMAIL}>
                 <Trans>Email</Trans>
-              </TabsTrigger>
-              <TabsTrigger className="w-full" value={DocumentDistributionMethod.NONE}>
-                <Trans>None</Trans>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -321,75 +307,6 @@ export const AddSubjectFormPartial = ({
                 </Form>
               </motion.div>
             )}
-
-            {distributionMethod === DocumentDistributionMethod.NONE && (
-              <motion.div
-                key={'Links'}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0, transition: { duration: 0.3 } }}
-                exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                className="rounded-lg border"
-              >
-                {document.status === DocumentStatus.DRAFT ? (
-                  <div className="py-16 text-center text-muted-foreground text-sm">
-                    <p>
-                      <Trans>We won't send anything to notify recipients.</Trans>
-                    </p>
-
-                    <p className="mt-2">
-                      <Trans>
-                        We will generate signing links for you, which you can send to the recipients through your method
-                        of choice.
-                      </Trans>
-                    </p>
-                  </div>
-                ) : (
-                  <ul className="divide-y text-muted-foreground">
-                    {recipients.length === 0 && (
-                      <li className="flex flex-col items-center justify-center py-6 text-sm">
-                        <Trans>No recipients</Trans>
-                      </li>
-                    )}
-
-                    {recipients.map((recipient) => (
-                      <li key={recipient.id} className="flex items-center justify-between px-4 py-3 text-sm">
-                        <AvatarWithText
-                          avatarFallback={recipient.email.slice(0, 1).toUpperCase()}
-                          primaryText={<p className="text-muted-foreground text-sm">{recipient.email}</p>}
-                          secondaryText={
-                            <p className="text-muted-foreground/70 text-xs">
-                              {_(RECIPIENT_ROLES_DESCRIPTION[recipient.role].roleName)}
-                            </p>
-                          }
-                        />
-
-                        {recipient.role !== RecipientRole.CC && (
-                          <CopyTextButton
-                            value={formatSigningLink(recipient.token)}
-                            onCopySuccess={() => {
-                              toast({
-                                title: _(msg`Copied to clipboard`),
-                                description: _(msg`The signing link has been copied to your clipboard.`),
-                              });
-                            }}
-                            badgeContentUncopied={
-                              <p className="ml-1 text-xs">
-                                <Trans>Copy</Trans>
-                              </p>
-                            }
-                            badgeContentCopied={
-                              <p className="ml-1 text-xs">
-                                <Trans>Copied</Trans>
-                              </p>
-                            }
-                          />
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </motion.div>
-            )}
           </AnimatePresence>
         </div>
       </DocumentFlowFormContainerContent>
@@ -400,7 +317,7 @@ export const AddSubjectFormPartial = ({
         <DocumentFlowFormContainerActions
           loading={isSubmitting}
           disabled={isSubmitting}
-          goNextLabel={GoNextLabel[distributionMethod][document.status]}
+          goNextLabel={goNextLabel[DocumentDistributionMethod.EMAIL][document.status]}
           onGoBackClick={previousStep}
           onGoNextClick={() => void onFormSubmit()}
         />

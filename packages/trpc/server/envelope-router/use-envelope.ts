@@ -2,8 +2,10 @@ import { getServerLimits } from '@documenso/ee/server-only/limits/server';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { sendDocument } from '@documenso/lib/server-only/document/send-document';
 import { getEnvelopeById } from '@documenso/lib/server-only/envelope/get-envelope-by-id';
+import { getTeamById } from '@documenso/lib/server-only/team/get-team';
 import { createDocumentFromTemplate } from '@documenso/lib/server-only/template/create-document-from-template';
 import { putNormalizedPdfFileServerSide } from '@documenso/lib/universal/upload/put-file.server';
+import { maskRecipientTokensForDocument } from '@documenso/lib/utils/mask-recipient-tokens-for-document';
 import { formatSigningLink } from '@documenso/lib/utils/recipients';
 import { EnvelopeType } from '@prisma/client';
 
@@ -48,15 +50,18 @@ export const useEnvelopeRoute = authenticatedProcedure
     }
 
     // Verify the template exists and get envelope items
-    const envelope = await getEnvelopeById({
-      id: {
-        type: 'envelopeId',
-        id: envelopeId,
-      },
-      type: EnvelopeType.TEMPLATE,
-      userId: user.id,
-      teamId,
-    });
+    const [envelope, team] = await Promise.all([
+      getEnvelopeById({
+        id: {
+          type: 'envelopeId',
+          id: envelopeId,
+        },
+        type: EnvelopeType.TEMPLATE,
+        userId: user.id,
+        teamId,
+      }),
+      getTeamById({ userId: user.id, teamId }),
+    ]);
 
     if (files.length > envelope.envelopeItems.length) {
       throw new AppError(AppErrorCode.INVALID_BODY, {
@@ -159,16 +164,22 @@ export const useEnvelopeRoute = authenticatedProcedure
       });
     }
 
+    const maskedEnvelope = maskRecipientTokensForDocument({
+      document: createdEnvelope,
+      user,
+      currentTeamRole: team.currentTeamRole,
+    });
+
     return {
       id: createdEnvelope.id,
-      recipients: createdEnvelope.recipients.map((recipient) => ({
+      recipients: maskedEnvelope.recipients.map((recipient) => ({
         id: recipient.id,
         name: recipient.name,
         email: recipient.email,
         token: recipient.token,
         role: recipient.role,
         signingOrder: recipient.signingOrder,
-        signingUrl: formatSigningLink(recipient.token),
+        signingUrl: recipient.token ? formatSigningLink(recipient.token) : '',
       })),
     };
   });
