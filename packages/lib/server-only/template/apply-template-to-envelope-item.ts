@@ -16,6 +16,10 @@ import {
 } from '@prisma/client';
 
 import { canRecipientFieldsBeModified } from '../../utils/recipients';
+import {
+  mapTemplateRecipientsByRole,
+  shouldMatchTemplateRecipientsBySigningOrder,
+} from '../../utils/template-recipient-mapping';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { getOrganisationTemplateById } from './get-organisation-template-by-id';
 import { getTemplateById } from './get-template-by-id';
@@ -124,10 +128,25 @@ export const resolveTemplateRecipient = <T extends TemplateRecipientReference>({
 export const resolveTemplateRecipients = <T extends TemplateRecipientReference>({
   templateRecipients,
   recipients,
+  ignoreSigningOrder = false,
 }: {
   templateRecipients: TemplateRecipientReference[];
   recipients: T[];
+  ignoreSigningOrder?: boolean;
 }) => {
+  if (ignoreSigningOrder) {
+    const roleMapping = mapTemplateRecipientsByRole({ templateRecipients, recipients });
+
+    if (!roleMapping) {
+      throw new AppError(AppErrorCode.INVALID_REQUEST, {
+        message: 'Could not uniquely map template recipients by role',
+        userMessage: 'The template recipients do not match the recipients on this document.',
+      });
+    }
+
+    return roleMapping;
+  }
+
   const availableRecipients = [...recipients];
   const recipientMap = new Map<number, number>();
   const unmappedTemplateRecipientIds: number[] = [];
@@ -286,6 +305,7 @@ const getEnvelopeForTemplateAction = async ({
       recipients: true,
       fields: true,
       envelopeItems: true,
+      documentMeta: true,
     },
   });
 
@@ -360,6 +380,11 @@ export const applyTemplateToEnvelopeItem = async ({
   const { recipientMap, unmappedTemplateRecipientIds } = resolveTemplateRecipients({
     templateRecipients,
     recipients: envelope.recipients,
+    ignoreSigningOrder: !shouldMatchTemplateRecipientsBySigningOrder({
+      templateSigningOrder:
+        'templateMeta' in template ? template.templateMeta?.signingOrder : template.documentMeta?.signingOrder,
+      envelopeSigningOrder: envelope.documentMeta?.signingOrder,
+    }),
   });
 
   for (const recipientId of recipientMap.values()) {

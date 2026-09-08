@@ -71,6 +71,42 @@ describe('resolveTemplateRecipients', () => {
     expect(result.unmappedTemplateRecipientIds).toEqual([2]);
   });
 
+  it('maps parallel recipients by role when signing orders differ', () => {
+    const result = resolveTemplateRecipients({
+      templateRecipients: [
+        { id: 1, role: RecipientRole.SIGNER, signingOrder: 1 },
+        { id: 2, role: RecipientRole.SIGNER, signingOrder: 2 },
+      ],
+      recipients: [
+        { id: 10, role: RecipientRole.SIGNER, signingOrder: 1 },
+        { id: 20, role: RecipientRole.SIGNER, signingOrder: 1 },
+      ],
+      ignoreSigningOrder: true,
+    });
+
+    expect(result.recipientMap).toEqual(
+      new Map([
+        [1, 10],
+        [2, 20],
+      ]),
+    );
+    expect(result.unmappedTemplateRecipientIds).toEqual([]);
+  });
+
+  it('maps available parallel recipients and reports missing recipients for creation', () => {
+    const result = resolveTemplateRecipients({
+      templateRecipients: [
+        { id: 1, role: RecipientRole.SIGNER, signingOrder: 1 },
+        { id: 2, role: RecipientRole.SIGNER, signingOrder: 2 },
+      ],
+      recipients: [{ id: 10, role: RecipientRole.SIGNER, signingOrder: 1 }],
+      ignoreSigningOrder: true,
+    });
+
+    expect(result.recipientMap).toEqual(new Map([[1, 10]]));
+    expect(result.unmappedTemplateRecipientIds).toEqual([2]);
+  });
+
   it('rejects ambiguous existing matches', () => {
     expect(() =>
       resolveTemplateRecipients({
