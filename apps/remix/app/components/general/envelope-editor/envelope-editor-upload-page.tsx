@@ -3,6 +3,7 @@ import { useEnvelopeAutosave } from '@documenso/lib/client-only/hooks/use-envelo
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { APP_DOCUMENT_UPLOAD_SIZE_LIMIT } from '@documenso/lib/constants/app';
+import { AppError } from '@documenso/lib/errors/app-error';
 import type { TEditorEnvelope } from '@documenso/lib/types/envelope-editor';
 import { nanoid } from '@documenso/lib/universal/id';
 import { megabytesToBytes } from '@documenso/lib/universal/unit-convertions';
@@ -173,6 +174,26 @@ export const EnvelopeEditorUploadPage = () => {
       }
     },
   });
+
+  const { mutateAsync: removeTemplate, isPending: isRemovingTemplate } = trpc.envelope.template.remove.useMutation();
+
+  const onRemoveTemplate = async (envelopeItemId: string) => {
+    try {
+      await removeTemplate({ envelopeId: envelope.id, envelopeItemId });
+
+      toast({
+        title: t`Template removed`,
+        description: t`Template fields were removed from the document.`,
+      });
+      await syncEnvelope();
+    } catch (error) {
+      toast({
+        title: t`Template could not be removed`,
+        description: AppError.parseError(error).userMessage || t`Please try again.`,
+        variant: 'destructive',
+      });
+    }
+  };
 
   const onFileDrop = async (files: File[]) => {
     const newUploadingFiles: (LocalFile & {
@@ -593,7 +614,7 @@ export const EnvelopeEditorUploadPage = () => {
                                   <p className="font-medium text-sm">{localFile.title}</p>
                                 )}
 
-                                <div className="text-muted-foreground text-xs">
+                                <div className="px-1 text-muted-foreground text-xs">
                                   {localFile.envelopeItemId !== null &&
                                     appliedTemplateSourceItemIdByEnvelopeItemId.has(localFile.envelopeItemId) && (
                                       <>
@@ -604,6 +625,23 @@ export const EnvelopeEditorUploadPage = () => {
                                             ''
                                           }
                                         />
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          aria-label={t`Remove template`}
+                                          title={t`Remove template`}
+                                          className="ml-0.5 h-5 w-5 p-0"
+                                          onClick={() => {
+                                            if (localFile.envelopeItemId) {
+                                              void onRemoveTemplate(localFile.envelopeItemId);
+                                            }
+                                          }}
+                                          disabled={
+                                            isRemovingTemplate || localFile.isReplacing || localFile.isUploading
+                                          }
+                                        >
+                                          <XIcon className="h-3 w-3" />
+                                        </Button>
                                       </>
                                     )}
 
