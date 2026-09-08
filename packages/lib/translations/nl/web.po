@@ -3889,9 +3889,6 @@ msgstr "Door ondertekenen via directe link uit te schakelen, voorkom je dat iema
 msgid "Disabling the user results in the user not being able to use the account. It also disables all the related contents such as subscription, webhooks, teams, and API keys."
 msgstr "Als je de gebruiker uitschakelt, kan deze het account niet meer gebruiken. Dit schakelt ook alle gerelateerde inhoud uit, zoals abonnement, webhooks, teams en API-sleutels."
 
-#: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
-msgid "Discord"
-msgstr "Discord"
 
 #: apps/remix/app/components/dialogs/organisation-email-create-dialog.tsx
 #: apps/remix/app/components/dialogs/organisation-email-update-dialog.tsx
@@ -6200,9 +6197,6 @@ msgstr "Japans"
 msgid "Join {organisationName} on Documenso"
 msgstr "Word lid van {organisationName} op Documenso"
 
-#: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
-msgid "Join our community on <0>Discord</0> for community support and discussion."
-msgstr "Word lid van onze community op <0>Discord</0> voor ondersteuning en discussie."
 
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
@@ -13857,4 +13851,3 @@ msgstr "Uw verificatiecode:"
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "your-domain.com another-domain.com"
 msgstr "your-domain.com another-domain.com"
-

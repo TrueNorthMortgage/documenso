@@ -10,6 +10,7 @@ import { prisma } from '@documenso/prisma';
 import { DocumentStatus, EnvelopeType } from '@prisma/client';
 
 import { canRecipientFieldsBeModified } from '../../utils/recipients';
+import { shouldMatchTemplateRecipientsBySigningOrder } from '../../utils/template-recipient-mapping';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import {
   createTemplateFieldGroups,
@@ -49,6 +50,7 @@ export const addTemplateToEnvelope = async ({
         recipients: true,
         fields: true,
         envelopeItems: true,
+        documentMeta: true,
         team: {
           select: {
             organisation: {
@@ -118,6 +120,11 @@ export const addTemplateToEnvelope = async ({
   const { recipientMap, unmappedTemplateRecipientIds } = resolveTemplateRecipients({
     templateRecipients,
     recipients: envelope.recipients,
+    ignoreSigningOrder: !shouldMatchTemplateRecipientsBySigningOrder({
+      templateSigningOrder:
+        'templateMeta' in template ? template.templateMeta?.signingOrder : template.documentMeta?.signingOrder,
+      envelopeSigningOrder: envelope.documentMeta?.signingOrder,
+    }),
   });
 
   for (const recipientId of recipientMap.values()) {

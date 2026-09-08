@@ -1,6 +1,10 @@
 import { useDebouncedValue } from '@documenso/lib/client-only/hooks/use-debounced-value';
 import { AppError } from '@documenso/lib/errors/app-error';
 import type { TEditorEnvelope } from '@documenso/lib/types/envelope-editor';
+import {
+  mapTemplateRecipientsByRole,
+  shouldMatchTemplateRecipientsBySigningOrder,
+} from '@documenso/lib/utils/template-recipient-mapping';
 import { trpc } from '@documenso/trpc/react';
 import type { TAddTemplateToEnvelopeResponse } from '@documenso/trpc/server/envelope-router/add-template-to-envelope.types';
 import type { TFindTemplatesResponse } from '@documenso/trpc/server/template-router/schema';
@@ -60,10 +64,12 @@ const canMapRecipients = ({
   template,
   templateItemId,
   recipients,
+  envelopeSigningOrder,
 }: {
   template: TTemplateRow | undefined;
   templateItemId: string | undefined;
   recipients: TEditorEnvelope['recipients'];
+  envelopeSigningOrder: TEditorEnvelope['documentMeta']['signingOrder'];
 }) => {
   if (!template || !templateItemId) {
     return false;
@@ -73,6 +79,28 @@ const canMapRecipients = ({
   const sourceRecipientIds = [...new Set(sourceFields.map((field) => field.recipientId))];
 
   const availableRecipients = [...recipients];
+
+  const templateRecipients = sourceRecipientIds
+    .map((sourceRecipientId) => template.recipients.find((recipient) => recipient.id === sourceRecipientId))
+    .filter((recipient): recipient is TTemplateRow['recipients'][number] => recipient !== undefined);
+
+  if (templateRecipients.length !== sourceRecipientIds.length) {
+    return false;
+  }
+
+  if (
+    !shouldMatchTemplateRecipientsBySigningOrder({
+      templateSigningOrder: template.templateMeta?.signingOrder,
+      envelopeSigningOrder,
+    })
+  ) {
+    return (
+      mapTemplateRecipientsByRole({
+        templateRecipients,
+        recipients,
+      }) !== null
+    );
+  }
 
   return sourceRecipientIds.every((sourceRecipientId) => {
     const sourceRecipient = template.recipients.find((recipient) => recipient.id === sourceRecipientId);
@@ -148,6 +176,7 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
     template: selectedTemplate,
     templateItemId: selectedTemplateItemId,
     recipients: envelope.recipients,
+    envelopeSigningOrder: envelope.documentMeta.signingOrder,
   });
   const sourceFieldCount = selectedTemplate?.fields.filter(
     (field) => field.envelopeItemId === selectedTemplateItemId,

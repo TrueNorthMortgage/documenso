@@ -3884,9 +3884,6 @@ msgstr "Disabling direct link signing will prevent anyone from accessing the lin
 msgid "Disabling the user results in the user not being able to use the account. It also disables all the related contents such as subscription, webhooks, teams, and API keys."
 msgstr "Disabling the user results in the user not being able to use the account. It also disables all the related contents such as subscription, webhooks, teams, and API keys."
 
-#: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
-msgid "Discord"
-msgstr "Discord"
 
 #: apps/remix/app/components/dialogs/organisation-email-create-dialog.tsx
 #: apps/remix/app/components/dialogs/organisation-email-update-dialog.tsx
@@ -6195,9 +6192,6 @@ msgstr "Japanese"
 msgid "Join {organisationName} on Documenso"
 msgstr "Join {organisationName} on Documenso"
 
-#: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
-msgid "Join our community on <0>Discord</0> for community support and discussion."
-msgstr "Join our community on <0>Discord</0> for community support and discussion."
 
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx

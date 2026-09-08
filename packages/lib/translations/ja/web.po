@@ -3889,9 +3889,6 @@ msgstr "ダイレクトリンク署名を無効にすると、誰もそのリン
 msgid "Disabling the user results in the user not being able to use the account. It also disables all the related contents such as subscription, webhooks, teams, and API keys."
 msgstr "ユーザーを無効化すると、そのユーザーはアカウントを使用できなくなります。また、サブスクリプション、Webhook、チーム、API キーなどの関連コンテンツもすべて無効になります。"
 
-#: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
-msgid "Discord"
-msgstr "Discord"
 
 #: apps/remix/app/components/dialogs/organisation-email-create-dialog.tsx
 #: apps/remix/app/components/dialogs/organisation-email-update-dialog.tsx
@@ -6200,9 +6197,6 @@ msgstr "日本語"
 msgid "Join {organisationName} on Documenso"
 msgstr "{organisationName} に Documenso で参加"
 
-#: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
-msgid "Join our community on <0>Discord</0> for community support and discussion."
-msgstr "コミュニティサポートやディスカッションのために、<0>Discord</0> のコミュニティに参加してください。"
 
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
@@ -13857,4 +13851,3 @@ msgstr "認証コード:"
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "your-domain.com another-domain.com"
 msgstr "your-domain.com another-domain.com"
-

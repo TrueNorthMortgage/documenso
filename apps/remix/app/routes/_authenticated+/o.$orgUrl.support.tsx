@@ -1,10 +1,9 @@
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
-import { useSession } from '@documenso/lib/client-only/providers/session';
 import { IS_BILLING_ENABLED } from '@documenso/lib/constants/app';
 import { Button } from '@documenso/ui/primitives/button';
 import { msg } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { BookIcon, HelpCircleIcon, Link2Icon } from 'lucide-react';
+import { BookIcon, HelpCircleIcon, Link2Icon, MailIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
@@ -17,7 +16,6 @@ export function meta() {
 
 export default function SupportPage() {
   const [showForm, setShowForm] = useState(false);
-  const { user } = useSession();
   const organisation = useCurrentOrganisation();
 
   const [searchParams] = useSearchParams();
@@ -65,28 +63,18 @@ export default function SupportPage() {
           </div>
           <div className="rounded-lg border p-4">
             <h2 className="flex items-center gap-2 font-bold text-lg">
-              <Link2Icon className="h-5 w-5 text-muted-foreground" />
-              <Link
-                to="https://documen.so/discord"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline"
-              >
-                <Trans>Discord</Trans>
+              <MailIcon className="h-5 w-5 text-muted-foreground" />
+              <Link to="mailto:helpdesk@truenorthmortgage.ca" className="hover:underline">
+                <Trans>Additional help</Trans>
               </Link>
             </h2>
             <p className="mt-1 text-muted-foreground">
               <Trans>
-                Join our community on{' '}
-                <Link
-                  to="https://documen.so/discord"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  Discord
+                Need additional help? Email{' '}
+                <Link to="mailto:helpdesk@truenorthmortgage.ca" className="hover:underline">
+                  helpdesk@truenorthmortgage.ca
                 </Link>{' '}
-                for community support and discussion.
+                for assistance.
               </Trans>
             </p>
           </div>

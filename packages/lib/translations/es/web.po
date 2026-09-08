@@ -3889,9 +3889,6 @@ msgstr "Deshabilitar la firma de enlace directo evitará que cualquiera acceda a
 msgid "Disabling the user results in the user not being able to use the account. It also disables all the related contents such as subscription, webhooks, teams, and API keys."
 msgstr "Deshabilitar al usuario implica que no podrá usar la cuenta. También desactiva todos los contenidos relacionados como suscripciones, webhooks, equipos y claves API."
 
-#: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
-msgid "Discord"
-msgstr "Discord"
 
 #: apps/remix/app/components/dialogs/organisation-email-create-dialog.tsx
 #: apps/remix/app/components/dialogs/organisation-email-update-dialog.tsx
@@ -6200,9 +6197,6 @@ msgstr "Japonés"
 msgid "Join {organisationName} on Documenso"
 msgstr "Únete a {organisationName} en Documenso"
 
-#: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
-msgid "Join our community on <0>Discord</0> for community support and discussion."
-msgstr "Únete a nuestra comunidad en <0>Discord</0> para soporte y debate."
 
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
@@ -13857,4 +13851,3 @@ msgstr "Su código de verificación:"
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "your-domain.com another-domain.com"
 msgstr "su-dominio.com otro-dominio.com"
-
