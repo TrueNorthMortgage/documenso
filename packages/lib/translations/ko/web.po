@@ -3889,9 +3889,6 @@ msgstr "직접 링크 서명을 비활성화하면 누구도 해당 링크에 �
 msgid "Disabling the user results in the user not being able to use the account. It also disables all the related contents such as subscription, webhooks, teams, and API keys."
 msgstr "사용자를 비활성화하면 계정을 사용할 수 없게 됩니다. 또한 구독, 웹후크, 팀, API 키 등의 관련 콘텐츠도 모두 비활성화됩니다."
 
-#: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
-msgid "Discord"
-msgstr "Discord"
 
 #: apps/remix/app/components/dialogs/organisation-email-create-dialog.tsx
 #: apps/remix/app/components/dialogs/organisation-email-update-dialog.tsx
@@ -6200,9 +6197,6 @@ msgstr "일본어"
 msgid "Join {organisationName} on Documenso"
 msgstr "Documenso에서 {organisationName} 조직에 참여하세요."
 
-#: apps/remix/app/routes/_authenticated+/o.$orgUrl.support.tsx
-msgid "Join our community on <0>Discord</0> for community support and discussion."
-msgstr "커뮤니티 지원과 논의를 위해 <0>Discord</0> 커뮤니티에 참여하세요."
 
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
@@ -13857,4 +13851,3 @@ msgstr "인증 코드:"
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "your-domain.com another-domain.com"
 msgstr "your-domain.com another-domain.com"
-
