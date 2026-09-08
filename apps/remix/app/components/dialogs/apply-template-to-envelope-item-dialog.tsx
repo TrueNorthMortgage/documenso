@@ -64,6 +64,7 @@ const canMapRecipients = ({
   template,
   templateItemId,
   recipients,
+  envelopeSigningOrder,
 }: {
   template: TTemplateRow | undefined;
   templateItemId: string | undefined;
@@ -89,7 +90,7 @@ const canMapRecipients = ({
 
   if (
     !shouldMatchTemplateRecipientsBySigningOrder({
-      templateSigningOrder: template.documentMeta?.signingOrder,
+      templateSigningOrder: template.templateMeta?.signingOrder,
       envelopeSigningOrder,
     })
   ) {
