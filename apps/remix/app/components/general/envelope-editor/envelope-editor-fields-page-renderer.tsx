@@ -915,14 +915,14 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       editable: isFieldEditable,
       mode: 'edit',
       showRequiredIndicator:
-        !field.fieldMeta.readOnly &&
+        !field.fieldMeta?.readOnly &&
         (isRequiredField({
           id: field.id ?? 0,
           type: field.type,
           fieldGroupId: field.fieldGroupId,
           inserted: field.inserted ?? false,
           customText: field.customText ?? '',
-          fieldMeta: field.fieldMeta,
+          fieldMeta: field.fieldMeta ?? null,
           fieldGroup: field.fieldGroup,
         }) ||
           isRequiredOptionGroup),
@@ -1424,6 +1424,8 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       editorFields.setSelectedField(null);
     }
 
+    editorFields.setSelectedFieldFormIds(fieldGroups.map((fieldGroup) => fieldGroup.id()));
+
     // Handle single field selection.
     if (fieldGroups.length === 1) {
       const fieldGroup = fieldGroups[0];
@@ -1617,15 +1619,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
   }, [copySelectedFields, deletedSelectedFields, isFieldChanging, nudgeSelectedFields, pasteCopiedFields]);
 
   const changeSelectedFieldsRecipients = (recipientId: number) => {
-    const fields = selectedKonvaFieldGroups
-      .map((field) => editorFields.getFieldByFormId(field.id()))
-      .filter((field) => field !== undefined);
-
-    for (const field of fields) {
-      if (field.recipientId !== recipientId) {
-        editorFields.updateFieldByFormId(field.formId, { recipientId, id: undefined });
-      }
-    }
+    editorFields.updateFieldsRecipient(
+      selectedKonvaFieldGroups.map((field) => field.id()),
+      recipientId,
+    );
   };
 
   const duplicatedSelectedFields = () => {

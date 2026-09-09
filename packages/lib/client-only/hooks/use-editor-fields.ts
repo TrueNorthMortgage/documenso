@@ -8,6 +8,7 @@ import { nanoid } from '@documenso/lib/universal/id';
 import { removeConditionalRulesForDeletedFields } from '@documenso/lib/utils/conditional-field-rules';
 import { clearOtherRadioGroupSelections } from '@documenso/lib/utils/field-groups';
 import { getFieldOptionId, getNextFieldOptionId } from '@documenso/lib/utils/field-option-values';
+import { getFieldFormIdsForRecipientUpdate } from '@documenso/lib/utils/field-recipients';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Field } from '@prisma/client';
 import { FieldType } from '@prisma/client';
@@ -115,12 +116,15 @@ type UseEditorFieldsResponse = {
   // Selected field
   selectedField: TLocalField | undefined;
   setSelectedField: (formId: string | null) => void;
+  selectedFieldFormIds: string[];
+  setSelectedFieldFormIds: (formIds: string[]) => void;
 
   // Field operations
   addField: (field: Omit<TLocalField, 'formId'>) => TLocalField;
   setFieldId: (formId: string, id: number) => void;
   removeFieldsByFormId: (formIds: string[]) => void;
   updateFieldByFormId: (formId: string, updates: Partial<TLocalField>) => void;
+  updateFieldsRecipient: (formIds: string[], recipientId: number) => void;
   updateFieldGroupMeta: (field: TLocalField, fieldMeta: TLocalField['fieldMeta']) => void;
   duplicateField: (field: TLocalField, options?: TDuplicateFieldOptions | number) => TLocalField;
   duplicateFieldToAllPages: (field: TLocalField, recipientId?: number) => TLocalField[];
@@ -146,6 +150,7 @@ type UseEditorFieldsResponse = {
 
 export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsProps): UseEditorFieldsResponse => {
   const [selectedFieldFormId, setSelectedFieldFormId] = useState<string | null>(null);
+  const [selectedFieldFormIds, setSelectedFieldFormIdsState] = useState<string[]>([]);
   const [selectedRecipientId, setSelectedRecipientId] = useState<number | null>(null);
 
   const generateDefaultValues = (fields?: TEditorField[]) => {
@@ -216,6 +221,12 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
     setSelectedFieldFormId(foundField?.formId ?? null);
   };
 
+  const setSelectedFieldFormIds = (formIds: string[]) => {
+    const availableFieldFormIds = new Set(localFields.map((field) => field.formId));
+
+    setSelectedFieldFormIdsState([...new Set(formIds)].filter((formId) => availableFieldFormIds.has(formId)));
+  };
+
   const addField = useCallback(
     (fieldData: Omit<TLocalField, 'formId'>): TLocalField => {
       const field: TLocalField = {
@@ -280,6 +291,31 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
       }
     },
     [localFields, update, triggerFieldsUpdate],
+  );
+
+  const updateFieldsRecipient = useCallback(
+    (formIds: string[], recipientId: number) => {
+      const fieldFormIdsToUpdate = getFieldFormIdsForRecipientUpdate(localFields, formIds);
+      const fieldsToUpdate = localFields.filter((field) => fieldFormIdsToUpdate.includes(field.formId));
+
+      for (const field of fieldsToUpdate) {
+        if (field.recipientId === recipientId && (!field.fieldGroup || field.fieldGroup.recipientId === recipientId)) {
+          continue;
+        }
+
+        updateFieldByFormId(field.formId, {
+          recipientId,
+          id: undefined,
+          fieldGroup: field.fieldGroup
+            ? {
+                ...field.fieldGroup,
+                recipientId,
+              }
+            : field.fieldGroup,
+        });
+      }
+    },
+    [localFields, updateFieldByFormId],
   );
 
   const updateFieldGroupMeta = useCallback(
@@ -725,6 +761,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
     setFieldId,
     removeFieldsByFormId,
     updateFieldByFormId,
+    updateFieldsRecipient,
     updateFieldGroupMeta,
     duplicateField,
     duplicateFieldToAllPages,
@@ -740,6 +777,8 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
     // Selected field
     selectedField,
     setSelectedField,
+    selectedFieldFormIds,
+    setSelectedFieldFormIds,
 
     // Selected recipient
     selectedRecipient,

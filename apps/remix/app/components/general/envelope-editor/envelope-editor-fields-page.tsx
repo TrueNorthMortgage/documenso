@@ -27,6 +27,7 @@ import { AnimateGenericFadeInOut } from '@documenso/ui/components/animate/animat
 import { cn } from '@documenso/ui/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@documenso/ui/primitives/alert';
 import { Button } from '@documenso/ui/primitives/button';
+import { Checkbox } from '@documenso/ui/primitives/checkbox';
 import {
   ConditionalFieldSettings,
   getFieldDisplayName,
@@ -85,6 +86,123 @@ const FieldSettingsTypeTranslations: Record<FieldType, MessageDescriptor> = {
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 export const INVALID_FIELD_PLACEMENT_CLASS_NAME = 'rounded-[2px] border-2 border-red-500 bg-white text-red-600';
+
+type BulkFieldSetting = 'required' | 'readOnly';
+
+const getBulkSettingState = (values: boolean[]): boolean | 'indeterminate' => {
+  if (values.every(Boolean)) {
+    return true;
+  }
+
+  if (values.some(Boolean)) {
+    return 'indeterminate';
+  }
+
+  return false;
+};
+
+const BulkFieldSettings = ({ fieldFormIds }: { fieldFormIds: string[] }) => {
+  const { editorFields } = useCurrentEnvelopeEditor();
+
+  const fields = useMemo(
+    () => editorFields.localFields.filter((field) => fieldFormIds.includes(field.formId)),
+    [editorFields.localFields, fieldFormIds],
+  );
+
+  const requiredState = getBulkSettingState(fields.map((field) => field.fieldMeta?.required === true));
+  const readOnlyState = getBulkSettingState(
+    fields.map((field) => field.fieldGroup?.readOnly ?? field.fieldMeta?.readOnly === true),
+  );
+  const hasValidationGroup = fields.some((field) => field.fieldGroup?.groupType === 'VALIDATION_GROUP');
+
+  const getUpdatedFieldMeta = (
+    field: (typeof fields)[number],
+    setting: BulkFieldSetting,
+    checked: boolean,
+  ): NonNullable<TFieldMetaSchema> | undefined => {
+    if (!field.fieldMeta) {
+      return undefined;
+    }
+
+    if (setting === 'required') {
+      return { ...field.fieldMeta, required: checked };
+    }
+
+    return { ...field.fieldMeta, readOnly: checked };
+  };
+
+  const updateSelectedSetting = (setting: BulkFieldSetting, checked: boolean) => {
+    const processedGroupIds = new Set<string>();
+
+    for (const field of fields) {
+      if (field.fieldGroupId && field.fieldGroup) {
+        if (processedGroupIds.has(field.fieldGroupId)) {
+          continue;
+        }
+
+        processedGroupIds.add(field.fieldGroupId);
+
+        if (setting === 'required' && field.fieldGroup.groupType === 'VALIDATION_GROUP') {
+          continue;
+        }
+
+        const updatedFieldMeta = getUpdatedFieldMeta(field, setting, checked);
+
+        if (updatedFieldMeta) {
+          editorFields.updateFieldGroupMeta(field, updatedFieldMeta);
+        }
+
+        continue;
+      }
+
+      const updatedFieldMeta = getUpdatedFieldMeta(field, setting, checked);
+
+      if (updatedFieldMeta) {
+        editorFields.updateFieldByFormId(field.formId, { fieldMeta: updatedFieldMeta });
+      }
+    }
+  };
+
+  if (fields.length < 2) {
+    return null;
+  }
+
+  return (
+    <section className="px-4">
+      <Separator className="my-4" />
+
+      <h3 className="font-semibold text-foreground text-sm">
+        <Trans>Bulk Field Settings</Trans>
+      </h3>
+      <p className="mt-1 text-muted-foreground text-xs">
+        <Trans>{fields.length} fields selected</Trans>
+      </p>
+
+      <div className="mt-4 space-y-3">
+        <label className="flex items-center gap-2 text-foreground text-sm">
+          <Checkbox
+            checked={requiredState}
+            disabled={hasValidationGroup}
+            onCheckedChange={(checked) => updateSelectedSetting('required', checked === true)}
+          />
+          <span>
+            <Trans>Required</Trans>
+          </span>
+        </label>
+
+        <label className="flex items-center gap-2 text-foreground text-sm">
+          <Checkbox
+            checked={readOnlyState}
+            onCheckedChange={(checked) => updateSelectedSetting('readOnly', checked === true)}
+          />
+          <span>
+            <Trans>Read only</Trans>
+          </span>
+        </label>
+      </div>
+    </section>
+  );
+};
 
 const InvalidFieldPlacementOverlay = ({
   isInteractive = true,
@@ -261,6 +379,7 @@ const InvalidFieldPlacementOverlay = ({
 
           if (currentPlacement) {
             editorFields.setSelectedField(currentPlacement.fieldFormId);
+            editorFields.setSelectedFieldFormIds([currentPlacement.fieldFormId]);
           }
           setActivePlacement(null);
           activeGroupPlacementsRef.current = [];
@@ -836,6 +955,30 @@ export const EnvelopeEditorFieldsPage = () => {
 
   const selectedField = useMemo(() => structuredClone(editorFields.selectedField), [editorFields.selectedField]);
 
+  const selectedFieldsRecipient = useMemo(() => {
+    const selectedFields = editorFields.localFields.filter((field) =>
+      editorFields.selectedFieldFormIds.includes(field.formId),
+    );
+    const firstField = selectedFields[0];
+
+    if (!firstField || !selectedFields.every((field) => field.recipientId === firstField.recipientId)) {
+      return null;
+    }
+
+    return envelope.recipients.find((recipient) => recipient.id === firstField.recipientId) ?? null;
+  }, [editorFields.localFields, editorFields.selectedFieldFormIds, envelope.recipients]);
+
+  const selectedRecipient =
+    editorFields.selectedFieldFormIds.length > 0 ? selectedFieldsRecipient : editorFields.selectedRecipient;
+
+  const handleRecipientChange = (recipient: (typeof envelope.recipients)[number]) => {
+    editorFields.setSelectedRecipient(recipient.id);
+
+    if (editorFields.selectedFieldFormIds.length > 0) {
+      editorFields.updateFieldsRecipient(editorFields.selectedFieldFormIds, recipient.id);
+    }
+  };
+
   const conditionalFields = useMemo(
     () =>
       editorFields.localFields.map((field) => ({
@@ -1089,28 +1232,27 @@ export const EnvelopeEditorFieldsPage = () => {
             {/* Recipient selector section. */}
             <section className="px-4">
               <h3 className="mb-2 font-semibold text-foreground text-sm">
-                <Trans>Selected Recipient</Trans>
+                <Trans>Recipient</Trans>
               </h3>
 
               <EnvelopeRecipientSelector
-                selectedRecipient={editorFields.selectedRecipient}
-                onSelectedRecipientChange={(recipient) => editorFields.setSelectedRecipient(recipient.id)}
+                selectedRecipient={selectedRecipient}
+                onSelectedRecipientChange={handleRecipientChange}
                 recipients={envelope.recipients}
                 fields={envelope.fields}
                 className="w-full"
                 align="end"
               />
 
-              {editorFields.selectedRecipient &&
-                !canRecipientFieldsBeModified(editorFields.selectedRecipient, envelope.fields) && (
-                  <Alert className="mt-4" variant="warning">
-                    <AlertDescription>
-                      <Trans>
-                        This recipient can no longer be modified as they have signed a field, or completed the document.
-                      </Trans>
-                    </AlertDescription>
-                  </Alert>
-                )}
+              {selectedRecipient && !canRecipientFieldsBeModified(selectedRecipient, envelope.fields) && (
+                <Alert className="mt-4" variant="warning">
+                  <AlertDescription>
+                    <Trans>
+                      This recipient can no longer be modified as they have signed a field, or completed the document.
+                    </Trans>
+                  </AlertDescription>
+                </Alert>
+              )}
             </section>
 
             <Separator className="my-4" />
@@ -1168,6 +1310,10 @@ export const EnvelopeEditorFieldsPage = () => {
                 </>
               )}
             </section>
+
+            {editorFields.selectedFieldFormIds.length > 1 && (
+              <BulkFieldSettings fieldFormIds={editorFields.selectedFieldFormIds} />
+            )}
 
             {/* Field details section. */}
             <AnimateGenericFadeInOut key={editorFields.selectedField?.formId}>
