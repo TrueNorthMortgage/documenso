@@ -26,7 +26,7 @@ import {
   getDragScrollDelta,
   getFieldNudgeDelta,
 } from '@documenso/lib/utils/field-drag';
-import { getFieldGroupValidationState, type TFieldWithGroup } from '@documenso/lib/utils/field-groups';
+import { getFieldGroupValidationState, isRequiredField, type TFieldWithGroup } from '@documenso/lib/utils/field-groups';
 import { getClientSideFieldTranslations } from '@documenso/lib/utils/fields';
 import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
 import { CommandDialog } from '@documenso/ui/primitives/command';
@@ -881,7 +881,18 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       field.fieldGroup?.groupType === FIELD_GROUP_TYPE.VALIDATION_GROUP
         ? getFieldGroupValidationState(groupFields as unknown as TFieldWithGroup[], field.fieldGroup)
         : null;
-
+    const hasMemberRequiredValue = groupFields.some(
+      (groupField) =>
+        groupField.fieldMeta &&
+        typeof groupField.fieldMeta === 'object' &&
+        !Array.isArray(groupField.fieldMeta) &&
+        'required' in groupField.fieldMeta,
+    );
+    const isRequiredOptionGroup =
+      field.fieldGroup?.groupType === FIELD_GROUP_TYPE.OPTION_GROUP &&
+      (hasMemberRequiredValue
+        ? groupFields.some((groupField) => groupField.fieldMeta?.required === true)
+        : field.fieldGroup.required);
     const { fieldGroup } = renderField({
       scale,
       pageLayer: pageLayer.current,
@@ -903,6 +914,18 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       color: getRecipientColorKey(field.recipientId),
       editable: isFieldEditable,
       mode: 'edit',
+      showRequiredIndicator:
+        !field.fieldMeta.readOnly &&
+        (isRequiredField({
+          id: field.id ?? 0,
+          type: field.type,
+          fieldGroupId: field.fieldGroupId,
+          inserted: field.inserted ?? false,
+          customText: field.customText ?? '',
+          fieldMeta: field.fieldMeta,
+          fieldGroup: field.fieldGroup,
+        }) ||
+          isRequiredOptionGroup),
     });
 
     fieldGroup.setAttr('dragPageNumber', field.page);
@@ -1315,6 +1338,14 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     currentPageLayer.find('.validation-group-indicator').forEach((indicator) => {
       const fieldFormId = indicator.id().replace(/-validation-group-indicator$/, '');
+
+      if (!localPageFields.some((field) => field.formId === fieldFormId)) {
+        indicator.destroy();
+      }
+    });
+
+    currentPageLayer.find('.required-field-indicator').forEach((indicator) => {
+      const fieldFormId = indicator.id().replace(/-required-indicator$/, '');
 
       if (!localPageFields.some((field) => field.formId === fieldFormId)) {
         indicator.destroy();

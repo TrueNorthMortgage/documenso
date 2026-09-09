@@ -1,3 +1,4 @@
+import { FieldType } from '@prisma/client';
 import Konva from 'konva';
 import { describe, expect, it } from 'vitest';
 
@@ -8,6 +9,7 @@ import {
   getFieldIndicatorNodes,
   getFieldIndicatorPosition,
   getFieldRectStyles,
+  upsertRequiredFieldIndicator,
 } from './field-generic-items';
 
 describe('getFieldRectStyles', () => {
@@ -105,6 +107,45 @@ describe('getFieldRectStyles', () => {
     } as unknown as Konva.Layer;
 
     expect(getFieldIndicatorNodes('field', pageLayer)).toEqual([validationIndicator]);
+  });
+
+  it('creates a Font Awesome triangle-exclamation required-field indicator', () => {
+    let addedIndicator: Konva.Group | undefined;
+    const pageLayer = {
+      findOne: () => undefined,
+      add: (indicator: Konva.Group) => {
+        addedIndicator = indicator;
+      },
+    } as unknown as Konva.Layer;
+    const field = {
+      renderId: 'field',
+      envelopeItemId: 'envelope-item',
+      recipientId: 1,
+      type: FieldType.TEXT,
+      page: 1,
+      customText: '',
+      inserted: false,
+      width: 20,
+      height: 5,
+      positionX: 10,
+      positionY: 10,
+    } as const;
+
+    const indicator = upsertRequiredFieldIndicator(field, {
+      pageLayer,
+      pageWidth: 600,
+      pageHeight: 800,
+      mode: 'edit',
+      scale: 1,
+      translations: null,
+    });
+
+    expect(indicator.id()).toBe('field-required-indicator');
+    expect(indicator.name()).toBe('required-field-indicator');
+    expect(indicator.visible()).toBe(false);
+    expect(addedIndicator).toBe(indicator);
+    expect(indicator.find('.required-indicator-icon')).toHaveLength(1);
+    expect(indicator.findOne('.required-indicator-icon')?.getAttr('data')).toContain('M256 32');
   });
 
   it('supports more than two indicator slots', () => {
