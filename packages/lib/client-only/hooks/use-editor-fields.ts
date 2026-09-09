@@ -6,7 +6,7 @@ import { ZFieldMetaSchema } from '@documenso/lib/types/field-meta';
 import { fromCheckboxValue } from '@documenso/lib/universal/field-checkbox';
 import { nanoid } from '@documenso/lib/universal/id';
 import { removeConditionalRulesForDeletedFields } from '@documenso/lib/utils/conditional-field-rules';
-import { clearOtherRadioGroupSelections } from '@documenso/lib/utils/field-groups';
+import { clearOtherRadioGroupSelections, toggleFieldOptionSelection } from '@documenso/lib/utils/field-groups';
 import { getFieldOptionId, getNextFieldOptionId } from '@documenso/lib/utils/field-option-values';
 import { getFieldFormIdsForRecipientUpdate } from '@documenso/lib/utils/field-recipients';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -124,6 +124,7 @@ type UseEditorFieldsResponse = {
   setFieldId: (formId: string, id: number) => void;
   removeFieldsByFormId: (formIds: string[]) => void;
   updateFieldByFormId: (formId: string, updates: Partial<TLocalField>) => void;
+  toggleFieldOptionSelection: (formId: string, optionIndex: number) => void;
   updateFieldsRecipient: (formIds: string[], recipientId: number) => void;
   updateFieldGroupMeta: (field: TLocalField, fieldMeta: TLocalField['fieldMeta']) => void;
   duplicateField: (field: TLocalField, options?: TDuplicateFieldOptions | number) => TLocalField;
@@ -316,6 +317,21 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
       }
     },
     [localFields, updateFieldByFormId],
+  );
+
+  const toggleFieldOption = useCallback(
+    (formId: string, optionIndex: number) => {
+      const currentFields = form.getValues('fields');
+      const updatedFields = toggleFieldOptionSelection(currentFields, formId, optionIndex);
+
+      if (updatedFields === currentFields) {
+        return;
+      }
+
+      replace(updatedFields as never);
+      triggerFieldsUpdate();
+    },
+    [form, replace, triggerFieldsUpdate],
   );
 
   const updateFieldGroupMeta = useCallback(
@@ -761,6 +777,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
     setFieldId,
     removeFieldsByFormId,
     updateFieldByFormId,
+    toggleFieldOptionSelection: toggleFieldOption,
     updateFieldsRecipient,
     updateFieldGroupMeta,
     duplicateField,

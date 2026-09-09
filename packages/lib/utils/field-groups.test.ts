@@ -14,6 +14,7 @@ import {
   getFieldsRequiringValidation,
   getInvalidFieldGroupConfigurations,
   type TFieldWithGroup,
+  toggleFieldOptionSelection,
 } from './field-groups';
 
 const group = (type: FieldType, overrides: Partial<TFieldGroup> = {}): TFieldGroup => ({
@@ -159,6 +160,114 @@ describe('field groups', () => {
     expect(
       updatedFields.map((field) => (field.fieldMeta?.type === 'radio' ? field.fieldMeta.values?.[0]?.checked : null)),
     ).toEqual([false, true]);
+  });
+
+  it('toggles standalone radio and checkbox options', () => {
+    const radioField = {
+      formId: 'radio-1',
+      type: FieldType.RADIO,
+      fieldGroupId: null,
+      fieldMeta: {
+        type: 'radio' as const,
+        direction: 'vertical' as const,
+        values: [
+          { id: 1, checked: false, value: 'Option 1' },
+          { id: 2, checked: true, value: 'Option 2' },
+        ],
+      },
+    };
+    const checkboxField = {
+      formId: 'checkbox-1',
+      type: FieldType.CHECKBOX,
+      fieldGroupId: null,
+      fieldMeta: {
+        type: 'checkbox' as const,
+        direction: 'vertical' as const,
+        validationRule: null,
+        validationLength: null,
+        values: [
+          { id: 1, checked: false, value: 'Option 1' },
+          { id: 2, checked: false, value: 'Option 2' },
+        ],
+      },
+    };
+
+    const radioResult = toggleFieldOptionSelection([radioField], 'radio-1', 0);
+    const checkboxResult = toggleFieldOptionSelection([checkboxField], 'checkbox-1', 1);
+
+    expect(radioResult[0].fieldMeta.values.map((value) => value.checked)).toEqual([true, false]);
+    expect(checkboxResult[0].fieldMeta.values.map((value) => value.checked)).toEqual([false, true]);
+  });
+
+  it('clears other radio fields in the same group', () => {
+    const radioGroup = group(FieldType.RADIO);
+    const fields = [
+      {
+        formId: 'radio-1',
+        type: FieldType.RADIO,
+        fieldGroupId: radioGroup.id,
+        fieldGroup: radioGroup,
+        fieldMeta: {
+          type: 'radio' as const,
+          direction: 'vertical' as const,
+          values: [{ id: 1, checked: true, value: 'Option 1' }],
+        },
+      },
+      {
+        formId: 'radio-2',
+        type: FieldType.RADIO,
+        fieldGroupId: radioGroup.id,
+        fieldGroup: radioGroup,
+        fieldMeta: {
+          type: 'radio' as const,
+          direction: 'vertical' as const,
+          values: [{ id: 2, checked: false, value: 'Option 2' }],
+        },
+      },
+    ];
+
+    const updatedFields = toggleFieldOptionSelection(fields, 'radio-2', 0);
+
+    expect(updatedFields.map((field) => field.fieldMeta.values[0].checked)).toEqual([false, true]);
+  });
+
+  it('does not exceed grouped checkbox selection limits', () => {
+    const checkboxGroup = group(FieldType.CHECKBOX, {
+      validationRule: 'Select at most',
+      validationLength: 1,
+    });
+    const fields = [
+      {
+        formId: 'checkbox-1',
+        type: FieldType.CHECKBOX,
+        fieldGroupId: checkboxGroup.id,
+        fieldGroup: checkboxGroup,
+        fieldMeta: {
+          type: 'checkbox' as const,
+          direction: 'vertical' as const,
+          validationRule: null,
+          validationLength: null,
+          values: [{ id: 1, checked: true, value: 'Option 1' }],
+        },
+      },
+      {
+        formId: 'checkbox-2',
+        type: FieldType.CHECKBOX,
+        fieldGroupId: checkboxGroup.id,
+        fieldGroup: checkboxGroup,
+        fieldMeta: {
+          type: 'checkbox' as const,
+          direction: 'vertical' as const,
+          validationRule: null,
+          validationLength: null,
+          values: [{ id: 2, checked: false, value: 'Option 2' }],
+        },
+      },
+    ];
+
+    const updatedFields = toggleFieldOptionSelection(fields, 'checkbox-2', 0);
+
+    expect(updatedFields).toEqual(fields);
   });
 
   it('treats radio options on different pages as one required field', () => {

@@ -939,6 +939,26 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     fieldGroup.off('transformend');
     fieldGroup.off('dragend');
 
+    if (field.type === 'RADIO' || field.type === 'CHECKBOX') {
+      fieldGroup.on('click tap', (event) => {
+        const target = event.target as Konva.Node;
+        const isOptionControl =
+          field.type === 'RADIO'
+            ? target.hasName('radio-circle') || target.hasName('radio-dot')
+            : target.hasName('checkbox-square') || target.hasName('checkbox-checkmark');
+
+        if (!isOptionControl) {
+          return;
+        }
+
+        const optionIndex = target.getAttr(field.type === 'RADIO' ? 'internalRadioIndex' : 'internalCheckboxIndex');
+
+        if (typeof optionIndex === 'number') {
+          editorFields.toggleFieldOptionSelection(field.formId, optionIndex);
+        }
+      });
+    }
+
     // Set up field selection.
     fieldGroup.on('click tap', (event) => {
       removePendingField();
