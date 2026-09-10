@@ -1,4 +1,3 @@
-import { FieldType } from '@prisma/client';
 import Konva from 'konva';
 import { describe, expect, it } from 'vitest';
 
@@ -9,12 +8,12 @@ import {
   getFieldIndicatorNodes,
   getFieldIndicatorPosition,
   getFieldRectStyles,
-  upsertRequiredFieldIndicator,
 } from './field-generic-items';
 
 describe('getFieldRectStyles', () => {
   it('uses a red border for fields selected as conditional children in the editor', () => {
     expect(getFieldRectStyles({ isHighlighted: true, conditionalChildRule: null }, { mode: 'edit' })).toEqual({
+      fill: 'rgba(255, 255, 255, 0.001)',
       stroke: CONDITIONAL_FIELD_SELECTION_STROKE,
       strokeWidth: 3,
       dash: [],
@@ -23,10 +22,34 @@ describe('getFieldRectStyles', () => {
 
   it('does not apply the editor highlight outside edit mode', () => {
     expect(getFieldRectStyles({ isHighlighted: true, conditionalChildRule: null }, { mode: 'sign' })).toEqual({
+      fill: 'rgba(255, 255, 255, 0.001)',
       stroke: '#e5e7eb',
       strokeWidth: 2,
       dash: [],
     });
+  });
+
+  it('shades required fields with the same recipient color in edit and sign mode', () => {
+    const field = { isHighlighted: false, conditionalChildRule: null };
+    const editStyles = getFieldRectStyles(field, { mode: 'edit', color: 'readOnly', isRequired: true });
+    const signStyles = getFieldRectStyles(field, { mode: 'sign', color: 'readOnly', isRequired: true });
+
+    expect(editStyles).toEqual({
+      fill: 'rgba(176, 176, 176, 1)',
+      stroke: 'rgba(176, 176, 176, 1)',
+      strokeWidth: 2,
+      dash: [],
+    });
+    expect(signStyles).toEqual(editStyles);
+  });
+
+  it('does not shade required fields in export mode', () => {
+    expect(
+      getFieldRectStyles(
+        { isHighlighted: false, conditionalChildRule: null },
+        { mode: 'export', color: 'readOnly', isRequired: true },
+      ).fill,
+    ).toBe('rgba(255, 255, 255, 0.001)');
   });
 
   it('places the conditional indicator outside the field bounds', () => {
@@ -107,45 +130,6 @@ describe('getFieldRectStyles', () => {
     } as unknown as Konva.Layer;
 
     expect(getFieldIndicatorNodes('field', pageLayer)).toEqual([validationIndicator]);
-  });
-
-  it('creates a Font Awesome triangle-exclamation required-field indicator', () => {
-    let addedIndicator: Konva.Group | undefined;
-    const pageLayer = {
-      findOne: () => undefined,
-      add: (indicator: Konva.Group) => {
-        addedIndicator = indicator;
-      },
-    } as unknown as Konva.Layer;
-    const field = {
-      renderId: 'field',
-      envelopeItemId: 'envelope-item',
-      recipientId: 1,
-      type: FieldType.TEXT,
-      page: 1,
-      customText: '',
-      inserted: false,
-      width: 20,
-      height: 5,
-      positionX: 10,
-      positionY: 10,
-    } as const;
-
-    const indicator = upsertRequiredFieldIndicator(field, {
-      pageLayer,
-      pageWidth: 600,
-      pageHeight: 800,
-      mode: 'edit',
-      scale: 1,
-      translations: null,
-    });
-
-    expect(indicator.id()).toBe('field-required-indicator');
-    expect(indicator.name()).toBe('required-field-indicator');
-    expect(indicator.visible()).toBe(false);
-    expect(addedIndicator).toBe(indicator);
-    expect(indicator.find('.required-indicator-icon')).toHaveLength(1);
-    expect(indicator.findOne('.required-indicator-icon')?.getAttr('data')).toContain('M256 32');
   });
 
   it('supports more than two indicator slots', () => {

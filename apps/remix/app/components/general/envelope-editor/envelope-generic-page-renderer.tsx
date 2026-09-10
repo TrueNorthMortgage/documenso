@@ -6,6 +6,7 @@ import {
 import type { TEnvelope } from '@documenso/lib/types/envelope';
 import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import { renderField } from '@documenso/lib/universal/field-renderer/render-field';
+import { isRequiredField } from '@documenso/lib/utils/advanced-fields-helpers';
 import { getClientSideFieldTranslations } from '@documenso/lib/utils/fields';
 import { EnvelopeRecipientFieldTooltip } from '@documenso/ui/components/document/envelope-recipient-field-tooltip';
 import { useLingui } from '@lingui/react/macro';
@@ -118,6 +119,7 @@ export const EnvelopeGenericPageRenderer = ({ pageData }: { pageData: PageRender
       pageHeight: unscaledViewport.height,
       color: getRecipientColorKey(field.recipientId),
       editable: false,
+      isRequired: !field.fieldMeta?.readOnly && isRequiredField(field),
       mode: overrideSettings?.mode ?? 'edit',
     });
   };

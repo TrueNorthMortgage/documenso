@@ -188,11 +188,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
 
     const fieldToRender = ZFullFieldSchema.parse(unparsedField);
 
-    const color = fieldToRender.fieldMeta?.readOnly
-      ? 'readOnly'
-      : showPendingFieldTooltip && isFieldUnsignedAndRequired(fieldToRender)
-        ? 'orange'
-        : 'green';
+    const color = fieldToRender.fieldMeta?.readOnly ? 'readOnly' : 'green';
 
     const { fieldGroup } = renderField({
       scale,
@@ -210,6 +206,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
       pageWidth: unscaledViewport.width,
       pageHeight: unscaledViewport.height,
       color,
+      isRequired: !fieldToRender.fieldMeta?.readOnly && isFieldUnsignedAndRequired(fieldToRender),
       mode: 'sign',
     });
 
@@ -580,6 +577,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
           pageHeight: unscaledViewport.height,
           color: 'readOnly',
           editable: false,
+          isRequired: false,
           mode: 'sign',
         });
 

@@ -914,7 +914,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       color: getRecipientColorKey(field.recipientId),
       editable: isFieldEditable,
       mode: 'edit',
-      showRequiredIndicator:
+      isRequired:
         !field.fieldMeta?.readOnly &&
         (isRequiredField({
           id: field.id ?? 0,
@@ -1358,14 +1358,6 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     currentPageLayer.find('.validation-group-indicator').forEach((indicator) => {
       const fieldFormId = indicator.id().replace(/-validation-group-indicator$/, '');
-
-      if (!localPageFields.some((field) => field.formId === fieldFormId)) {
-        indicator.destroy();
-      }
-    });
-
-    currentPageLayer.find('.required-field-indicator').forEach((indicator) => {
-      const fieldFormId = indicator.id().replace(/-required-indicator$/, '');
 
       if (!localPageFields.some((field) => field.formId === fieldFormId)) {
         indicator.destroy();

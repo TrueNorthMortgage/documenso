@@ -10,7 +10,6 @@ import {
   positionFieldIndicators,
   upsertConditionalFieldIndicator,
   upsertConditionalFieldSelectionLabel,
-  upsertRequiredFieldIndicator,
   upsertValidationGroupIndicator,
 } from './field-generic-items';
 import { renderCheckboxFieldElement } from './render-checkbox-field';
@@ -65,7 +64,7 @@ type RenderFieldOptions = {
 
   scale: number;
   editable?: boolean;
-  showRequiredIndicator?: boolean;
+  isRequired?: boolean;
 };
 
 export const renderField = ({
@@ -78,7 +77,7 @@ export const renderField = ({
   scale,
   editable,
   color,
-  showRequiredIndicator,
+  isRequired,
 }: RenderFieldOptions) => {
   const options = {
     pageLayer,
@@ -89,7 +88,7 @@ export const renderField = ({
     color,
     editable,
     scale,
-    showRequiredIndicator,
+    isRequired,
   };
 
   // If the generic text field element array changes, update the `GenericTextFieldTypeMetas` type
@@ -122,12 +121,6 @@ export const renderField = ({
     upsertValidationGroupIndicator(field, options);
   } else {
     options.pageLayer.findOne(`#${field.renderId}-validation-group-indicator`)?.destroy();
-  }
-
-  if (mode === 'edit' && showRequiredIndicator) {
-    upsertRequiredFieldIndicator(field, options);
-  } else {
-    options.pageLayer.findOne(`#${field.renderId}-required-indicator`)?.destroy();
   }
 
   positionFieldIndicators(field, options);

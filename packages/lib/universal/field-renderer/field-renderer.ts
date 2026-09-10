@@ -40,7 +40,7 @@ export type RenderFieldElementOptions = {
   editable?: boolean;
   scale: number;
   color?: TRecipientColor;
-  showRequiredIndicator?: boolean;
+  isRequired?: boolean;
   translations: Record<FieldType, string> | null;
 };
 
