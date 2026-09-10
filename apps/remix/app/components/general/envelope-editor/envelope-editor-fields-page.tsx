@@ -893,7 +893,9 @@ const InvalidFieldPlacementSelection = ({
 
       if (
         !(target instanceof HTMLElement) ||
-        target.closest('[data-invalid-field-placement], button, a, input, select, textarea, [role="button"]')
+        target.closest(
+          '[data-invalid-field-placement], [data-active-field-selection], button, a, input, select, textarea, [role="button"]',
+        )
       ) {
         return;
       }
