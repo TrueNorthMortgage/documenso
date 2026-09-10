@@ -169,10 +169,15 @@ type FieldContextMenuProps = {
   y: number;
   canCopy: boolean;
   canDelete: boolean;
+  canChangeRecipient: boolean;
+  canDuplicate: boolean;
   canAddText: boolean;
   canPaste: boolean;
   onCopy: () => void;
   onPaste: () => void;
+  onChangeRecipient: () => void;
+  onDuplicate: () => void;
+  onDuplicateOnAllPages: () => void;
   onAddText: () => void;
   onDelete: () => void;
 };
@@ -182,10 +187,15 @@ const FieldContextMenu = ({
   y,
   canCopy,
   canDelete,
+  canChangeRecipient,
+  canDuplicate,
   canAddText,
   canPaste,
   onCopy,
   onPaste,
+  onChangeRecipient,
+  onDuplicate,
+  onDuplicateOnAllPages,
   onAddText,
   onDelete,
 }: FieldContextMenuProps) => {
@@ -218,6 +228,15 @@ const FieldContextMenu = ({
         <ClipboardPasteIcon className="h-3.5 w-3.5" />
         <Trans>Paste</Trans>
       </button>
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+        disabled={!canChangeRecipient}
+        onClick={onChangeRecipient}
+      >
+        <UserCircleIcon className="h-3.5 w-3.5" />
+        <Trans>Assign recipient</Trans>
+      </button>
       {canAddText && (
         <button
           type="button"
@@ -228,6 +247,24 @@ const FieldContextMenu = ({
           <Trans>Add text</Trans>
         </button>
       )}
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+        disabled={!canDuplicate}
+        onClick={onDuplicate}
+      >
+        <CopyPlusIcon className="h-3.5 w-3.5" />
+        <Trans>Duplicate</Trans>
+      </button>
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+        disabled={!canDuplicate}
+        onClick={onDuplicateOnAllPages}
+      >
+        <SquareStackIcon className="h-3.5 w-3.5" />
+        <Trans>Duplicate on all pages</Trans>
+      </button>
       <button
         type="button"
         className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-destructive text-sm hover:bg-destructive/10 disabled:pointer-events-none disabled:opacity-50"
@@ -467,6 +504,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     y: number;
     fieldFormId: string | null;
   } | null>(null);
+  const [showContextMenuRecipientSelector, setShowContextMenuRecipientSelector] = useState(false);
   const lastDragMoveAt = useRef<number | null>(null);
 
   const { stage, pageLayer, konvaContainer, scaledViewport, unscaledViewport } = usePageRenderer(
@@ -1915,23 +1953,23 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
   const changeSelectedFieldsRecipients = (recipientId: number) => {
     editorFields.updateFieldsRecipient(
-      selectedKonvaFieldGroups.map((field) => field.id()),
+      selectedKonvaFieldGroupsRef.current.map((field) => field.id()),
       recipientId,
     );
   };
 
   const duplicatedSelectedFields = () => {
-    const fields = selectedKonvaFieldGroups
+    const fields = selectedKonvaFieldGroupsRef.current
       .map((field) => editorFields.getFieldByFormId(field.id()))
       .filter((field) => field !== undefined);
 
-    for (const field of fields) {
-      editorFields.duplicateField(field);
-    }
+    const duplicatedFields = fields.map((field) => editorFields.duplicateField(field));
+
+    setPendingSelectionFieldFormIds(duplicatedFields.map((field) => field.formId));
   };
 
   const duplicatedSelectedFieldsOnAllPages = () => {
-    const fields = selectedKonvaFieldGroups
+    const fields = selectedKonvaFieldGroupsRef.current
       .map((field) => editorFields.getFieldByFormId(field.id()))
       .filter((field) => field !== undefined);
 
@@ -1994,6 +2032,23 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     }
   };
 
+  const preselectedContextMenuRecipient = useMemo(() => {
+    const selectedFieldFormIds = selectedKonvaFieldGroups.map((field) => field.id());
+
+    if (selectedFieldFormIds.length === 0) {
+      return null;
+    }
+
+    const fields = editorFields.localFields.filter((field) => selectedFieldFormIds.includes(field.formId));
+    const recipient = envelope.recipients.find((candidate) => candidate.id === fields[0]?.recipientId);
+
+    if (!recipient || !fields.every((field) => field.recipientId === recipient.id)) {
+      return null;
+    }
+
+    return recipient;
+  }, [editorFields.localFields, envelope.recipients, selectedKonvaFieldGroups]);
+
   if (!currentEnvelopeItem) {
     return null;
   }
@@ -2054,7 +2109,9 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
           y={fieldContextMenu.y}
           canCopy={selectedKonvaFieldGroups.length > 0}
           canDelete={selectedKonvaFieldGroups.length > 0}
-          canAddText={contextMenuField?.type === FieldType.TEXT}
+          canChangeRecipient={selectedKonvaFieldGroups.length > 0}
+          canDuplicate={selectedKonvaFieldGroups.length > 0}
+          canAddText={selectedKonvaFieldGroups.length === 1 && contextMenuField?.type === FieldType.TEXT}
           canPaste={fieldClipboard.current.length > 0}
           onCopy={() => {
             copySelectedFields();
@@ -2062,6 +2119,18 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
           }}
           onPaste={() => {
             pasteCopiedFields();
+            setFieldContextMenu(null);
+          }}
+          onChangeRecipient={() => {
+            setFieldContextMenu(null);
+            setShowContextMenuRecipientSelector(true);
+          }}
+          onDuplicate={() => {
+            duplicatedSelectedFields();
+            setFieldContextMenu(null);
+          }}
+          onDuplicateOnAllPages={() => {
+            duplicatedSelectedFieldsOnAllPages();
             setFieldContextMenu(null);
           }}
           onAddText={() => {
@@ -2075,6 +2144,24 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
           }}
         />
       )}
+
+      <CommandDialog
+        position="start"
+        open={showContextMenuRecipientSelector}
+        onOpenChange={setShowContextMenuRecipientSelector}
+      >
+        <EnvelopeRecipientSelectorCommand
+          placeholder={t`Select a recipient`}
+          selectedRecipient={preselectedContextMenuRecipient}
+          onSelectedRecipientChange={(recipient) => {
+            editorFields.setSelectedRecipient(recipient.id);
+            changeSelectedFieldsRecipients(recipient.id);
+            setShowContextMenuRecipientSelector(false);
+          }}
+          recipients={envelope.recipients}
+          fields={envelope.fields}
+        />
+      </CommandDialog>
 
       {pendingFieldCreation && (
         <div
