@@ -42,6 +42,19 @@ export const TextFieldAdvancedSettings = ({
   return (
     <div className="flex flex-col gap-4">
       <div>
+        <Label className="mt-4">
+          <Trans>Add text</Trans>
+        </Label>
+        <Textarea
+          id="text"
+          className="mt-2 bg-background"
+          placeholder={t`Add text to the field`}
+          value={fieldState.text}
+          onChange={(e) => handleInput('text', e.target.value)}
+        />
+      </div>
+
+      <div>
         <Label>
           <Trans>Label</Trans>
         </Label>
@@ -63,19 +76,6 @@ export const TextFieldAdvancedSettings = ({
           placeholder={t`Field placeholder`}
           value={fieldState.placeholder}
           onChange={(e) => handleFieldChange('placeholder', e.target.value)}
-        />
-      </div>
-
-      <div>
-        <Label className="mt-4">
-          <Trans>Add text</Trans>
-        </Label>
-        <Textarea
-          id="text"
-          className="mt-2 bg-background"
-          placeholder={t`Add text to the field`}
-          value={fieldState.text}
-          onChange={(e) => handleInput('text', e.target.value)}
         />
       </div>
 

@@ -30,13 +30,24 @@ import { getFieldGroupValidationState, isRequiredField, type TFieldWithGroup } f
 import { getClientSideFieldTranslations } from '@documenso/lib/utils/fields';
 import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
 import { CommandDialog } from '@documenso/ui/primitives/command';
-import { useLingui } from '@lingui/react/macro';
-import type { FieldType } from '@prisma/client';
+import { Textarea } from '@documenso/ui/primitives/textarea';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { FieldType } from '@prisma/client';
 import Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Transformer } from 'konva/lib/shapes/Transformer';
-import { CopyPlusIcon, SquareStackIcon, TrashIcon, UserCircleIcon } from 'lucide-react';
+import {
+  ClipboardIcon,
+  ClipboardPasteIcon,
+  CopyPlusIcon,
+  PencilIcon,
+  SquareStackIcon,
+  TrashIcon,
+  TypeIcon,
+  UserCircleIcon,
+} from 'lucide-react';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { ConditionalFieldHighlightContext } from './conditional-field-highlight-context';
 import { useEnvelopeEditorFieldDrag } from './envelope-editor-field-drag-context';
@@ -67,10 +78,168 @@ const getClientPoint = (event: KonvaEventObject<Event>) => {
   return null;
 };
 
+const getFieldGroupFromTarget = (target: Konva.Node) =>
+  target.hasName('field-group') ? target : target.findAncestor('.field-group', true);
+
 const isPointerReleased = (event: KonvaEventObject<Event>) => {
   const nativeEvent = event.evt as (MouseEvent & { changedTouches?: TouchList }) | undefined;
 
   return Boolean(nativeEvent && (typeof nativeEvent.buttons !== 'number' || nativeEvent.buttons === 0));
+};
+
+const getTextFieldValue = (field: TLocalField) => {
+  if (field.type !== FieldType.TEXT || field.fieldMeta?.type !== 'text') {
+    return '';
+  }
+
+  return field.fieldMeta.text ?? '';
+};
+
+type EditorTextFieldProps = {
+  field: TLocalField;
+  initialValue: string;
+  scale: number;
+  pageHeight: number;
+  pageWidth: number;
+  onCancel: () => void;
+  onCommit: (value: string) => void;
+};
+
+const EditorTextField = ({
+  field,
+  initialValue,
+  scale,
+  pageHeight,
+  pageWidth,
+  onCancel,
+  onCommit,
+}: EditorTextFieldProps) => {
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [value, setValue] = useState(initialValue);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+
+    if (inputRef.current) {
+      inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+    }
+  }, []);
+
+  if (field.type !== FieldType.TEXT || field.fieldMeta?.type !== 'text') {
+    return null;
+  }
+
+  return (
+    <div
+      className="pointer-events-auto absolute z-40"
+      style={{
+        top: `${(field.positionY / 100) * pageHeight * scale}px`,
+        left: `${(field.positionX / 100) * pageWidth * scale}px`,
+        width: `${(field.width / 100) * pageWidth * scale}px`,
+        height: `${(field.height / 100) * pageHeight * scale}px`,
+      }}
+    >
+      <Textarea
+        ref={inputRef}
+        aria-label={field.fieldMeta.label || 'Text field'}
+        autoComplete="off"
+        className="box-border h-full w-full resize-none overflow-auto rounded-[2px] border-2 border-primary bg-white px-2 py-1 text-black shadow-sm focus-visible:ring-2"
+        maxLength={field.fieldMeta.characterLimit || undefined}
+        placeholder={field.fieldMeta.placeholder}
+        style={{
+          fontSize: `${Math.max(8, Number(field.fieldMeta.fontSize ?? 14) * scale)}px`,
+          textAlign: field.fieldMeta.textAlign,
+        }}
+        value={value}
+        onBlur={() => onCommit(value)}
+        onChange={(event) => setValue(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            onCancel();
+          }
+        }}
+      />
+    </div>
+  );
+};
+
+type FieldContextMenuProps = {
+  x: number;
+  y: number;
+  canCopy: boolean;
+  canDelete: boolean;
+  canAddText: boolean;
+  canPaste: boolean;
+  onCopy: () => void;
+  onPaste: () => void;
+  onAddText: () => void;
+  onDelete: () => void;
+};
+
+const FieldContextMenu = ({
+  x,
+  y,
+  canCopy,
+  canDelete,
+  canAddText,
+  canPaste,
+  onCopy,
+  onPaste,
+  onAddText,
+  onDelete,
+}: FieldContextMenuProps) => {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(
+    <div
+      className="fixed z-[70] min-w-40 rounded-md border border-border bg-background p-1 shadow-lg"
+      style={{ left: x, top: y }}
+      onContextMenu={(event) => event.preventDefault()}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+        disabled={!canCopy}
+        onClick={onCopy}
+      >
+        <ClipboardIcon className="h-3.5 w-3.5" />
+        <Trans>Copy</Trans>
+      </button>
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+        disabled={!canPaste}
+        onClick={onPaste}
+      >
+        <ClipboardPasteIcon className="h-3.5 w-3.5" />
+        <Trans>Paste</Trans>
+      </button>
+      {canAddText && (
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted"
+          onClick={onAddText}
+        >
+          <TypeIcon className="h-3.5 w-3.5" />
+          <Trans>Add text</Trans>
+        </button>
+      )}
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-destructive text-sm hover:bg-destructive/10 disabled:pointer-events-none disabled:opacity-50"
+        disabled={!canDelete}
+        onClick={onDelete}
+      >
+        <TrashIcon className="h-3.5 w-3.5" />
+        <Trans>Delete</Trans>
+      </button>
+    </div>,
+    document.body,
+  );
 };
 
 export const getPageAtPoint = (x: number, y: number) =>
@@ -169,10 +338,7 @@ const getVisiblePage = (currentPage: PageRenderer) => {
 
 const getPasteTarget = (currentPage: PageRenderer) => {
   if (lastPastePointer) {
-    const pointerPageElement = getPageAtPoint(lastPastePointer.clientX, lastPastePointer.clientY);
-    const pointerPage = pointerPageElement
-      ? pageRendererRegistry.get(Number(pointerPageElement.dataset.pageNumber))
-      : undefined;
+    const pointerPage = pageRendererRegistry.get(lastPastePointer.pageNumber);
 
     if (pointerPage) {
       const pageRect = pointerPage.container.getBoundingClientRect();
@@ -295,6 +461,12 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
   const [isFieldChanging, setIsFieldChanging] = useState(false);
   const [pendingFieldCreation, setPendingFieldCreation] = useState<Konva.Rect | null>(null);
+  const [editingTextField, setEditingTextField] = useState<{ formId: string; initialValue: string } | null>(null);
+  const [fieldContextMenu, setFieldContextMenu] = useState<{
+    x: number;
+    y: number;
+    fieldFormId: string | null;
+  } | null>(null);
   const lastDragMoveAt = useRef<number | null>(null);
 
   const { stage, pageLayer, konvaContainer, scaledViewport, unscaledViewport } = usePageRenderer(
@@ -303,6 +475,81 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
   );
 
   const { scale, pageNumber } = pageData;
+
+  const startTextEditing = useCallback(
+    (fieldFormId: string, valueOverride?: string) => {
+      const field = editorFields.getFieldByFormId(fieldFormId);
+
+      if (!field || field.type !== FieldType.TEXT || field.fieldMeta?.type !== 'text') {
+        return;
+      }
+
+      setFieldContextMenu(null);
+      setEditingTextField({
+        formId: fieldFormId,
+        initialValue: valueOverride ?? getTextFieldValue(field),
+      });
+    },
+    [editorFields],
+  );
+
+  const commitTextEditing = useCallback(
+    (fieldFormId: string, value: string) => {
+      const field = editorFields.getFieldByFormId(fieldFormId);
+
+      if (field?.type === FieldType.TEXT && field.fieldMeta?.type === 'text') {
+        editorFields.updateFieldByFormId(fieldFormId, {
+          fieldMeta: {
+            ...field.fieldMeta,
+            text: value,
+          },
+        });
+      }
+
+      setEditingTextField(null);
+    },
+    [editorFields],
+  );
+
+  const openFieldContextMenu = useCallback(
+    (event: KonvaEventObject<Event>) => {
+      const nativeEvent = event.evt as MouseEvent;
+
+      nativeEvent.preventDefault();
+      event.cancelBubble = true;
+
+      const fieldGroup = getFieldGroupFromTarget(event.target);
+      const fieldFormId = fieldGroup?.id() || null;
+
+      if (fieldGroup && !selectedKonvaFieldGroupsRef.current.includes(fieldGroup as Konva.Group)) {
+        setSelectedFields([fieldGroup]);
+      }
+
+      if (typeof nativeEvent.clientX !== 'number' || typeof nativeEvent.clientY !== 'number') {
+        return;
+      }
+
+      lastPastePointer = {
+        clientX: nativeEvent.clientX,
+        clientY: nativeEvent.clientY,
+        pageNumber,
+      };
+      setFieldContextMenu({
+        x: nativeEvent.clientX,
+        y: nativeEvent.clientY,
+        fieldFormId,
+      });
+    },
+    [pageNumber],
+  );
+
+  useEffect(() => {
+    const closeContextMenu = () => setFieldContextMenu(null);
+
+    window.addEventListener('pointerdown', closeContextMenu);
+
+    return () => window.removeEventListener('pointerdown', closeContextMenu);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -978,6 +1225,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         setSelectedFields([...selectedFieldGroups, fieldGroup]);
       }
 
+      if (field.type === FieldType.TEXT && nativeEvent instanceof MouseEvent && nativeEvent.detail === 2) {
+        startTextEditing(field.formId);
+      }
+
       pageLayer.current?.batchDraw();
     });
 
@@ -1032,14 +1283,25 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       };
     };
 
-    const clearPastePointer = () => {
-      if (lastPastePointer?.pageNumber === pageNumber) {
-        lastPastePointer = null;
-      }
-    };
-
     currentStage.on('mousemove touchmove', updatePastePointer);
-    currentStage.on('mouseleave', clearPastePointer);
+    currentStage.on('contextmenu', openFieldContextMenu);
+    currentStage.on('dblclick', (event) => {
+      const fieldGroup = getFieldGroupFromTarget(event.target);
+
+      if (!fieldGroup) {
+        return;
+      }
+
+      const field = editorFields.getFieldByFormId(fieldGroup.id());
+
+      if (!field || field.type !== FieldType.TEXT) {
+        return;
+      }
+
+      event.cancelBubble = true;
+      setSelectedFields([fieldGroup]);
+      startTextEditing(field.formId);
+    });
 
     for (const field of localPageFields) {
       renderFieldOnLayer(field);
@@ -1049,7 +1311,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     currentStage.on('mousedown', (e) => {
       removePendingField();
 
-      if (e.target === stage.current) {
+      if (e.target === stage.current && (e.evt as MouseEvent).button !== 2) {
         setSelectedFields([]);
         currentPageLayer.batchDraw();
       }
@@ -1448,12 +1710,14 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
   };
 
   const deletedSelectedFields = useCallback(() => {
-    const fieldFormids = selectedKonvaFieldGroups.map((field) => field.id()).filter((field) => field !== undefined);
+    const fieldFormids = selectedKonvaFieldGroupsRef.current
+      .map((field) => field.id())
+      .filter((field) => field !== undefined);
 
     editorFields.removeFieldsByFormId(fieldFormids);
 
     setSelectedFields([]);
-  }, [editorFields, selectedKonvaFieldGroups]);
+  }, [editorFields]);
 
   const copySelectedFields = useCallback(() => {
     fieldClipboard.current = selectedKonvaFieldGroupsRef.current
@@ -1474,12 +1738,6 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     }
 
     const pasteTarget = getPasteTarget(currentPage);
-
-    // Every mounted page registers its own key listener. Only the renderer for
-    // the page under the pointer (or the visible page fallback) may paste.
-    if (pasteTarget.page.pageLayer !== pageLayer.current) {
-      return false;
-    }
 
     const pastePositions = getPastePositions({
       fields: fieldClipboard.current,
@@ -1592,6 +1850,22 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       const isModifierPressed = event.ctrlKey || event.metaKey;
       const key = event.key.toLowerCase();
 
+      const selectedFieldGroup =
+        selectedKonvaFieldGroupsRef.current.length === 1 ? selectedKonvaFieldGroupsRef.current[0] : undefined;
+      const selectedField = selectedFieldGroup ? editorFields.getFieldByFormId(selectedFieldGroup.id()) : undefined;
+
+      if (
+        !editingTextField &&
+        !isModifierPressed &&
+        !event.altKey &&
+        event.key.length === 1 &&
+        selectedField?.type === FieldType.TEXT
+      ) {
+        event.preventDefault();
+        startTextEditing(selectedField.formId, `${getTextFieldValue(selectedField)}${event.key}`);
+        return;
+      }
+
       if (isModifierPressed && !event.altKey && key === 'c' && selectedKonvaFieldGroupsRef.current.length > 0) {
         event.preventDefault();
         copySelectedFields();
@@ -1628,7 +1902,16 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     window.addEventListener('keydown', handleKeyDown);
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySelectedFields, deletedSelectedFields, isFieldChanging, nudgeSelectedFields, pasteCopiedFields]);
+  }, [
+    copySelectedFields,
+    deletedSelectedFields,
+    editingTextField,
+    editorFields,
+    isFieldChanging,
+    nudgeSelectedFields,
+    pasteCopiedFields,
+    startTextEditing,
+  ]);
 
   const changeSelectedFieldsRecipients = (recipientId: number) => {
     editorFields.updateFieldsRecipient(
@@ -1715,6 +1998,16 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     return null;
   }
 
+  const editingField = editingTextField ? editorFields.getFieldByFormId(editingTextField.formId) : undefined;
+  const contextMenuField = fieldContextMenu?.fieldFormId
+    ? editorFields.getFieldByFormId(fieldContextMenu.fieldFormId)
+    : undefined;
+  const selectedTextFieldFormId =
+    selectedKonvaFieldGroups.length === 1 &&
+    editorFields.getFieldByFormId(selectedKonvaFieldGroups[0].id())?.type === FieldType.TEXT
+      ? selectedKonvaFieldGroups[0].id()
+      : null;
+
   return (
     <>
       {selectedKonvaFieldGroups.length > 0 && interactiveTransformer.current && !isFieldChanging && (
@@ -1723,6 +2016,12 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
           handleDuplicateSelectedFieldsOnAllPages={duplicatedSelectedFieldsOnAllPages}
           handleDeleteSelectedFields={deletedSelectedFields}
           handleChangeRecipient={changeSelectedFieldsRecipients}
+          handleEditSelectedText={() => {
+            if (selectedTextFieldFormId) {
+              startTextEditing(selectedTextFieldFormId);
+            }
+          }}
+          canEditText={Boolean(selectedTextFieldFormId)}
           selectedFieldFormId={selectedKonvaFieldGroups.map((field) => field.id())}
           style={{
             position: 'absolute',
@@ -1732,6 +2031,47 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
             gap: '8px',
             pointerEvents: 'auto',
             zIndex: 50,
+          }}
+        />
+      )}
+
+      {editingTextField && editingField && (
+        <EditorTextField
+          key={editingTextField.formId}
+          field={editingField}
+          initialValue={editingTextField.initialValue}
+          pageHeight={unscaledViewport.height}
+          pageWidth={unscaledViewport.width}
+          scale={scale}
+          onCancel={() => setEditingTextField(null)}
+          onCommit={(value) => commitTextEditing(editingTextField.formId, value)}
+        />
+      )}
+
+      {fieldContextMenu && (
+        <FieldContextMenu
+          x={fieldContextMenu.x}
+          y={fieldContextMenu.y}
+          canCopy={selectedKonvaFieldGroups.length > 0}
+          canDelete={selectedKonvaFieldGroups.length > 0}
+          canAddText={contextMenuField?.type === FieldType.TEXT}
+          canPaste={fieldClipboard.current.length > 0}
+          onCopy={() => {
+            copySelectedFields();
+            setFieldContextMenu(null);
+          }}
+          onPaste={() => {
+            pasteCopiedFields();
+            setFieldContextMenu(null);
+          }}
+          onAddText={() => {
+            if (contextMenuField) {
+              startTextEditing(contextMenuField.formId);
+            }
+          }}
+          onDelete={() => {
+            deletedSelectedFields();
+            setFieldContextMenu(null);
           }}
         />
       )}
@@ -1771,6 +2111,8 @@ type FieldActionButtonsProps = React.HTMLAttributes<HTMLDivElement> & {
   handleDuplicateSelectedFieldsOnAllPages: () => void;
   handleDeleteSelectedFields: () => void;
   handleChangeRecipient: (recipientId: number) => void;
+  handleEditSelectedText: () => void;
+  canEditText: boolean;
   selectedFieldFormId: string[];
 };
 
@@ -1779,6 +2121,8 @@ const FieldActionButtons = ({
   handleDuplicateSelectedFieldsOnAllPages,
   handleDeleteSelectedFields,
   handleChangeRecipient,
+  handleEditSelectedText,
+  canEditText,
   selectedFieldFormId,
   ...props
 }: FieldActionButtonsProps) => {
@@ -1826,6 +2170,7 @@ const FieldActionButtons = ({
       <div className="group flex w-fit items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
         <button
           title={t`Change Recipient`}
+          type="button"
           className="rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
           onClick={() => setShowRecipientSelector(true)}
           onTouchEnd={() => setShowRecipientSelector(true)}
@@ -1833,8 +2178,21 @@ const FieldActionButtons = ({
           <UserCircleIcon className="h-3 w-3" />
         </button>
 
+        {canEditText && (
+          <button
+            title={t`Edit text`}
+            type="button"
+            className="rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
+            onClick={handleEditSelectedText}
+            onTouchEnd={handleEditSelectedText}
+          >
+            <PencilIcon className="h-3 w-3" />
+          </button>
+        )}
+
         <button
           title={t`Duplicate`}
+          type="button"
           className="rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
           onClick={handleDuplicateSelectedFields}
           onTouchEnd={handleDuplicateSelectedFields}
@@ -1844,6 +2202,7 @@ const FieldActionButtons = ({
 
         <button
           title={t`Duplicate on all pages`}
+          type="button"
           className="rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
           onClick={handleDuplicateSelectedFieldsOnAllPages}
           onTouchEnd={handleDuplicateSelectedFieldsOnAllPages}
@@ -1853,6 +2212,7 @@ const FieldActionButtons = ({
 
         <button
           title={t`Remove`}
+          type="button"
           className="rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
           onClick={handleDeleteSelectedFields}
           onTouchEnd={handleDeleteSelectedFields}
