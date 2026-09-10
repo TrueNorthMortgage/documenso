@@ -816,6 +816,8 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     placements.forEach(setInvalidPlacement);
     fieldDragState.current = null;
+    setActiveGroupPlacements([]);
+    setActivePlacement(null);
     draggedFields.forEach((draggedField) => {
       draggedField.fieldGroup.stopDrag();
       draggedField.fieldGroup.destroy();
