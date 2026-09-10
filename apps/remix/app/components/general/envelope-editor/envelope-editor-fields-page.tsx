@@ -980,24 +980,29 @@ const InvalidFieldPlacementOverlays = ({
   };
 
   const overlays = new Map<string, PlacementOverlay>();
-  const activePlacementIsInvalid = activePlacement
-    ? invalidPlacements.some((placement) => placement.fieldFormId === activePlacement.fieldFormId)
+  const activePlacementOverlay = activePlacement
+    ? (activeGroupPlacements.find((placement) => placement.fieldFormId === activePlacement.fieldFormId) ??
+      activePlacement)
+    : null;
+  const activePlacementIsInvalid = activePlacementOverlay
+    ? invalidPlacements.some((placement) => placement.fieldFormId === activePlacementOverlay.fieldFormId)
     : false;
 
-  if (activePlacement?.envelopeItemId === currentEnvelopeItem.id) {
-    overlays.set(activePlacement.fieldFormId, {
+  if (activePlacementOverlay?.envelopeItemId === currentEnvelopeItem.id) {
+    overlays.set(activePlacementOverlay.fieldFormId, {
       isInteractive: true,
       isInvalidPlacement: activePlacementIsInvalid,
       isPlacementDragging: activePlacementIsInvalid,
       isPrimary: true,
-      placement: activePlacement,
+      placement: activePlacementOverlay,
     });
   }
 
   activeGroupPlacements
     .filter(
       (placement) =>
-        placement.envelopeItemId === currentEnvelopeItem.id && placement.fieldFormId !== activePlacement?.fieldFormId,
+        placement.envelopeItemId === currentEnvelopeItem.id &&
+        placement.fieldFormId !== activePlacementOverlay?.fieldFormId,
     )
     .forEach((placement) => {
       overlays.set(placement.fieldFormId, {

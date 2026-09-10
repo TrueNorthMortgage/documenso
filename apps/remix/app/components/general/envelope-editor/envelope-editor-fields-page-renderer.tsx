@@ -487,6 +487,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     setActivePlacement,
     setInvalidPlacement,
     setPendingSelectionFieldFormIds,
+    setSelectedInvalidFieldFormIds,
   } = useEnvelopeEditorFieldDrag();
 
   const interactiveTransformer = useRef<Transformer | null>(null);
@@ -658,8 +659,11 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       skipShadow: true,
       skipStroke: false,
     });
-    const previewWidth = fieldRect.width || fieldPixelWidth;
-    const previewHeight = fieldRect.height || fieldPixelHeight;
+    // Use the dimensions captured at drag start. When multiple fields are
+    // selected, getClientRect() can include the transformer's group bounds
+    // for the anchor field and stretch its preview over the other fields.
+    const previewWidth = fieldPixelWidth;
+    const previewHeight = fieldPixelHeight;
     const maxX = Math.max(0, scrollContainer.clientWidth - previewWidth);
     const maxY = Math.max(
       scrollContainer.scrollTop + scrollContainer.clientHeight - previewHeight,
@@ -818,6 +822,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     fieldDragState.current = null;
     setActiveGroupPlacements([]);
     setActivePlacement(null);
+    setSelectedInvalidFieldFormIds(placements.map((placement) => placement.fieldFormId));
     draggedFields.forEach((draggedField) => {
       draggedField.fieldGroup.stopDrag();
       draggedField.fieldGroup.destroy();
