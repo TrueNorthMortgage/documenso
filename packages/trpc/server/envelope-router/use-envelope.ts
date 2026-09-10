@@ -81,6 +81,7 @@ export const useEnvelopeRoute = authenticatedProcedure
         // We disable flattening here since `createDocumentFromTemplate` will handle it.
         const { id: documentDataId } = await putNormalizedPdfFileServerSide(file, {
           flattenForm: false,
+          rasterize: false,
         });
 
         return {

@@ -80,6 +80,8 @@ export const pdfToImages = async (pdfBytes: Uint8Array, options: PdfToImagesOpti
         image: await canvas.toBuffer('jpeg'),
         width: Math.floor(viewport.width),
         height: Math.floor(viewport.height),
+        pageWidth: viewport.width / scale,
+        pageHeight: viewport.height / scale,
         mimeType: 'image/jpeg',
       };
 

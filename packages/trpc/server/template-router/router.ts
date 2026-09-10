@@ -280,6 +280,7 @@ export const templateRouter = router({
 
       const { id: templateDocumentDataId } = await putNormalizedPdfFileServerSide(file, {
         flattenForm: false,
+        rasterize: false,
       });
 
       ctx.logger.info({

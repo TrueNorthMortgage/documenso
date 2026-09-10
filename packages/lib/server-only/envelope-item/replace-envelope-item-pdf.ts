@@ -82,9 +82,10 @@ export const UNSAFE_replaceEnvelopeItemPdf = async ({
 
   const normalized = await normalizePdf(buffer, {
     flattenForm: envelope.type !== 'TEMPLATE',
+    rasterize: envelope.type !== 'TEMPLATE',
   });
 
-  const { cleanedPdf, placeholders } = await extractPdfPlaceholders(normalized);
+  const { cleanedPdf, placeholders } = await extractPdfPlaceholders(normalized, { sourcePdf: buffer });
 
   // Upload the new PDF and get a new DocumentData record.
   const { documentData: newDocumentData, filePageCount } = await putPdfFileServerSide({

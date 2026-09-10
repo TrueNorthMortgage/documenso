@@ -1,6 +1,7 @@
 import { PDF, PdfDict, PdfRef } from '@libpdf/core';
 
 import { AppError } from '../../errors/app-error';
+import { rasterizePdf } from './rasterize-pdf';
 
 const removeWidgetAnnotations = (pdfDoc: PDF) => {
   for (const page of pdfDoc.getPages()) {
@@ -25,8 +26,9 @@ const removeWidgetAnnotations = (pdfDoc: PDF) => {
   }
 };
 
-export const normalizePdf = async (pdf: Buffer, options: { flattenForm?: boolean } = {}) => {
+export const normalizePdf = async (pdf: Buffer, options: { flattenForm?: boolean; rasterize?: boolean } = {}) => {
   const shouldFlattenForm = options.flattenForm ?? true;
+  const shouldRasterize = options.rasterize ?? true;
 
   const pdfDoc = await PDF.load(pdf).catch((e) => {
     console.error(`PDF normalization error: ${e.message}`);
@@ -40,6 +42,18 @@ export const normalizePdf = async (pdf: Buffer, options: { flattenForm?: boolean
     throw new AppError('INVALID_DOCUMENT_FILE', {
       message: 'The document is encrypted',
     });
+  }
+
+  if (shouldRasterize) {
+    try {
+      return await rasterizePdf(pdf);
+    } catch (e) {
+      console.error(`PDF rasterization error: ${e instanceof Error ? e.message : String(e)}`);
+
+      throw new AppError('INVALID_DOCUMENT_FILE', {
+        message: 'The document is not a valid PDF',
+      });
+    }
   }
 
   pdfDoc.flattenLayers();

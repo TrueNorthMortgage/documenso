@@ -182,8 +182,9 @@ export const removePlaceholdersFromPDF = async (pdf: Buffer, placeholders?: Plac
  */
 export const extractPdfPlaceholders = async (
   pdf: Buffer,
+  options: { sourcePdf?: Buffer } = {},
 ): Promise<{ cleanedPdf: Buffer; placeholders: PlaceholderInfo[] }> => {
-  const placeholders = await extractPlaceholdersFromPDF(pdf);
+  const placeholders = await extractPlaceholdersFromPDF(options.sourcePdf ?? pdf);
 
   if (placeholders.length === 0) {
     return { cleanedPdf: pdf, placeholders: [] };
