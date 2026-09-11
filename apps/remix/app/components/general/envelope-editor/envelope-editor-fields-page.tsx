@@ -20,7 +20,7 @@ import {
   type TTextFieldMeta,
 } from '@documenso/lib/types/field-meta';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
-import { getDragScrollDelta } from '@documenso/lib/utils/field-drag';
+import { getClampedFieldGroupPositions, getDragScrollDelta } from '@documenso/lib/utils/field-drag';
 import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
 import { trpc } from '@documenso/trpc/react';
 import { AnimateGenericFadeInOut } from '@documenso/ui/components/animate/animate-generic-fade-in-out';
@@ -109,7 +109,19 @@ const BulkFieldSettings = ({ fieldFormIds }: { fieldFormIds: string[] }) => {
     [editorFields.localFields, fieldFormIds],
   );
 
-  const requiredState = getBulkSettingState(fields.map((field) => field.fieldMeta?.required === true));
+  const requiredState = getBulkSettingState(
+    fields.map((field) => {
+      if (field.fieldGroup?.groupType !== 'OPTION_GROUP') {
+        return field.fieldMeta?.required === true;
+      }
+
+      const hasMemberRequiredValue = editorFields.localFields.some(
+        (candidate) => candidate.fieldGroupId === field.fieldGroupId && candidate.fieldMeta?.required !== undefined,
+      );
+
+      return hasMemberRequiredValue ? field.fieldMeta?.required === true : field.fieldGroup.required;
+    }),
+  );
   const readOnlyState = getBulkSettingState(
     fields.map((field) => field.fieldGroup?.readOnly ?? field.fieldMeta?.readOnly === true),
   );
@@ -360,21 +372,31 @@ const useInvalidFieldPlacementDrag = ({
         ) {
           const pageX = pageRect.left - scrollRect.left + scrollContainer.scrollLeft;
           const pageY = pageRect.top - scrollRect.top + scrollContainer.scrollTop;
-          for (const groupPlacement of placements) {
-            const field = editorFields.getFieldByFormId(groupPlacement.fieldFormId);
+          const clampedPositions = getClampedFieldGroupPositions({
+            anchorFieldFormId: currentPlacement.fieldFormId,
+            anchorX: currentPlacement.x - pageX,
+            anchorY: currentPlacement.y - pageY,
+            fields: placements.map((groupPlacement) => ({
+              fieldFormId: groupPlacement.fieldFormId,
+              height: groupPlacement.height,
+              width: groupPlacement.width,
+              x: groupPlacement.x - pageX,
+              y: groupPlacement.y - pageY,
+            })),
+            pageHeight: pageRect.height,
+            pageWidth: pageRect.width,
+          });
 
-            if (!field) {
-              continue;
+          for (const position of clampedPositions) {
+            const field = editorFields.getFieldByFormId(position.fieldFormId);
+
+            if (field) {
+              editorFields.updateFieldByFormId(field.formId, {
+                page: pageNumber,
+                positionX: position.positionX * 100,
+                positionY: position.positionY * 100,
+              });
             }
-
-            const maxPositionX = Math.max(0, 100 - field.width);
-            const maxPositionY = Math.max(0, 100 - field.height);
-
-            editorFields.updateFieldByFormId(field.formId, {
-              page: pageNumber,
-              positionX: clamp(((groupPlacement.x - pageX) / pageRect.width) * 100, 0, maxPositionX),
-              positionY: clamp(((groupPlacement.y - pageY) / pageRect.height) * 100, 0, maxPositionY),
-            });
           }
 
           if (currentPlacement) {

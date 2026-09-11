@@ -306,7 +306,6 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
 
         updateFieldByFormId(field.formId, {
           recipientId,
-          id: undefined,
           fieldGroup: field.fieldGroup
             ? {
                 ...field.fieldGroup,

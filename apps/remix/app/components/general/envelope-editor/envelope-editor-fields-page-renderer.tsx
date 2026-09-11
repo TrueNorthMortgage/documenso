@@ -507,6 +507,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
   } | null>(null);
   const [showContextMenuRecipientSelector, setShowContextMenuRecipientSelector] = useState(false);
   const lastDragMoveAt = useRef<number | null>(null);
+  const openFieldContextMenuRef = useRef<(event: KonvaEventObject<Event>) => void>(() => undefined);
 
   const { stage, pageLayer, konvaContainer, scaledViewport, unscaledViewport } = usePageRenderer(
     ({ stage, pageLayer }) => createPageCanvas(stage, pageLayer),
@@ -557,11 +558,14 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       nativeEvent.preventDefault();
       event.cancelBubble = true;
 
-      const fieldGroup = getFieldGroupFromTarget(event.target);
+      const targetFieldGroup = getFieldGroupFromTarget(event.target);
+      const fieldGroup = targetFieldGroup?.draggable() ? targetFieldGroup : null;
       const fieldFormId = fieldGroup?.id() || null;
 
       if (fieldGroup && !selectedKonvaFieldGroupsRef.current.includes(fieldGroup as Konva.Group)) {
         setSelectedFields([fieldGroup]);
+      } else if (targetFieldGroup) {
+        setSelectedFields([]);
       }
 
       if (typeof nativeEvent.clientX !== 'number' || typeof nativeEvent.clientY !== 'number') {
@@ -581,6 +585,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     },
     [pageNumber],
   );
+
+  useEffect(() => {
+    openFieldContextMenuRef.current = openFieldContextMenu;
+  }, [openFieldContextMenu]);
 
   useEffect(() => {
     const closeContextMenu = () => setFieldContextMenu(null);
@@ -1329,7 +1337,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     };
 
     currentStage.on('mousemove touchmove', updatePastePointer);
-    currentStage.on('contextmenu', openFieldContextMenu);
+    currentStage.on('contextmenu', (event) => openFieldContextMenuRef.current(event));
     currentStage.on('dblclick', (event) => {
       const fieldGroup = getFieldGroupFromTarget(event.target);
 
@@ -2114,11 +2122,21 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         <FieldContextMenu
           x={fieldContextMenu.x}
           y={fieldContextMenu.y}
-          canCopy={selectedKonvaFieldGroups.length > 0}
-          canDelete={selectedKonvaFieldGroups.length > 0}
-          canChangeRecipient={selectedKonvaFieldGroups.length > 0}
-          canDuplicate={selectedKonvaFieldGroups.length > 0}
-          canAddText={selectedKonvaFieldGroups.length === 1 && contextMenuField?.type === FieldType.TEXT}
+          canCopy={selectedKonvaFieldGroups.length > 0 && selectedKonvaFieldGroups.every((field) => field.draggable())}
+          canDelete={
+            selectedKonvaFieldGroups.length > 0 && selectedKonvaFieldGroups.every((field) => field.draggable())
+          }
+          canChangeRecipient={
+            selectedKonvaFieldGroups.length > 0 && selectedKonvaFieldGroups.every((field) => field.draggable())
+          }
+          canDuplicate={
+            selectedKonvaFieldGroups.length > 0 && selectedKonvaFieldGroups.every((field) => field.draggable())
+          }
+          canAddText={
+            selectedKonvaFieldGroups.length === 1 &&
+            selectedKonvaFieldGroups[0]?.draggable() &&
+            contextMenuField?.type === FieldType.TEXT
+          }
           canPaste={fieldClipboard.current.length > 0}
           onCopy={() => {
             copySelectedFields();
