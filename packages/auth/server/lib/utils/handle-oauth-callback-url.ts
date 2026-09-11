@@ -1,6 +1,7 @@
 import { NEXT_PUBLIC_WEBAPP_URL } from '@documenso/lib/constants/app';
 import { isEmailDomainAllowedForSignup, isSignupEnabledForProvider } from '@documenso/lib/constants/auth';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
+import { getTeams } from '@documenso/lib/server-only/team/get-teams';
 import { onCreateUserHook } from '@documenso/lib/server-only/user/create-user';
 import { deletedServiceAccountEmail } from '@documenso/lib/server-only/user/service-accounts/deleted-account';
 import { legacyServiceAccountEmail } from '@documenso/lib/server-only/user/service-accounts/legacy-service-account';
@@ -9,12 +10,13 @@ import { prisma } from '@documenso/prisma';
 import { UserSecurityAuditLogType } from '@prisma/client';
 import { decodeIdToken, OAuth2Client } from 'arctic';
 import type { Context } from 'hono';
-import { deleteCookie } from 'hono/cookie';
+import { deleteCookie, getCookie } from 'hono/cookie';
 
 import type { OAuthClientOptions } from '../../config';
 import { AuthenticationErrorCode } from '../errors/error-codes';
 import { onAuthorize } from './authorizer';
 import {
+  type AutoProvisionResult,
   getAutoProvisionRedirectPath,
   getOidcTeamUrlForEmail,
   isOidcAutoProvisioningEnabled,
@@ -65,7 +67,15 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
 
     await onAuthorize({ userId: existingAccount.user.id }, c);
 
-    return c.redirect(getAutoProvisionRedirectPath(redirectPath, existingAccountProvisioning), 302);
+    return c.redirect(
+      await getOAuthRedirectPath({
+        c,
+        redirectPath,
+        provisioning: existingAccountProvisioning,
+        userId: existingAccount.user.id,
+      }),
+      302,
+    );
   }
 
   const userWithSameEmail = await prisma.user.findFirst({
@@ -127,7 +137,15 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
 
     await onAuthorize({ userId: userWithSameEmail.id }, c);
 
-    return c.redirect(getAutoProvisionRedirectPath(redirectPath, existingEmailProvisioning), 302);
+    return c.redirect(
+      await getOAuthRedirectPath({
+        c,
+        redirectPath,
+        provisioning: existingEmailProvisioning,
+        userId: userWithSameEmail.id,
+      }),
+      302,
+    );
   }
 
   // Check if signups are disabled for this provider.
@@ -194,7 +212,39 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
 
   await onAuthorize({ userId: createdUser.id }, c);
 
-  return c.redirect(getAutoProvisionRedirectPath(redirectPath, createdUserProvisioning), 302);
+  return c.redirect(
+    await getOAuthRedirectPath({
+      c,
+      redirectPath,
+      provisioning: createdUserProvisioning,
+      userId: createdUser.id,
+    }),
+    302,
+  );
+};
+
+const getOAuthRedirectPath = async ({
+  c,
+  redirectPath,
+  provisioning,
+  userId,
+}: {
+  c: Context;
+  redirectPath: string;
+  provisioning: AutoProvisionResult;
+  userId: number;
+}) => {
+  const preferredTeamUrl = getCookie(c, 'preferred-team-url');
+
+  if (redirectPath === '/' && preferredTeamUrl) {
+    const teams = await getTeams({ userId });
+
+    if (teams.some((team) => team.url === preferredTeamUrl)) {
+      return redirectPath;
+    }
+  }
+
+  return getAutoProvisionRedirectPath(redirectPath, provisioning);
 };
 
 export const validateOauth = async (options: HandleOAuthCallbackUrlOptions) => {
