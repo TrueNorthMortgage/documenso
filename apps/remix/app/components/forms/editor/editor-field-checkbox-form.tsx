@@ -19,8 +19,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { PlusIcon, Trash } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { isDeepEqual } from 'remeda';
 import { z } from 'zod';
 
 import {
@@ -75,10 +76,8 @@ export const EditorFieldCheckboxForm = ({
   onValueChange,
   isGrouped = false,
 }: EditorFieldCheckboxFormProps) => {
-  const form = useForm<TCheckboxFieldFormSchema>({
-    resolver: zodResolver(ZCheckboxFieldFormSchema),
-    mode: 'onChange',
-    defaultValues: {
+  const defaultValues = useMemo(
+    () => ({
       label: value.label || '',
       direction: value.direction || 'vertical',
       validationRule: value.validationRule || '',
@@ -87,7 +86,23 @@ export const EditorFieldCheckboxForm = ({
       required: value.required || false,
       readOnly: value.readOnly || false,
       fontSize: value.fontSize || DEFAULT_FIELD_FONT_SIZE,
-    },
+    }),
+    [
+      value.direction,
+      value.fontSize,
+      value.label,
+      value.readOnly,
+      value.required,
+      value.validationLength,
+      value.validationRule,
+      value.values,
+    ],
+  );
+
+  const form = useForm<TCheckboxFieldFormSchema>({
+    resolver: zodResolver(ZCheckboxFieldFormSchema),
+    mode: 'onChange',
+    defaultValues,
   });
 
   const { control } = form;
@@ -95,6 +110,21 @@ export const EditorFieldCheckboxForm = ({
   const formValues = useWatch({
     control,
   });
+
+  const previousDefaultValuesRef = useRef(defaultValues);
+  const shouldSkipValueChangeRef = useRef(false);
+
+  useEffect(() => {
+    const hasExternalValueChanged = !isDeepEqual(previousDefaultValuesRef.current, defaultValues);
+    previousDefaultValuesRef.current = defaultValues;
+
+    if (!hasExternalValueChanged || isDeepEqual(form.getValues(), defaultValues)) {
+      return;
+    }
+
+    shouldSkipValueChangeRef.current = true;
+    form.reset(defaultValues);
+  }, [defaultValues, form]);
 
   const addValue = (numberOfValues: number = 1) => {
     const currentValues = form.getValues('values') || [];
@@ -123,6 +153,11 @@ export const EditorFieldCheckboxForm = ({
   };
 
   useEffect(() => {
+    if (shouldSkipValueChangeRef.current) {
+      shouldSkipValueChangeRef.current = false;
+      return;
+    }
+
     const validatedFormValues = ZCheckboxFieldFormSchema.safeParse(formValues);
 
     if (validatedFormValues.success) {
