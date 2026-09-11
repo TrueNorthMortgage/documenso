@@ -15,6 +15,7 @@ import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../
 import type { ApiRequestMetadata } from '../../universal/extract-request-metadata';
 import { isDocumentCompleted } from '../../utils/document';
 import { createDocumentAuditLogData } from '../../utils/document-audit-logs';
+import { isSameEmail } from '../../utils/email';
 import { type EnvelopeIdOptions, unsafeBuildEnvelopeIdQuery } from '../../utils/envelope';
 import { isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
@@ -68,7 +69,7 @@ export const deleteDocument = async ({ id, userId, teamId, requestMetadata }: De
     .catch(() => false);
 
   const isUserOwner = envelope.userId === userId;
-  const userRecipient = envelope.recipients.find((recipient) => recipient.email === user.email);
+  const userRecipient = envelope.recipients.find((recipient) => isSameEmail(recipient.email, user.email));
 
   if (!isUserOwner && !isUserTeamMember && !userRecipient) {
     throw new AppError(AppErrorCode.UNAUTHORIZED, {

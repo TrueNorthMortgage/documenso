@@ -8,6 +8,7 @@ import { DateTime } from 'luxon';
 
 import { STATS_COUNT_CAP } from '../../constants/document';
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
+import { normalizeEmail } from '../../utils/email';
 import { getTeamById } from '../team/get-team';
 
 // Kysely query builder type for Envelope queries.
@@ -85,6 +86,7 @@ export const getStats = async ({ userId, teamId, period, search = '', folderId, 
     where: { id: userId },
     select: { id: true, email: true },
   });
+  const userEmail = normalizeEmail(user.email);
 
   const team = await getTeamById({ userId, teamId });
 
@@ -159,7 +161,7 @@ export const getStats = async ({ userId, teamId, period, search = '', folderId, 
         allowedVisibilities.map((v) => sql.lit(v)),
       ),
       eb('Envelope.userId', '=', user.id),
-      recipientExists(eb, user.email),
+      recipientExists(eb, userEmail),
     ]);
 
   const teamDeletedFilter = (eb: EnvelopeExpressionBuilder) => {

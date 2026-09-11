@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '@documenso/ui/primitives/al
 import { RecipientSelector } from '@documenso/ui/primitives/recipient-selector';
 import { Separator } from '@documenso/ui/primitives/separator';
 import type { Faker } from '@faker-js/faker';
+import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { FieldType, SigningStatus } from '@prisma/client';
 import { FileTextIcon } from 'lucide-react';
@@ -72,7 +73,7 @@ export const EnvelopeEditorPreviewPage = () => {
         inserted: true,
         ...match(fieldMeta)
           .with({ type: FieldType.TEXT }, ({ fieldMeta }) => {
-            let text = fieldMeta?.text || faker.lorem.words(5);
+            let text = fieldMeta?.text || t`Sample text`;
 
             if (fieldMeta?.characterLimit) {
               text = text.slice(0, fieldMeta?.characterLimit);

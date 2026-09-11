@@ -15,6 +15,7 @@ import { DateTime } from 'luxon';
 import { match } from 'ts-pattern';
 
 import type { FindResultResponse } from '../../types/search-params';
+import { normalizeEmail } from '../../utils/email';
 import { maskRecipientTokensForDocument } from '../../utils/mask-recipient-tokens-for-document';
 import { getTeamById } from '../team/get-team';
 
@@ -121,6 +122,7 @@ export const findDocuments = async ({
     where: { id: userId },
     select: { id: true, email: true, name: true },
   });
+  const userEmail = normalizeEmail(user.email);
 
   let team = null;
 
@@ -209,7 +211,7 @@ export const findDocuments = async ({
     const personalDeletedFilter = (eb: EnvelopeExpressionBuilder) =>
       eb.or([
         eb.and([eb('Envelope.userId', '=', user.id), eb('Envelope.deletedAt', 'is', null)]),
-        recipientExists(eb, user.email, (reb) => reb('Recipient.documentDeletedAt', 'is', null)),
+        recipientExists(eb, userEmail, (reb) => reb('Recipient.documentDeletedAt', 'is', null)),
       ]);
 
     return match<ExtendedDocumentStatus, EnvelopeQueryBuilder | null>(status)
@@ -221,7 +223,7 @@ export const findDocuments = async ({
               eb('Envelope.userId', '=', user.id),
               eb.and([
                 eb('Envelope.status', 'in', [sql.lit(DocumentStatus.COMPLETED), sql.lit(DocumentStatus.PENDING)]),
-                recipientExists(eb, user.email),
+                recipientExists(eb, userEmail),
               ]),
             ]),
           ]),
@@ -233,7 +235,7 @@ export const findDocuments = async ({
           // not soft-deleted. This replaces the previous personalDeletedFilter +
           // separate recipientExists pair, eliminating a hashed SubPlan that
           // materialised all recipient rows for this email (~125k for heavy users).
-          recipientExists(eb, user.email, (reb) =>
+          recipientExists(eb, userEmail, (reb) =>
             reb.and([
               reb('Recipient.documentDeletedAt', 'is', null),
               reb('signingStatus', '=', sql.lit(SigningStatus.NOT_SIGNED)),
@@ -256,7 +258,7 @@ export const findDocuments = async ({
               personalDeletedFilter(eb),
               eb.or([
                 eb('Envelope.userId', '=', user.id),
-                recipientExists(eb, user.email, (reb) =>
+                recipientExists(eb, userEmail, (reb) =>
                   reb.and([
                     reb('Recipient.signingStatus', '=', sql.lit(SigningStatus.SIGNED)),
                     reb('Recipient.role', '!=', sql.lit(RecipientRole.CC)),
@@ -272,7 +274,7 @@ export const findDocuments = async ({
           .where((eb) =>
             eb.and([
               personalDeletedFilter(eb),
-              eb.or([eb('Envelope.userId', '=', user.id), recipientExists(eb, user.email)]),
+              eb.or([eb('Envelope.userId', '=', user.id), recipientExists(eb, userEmail)]),
             ]),
           ),
       )
@@ -284,7 +286,7 @@ export const findDocuments = async ({
               personalDeletedFilter(eb),
               eb.or([
                 eb('Envelope.userId', '=', user.id),
-                recipientExists(eb, user.email, (reb) =>
+                recipientExists(eb, userEmail, (reb) =>
                   reb('Recipient.signingStatus', '=', sql.lit(SigningStatus.REJECTED)),
                 ),
               ]),
@@ -320,7 +322,7 @@ export const findDocuments = async ({
           allowedVisibilities.map((v) => sql.lit(v)),
         ),
         eb('Envelope.userId', '=', user.id),
-        recipientExists(eb, user.email),
+        recipientExists(eb, userEmail),
       ]);
 
     // Deleted filter for team path

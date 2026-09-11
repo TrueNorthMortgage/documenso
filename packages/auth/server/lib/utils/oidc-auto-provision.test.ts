@@ -1,9 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { getOidcTeamUrlForEmail, isOidcAutoProvisioningEnabled } from './oidc-auto-provision';
+import {
+  getAutoProvisionRedirectPath,
+  getOidcTeamUrlForEmail,
+  isOidcAutoProvisioningEnabled,
+} from './oidc-auto-provision';
 
 const originalEnabled = process.env.SELF_HOSTED_OIDC_AUTO_PROVISION_ENABLED;
 const originalMap = process.env.SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP;
+const originalRedirectToTeam = process.env.SELF_HOSTED_OIDC_AUTO_PROVISION_REDIRECT_TO_TEAM;
 
 afterEach(() => {
   if (originalEnabled === undefined) {
@@ -16,6 +21,12 @@ afterEach(() => {
     delete process.env.SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP;
   } else {
     process.env.SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP = originalMap;
+  }
+
+  if (originalRedirectToTeam === undefined) {
+    delete process.env.SELF_HOSTED_OIDC_AUTO_PROVISION_REDIRECT_TO_TEAM;
+  } else {
+    process.env.SELF_HOSTED_OIDC_AUTO_PROVISION_REDIRECT_TO_TEAM = originalRedirectToTeam;
   }
 });
 
@@ -40,5 +51,11 @@ describe('OIDC email-domain team provisioning', () => {
     expect(() => getOidcTeamUrlForEmail('user@alpha.example')).toThrow(
       'SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP must contain comma-separated <domain>:<team-url> entries',
     );
+  });
+
+  it('keeps the root redirect when a saved team is still accessible', () => {
+    process.env.SELF_HOSTED_OIDC_AUTO_PROVISION_REDIRECT_TO_TEAM = 'true';
+
+    expect(getAutoProvisionRedirectPath('/', { provisioned: true, teamUrl: 'tnm' }, true)).toBe('/');
   });
 });
