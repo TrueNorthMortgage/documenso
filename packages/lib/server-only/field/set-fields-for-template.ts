@@ -155,6 +155,12 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
           direction: group.direction,
           validationRule: group.groupType === FieldGroupType.VALIDATION_GROUP ? group.validationRule : null,
           validationLength: group.groupType === FieldGroupType.VALIDATION_GROUP ? group.validationLength : null,
+          recipient: {
+            connect: {
+              id: group.recipientId,
+              envelopeId: envelope.id,
+            },
+          },
         },
         create: {
           id: group.id,
@@ -253,6 +259,12 @@ export const setFieldsForTemplate = async ({ userId, teamId, id, fields }: SetFi
           height: field.pageHeight,
           fieldMeta: parsedFieldMeta,
           fieldGroup: field.fieldGroup ? { connect: { id: field.fieldGroup.id } } : { disconnect: true },
+          recipient: {
+            connect: {
+              id: field._recipient.id,
+              envelopeId: envelope.id,
+            },
+          },
         },
         create: {
           type: field.type,

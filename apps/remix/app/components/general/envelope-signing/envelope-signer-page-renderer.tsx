@@ -25,7 +25,15 @@ import { EnvelopeRecipientFieldTooltip } from '@documenso/ui/components/document
 import { EnvelopeFieldToolTip } from '@documenso/ui/components/field/envelope-field-tooltip';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { type Field, FieldType, type Recipient, RecipientRole, type Signature, SigningStatus } from '@prisma/client';
+import {
+  type Field,
+  FieldGroupType,
+  FieldType,
+  type Recipient,
+  RecipientRole,
+  type Signature,
+  SigningStatus,
+} from '@prisma/client';
 import type Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import { useEffect, useMemo, useRef } from 'react';
@@ -187,12 +195,19 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     }
 
     const fieldToRender = ZFullFieldSchema.parse(unparsedField);
+    const activeRecipientFields =
+      recipient.role === RecipientRole.ASSISTANT ? selectedAssistantRecipientFields : recipientFields;
+    const groupFields = fieldToRender.fieldGroupId
+      ? activeRecipientFields.filter((field) => field.fieldGroupId === fieldToRender.fieldGroupId)
+      : [];
+    const hasMemberRequiredValue = groupFields.some((field) => field.fieldMeta?.required !== undefined);
+    const isRequiredOptionGroup =
+      fieldToRender.fieldGroup?.groupType === FieldGroupType.OPTION_GROUP &&
+      (hasMemberRequiredValue
+        ? groupFields.some((field) => field.fieldMeta?.required === true)
+        : fieldToRender.fieldGroup.required);
 
-    const color = fieldToRender.fieldMeta?.readOnly
-      ? 'readOnly'
-      : showPendingFieldTooltip && isFieldUnsignedAndRequired(fieldToRender)
-        ? 'orange'
-        : 'green';
+    const color = fieldToRender.fieldMeta?.readOnly ? 'readOnly' : 'green';
 
     const { fieldGroup } = renderField({
       scale,
@@ -210,6 +225,10 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
       pageWidth: unscaledViewport.width,
       pageHeight: unscaledViewport.height,
       color,
+      isRequired:
+        !fieldToRender.fieldMeta?.readOnly &&
+        !fieldToRender.fieldGroup?.readOnly &&
+        (isFieldUnsignedAndRequired(fieldToRender) || isRequiredOptionGroup),
       mode: 'sign',
     });
 
@@ -580,6 +599,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
           pageHeight: unscaledViewport.height,
           color: 'readOnly',
           editable: false,
+          isRequired: false,
           mode: 'sign',
         });
 

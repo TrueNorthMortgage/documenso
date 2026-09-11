@@ -64,6 +64,7 @@ type RenderFieldOptions = {
 
   scale: number;
   editable?: boolean;
+  isRequired?: boolean;
 };
 
 export const renderField = ({
@@ -76,6 +77,7 @@ export const renderField = ({
   scale,
   editable,
   color,
+  isRequired,
 }: RenderFieldOptions) => {
   const options = {
     pageLayer,
@@ -86,6 +88,7 @@ export const renderField = ({
     color,
     editable,
     scale,
+    isRequired,
   };
 
   // If the generic text field element array changes, update the `GenericTextFieldTypeMetas` type

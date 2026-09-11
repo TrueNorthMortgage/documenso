@@ -13,6 +13,7 @@ import {
 describe('getFieldRectStyles', () => {
   it('uses a red border for fields selected as conditional children in the editor', () => {
     expect(getFieldRectStyles({ isHighlighted: true, conditionalChildRule: null }, { mode: 'edit' })).toEqual({
+      fill: 'rgba(255, 255, 255, 0.001)',
       stroke: CONDITIONAL_FIELD_SELECTION_STROKE,
       strokeWidth: 3,
       dash: [],
@@ -21,10 +22,34 @@ describe('getFieldRectStyles', () => {
 
   it('does not apply the editor highlight outside edit mode', () => {
     expect(getFieldRectStyles({ isHighlighted: true, conditionalChildRule: null }, { mode: 'sign' })).toEqual({
+      fill: 'rgba(255, 255, 255, 0.001)',
       stroke: '#e5e7eb',
       strokeWidth: 2,
       dash: [],
     });
+  });
+
+  it('shades required fields with the same recipient color in edit and sign mode', () => {
+    const field = { isHighlighted: false, conditionalChildRule: null };
+    const editStyles = getFieldRectStyles(field, { mode: 'edit', color: 'readOnly', isRequired: true });
+    const signStyles = getFieldRectStyles(field, { mode: 'sign', color: 'readOnly', isRequired: true });
+
+    expect(editStyles).toEqual({
+      fill: 'rgba(176, 176, 176, 1)',
+      stroke: 'rgba(176, 176, 176, 1)',
+      strokeWidth: 2,
+      dash: [],
+    });
+    expect(signStyles).toEqual(editStyles);
+  });
+
+  it('does not shade required fields in export mode', () => {
+    expect(
+      getFieldRectStyles(
+        { isHighlighted: false, conditionalChildRule: null },
+        { mode: 'export', color: 'readOnly', isRequired: true },
+      ).fill,
+    ).toBe('rgba(255, 255, 255, 0.001)');
   });
 
   it('places the conditional indicator outside the field bounds', () => {

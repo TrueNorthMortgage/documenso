@@ -21,11 +21,16 @@ const FIELD_INDICATOR_SUFFIXES = ['conditional-indicator', 'validation-group-ind
 
 export const getFieldRectStyles = (
   field: Pick<FieldToRender, 'conditionalChildRule' | 'isHighlighted'>,
-  options: Pick<RenderFieldElementOptions, 'color' | 'mode'>,
+  options: Pick<RenderFieldElementOptions, 'color' | 'isRequired' | 'mode'>,
 ) => {
   const isHighlighted = options.mode === 'edit' && field.isHighlighted;
+  const fill =
+    options.mode !== 'export' && options.isRequired && options.color
+      ? getRecipientColorStyles(options.color).baseRingHover
+      : FIELD_HIT_AREA_FILL;
 
   return {
+    fill,
     stroke: isHighlighted
       ? CONDITIONAL_FIELD_SELECTION_STROKE
       : options.color
@@ -213,7 +218,7 @@ export const upsertFieldGroup = (field: FieldToRender, options: RenderFieldEleme
 };
 
 export const upsertFieldRect = (field: FieldToRender, options: RenderFieldElementOptions): Konva.Rect => {
-  const { pageWidth, pageHeight, mode, pageLayer, color } = options;
+  const { pageWidth, pageHeight, pageLayer, mode } = options;
 
   const { fieldWidth, fieldHeight } = calculateFieldPosition(field, pageWidth, pageHeight);
 
@@ -228,7 +233,7 @@ export const upsertFieldRect = (field: FieldToRender, options: RenderFieldElemen
     width: fieldWidth,
     height: fieldHeight,
     // Keep the hit area inside the field bounds while allowing the field to look transparent.
-    fill: FIELD_HIT_AREA_FILL,
+    ...getFieldRectStyles(field, options),
     listening: true,
     hitFunc: (context, shape) => {
       context.beginPath();
@@ -236,7 +241,6 @@ export const upsertFieldRect = (field: FieldToRender, options: RenderFieldElemen
       context.closePath();
       context.fillStrokeShape(shape);
     },
-    ...getFieldRectStyles(field, { color, mode }),
     cornerRadius: 2,
     strokeScaleEnabled: false,
     visible: mode !== 'export',
@@ -498,6 +502,7 @@ export const createFieldHoverInteraction = ({ options, fieldGroup, fieldRect }: 
   }
 
   const hoverColor = getRecipientColorStyles(options.color).baseRingHover;
+  const defaultFill = getFieldRectStyles({ isHighlighted: false, conditionalChildRule: null }, options).fill;
 
   fieldGroup.on('mouseover', () => {
     const layer = fieldRect.getLayer();
@@ -521,7 +526,7 @@ export const createFieldHoverInteraction = ({ options, fieldGroup, fieldRect }: 
     new Konva.Tween({
       node: fieldRect,
       duration: 0.3,
-      fill: FIELD_HIT_AREA_FILL,
+      fill: defaultFill,
     }).play();
   });
 
@@ -547,7 +552,7 @@ export const createFieldHoverInteraction = ({ options, fieldGroup, fieldRect }: 
     new Konva.Tween({
       node: fieldRect,
       duration: 0.3,
-      fill: FIELD_HIT_AREA_FILL,
+      fill: defaultFill,
     }).play();
   });
 };

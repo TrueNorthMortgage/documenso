@@ -108,6 +108,40 @@ export const EditorFieldTextForm = ({
     <Form {...form}>
       <form>
         <fieldset className="flex flex-col gap-2">
+          <FormField
+            control={form.control}
+            name="text"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  <Trans>Add text</Trans>
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    data-testid="field-form-text"
+                    className="h-auto"
+                    placeholder={t`Add text to the field`}
+                    {...field}
+                    onChange={(e) => {
+                      const values = form.getValues();
+                      const characterLimit = values.characterLimit || 0;
+                      let textValue = e.target.value;
+
+                      if (characterLimit > 0 && textValue.length > characterLimit) {
+                        textValue = textValue.slice(0, characterLimit);
+                      }
+
+                      e.target.value = textValue;
+                      field.onChange(e);
+                    }}
+                    rows={1}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <EditorGenericFontSizeField className="w-full" formControl={form.control} />
 
           <div className="flex w-full flex-row gap-x-4">
@@ -142,40 +176,6 @@ export const EditorFieldTextForm = ({
                 </FormLabel>
                 <FormControl>
                   <Input data-testid="field-form-placeholder" placeholder={t`Field placeholder`} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="text"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  <Trans>Add text</Trans>
-                </FormLabel>
-                <FormControl>
-                  <Textarea
-                    data-testid="field-form-text"
-                    className="h-auto"
-                    placeholder={t`Add text to the field`}
-                    {...field}
-                    onChange={(e) => {
-                      const values = form.getValues();
-                      const characterLimit = values.characterLimit || 0;
-                      let textValue = e.target.value;
-
-                      if (characterLimit > 0 && textValue.length > characterLimit) {
-                        textValue = textValue.slice(0, characterLimit);
-                      }
-
-                      e.target.value = textValue;
-                      field.onChange(e);
-                    }}
-                    rows={1}
-                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

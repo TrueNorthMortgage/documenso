@@ -85,6 +85,14 @@ export const setFieldsForDocument = async ({
     (existingField) => !fields.find((field) => field.id === existingField.id),
   );
 
+  for (const field of removedFields) {
+    if (!field.recipient || !canRecipientFieldsBeModified(field.recipient, existingFields)) {
+      throw new AppError(AppErrorCode.INVALID_REQUEST, {
+        message: 'Cannot modify a field where the recipient has already interacted with the document',
+      });
+    }
+  }
+
   const linkedFields = fields.map((field) => {
     const existing = existingFields.find((existingField) => existingField.id === field.id);
 
@@ -107,10 +115,16 @@ export const setFieldsForDocument = async ({
     }
 
     // Check whether the existing field can be modified.
-    if (existing && hasFieldBeenChanged(existing, field) && !canRecipientFieldsBeModified(recipient, existingFields)) {
-      throw new AppError(AppErrorCode.INVALID_REQUEST, {
-        message: 'Cannot modify a field where the recipient has already interacted with the document',
-      });
+    if (existing && hasFieldBeenChanged(existing, field)) {
+      const canModifyExistingRecipient =
+        existing.recipient && canRecipientFieldsBeModified(existing.recipient, existingFields);
+      const canModifyNewRecipient = canRecipientFieldsBeModified(recipient, existingFields);
+
+      if (!canModifyExistingRecipient || !canModifyNewRecipient) {
+        throw new AppError(AppErrorCode.INVALID_REQUEST, {
+          message: 'Cannot modify a field where the recipient has already interacted with the document',
+        });
+      }
     }
 
     // Prevent creating new fields when recipient has interacted with the document.
@@ -167,6 +181,12 @@ export const setFieldsForDocument = async ({
             direction: group.direction,
             validationRule: group.groupType === FieldGroupType.VALIDATION_GROUP ? group.validationRule : null,
             validationLength: group.groupType === FieldGroupType.VALIDATION_GROUP ? group.validationLength : null,
+            recipient: {
+              connect: {
+                id: group.recipientId,
+                envelopeId: envelope.id,
+              },
+            },
           },
           create: {
             id: group.id,
@@ -274,6 +294,12 @@ export const setFieldsForDocument = async ({
             height: field.pageHeight,
             fieldMeta: parsedFieldMeta,
             fieldGroup: field.fieldGroup ? { connect: { id: field.fieldGroup.id } } : { disconnect: true },
+            recipient: {
+              connect: {
+                id: field._recipient.id,
+                envelopeId: envelope.id,
+              },
+            },
           },
           create: {
             type: field.type,
@@ -439,6 +465,7 @@ const hasFieldBeenChanged = (field: Field, newFieldData: FieldData) => {
     field.width.toNumber() !== newFieldData.pageWidth ||
     field.height.toNumber() !== newFieldData.pageHeight ||
     !isDeepEqual(currentFieldMeta, newFieldMeta) ||
+    field.recipientId !== newFieldData.recipientId ||
     field.fieldGroupId !== newFieldData.fieldGroup?.id
   );
 };

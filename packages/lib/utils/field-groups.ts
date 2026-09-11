@@ -25,6 +25,38 @@ type TRadioGroupSelectionField = {
   fieldMeta?: TFieldMetaSchema;
 };
 
+type TFieldOptionSelectionField = TRadioGroupSelectionField & {
+  type: FieldType;
+  fieldGroup?: TFieldGroup | null;
+};
+
+type TFieldOption = {
+  id: number;
+  checked: boolean;
+  value: string;
+};
+
+const getFieldOptionValues = (field: TFieldOptionSelectionField): TFieldOption[] | null => {
+  if (field.type === FieldType.RADIO && field.fieldMeta?.type === 'radio') {
+    return field.fieldMeta.values ?? [];
+  }
+
+  if (field.type === FieldType.CHECKBOX && field.fieldMeta?.type === 'checkbox') {
+    return field.fieldMeta.values ?? [];
+  }
+
+  return null;
+};
+
+const updateFieldOptionValues = <T extends TFieldOptionSelectionField>(field: T, values: TFieldOption[]) =>
+  ({
+    ...field,
+    fieldMeta: {
+      ...field.fieldMeta,
+      values,
+    },
+  }) as T;
+
 export const clearOtherRadioGroupSelections = <T extends TRadioGroupSelectionField>(
   fields: T[],
   selectedField: TRadioGroupSelectionField,
@@ -58,6 +90,117 @@ export const clearOtherRadioGroupSelections = <T extends TRadioGroupSelectionFie
         })),
       },
     };
+  });
+};
+
+const getCheckedOptionCount = (fields: TFieldOptionSelectionField[]) =>
+  fields.reduce((count, field) => {
+    const values = getFieldOptionValues(field);
+
+    if (!values) {
+      return count;
+    }
+
+    return count + values.filter((value) => value.checked).length;
+  }, 0);
+
+const exceedsCheckboxSelectionLimit = (field: TFieldOptionSelectionField, fields: TFieldOptionSelectionField[]) => {
+  const validationRule =
+    field.fieldGroup?.validationRule ??
+    (field.fieldMeta?.type === 'checkbox' ? field.fieldMeta.validationRule : undefined);
+  const validationLength =
+    field.fieldGroup?.validationLength ??
+    (field.fieldMeta?.type === 'checkbox' ? field.fieldMeta.validationLength : undefined);
+
+  if (!validationRule || !validationLength || !['Select exactly', 'Select at most'].includes(validationRule)) {
+    return false;
+  }
+
+  return getCheckedOptionCount(fields) >= validationLength;
+};
+
+/**
+ * Toggles a radio or checkbox value while preserving standalone and grouped field rules.
+ */
+export const toggleFieldOptionSelection = <T extends TFieldOptionSelectionField>(
+  fields: T[],
+  selectedFieldFormId: string,
+  selectedOptionIndex: number,
+): T[] => {
+  const selectedField = fields.find((field) => field.formId === selectedFieldFormId);
+
+  if (
+    !selectedField ||
+    !selectedField.fieldMeta ||
+    (selectedField.type !== FieldType.RADIO && selectedField.type !== FieldType.CHECKBOX) ||
+    !getFieldOptionValues(selectedField)?.[selectedOptionIndex]
+  ) {
+    return fields;
+  }
+
+  const selectedValues = getFieldOptionValues(selectedField);
+
+  if (!selectedValues) {
+    return fields;
+  }
+
+  const isSelected = selectedValues[selectedOptionIndex].checked;
+  const groupedFields = selectedField.fieldGroupId
+    ? fields.filter((field) => field.fieldGroupId === selectedField.fieldGroupId)
+    : [selectedField];
+
+  if (
+    selectedField.type === FieldType.CHECKBOX &&
+    !isSelected &&
+    exceedsCheckboxSelectionLimit(selectedField, groupedFields)
+  ) {
+    return fields;
+  }
+
+  const isSelecting = !isSelected;
+
+  return fields.map((field) => {
+    if (field.formId === selectedField.formId) {
+      const values = getFieldOptionValues(field);
+
+      if (!values) {
+        return field;
+      }
+
+      return updateFieldOptionValues(
+        field,
+        values.map((value, index) => ({
+          ...value,
+          checked:
+            selectedField.type === FieldType.RADIO
+              ? isSelecting && index === selectedOptionIndex
+              : index === selectedOptionIndex
+                ? isSelecting
+                : value.checked,
+        })),
+      );
+    }
+
+    if (
+      isSelecting &&
+      selectedField.type === FieldType.RADIO &&
+      selectedField.fieldGroupId &&
+      field.fieldGroupId === selectedField.fieldGroupId &&
+      field.fieldMeta?.type === 'radio'
+    ) {
+      const values = getFieldOptionValues(field);
+
+      if (!values) {
+        return field;
+      }
+
+      return updateFieldOptionValues(
+        field,
+        values.map((value) => ({ ...value, checked: false })),
+      );
+    }
+
+    return field;
   });
 };
 

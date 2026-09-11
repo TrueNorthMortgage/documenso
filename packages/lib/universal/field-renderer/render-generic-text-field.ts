@@ -104,7 +104,7 @@ const upsertFieldText = (field: FieldToRender, options: RenderFieldElementOption
   }
 
   const overflowLayout = calculateOverflowLayout({
-    overflowMode: resolveFieldOverflowMode(fieldMeta, field.type),
+    overflowMode: mode === 'edit' ? 'crop' : resolveFieldOverflowMode(fieldMeta, field.type),
     isLabel,
     textToRender,
     fontSize: textFontSize,
@@ -217,7 +217,7 @@ export const renderGenericTextFieldElement = (field: FieldToRender, options: Ren
 
     // Recalculate overflow layout with new field dimensions.
     const newOverflowLayout = calculateOverflowLayout({
-      overflowMode: resolveFieldOverflowMode(fieldMeta, field.type),
+      overflowMode: mode === 'edit' ? 'crop' : resolveFieldOverflowMode(fieldMeta, field.type),
       isLabel,
       textToRender,
       fontSize: textFontSize,
