@@ -2,6 +2,7 @@ import { getSession } from '@documenso/auth/server/lib/utils/get-session';
 import { getDocumentWithDetailsById } from '@documenso/lib/server-only/document/get-document-with-details-by-id';
 import { getTeamByUrl } from '@documenso/lib/server-only/team/get-team';
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
+import { isSameEmail } from '@documenso/lib/utils/email';
 import { logDocumentAccess } from '@documenso/lib/utils/logger';
 import { canAccessTeamDocument, formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { Plural, Trans } from '@lingui/react/macro';
@@ -45,7 +46,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
   const documentVisibility = document.visibility;
   const currentTeamMemberRole = team.currentTeamRole;
-  const isRecipient = document.recipients.find((recipient) => recipient.email === user.email);
+  const isRecipient = document.recipients.find((recipient) => isSameEmail(recipient.email, user.email));
 
   let canAccessDocument = true;
 

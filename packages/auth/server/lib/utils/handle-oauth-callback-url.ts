@@ -5,6 +5,7 @@ import { getTeams } from '@documenso/lib/server-only/team/get-teams';
 import { onCreateUserHook } from '@documenso/lib/server-only/user/create-user';
 import { deletedServiceAccountEmail } from '@documenso/lib/server-only/user/service-accounts/deleted-account';
 import { legacyServiceAccountEmail } from '@documenso/lib/server-only/user/service-accounts/legacy-service-account';
+import { normalizeEmail } from '@documenso/lib/utils/email';
 import { isValidReturnTo, normalizeReturnTo } from '@documenso/lib/utils/is-valid-return-to';
 import { prisma } from '@documenso/prisma';
 import { UserSecurityAuditLogType } from '@prisma/client';
@@ -39,7 +40,7 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
     clientOptions,
   });
 
-  if (email.toLowerCase() === legacyServiceAccountEmail() || email.toLowerCase() === deletedServiceAccountEmail()) {
+  if (email === legacyServiceAccountEmail() || email === deletedServiceAccountEmail()) {
     return c.text('FORBIDDEN', 403);
   }
 
@@ -80,7 +81,10 @@ export const handleOAuthCallbackUrl = async (options: HandleOAuthCallbackUrlOpti
 
   const userWithSameEmail = await prisma.user.findFirst({
     where: {
-      email: email,
+      email: {
+        equals: email,
+        mode: 'insensitive',
+      },
     },
     select: {
       id: true,
@@ -324,7 +328,7 @@ export const validateOauth = async (options: HandleOAuthCallbackUrlOptions) => {
   }
 
   return {
-    email,
+    email: normalizeEmail(email),
     name,
     sub,
     accessToken,

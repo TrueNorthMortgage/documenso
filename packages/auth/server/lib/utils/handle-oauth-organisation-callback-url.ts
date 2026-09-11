@@ -60,7 +60,10 @@ export const handleOAuthOrganisationCallbackUrl = async (options: HandleOAuthOrg
 
   let userToLink = await prisma.user.findFirst({
     where: {
-      email,
+      email: {
+        equals: email,
+        mode: 'insensitive',
+      },
     },
   });
 

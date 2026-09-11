@@ -1,3 +1,4 @@
+import { isSameEmail, normalizeEmail } from '@documenso/lib/utils/email';
 import { formatDocumentsPath, getHighestTeamRoleInGroup } from '@documenso/lib/utils/teams';
 import { prisma } from '@documenso/prisma';
 import type { Prisma } from '@prisma/client';
@@ -28,6 +29,7 @@ export const searchDocumentsWithKeyword = async ({ query, userId, limit = 20 }: 
   ]);
 
   const teamIds = [...teamGroupsByTeamId.keys()];
+  const userEmail = normalizeEmail(user.email);
 
   const filters: Prisma.EnvelopeWhereInput[] = [
     // Documents owned by the user matching title, externalId, or recipient email.
@@ -47,7 +49,7 @@ export const searchDocumentsWithKeyword = async ({ query, userId, limit = 20 }: 
     // Documents where the user is a recipient (completed or pending).
     {
       status: { in: [DocumentStatus.COMPLETED, DocumentStatus.PENDING] },
-      recipients: { some: { email: user.email } },
+      recipients: { some: { email: userEmail } },
       title: { contains: query, mode: 'insensitive' },
       deletedAt: null,
     },
@@ -133,7 +135,7 @@ export const searchDocumentsWithKeyword = async ({ query, userId, limit = 20 }: 
       if (envelope.userId === user.id || (envelope.teamId && teamGroupsByTeamId.has(envelope.teamId))) {
         path = `${formatDocumentsPath(envelope.team.url)}/${legacyDocumentId}`;
       } else {
-        const signingToken = envelope.recipients.find((r) => r.email === user.email)?.token;
+        const signingToken = envelope.recipients.find((recipient) => isSameEmail(recipient.email, user.email))?.token;
         path = `/sign/${signingToken}`;
       }
 

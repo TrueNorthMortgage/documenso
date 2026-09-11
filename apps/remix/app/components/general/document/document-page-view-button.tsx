@@ -1,6 +1,7 @@
 import { useSession } from '@documenso/lib/client-only/providers/session';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
+import { isSameEmail } from '@documenso/lib/utils/email';
 import { formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { Button } from '@documenso/ui/primitives/button';
 import { Trans } from '@lingui/react/macro';
@@ -18,7 +19,7 @@ export type DocumentPageViewButtonProps = {
 export const DocumentPageViewButton = ({ envelope }: DocumentPageViewButtonProps) => {
   const { user } = useSession();
 
-  const recipient = envelope.recipients.find((recipient) => recipient.email === user.email);
+  const recipient = envelope.recipients.find((recipient) => isSameEmail(recipient.email, user.email));
 
   const isRecipient = !!recipient;
   const isPending = envelope.status === DocumentStatus.PENDING;

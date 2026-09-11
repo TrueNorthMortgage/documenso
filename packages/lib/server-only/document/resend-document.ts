@@ -23,6 +23,7 @@ import { NEXT_PUBLIC_WEBAPP_URL } from '../../constants/app';
 import { extractDerivedDocumentEmailSettings } from '../../types/document-email';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
 import { isDocumentCompleted } from '../../utils/document';
+import { isSameEmail } from '../../utils/email';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
@@ -140,7 +141,7 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
       const recipientEmailType = RECIPIENT_ROLE_TO_EMAIL_TYPE[recipient.role];
 
       const { email, name } = recipient;
-      const selfSigner = email === user.email;
+      const selfSigner = isSameEmail(email, user.email);
 
       const recipientActionVerb = i18n._(RECIPIENT_ROLES_DESCRIPTION[recipient.role].actionVerb).toLowerCase();
 

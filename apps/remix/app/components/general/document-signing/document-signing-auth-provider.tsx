@@ -8,6 +8,7 @@ import type {
 } from '@documenso/lib/types/document-auth';
 import { DocumentAuth } from '@documenso/lib/types/document-auth';
 import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
+import { isSameEmail } from '@documenso/lib/utils/email';
 import { trpc } from '@documenso/trpc/react';
 import { type Envelope, FieldType, type Passkey, type Recipient } from '@prisma/client';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -130,7 +131,7 @@ export const DocumentSigningAuthProvider = ({
       };
     }
 
-    if (derivedRecipientActionAuth.includes(DocumentAuth.ACCOUNT) && user?.email === recipient.email) {
+    if (derivedRecipientActionAuth.includes(DocumentAuth.ACCOUNT) && isSameEmail(user?.email, recipient.email)) {
       return {
         type: DocumentAuth.ACCOUNT,
       };
@@ -174,7 +175,7 @@ export const DocumentSigningAuthProvider = ({
     derivedRecipientActionAuth &&
       derivedRecipientActionAuth.length > 0 &&
       !derivedRecipientActionAuth.includes(DocumentAuth.EXPLICIT_NONE) &&
-      user?.email !== recipient.email,
+      !isSameEmail(user?.email, recipient.email),
   );
 
   const refetchPasskeys = async () => {
