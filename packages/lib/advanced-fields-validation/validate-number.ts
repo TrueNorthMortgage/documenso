@@ -2,6 +2,22 @@ import { numberFormatValues } from '@documenso/ui/primitives/document-flow/field
 
 import type { TNumberFieldMeta as NumberFieldMeta } from '../types/field-meta';
 
+const getNumberValue = (value: string, numberFormat?: string | null) => {
+  const trimmedValue = value.trim();
+
+  if (trimmedValue.length === 0) {
+    return null;
+  }
+
+  const normalizedValue =
+    numberFormat === '123.456.789,00'
+      ? trimmedValue.replace(/\./g, '').replace(',', '.')
+      : trimmedValue.replace(/,/g, '');
+  const numberValue = Number(normalizedValue);
+
+  return Number.isFinite(numberValue) ? numberValue : null;
+};
+
 export const validateNumberField = (
   value: string,
   fieldMeta?: NumberFieldMeta,
@@ -23,21 +39,21 @@ export const validateNumberField = (
     }
   }
 
-  const numberValue = parseFloat(value);
+  const numberValue = getNumberValue(value, numberFormat);
 
   if (isSigningPage && required && !value) {
     errors.push('Value is required');
   }
 
-  if ((isSigningPage || value.length > 0) && !/^[0-9,.]+$/.test(value.trim())) {
+  if ((isSigningPage || value.trim().length > 0) && (!/^[0-9,.]+$/.test(value.trim()) || numberValue === null)) {
     errors.push(`Value is not a valid number`);
   }
 
-  if (typeof minValue === 'number' && minValue > 0 && numberValue < minValue) {
+  if (typeof minValue === 'number' && minValue > 0 && numberValue !== null && numberValue < minValue) {
     errors.push(`Value ${value} is less than the minimum value of ${minValue}`);
   }
 
-  if (typeof maxValue === 'number' && maxValue > 0 && numberValue > maxValue) {
+  if (typeof maxValue === 'number' && maxValue > 0 && numberValue !== null && numberValue > maxValue) {
     errors.push(`Value ${value} is greater than the maximum value of ${maxValue}`);
   }
 
@@ -49,7 +65,7 @@ export const validateNumberField = (
     errors.push('Maximum value cannot be less than minimum value');
   }
 
-  if (readOnly && numberValue < 1) {
+  if (readOnly && numberValue !== null && numberValue < 1) {
     errors.push('A read-only field must have a value greater than 0');
   }
 
