@@ -72,6 +72,12 @@ export type PDFViewerProps = {
 
   /** Maximum page width used for fit-to-width scaling. */
   maxFitWidth?: number;
+
+  /** Controlled zoom level. */
+  zoomLevel?: PdfZoomLevel;
+
+  /** Called when the zoom level changes. */
+  onZoomLevelChange?: (zoomLevel: PdfZoomLevel) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export default function PDFViewer({
@@ -82,6 +88,8 @@ export default function PDFViewer({
   customPageRenderer,
   showZoomControls = false,
   maxFitWidth,
+  zoomLevel: controlledZoomLevel,
+  onZoomLevelChange,
   ...props
 }: PDFViewerProps) {
   const { t } = useLingui();
@@ -94,8 +102,17 @@ export default function PDFViewer({
   const pdfRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
 
   const [pages, setPages] = useState<PageMeta[]>([]);
-  const [zoomLevel, setZoomLevel] = useState<PdfZoomLevel>(DEFAULT_PDF_ZOOM_LEVEL);
+  const [internalZoomLevel, setInternalZoomLevel] = useState<PdfZoomLevel>(DEFAULT_PDF_ZOOM_LEVEL);
+  const zoomLevel = controlledZoomLevel ?? internalZoomLevel;
   const previousZoomLevelRef = useRef(zoomLevel);
+
+  const updateZoomLevel = (nextZoomLevel: PdfZoomLevel) => {
+    if (controlledZoomLevel === undefined) {
+      setInternalZoomLevel(nextZoomLevel);
+    }
+
+    onZoomLevelChange?.(nextZoomLevel);
+  };
 
   useEffect(() => {
     if (!data) {
@@ -283,12 +300,12 @@ export default function PDFViewer({
               className="h-8 w-8 p-0"
               aria-label={t`Zoom out`}
               disabled={zoomLevel === PDF_ZOOM_LEVELS[0]}
-              onClick={() => setZoomLevel((current) => getNextPdfZoomLevel(current, 'out'))}
+              onClick={() => updateZoomLevel(getNextPdfZoomLevel(zoomLevel, 'out'))}
             >
               <ZoomOutIcon className="h-4 w-4" />
             </Button>
 
-            <Select value={String(zoomLevel)} onValueChange={(value) => setZoomLevel(Number(value) as PdfZoomLevel)}>
+            <Select value={String(zoomLevel)} onValueChange={(value) => updateZoomLevel(Number(value) as PdfZoomLevel)}>
               <SelectTrigger className="h-8 w-[5.25rem]" aria-label={t`Zoom level`}>
                 <SelectValue />
               </SelectTrigger>
@@ -308,7 +325,7 @@ export default function PDFViewer({
               className="h-8 w-8 p-0"
               aria-label={t`Zoom in`}
               disabled={zoomLevel === PDF_ZOOM_LEVELS[PDF_ZOOM_LEVELS.length - 1]}
-              onClick={() => setZoomLevel((current) => getNextPdfZoomLevel(current, 'in'))}
+              onClick={() => updateZoomLevel(getNextPdfZoomLevel(zoomLevel, 'in'))}
             >
               <ZoomInIcon className="h-4 w-4" />
             </Button>

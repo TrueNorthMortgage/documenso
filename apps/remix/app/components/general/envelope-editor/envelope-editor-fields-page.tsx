@@ -1357,7 +1357,10 @@ export const EnvelopeEditorFieldsPage = () => {
       )}
 
       <div className="flex min-h-0 flex-1">
-        <div className="relative flex h-full w-full flex-col overflow-y-auto px-2" ref={scrollableContainerRef}>
+        <div
+          className="relative flex h-full w-full flex-col overflow-y-auto px-2 [scrollbar-gutter:stable]"
+          ref={scrollableContainerRef}
+        >
           {/* Keep document navigation horizontal on smaller screens. */}
           <EnvelopeRendererFileSelector
             className="px-0 lg:hidden"
@@ -1366,7 +1369,7 @@ export const EnvelopeEditorFieldsPage = () => {
           />
 
           {/* Document View */}
-          <div className="mt-4 flex h-full flex-col items-center justify-center">
+          <div className="mt-4 flex min-h-full flex-shrink-0 flex-col items-center">
             {envelope.recipients.length === 0 && (
               <Alert
                 variant="neutral"

@@ -1,10 +1,11 @@
 import { useCurrentEnvelopeRender } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import { PDF_VIEWER_ERROR_MESSAGES } from '@documenso/lib/constants/pdf-viewer-i18n';
+import { DEFAULT_PDF_ZOOM_LEVEL, type PdfZoomLevel } from '@documenso/lib/utils/pdf-zoom';
 import { cn } from '@documenso/ui/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@documenso/ui/primitives/alert';
 import type { MessageDescriptor } from '@lingui/core';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import type { PDFViewerProps } from './pdf-viewer';
 import PDFViewerLazy from './pdf-viewer-lazy';
@@ -15,12 +16,13 @@ export type EnvelopePdfViewerProps = {
    */
   errorMessage: { title: MessageDescriptor; description: MessageDescriptor } | null;
   showZoomControls?: boolean;
-} & Omit<PDFViewerProps, 'data' | 'maxFitWidth'>;
+} & Omit<PDFViewerProps, 'data' | 'maxFitWidth' | 'zoomLevel' | 'onZoomLevelChange'>;
 
 export const EnvelopePdfViewer = ({ errorMessage, className, showZoomControls, ...props }: EnvelopePdfViewerProps) => {
   const { t } = useLingui();
 
   const $el = useRef<HTMLDivElement>(null);
+  const [zoomLevel, setZoomLevel] = useState<PdfZoomLevel>(DEFAULT_PDF_ZOOM_LEVEL);
 
   const { currentEnvelopeItem, renderError } = useCurrentEnvelopeRender();
 
@@ -51,6 +53,8 @@ export const EnvelopePdfViewer = ({ errorMessage, className, showZoomControls, .
       {...props}
       showZoomControls={showZoomControls}
       maxFitWidth={showZoomControls ? 800 : undefined}
+      zoomLevel={showZoomControls ? zoomLevel : undefined}
+      onZoomLevelChange={showZoomControls ? setZoomLevel : undefined}
       className={cn(showZoomControls ? 'min-h-full w-full flex-shrink-0' : 'h-full w-full max-w-[800px]', className)}
       data={currentEnvelopeItem.data}
     />
