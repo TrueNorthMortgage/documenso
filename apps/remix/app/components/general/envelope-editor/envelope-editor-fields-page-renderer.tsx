@@ -81,6 +81,9 @@ const getClientPoint = (event: KonvaEventObject<Event>) => {
 const getFieldGroupFromTarget = (target: Konva.Node) =>
   target.hasName('field-group') ? target : target.findAncestor('.field-group', true);
 
+const isNonPrimaryMouseClick = (event: KonvaEventObject<Event>) =>
+  event.evt instanceof MouseEvent && event.evt.button !== 0;
+
 const isPointerReleased = (event: KonvaEventObject<Event>) => {
   const nativeEvent = event.evt as (MouseEvent & { changedTouches?: TouchList }) | undefined;
 
@@ -560,11 +563,13 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
       const targetFieldGroup = getFieldGroupFromTarget(event.target);
       const fieldGroup = targetFieldGroup?.draggable() ? targetFieldGroup : null;
+      const isTargetAlreadySelected =
+        targetFieldGroup && selectedKonvaFieldGroupsRef.current.includes(targetFieldGroup as Konva.Group);
       const fieldFormId = fieldGroup?.id() || null;
 
-      if (fieldGroup && !selectedKonvaFieldGroupsRef.current.includes(fieldGroup as Konva.Group)) {
+      if (fieldGroup && !isTargetAlreadySelected) {
         setSelectedFields([fieldGroup]);
-      } else if (targetFieldGroup) {
+      } else if (targetFieldGroup && !isTargetAlreadySelected) {
         setSelectedFields([]);
       }
 
@@ -1241,6 +1246,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     if (field.type === 'RADIO' || field.type === 'CHECKBOX') {
       fieldGroup.on('click tap', (event) => {
+        if (isNonPrimaryMouseClick(event)) {
+          return;
+        }
+
         const target = event.target as Konva.Node;
         const isOptionControl =
           field.type === 'RADIO'
@@ -1261,6 +1270,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     // Set up field selection.
     fieldGroup.on('click tap', (event) => {
+      if (isNonPrimaryMouseClick(event)) {
+        return;
+      }
+
       removePendingField();
       event.cancelBubble = true;
 
@@ -1597,6 +1610,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     // Clicks should select/deselect shapes
     currentStage.on('click tap', (e) => {
+      if (isNonPrimaryMouseClick(e)) {
+        return;
+      }
+
       // if we are selecting with rect, do nothing
       if (selectionRectangle.visible() && selectionRectangle.width() > 0 && selectionRectangle.height() > 0) {
         return;
