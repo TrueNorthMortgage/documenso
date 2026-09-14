@@ -26,6 +26,10 @@ export const formatTeamUrl = (teamUrl: string, baseUrl?: string) => {
   return `${formattedBaseUrl}/t/${teamUrl}`;
 };
 
+export const getTeamDisplayName = (team: { name: string; displayName?: string | null }) => {
+  return team.displayName?.trim() || team.name;
+};
+
 export const formatDocumentsPath = (teamUrl: string) => {
   return `/t/${teamUrl}/documents`;
 };

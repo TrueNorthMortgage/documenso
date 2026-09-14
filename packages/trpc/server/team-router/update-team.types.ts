@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { ZTeamNameSchema, ZTeamUrlSchema } from './schema';
+import { ZTeamDisplayNameSchema, ZTeamNameSchema, ZTeamUrlSchema } from './schema';
 
 export const MAX_PROFILE_BIO_LENGTH = 256;
 
@@ -20,6 +20,7 @@ export const ZUpdateTeamRequestSchema = z.object({
   teamId: z.number(),
   data: z.object({
     name: ZTeamNameSchema.optional(),
+    displayName: ZTeamDisplayNameSchema.optional(),
     url: ZTeamUrlSchema.optional(),
     profileBio: z
       .string()

@@ -11,42 +11,59 @@ export type UpdateTeamOptions = {
   teamId: number;
   data: {
     name?: string;
+    displayName?: string;
     url?: string;
   };
 };
 
 export const updateTeam = async ({ userId, teamId, data }: UpdateTeamOptions): Promise<void> => {
   try {
-    const foundTeamWithUrl = await prisma.team.findFirst({
-      where: {
-        url: data.url,
-        id: {
-          not: teamId,
+    const teamWhere = buildTeamWhereQuery({
+      teamId,
+      userId,
+      roles: TEAM_MEMBER_ROLE_PERMISSIONS_MAP['MANAGE_TEAM'],
+    });
+
+    if (data.url !== undefined) {
+      const currentTeam = await prisma.team.findFirstOrThrow({
+        where: teamWhere,
+        select: {
+          url: true,
         },
-      },
-    });
-
-    const foundOrganisationWithUrl = await prisma.organisation.findFirst({
-      where: {
-        url: data.url,
-      },
-    });
-
-    if (foundTeamWithUrl || foundOrganisationWithUrl) {
-      throw new AppError(AppErrorCode.ALREADY_EXISTS, {
-        message: 'Team URL already exists.',
       });
+
+      if (data.url !== currentTeam.url) {
+        const foundTeamWithUrl = await prisma.team.findFirst({
+          where: {
+            url: data.url,
+            id: {
+              not: teamId,
+            },
+          },
+        });
+
+        const foundOrganisationWithUrl = await prisma.organisation.findFirst({
+          where: {
+            url: data.url,
+          },
+        });
+
+        if (foundTeamWithUrl || foundOrganisationWithUrl) {
+          throw new AppError(AppErrorCode.ALREADY_EXISTS, {
+            message: 'Team URL already exists.',
+          });
+        }
+      }
     }
 
     await prisma.team.update({
-      where: buildTeamWhereQuery({
-        teamId,
-        userId,
-        roles: TEAM_MEMBER_ROLE_PERMISSIONS_MAP['MANAGE_TEAM'],
-      }),
+      where: teamWhere,
       data: {
         url: data.url,
         name: data.name,
+        ...(data.displayName !== undefined && {
+          displayName: data.displayName.trim() || null,
+        }),
       },
     });
   } catch (err) {
