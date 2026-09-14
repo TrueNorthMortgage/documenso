@@ -266,6 +266,7 @@ export const DocumentSigningPageViewV2 = () => {
                     key={currentEnvelopeItem.id}
                     customPageRenderer={EnvelopeSignerPageRenderer}
                     scrollParentRef={scrollableContainerRef}
+                    showZoomControls
                     errorMessage={PDF_VIEWER_ERROR_MESSAGES.signing}
                   />
                 ) : (

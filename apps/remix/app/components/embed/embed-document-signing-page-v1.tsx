@@ -296,6 +296,7 @@ export const EmbedSignDocumentV1ClientPage = ({
                 presignToken: undefined,
               })}
               scrollParentRef="window"
+              showZoomControls
               onDocumentLoad={() => setHasDocumentLoaded(true)}
             />
           </div>

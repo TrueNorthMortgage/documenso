@@ -284,6 +284,7 @@ export const DocumentSigningPageViewV1 = ({
                     presignToken: undefined,
                   })}
                   scrollParentRef="window"
+                  showZoomControls
                 />
               </CardContent>
             </Card>

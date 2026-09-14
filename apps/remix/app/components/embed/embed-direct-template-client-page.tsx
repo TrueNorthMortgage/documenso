@@ -362,6 +362,7 @@ export const EmbedDirectTemplateClientPage = ({
               presignToken: undefined,
             })}
             scrollParentRef="window"
+            showZoomControls
             onDocumentLoad={() => setHasDocumentLoaded(true)}
           />
         </div>

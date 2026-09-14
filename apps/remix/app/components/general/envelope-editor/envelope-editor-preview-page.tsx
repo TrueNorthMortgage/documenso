@@ -269,6 +269,7 @@ export const EnvelopeEditorPreviewPage = () => {
               <EnvelopePdfViewer
                 customPageRenderer={EnvelopeGenericPageRenderer}
                 scrollParentRef={scrollableContainerRef}
+                showZoomControls
                 errorMessage={PDF_VIEWER_ERROR_MESSAGES.preview}
               />
             ) : (

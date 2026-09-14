@@ -14,9 +14,10 @@ export type EnvelopePdfViewerProps = {
    * The error message to render when there is an error.
    */
   errorMessage: { title: MessageDescriptor; description: MessageDescriptor } | null;
-} & Omit<PDFViewerProps, 'data'>;
+  showZoomControls?: boolean;
+} & Omit<PDFViewerProps, 'data' | 'maxFitWidth'>;
 
-export const EnvelopePdfViewer = ({ errorMessage, className, ...props }: EnvelopePdfViewerProps) => {
+export const EnvelopePdfViewer = ({ errorMessage, className, showZoomControls, ...props }: EnvelopePdfViewerProps) => {
   const { t } = useLingui();
 
   const $el = useRef<HTMLDivElement>(null);
@@ -48,7 +49,9 @@ export const EnvelopePdfViewer = ({ errorMessage, className, ...props }: Envelop
     <PDFViewerLazy
       key={`${currentEnvelopeItem.envelopeId}-${currentEnvelopeItem.id}`}
       {...props}
-      className={cn('h-full w-full max-w-[800px]', className)}
+      showZoomControls={showZoomControls}
+      maxFitWidth={showZoomControls ? 800 : undefined}
+      className={cn(showZoomControls ? 'min-h-full w-full flex-shrink-0' : 'h-full w-full max-w-[800px]', className)}
       data={currentEnvelopeItem.data}
     />
   );
