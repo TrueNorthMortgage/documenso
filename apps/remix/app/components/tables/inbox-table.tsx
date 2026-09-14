@@ -1,6 +1,7 @@
 import { useUpdateSearchParams } from '@documenso/lib/client-only/hooks/use-update-search-params';
 import { useSession } from '@documenso/lib/client-only/providers/session';
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
+import { isSameEmail } from '@documenso/lib/utils/email';
 import { trpc } from '@documenso/trpc/react';
 import type { TFindInboxResponse } from '@documenso/trpc/server/document-router/find-inbox.types';
 import { Button } from '@documenso/ui/primitives/button';
@@ -176,7 +177,7 @@ export const InboxTableActionButton = ({ row }: InboxTableActionButtonProps) => 
   const { toast } = useToast();
   const { _ } = useLingui();
 
-  const recipient = row.recipients.find((recipient) => recipient.email === user.email);
+  const recipient = row.recipients.find((recipient) => isSameEmail(recipient.email, user.email));
 
   const isPending = row.status === DocumentStatusEnum.PENDING;
   const isComplete = isDocumentCompleted(row.status);

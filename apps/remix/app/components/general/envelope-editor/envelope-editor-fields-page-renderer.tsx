@@ -1,3 +1,4 @@
+import { validateNumberField } from '@documenso/lib/advanced-fields-validation/validate-number';
 import type { TLocalField } from '@documenso/lib/client-only/hooks/use-editor-fields';
 import { usePageRenderer } from '@documenso/lib/client-only/hooks/use-page-renderer';
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
@@ -7,7 +8,7 @@ import {
 } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import { PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
 import { FIELD_GROUP_TYPE } from '@documenso/lib/types/field-group';
-import { FIELD_META_DEFAULT_VALUES } from '@documenso/lib/types/field-meta';
+import { FIELD_META_DEFAULT_VALUES, type TNumberFieldMeta, type TTextFieldMeta } from '@documenso/lib/types/field-meta';
 import {
   getFieldIndicatorNodes,
   getFieldIndicatorPosition,
@@ -29,7 +30,9 @@ import {
 import { getFieldGroupValidationState, isRequiredField, type TFieldWithGroup } from '@documenso/lib/utils/field-groups';
 import { getClientSideFieldTranslations } from '@documenso/lib/utils/fields';
 import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
+import { cn } from '@documenso/ui/lib/utils';
 import { CommandDialog } from '@documenso/ui/primitives/command';
+import { Input } from '@documenso/ui/primitives/input';
 import { Textarea } from '@documenso/ui/primitives/textarea';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FieldType } from '@prisma/client';
@@ -81,22 +84,42 @@ const getClientPoint = (event: KonvaEventObject<Event>) => {
 const getFieldGroupFromTarget = (target: Konva.Node) =>
   target.hasName('field-group') ? target : target.findAncestor('.field-group', true);
 
+const isNonPrimaryMouseClick = (event: KonvaEventObject<Event>) =>
+  event.evt instanceof MouseEvent && event.evt.button !== 0;
+
 const isPointerReleased = (event: KonvaEventObject<Event>) => {
   const nativeEvent = event.evt as (MouseEvent & { changedTouches?: TouchList }) | undefined;
 
   return Boolean(nativeEvent && (typeof nativeEvent.buttons !== 'number' || nativeEvent.buttons === 0));
 };
 
-const getTextFieldValue = (field: TLocalField) => {
-  if (field.type !== FieldType.TEXT || field.fieldMeta?.type !== 'text') {
-    return '';
+type TInlineEditableField =
+  | (TLocalField & { type: typeof FieldType.TEXT; fieldMeta: TTextFieldMeta })
+  | (TLocalField & { type: typeof FieldType.NUMBER; fieldMeta: TNumberFieldMeta });
+
+type TInlineEditableFieldType = TInlineEditableField['type'];
+
+const isInlineEditableField = (field: TLocalField | undefined): field is TInlineEditableField =>
+  Boolean(
+    field &&
+      ((field.type === FieldType.TEXT && field.fieldMeta?.type === 'text') ||
+        (field.type === FieldType.NUMBER && field.fieldMeta?.type === 'number')),
+  );
+
+const getInlineFieldValue = (field: TInlineEditableField) => {
+  if (field.type === FieldType.TEXT && field.fieldMeta?.type === 'text') {
+    return field.fieldMeta.text ?? '';
   }
 
-  return field.fieldMeta.text ?? '';
+  if (field.type === FieldType.NUMBER && field.fieldMeta?.type === 'number') {
+    return field.fieldMeta.value ?? '';
+  }
+
+  return '';
 };
 
-type EditorTextFieldProps = {
-  field: TLocalField;
+type EditorFieldValueProps = {
+  field: TInlineEditableField;
   initialValue: string;
   scale: number;
   pageHeight: number;
@@ -105,7 +128,7 @@ type EditorTextFieldProps = {
   onCommit: (value: string) => void;
 };
 
-const EditorTextField = ({
+const EditorFieldValue = ({
   field,
   initialValue,
   scale,
@@ -113,19 +136,82 @@ const EditorTextField = ({
   pageWidth,
   onCancel,
   onCommit,
-}: EditorTextFieldProps) => {
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+}: EditorFieldValueProps) => {
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const numberInputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(initialValue);
+  const [numberValidationError, setNumberValidationError] = useState<string | null>(null);
+  const isTextField = field.type === FieldType.TEXT && field.fieldMeta?.type === 'text';
+  const isNumberField = field.type === FieldType.NUMBER && field.fieldMeta?.type === 'number';
 
   useEffect(() => {
-    inputRef.current?.focus();
+    const input = isTextField ? textAreaRef.current : numberInputRef.current;
 
-    if (inputRef.current) {
-      inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+    input?.focus();
+
+    if (input) {
+      input.setSelectionRange(input.value.length, input.value.length);
     }
   }, []);
 
-  if (field.type !== FieldType.TEXT || field.fieldMeta?.type !== 'text') {
+  const getNumberValidationError = (numberValue: string) => {
+    if (!isNumberField || field.type !== FieldType.NUMBER || field.fieldMeta.type !== 'number') {
+      return null;
+    }
+
+    return validateNumberField(numberValue, field.fieldMeta)[0] ?? null;
+  };
+
+  const commitNumberValue = () => {
+    const error = getNumberValidationError(value);
+
+    setNumberValidationError(error);
+
+    if (error) {
+      numberInputRef.current?.focus();
+      return;
+    }
+
+    onCommit(value);
+  };
+
+  if (isTextField) {
+    return (
+      <div
+        className="pointer-events-auto absolute z-40"
+        style={{
+          top: `${(field.positionY / 100) * pageHeight * scale}px`,
+          left: `${(field.positionX / 100) * pageWidth * scale}px`,
+          width: `${(field.width / 100) * pageWidth * scale}px`,
+          height: `${(field.height / 100) * pageHeight * scale}px`,
+        }}
+      >
+        <Textarea
+          ref={textAreaRef}
+          aria-label={field.fieldMeta.label || 'Text field'}
+          autoComplete="off"
+          className="box-border h-full w-full resize-none overflow-auto rounded-[2px] border-2 border-primary bg-white px-2 py-1 text-black shadow-sm focus-visible:ring-2"
+          maxLength={field.fieldMeta.characterLimit || undefined}
+          placeholder={field.fieldMeta.placeholder}
+          style={{
+            fontSize: `${Math.max(8, Number(field.fieldMeta.fontSize ?? 14) * scale)}px`,
+            textAlign: field.fieldMeta.textAlign,
+          }}
+          value={value}
+          onBlur={() => onCommit(value)}
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              onCancel();
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (!isNumberField) {
     return null;
   }
 
@@ -139,27 +225,50 @@ const EditorTextField = ({
         height: `${(field.height / 100) * pageHeight * scale}px`,
       }}
     >
-      <Textarea
-        ref={inputRef}
-        aria-label={field.fieldMeta.label || 'Text field'}
+      <Input
+        ref={numberInputRef}
+        aria-label={field.fieldMeta.label || 'Number field'}
+        aria-invalid={Boolean(numberValidationError)}
         autoComplete="off"
-        className="box-border h-full w-full resize-none overflow-auto rounded-[2px] border-2 border-primary bg-white px-2 py-1 text-black shadow-sm focus-visible:ring-2"
-        maxLength={field.fieldMeta.characterLimit || undefined}
+        className={cn(
+          'box-border h-full w-full rounded-[2px] border-2 border-primary bg-white px-2 py-1 text-black shadow-sm focus-visible:ring-2',
+          numberValidationError && 'border-red-500 focus-visible:ring-red-200',
+        )}
+        inputMode="decimal"
         placeholder={field.fieldMeta.placeholder}
         style={{
           fontSize: `${Math.max(8, Number(field.fieldMeta.fontSize ?? 14) * scale)}px`,
           textAlign: field.fieldMeta.textAlign,
         }}
+        type="text"
         value={value}
-        onBlur={() => onCommit(value)}
-        onChange={(event) => setValue(event.target.value)}
+        onBlur={commitNumberValue}
+        onChange={(event) => {
+          const nextValue = event.target.value;
+
+          setValue(nextValue);
+          setNumberValidationError(getNumberValidationError(nextValue));
+        }}
         onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            commitNumberValue();
+          }
+
           if (event.key === 'Escape') {
             event.preventDefault();
             onCancel();
           }
         }}
       />
+      {numberValidationError && (
+        <p
+          role="alert"
+          className="pointer-events-none absolute top-full left-0 z-30 mt-1 w-max max-w-64 rounded border border-red-500 bg-white px-1.5 py-1 text-red-600 text-xs shadow-sm"
+        >
+          {numberValidationError}
+        </p>
+      )}
     </div>
   );
 };
@@ -171,14 +280,15 @@ type FieldContextMenuProps = {
   canDelete: boolean;
   canChangeRecipient: boolean;
   canDuplicate: boolean;
-  canAddText: boolean;
+  canEditValue: boolean;
+  editValueType: TInlineEditableFieldType | null;
   canPaste: boolean;
   onCopy: () => void;
   onPaste: () => void;
   onChangeRecipient: () => void;
   onDuplicate: () => void;
   onDuplicateOnAllPages: () => void;
-  onAddText: () => void;
+  onEditValue: () => void;
   onDelete: () => void;
 };
 
@@ -189,14 +299,15 @@ const FieldContextMenu = ({
   canDelete,
   canChangeRecipient,
   canDuplicate,
-  canAddText,
+  canEditValue,
+  editValueType,
   canPaste,
   onCopy,
   onPaste,
   onChangeRecipient,
   onDuplicate,
   onDuplicateOnAllPages,
-  onAddText,
+  onEditValue,
   onDelete,
 }: FieldContextMenuProps) => {
   if (typeof document === 'undefined') {
@@ -237,14 +348,14 @@ const FieldContextMenu = ({
         <UserCircleIcon className="h-3.5 w-3.5" />
         <Trans>Assign recipient</Trans>
       </button>
-      {canAddText && (
+      {canEditValue && (
         <button
           type="button"
           className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted"
-          onClick={onAddText}
+          onClick={onEditValue}
         >
           <TypeIcon className="h-3.5 w-3.5" />
-          <Trans>Add text</Trans>
+          {editValueType === FieldType.NUMBER ? <Trans>Enter number</Trans> : <Trans>Add text</Trans>}
         </button>
       )}
       <button
@@ -499,7 +610,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
   const [isFieldChanging, setIsFieldChanging] = useState(false);
   const [pendingFieldCreation, setPendingFieldCreation] = useState<Konva.Rect | null>(null);
-  const [editingTextField, setEditingTextField] = useState<{ formId: string; initialValue: string } | null>(null);
+  const [editingFieldValue, setEditingFieldValue] = useState<{ formId: string; initialValue: string } | null>(null);
   const [fieldContextMenu, setFieldContextMenu] = useState<{
     x: number;
     y: number;
@@ -516,24 +627,24 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
   const { scale, pageNumber } = pageData;
 
-  const startTextEditing = useCallback(
+  const startInlineFieldEditing = useCallback(
     (fieldFormId: string, valueOverride?: string) => {
       const field = editorFields.getFieldByFormId(fieldFormId);
 
-      if (!field || field.type !== FieldType.TEXT || field.fieldMeta?.type !== 'text') {
+      if (!isInlineEditableField(field)) {
         return;
       }
 
       setFieldContextMenu(null);
-      setEditingTextField({
+      setEditingFieldValue({
         formId: fieldFormId,
-        initialValue: valueOverride ?? getTextFieldValue(field),
+        initialValue: valueOverride ?? getInlineFieldValue(field),
       });
     },
     [editorFields],
   );
 
-  const commitTextEditing = useCallback(
+  const commitInlineFieldEditing = useCallback(
     (fieldFormId: string, value: string) => {
       const field = editorFields.getFieldByFormId(fieldFormId);
 
@@ -544,9 +655,16 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
             text: value,
           },
         });
+      } else if (field?.type === FieldType.NUMBER && field.fieldMeta?.type === 'number') {
+        editorFields.updateFieldByFormId(fieldFormId, {
+          fieldMeta: {
+            ...field.fieldMeta,
+            value,
+          },
+        });
       }
 
-      setEditingTextField(null);
+      setEditingFieldValue(null);
     },
     [editorFields],
   );
@@ -560,11 +678,13 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
       const targetFieldGroup = getFieldGroupFromTarget(event.target);
       const fieldGroup = targetFieldGroup?.draggable() ? targetFieldGroup : null;
+      const isTargetAlreadySelected =
+        targetFieldGroup && selectedKonvaFieldGroupsRef.current.includes(targetFieldGroup as Konva.Group);
       const fieldFormId = fieldGroup?.id() || null;
 
-      if (fieldGroup && !selectedKonvaFieldGroupsRef.current.includes(fieldGroup as Konva.Group)) {
+      if (fieldGroup && !isTargetAlreadySelected) {
         setSelectedFields([fieldGroup]);
-      } else if (targetFieldGroup) {
+      } else if (targetFieldGroup && !isTargetAlreadySelected) {
         setSelectedFields([]);
       }
 
@@ -1241,6 +1361,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     if (field.type === 'RADIO' || field.type === 'CHECKBOX') {
       fieldGroup.on('click tap', (event) => {
+        if (isNonPrimaryMouseClick(event)) {
+          return;
+        }
+
         const target = event.target as Konva.Node;
         const isOptionControl =
           field.type === 'RADIO'
@@ -1261,6 +1385,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     // Set up field selection.
     fieldGroup.on('click tap', (event) => {
+      if (isNonPrimaryMouseClick(event)) {
+        return;
+      }
+
       removePendingField();
       event.cancelBubble = true;
 
@@ -1278,8 +1406,8 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         setSelectedFields([...selectedFieldGroups, fieldGroup]);
       }
 
-      if (field.type === FieldType.TEXT && nativeEvent instanceof MouseEvent && nativeEvent.detail === 2) {
-        startTextEditing(field.formId);
+      if (isInlineEditableField(field) && nativeEvent instanceof MouseEvent && nativeEvent.detail === 2) {
+        startInlineFieldEditing(field.formId);
       }
 
       pageLayer.current?.batchDraw();
@@ -1347,13 +1475,13 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
       const field = editorFields.getFieldByFormId(fieldGroup.id());
 
-      if (!field || field.type !== FieldType.TEXT) {
+      if (!isInlineEditableField(field)) {
         return;
       }
 
       event.cancelBubble = true;
       setSelectedFields([fieldGroup]);
-      startTextEditing(field.formId);
+      startInlineFieldEditing(field.formId);
     });
 
     for (const field of localPageFields) {
@@ -1597,6 +1725,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     // Clicks should select/deselect shapes
     currentStage.on('click tap', (e) => {
+      if (isNonPrimaryMouseClick(e)) {
+        return;
+      }
+
       // if we are selecting with rect, do nothing
       if (selectionRectangle.visible() && selectionRectangle.width() > 0 && selectionRectangle.height() > 0) {
         return;
@@ -1908,14 +2040,14 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       const selectedField = selectedFieldGroup ? editorFields.getFieldByFormId(selectedFieldGroup.id()) : undefined;
 
       if (
-        !editingTextField &&
+        !editingFieldValue &&
         !isModifierPressed &&
         !event.altKey &&
         event.key.length === 1 &&
-        selectedField?.type === FieldType.TEXT
+        isInlineEditableField(selectedField)
       ) {
         event.preventDefault();
-        startTextEditing(selectedField.formId, `${getTextFieldValue(selectedField)}${event.key}`);
+        startInlineFieldEditing(selectedField.formId, `${getInlineFieldValue(selectedField)}${event.key}`);
         return;
       }
 
@@ -1958,12 +2090,12 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
   }, [
     copySelectedFields,
     deletedSelectedFields,
-    editingTextField,
+    editingFieldValue,
     editorFields,
     isFieldChanging,
     nudgeSelectedFields,
     pasteCopiedFields,
-    startTextEditing,
+    startInlineFieldEditing,
   ]);
 
   const changeSelectedFieldsRecipients = (recipientId: number) => {
@@ -2068,15 +2200,18 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     return null;
   }
 
-  const editingField = editingTextField ? editorFields.getFieldByFormId(editingTextField.formId) : undefined;
+  const editingField = editingFieldValue ? editorFields.getFieldByFormId(editingFieldValue.formId) : undefined;
   const contextMenuField = fieldContextMenu?.fieldFormId
     ? editorFields.getFieldByFormId(fieldContextMenu.fieldFormId)
     : undefined;
-  const selectedTextFieldFormId =
-    selectedKonvaFieldGroups.length === 1 &&
-    editorFields.getFieldByFormId(selectedKonvaFieldGroups[0].id())?.type === FieldType.TEXT
-      ? selectedKonvaFieldGroups[0].id()
-      : null;
+  const selectedInlineEditableField =
+    selectedKonvaFieldGroups.length === 1 ? editorFields.getFieldByFormId(selectedKonvaFieldGroups[0].id()) : undefined;
+  const selectedInlineEditableFieldFormId = isInlineEditableField(selectedInlineEditableField)
+    ? selectedInlineEditableField.formId
+    : null;
+  const selectedInlineEditableFieldType = isInlineEditableField(selectedInlineEditableField)
+    ? selectedInlineEditableField.type
+    : null;
 
   return (
     <>
@@ -2086,12 +2221,13 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
           handleDuplicateSelectedFieldsOnAllPages={duplicatedSelectedFieldsOnAllPages}
           handleDeleteSelectedFields={deletedSelectedFields}
           handleChangeRecipient={changeSelectedFieldsRecipients}
-          handleEditSelectedText={() => {
-            if (selectedTextFieldFormId) {
-              startTextEditing(selectedTextFieldFormId);
+          handleEditSelectedValue={() => {
+            if (selectedInlineEditableFieldFormId) {
+              startInlineFieldEditing(selectedInlineEditableFieldFormId);
             }
           }}
-          canEditText={Boolean(selectedTextFieldFormId)}
+          canEditValue={Boolean(selectedInlineEditableFieldFormId)}
+          editValueType={selectedInlineEditableFieldType}
           selectedFieldFormId={selectedKonvaFieldGroups.map((field) => field.id())}
           style={{
             position: 'absolute',
@@ -2105,16 +2241,16 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         />
       )}
 
-      {editingTextField && editingField && (
-        <EditorTextField
-          key={editingTextField.formId}
+      {editingFieldValue && isInlineEditableField(editingField) && (
+        <EditorFieldValue
+          key={editingFieldValue.formId}
           field={editingField}
-          initialValue={editingTextField.initialValue}
+          initialValue={editingFieldValue.initialValue}
           pageHeight={unscaledViewport.height}
           pageWidth={unscaledViewport.width}
           scale={scale}
-          onCancel={() => setEditingTextField(null)}
-          onCommit={(value) => commitTextEditing(editingTextField.formId, value)}
+          onCancel={() => setEditingFieldValue(null)}
+          onCommit={(value) => commitInlineFieldEditing(editingFieldValue.formId, value)}
         />
       )}
 
@@ -2132,11 +2268,12 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
           canDuplicate={
             selectedKonvaFieldGroups.length > 0 && selectedKonvaFieldGroups.every((field) => field.draggable())
           }
-          canAddText={
+          canEditValue={
             selectedKonvaFieldGroups.length === 1 &&
             selectedKonvaFieldGroups[0]?.draggable() &&
-            contextMenuField?.type === FieldType.TEXT
+            isInlineEditableField(contextMenuField)
           }
+          editValueType={isInlineEditableField(contextMenuField) ? contextMenuField.type : null}
           canPaste={fieldClipboard.current.length > 0}
           onCopy={() => {
             copySelectedFields();
@@ -2158,9 +2295,9 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
             duplicatedSelectedFieldsOnAllPages();
             setFieldContextMenu(null);
           }}
-          onAddText={() => {
-            if (contextMenuField) {
-              startTextEditing(contextMenuField.formId);
+          onEditValue={() => {
+            if (isInlineEditableField(contextMenuField)) {
+              startInlineFieldEditing(contextMenuField.formId);
             }
           }}
           onDelete={() => {
@@ -2223,8 +2360,9 @@ type FieldActionButtonsProps = React.HTMLAttributes<HTMLDivElement> & {
   handleDuplicateSelectedFieldsOnAllPages: () => void;
   handleDeleteSelectedFields: () => void;
   handleChangeRecipient: (recipientId: number) => void;
-  handleEditSelectedText: () => void;
-  canEditText: boolean;
+  handleEditSelectedValue: () => void;
+  canEditValue: boolean;
+  editValueType: TInlineEditableFieldType | null;
   selectedFieldFormId: string[];
 };
 
@@ -2233,8 +2371,9 @@ const FieldActionButtons = ({
   handleDuplicateSelectedFieldsOnAllPages,
   handleDeleteSelectedFields,
   handleChangeRecipient,
-  handleEditSelectedText,
-  canEditText,
+  handleEditSelectedValue,
+  canEditValue,
+  editValueType,
   selectedFieldFormId,
   ...props
 }: FieldActionButtonsProps) => {
@@ -2290,13 +2429,13 @@ const FieldActionButtons = ({
           <UserCircleIcon className="h-3 w-3" />
         </button>
 
-        {canEditText && (
+        {canEditValue && (
           <button
-            title={t`Edit text`}
+            title={editValueType === FieldType.NUMBER ? t`Edit number` : t`Edit text`}
             type="button"
             className="rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
-            onClick={handleEditSelectedText}
-            onTouchEnd={handleEditSelectedText}
+            onClick={handleEditSelectedValue}
+            onTouchEnd={handleEditSelectedValue}
           >
             <PencilIcon className="h-3 w-3" />
           </button>

@@ -3,6 +3,7 @@ import {
   type TRecipientActionAuth,
   type TRecipientActionAuthTypes,
 } from '@documenso/lib/types/document-auth';
+import { isSameEmail } from '@documenso/lib/utils/email';
 import { Button } from '@documenso/ui/primitives/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@documenso/ui/primitives/dialog';
 import { Trans } from '@lingui/react/macro';
@@ -148,7 +149,7 @@ export const DocumentSigningAuthDialog = ({
             .with(
               { documentAuthType: DocumentAuth.ACCOUNT },
               {
-                user: P.when((user) => !user || (user.email !== recipient.email && !isDirectTemplate)),
+                user: P.when((user) => !user || (!isSameEmail(user.email, recipient.email) && !isDirectTemplate)),
               }, // Assume all current auth methods requires them to be logged in.
               () => <DocumentSigningAuthAccount onOpenChange={onOpenChange} />,
             )

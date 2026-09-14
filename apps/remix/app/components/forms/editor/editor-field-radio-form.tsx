@@ -11,8 +11,9 @@ import { Separator } from '@documenso/ui/primitives/separator';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { PlusIcon, Trash } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { isDeepEqual } from 'remeda';
 import type { z } from 'zod';
 
 import {
@@ -60,23 +61,42 @@ export const EditorFieldRadioForm = ({
   isGrouped = false,
 }: EditorFieldRadioFormProps) => {
   const { t } = useLingui();
-
-  const form = useForm<TRadioFieldFormSchema>({
-    resolver: zodResolver(ZRadioFieldFormSchema),
-    mode: 'onChange',
-    defaultValues: {
+  const defaultValues = useMemo(
+    () => ({
       label: value.label || '',
       values: value.values || [{ id: 1, checked: false, value: t`Default value` }],
       required: value.required || false,
       readOnly: value.readOnly || false,
       direction: value.direction || 'vertical',
       fontSize: value.fontSize || DEFAULT_FIELD_FONT_SIZE,
-    },
+    }),
+    [t, value.direction, value.fontSize, value.label, value.readOnly, value.required, value.values],
+  );
+
+  const form = useForm<TRadioFieldFormSchema>({
+    resolver: zodResolver(ZRadioFieldFormSchema),
+    mode: 'onChange',
+    defaultValues,
   });
 
   const formValues = useWatch({
     control: form.control,
   });
+
+  const previousDefaultValuesRef = useRef(defaultValues);
+  const shouldSkipValueChangeRef = useRef(false);
+
+  useEffect(() => {
+    const hasExternalValueChanged = !isDeepEqual(previousDefaultValuesRef.current, defaultValues);
+    previousDefaultValuesRef.current = defaultValues;
+
+    if (!hasExternalValueChanged || isDeepEqual(form.getValues(), defaultValues)) {
+      return;
+    }
+
+    shouldSkipValueChangeRef.current = true;
+    form.reset(defaultValues);
+  }, [defaultValues, form]);
 
   const addValue = () => {
     const currentValues = form.getValues('values') || [];
@@ -100,6 +120,11 @@ export const EditorFieldRadioForm = ({
   };
 
   useEffect(() => {
+    if (shouldSkipValueChangeRef.current) {
+      shouldSkipValueChangeRef.current = false;
+      return;
+    }
+
     const validatedFormValues = ZRadioFieldFormSchema.safeParse(formValues);
 
     if (validatedFormValues.success) {

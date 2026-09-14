@@ -448,6 +448,12 @@ export const FIELD_META_DEFAULT_VALUES: Record<FieldType, TFieldMetaSchema> = {
   [FieldType.DROPDOWN]: FIELD_DROPDOWN_META_DEFAULT_VALUES,
 } as const;
 
+export const canFieldTypeUseBulkSetting = (fieldType: FieldType, setting: 'required' | 'readOnly') => {
+  const fieldMeta = FIELD_META_DEFAULT_VALUES[fieldType];
+
+  return fieldMeta !== undefined && Object.hasOwn(fieldMeta, setting);
+};
+
 export const ZEnvelopeFieldAndMetaSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal(FieldType.SIGNATURE),

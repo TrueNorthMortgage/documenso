@@ -2,6 +2,8 @@ import type { EnvelopeWithRecipients } from '@documenso/prisma/types/document-wi
 import type { User } from '@prisma/client';
 import { TeamMemberRole } from '@prisma/client';
 
+import { isSameEmail } from './email';
+
 export type MaskRecipientTokensForDocumentOptions<T extends EnvelopeWithRecipients> = {
   document: T;
   user?: Pick<User, 'id' | 'email'>;
@@ -20,7 +22,7 @@ export const maskRecipientTokensForDocument = <T extends EnvelopeWithRecipients>
       return recipient;
     }
 
-    if (recipient.email === user?.email) {
+    if (isSameEmail(recipient.email, user?.email)) {
       return recipient;
     }
 

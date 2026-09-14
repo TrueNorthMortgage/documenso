@@ -1,6 +1,8 @@
+import { FieldType } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
 import {
+  canFieldTypeUseBulkSetting,
   DEFAULT_INITIALS_OVERFLOW_MODE,
   DEFAULT_NAME_OVERFLOW_MODE,
   DEFAULT_NUMBER_OVERFLOW_MODE,
@@ -33,5 +35,18 @@ describe('field overflow defaults', () => {
     expect(resolveFieldOverflowMode({ type: 'initials', overflow: 'crop' })).toBe('crop');
     expect(resolveFieldOverflowMode({ type: 'name', overflow: 'crop' })).toBe('crop');
     expect(resolveFieldOverflowMode({ type: 'text', overflow: 'horizontal' })).toBe('horizontal');
+  });
+});
+
+describe('bulk field setting support', () => {
+  it('matches the settings supported by each field type', () => {
+    expect(canFieldTypeUseBulkSetting(FieldType.TEXT, 'required')).toBe(true);
+    expect(canFieldTypeUseBulkSetting(FieldType.TEXT, 'readOnly')).toBe(true);
+    expect(canFieldTypeUseBulkSetting(FieldType.INITIALS, 'required')).toBe(true);
+    expect(canFieldTypeUseBulkSetting(FieldType.INITIALS, 'readOnly')).toBe(false);
+    expect(canFieldTypeUseBulkSetting(FieldType.NAME, 'required')).toBe(false);
+    expect(canFieldTypeUseBulkSetting(FieldType.DATE, 'readOnly')).toBe(false);
+    expect(canFieldTypeUseBulkSetting(FieldType.SIGNATURE, 'required')).toBe(false);
+    expect(canFieldTypeUseBulkSetting(FieldType.FREE_SIGNATURE, 'readOnly')).toBe(false);
   });
 });

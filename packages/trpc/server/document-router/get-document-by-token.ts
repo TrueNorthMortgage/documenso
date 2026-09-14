@@ -1,4 +1,5 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
+import { normalizeEmail } from '@documenso/lib/utils/email';
 import { prisma } from '@documenso/prisma';
 import { EnvelopeType } from '@prisma/client';
 
@@ -17,7 +18,7 @@ export const getDocumentByTokenRoute = authenticatedProcedure
         recipients: {
           some: {
             token,
-            email: ctx.user.email,
+            email: normalizeEmail(ctx.user.email),
           },
         },
       },

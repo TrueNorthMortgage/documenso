@@ -1,5 +1,6 @@
 import type { FindResultResponse } from '@documenso/lib/types/search-params';
 import { mapEnvelopesToDocumentMany } from '@documenso/lib/utils/document';
+import { normalizeEmail } from '@documenso/lib/utils/email';
 import { maskRecipientTokensForDocument } from '@documenso/lib/utils/mask-recipient-tokens-for-document';
 import { prisma } from '@documenso/prisma';
 import type { Envelope, Prisma } from '@prisma/client';
@@ -51,6 +52,7 @@ export const findInbox = async ({ userId, page = 1, perPage = 10, orderBy }: Fin
 
   const orderByColumn = orderBy?.column ?? 'createdAt';
   const orderByDirection = orderBy?.direction ?? 'desc';
+  const userEmail = normalizeEmail(user.email);
 
   const whereClause: Prisma.EnvelopeWhereInput = {
     type: EnvelopeType.DOCUMENT,
@@ -60,7 +62,7 @@ export const findInbox = async ({ userId, page = 1, perPage = 10, orderBy }: Fin
     deletedAt: null,
     recipients: {
       some: {
-        email: user.email,
+        email: userEmail,
         role: {
           not: RecipientRole.CC,
         },

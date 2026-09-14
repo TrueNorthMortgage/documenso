@@ -6,6 +6,7 @@ import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/tr
 import type { NormalizedFieldWithContext } from '@documenso/lib/server-only/ai/envelope/detect-fields/types';
 import type { TConditionalFieldRule } from '@documenso/lib/types/conditional-field';
 import {
+  canFieldTypeUseBulkSetting,
   FIELD_META_DEFAULT_VALUES,
   type TCheckboxFieldMeta,
   type TDateFieldMeta,
@@ -90,6 +91,10 @@ export const INVALID_FIELD_PLACEMENT_CLASS_NAME = 'rounded-[2px] border-2 border
 type BulkFieldSetting = 'required' | 'readOnly';
 
 const getBulkSettingState = (values: boolean[]): boolean | 'indeterminate' => {
+  if (values.length === 0) {
+    return false;
+  }
+
   if (values.every(Boolean)) {
     return true;
   }
@@ -109,8 +114,15 @@ const BulkFieldSettings = ({ fieldFormIds }: { fieldFormIds: string[] }) => {
     [editorFields.localFields, fieldFormIds],
   );
 
+  const canApplyBulkSetting = (field: (typeof fields)[number], setting: BulkFieldSetting) =>
+    canFieldTypeUseBulkSetting(field.type, setting) &&
+    !(setting === 'required' && field.fieldGroup?.groupType === 'VALIDATION_GROUP');
+
+  const requiredFields = fields.filter((field) => canApplyBulkSetting(field, 'required'));
+  const readOnlyFields = fields.filter((field) => canApplyBulkSetting(field, 'readOnly'));
+
   const requiredState = getBulkSettingState(
-    fields.map((field) => {
+    requiredFields.map((field) => {
       if (field.fieldGroup?.groupType !== 'OPTION_GROUP') {
         return field.fieldMeta?.required === true;
       }
@@ -123,16 +135,18 @@ const BulkFieldSettings = ({ fieldFormIds }: { fieldFormIds: string[] }) => {
     }),
   );
   const readOnlyState = getBulkSettingState(
-    fields.map((field) => field.fieldGroup?.readOnly ?? field.fieldMeta?.readOnly === true),
+    readOnlyFields.map((field) => field.fieldGroup?.readOnly ?? field.fieldMeta?.readOnly === true),
   );
-  const hasValidationGroup = fields.some((field) => field.fieldGroup?.groupType === 'VALIDATION_GROUP');
+  const hasUnsupportedFields = fields.some(
+    (field) => !canApplyBulkSetting(field, 'required') || !canApplyBulkSetting(field, 'readOnly'),
+  );
 
   const getUpdatedFieldMeta = (
     field: (typeof fields)[number],
     setting: BulkFieldSetting,
     checked: boolean,
   ): NonNullable<TFieldMetaSchema> | undefined => {
-    if (!field.fieldMeta) {
+    if (!field.fieldMeta || !canApplyBulkSetting(field, setting)) {
       return undefined;
     }
 
@@ -190,11 +204,22 @@ const BulkFieldSettings = ({ fieldFormIds }: { fieldFormIds: string[] }) => {
         <Trans>{fields.length} fields selected</Trans>
       </p>
 
+      {hasUnsupportedFields && (
+        <Alert className="mt-3" variant="warning" padding="tight">
+          <AlertDescription className="text-xs">
+            <Trans>
+              Some selected fields don’t support Required or Read only. These options will only apply to compatible
+              fields.
+            </Trans>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="mt-4 space-y-3">
         <label className="flex items-center gap-2 text-foreground text-sm">
           <Checkbox
             checked={requiredState}
-            disabled={hasValidationGroup}
+            disabled={requiredFields.length === 0}
             onCheckedChange={(checked) => updateSelectedSetting('required', checked === true)}
           />
           <span>
@@ -205,6 +230,7 @@ const BulkFieldSettings = ({ fieldFormIds }: { fieldFormIds: string[] }) => {
         <label className="flex items-center gap-2 text-foreground text-sm">
           <Checkbox
             checked={readOnlyState}
+            disabled={readOnlyFields.length === 0}
             onCheckedChange={(checked) => updateSelectedSetting('readOnly', checked === true)}
           />
           <span>

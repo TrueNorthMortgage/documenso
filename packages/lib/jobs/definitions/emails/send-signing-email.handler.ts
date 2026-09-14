@@ -21,6 +21,7 @@ import { updateRecipientNextReminder } from '../../../server-only/recipient/upda
 import { DOCUMENT_AUDIT_LOG_TYPE } from '../../../types/document-audit-logs';
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
 import { createDocumentAuditLogData } from '../../../utils/document-audit-logs';
+import { isSameEmail } from '../../../utils/email';
 import { unsafeBuildEnvelopeIdQuery } from '../../../utils/envelope';
 import { renderCustomEmailTemplate } from '../../../utils/render-custom-email-template';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
@@ -98,7 +99,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
   const recipientEmailType = RECIPIENT_ROLE_TO_EMAIL_TYPE[recipient.role];
 
   const { email, name } = recipient;
-  const selfSigner = email === user.email;
+  const selfSigner = isSameEmail(email, user.email);
 
   const i18n = await getI18nInstance(emailLanguage);
 

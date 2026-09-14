@@ -15,6 +15,7 @@ import { getRecipientsForAssistant } from '@documenso/lib/server-only/recipient/
 import { DocumentAccessAuth } from '@documenso/lib/types/document-auth';
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
 import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
+import { isSameEmail } from '@documenso/lib/utils/email';
 import { isRecipientExpired } from '@documenso/lib/utils/recipients';
 import { prisma } from '@documenso/prisma';
 import { RecipientRole } from '@prisma/client';
@@ -95,7 +96,7 @@ async function handleV1Loader({ params, request }: Route.LoaderArgs) {
 
   const isAccessAuthValid = derivedRecipientAccessAuth.every((accesssAuth) =>
     match(accesssAuth)
-      .with(DocumentAccessAuth.ACCOUNT, () => user && user.email === recipient.email)
+      .with(DocumentAccessAuth.ACCOUNT, () => user && isSameEmail(user.email, recipient.email))
       .with(DocumentAccessAuth.TWO_FACTOR_AUTH, () => true) // Allow without account requirement
       .exhaustive(),
   );
@@ -248,7 +249,7 @@ async function handleV2Loader({ params, request }: Route.LoaderArgs) {
 
   const isAccessAuthValid = derivedRecipientAccessAuth.every((accesssAuth) =>
     match(accesssAuth)
-      .with(DocumentAccessAuth.ACCOUNT, () => user && user.email === recipient.email)
+      .with(DocumentAccessAuth.ACCOUNT, () => user && isSameEmail(user.email, recipient.email))
       .with(DocumentAccessAuth.TWO_FACTOR_AUTH, () => true)
       .exhaustive(),
   );
@@ -349,8 +350,8 @@ const EmbedSignDocumentPageV1 = ({ data }: { data: Awaited<ReturnType<typeof han
   return (
     <DocumentSigningProvider
       email={recipient.email}
-      fullName={user?.email === recipient.email ? user?.name : recipient.name}
-      signature={user?.email === recipient.email ? user?.signature : undefined}
+      fullName={isSameEmail(user?.email, recipient.email) ? user?.name : recipient.name}
+      signature={isSameEmail(user?.email, recipient.email) ? user?.signature : undefined}
       typedSignatureEnabled={document.documentMeta?.typedSignatureEnabled}
       uploadSignatureEnabled={document.documentMeta?.uploadSignatureEnabled}
       drawSignatureEnabled={document.documentMeta?.drawSignatureEnabled}
@@ -384,8 +385,8 @@ const EmbedSignDocumentPageV2 = ({ data }: { data: Awaited<ReturnType<typeof han
     <EnvelopeSigningProvider
       envelopeData={envelopeForSigning}
       email={recipient.email}
-      fullName={user?.email === recipient.email ? user?.name : recipient.name}
-      signature={user?.email === recipient.email ? user?.signature : undefined}
+      fullName={isSameEmail(user?.email, recipient.email) ? user?.name : recipient.name}
+      signature={isSameEmail(user?.email, recipient.email) ? user?.signature : undefined}
     >
       <DocumentSigningAuthProvider documentAuthOptions={envelope.authOptions} recipient={recipient} user={user}>
         <EnvelopeRenderProvider

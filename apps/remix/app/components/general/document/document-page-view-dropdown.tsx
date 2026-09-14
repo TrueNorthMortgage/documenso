@@ -1,6 +1,7 @@
 import { useSession } from '@documenso/lib/client-only/providers/session';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
+import { isSameEmail } from '@documenso/lib/utils/email';
 import { getEnvelopeItemPermissions, mapSecondaryIdToDocumentId } from '@documenso/lib/utils/envelope';
 import { canExecuteTeamAction, formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { trpc as trpcReact } from '@documenso/trpc/react';
@@ -41,7 +42,7 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
   const [isRenameDialogOpen, setRenameDialogOpen] = useState(false);
   const [isSaveAsTemplateDialogOpen, setSaveAsTemplateDialogOpen] = useState(false);
 
-  const recipient = envelope.recipients.find((recipient) => recipient.email === user.email);
+  const recipient = envelope.recipients.find((recipient) => isSameEmail(recipient.email, user.email));
 
   const isOwner = envelope.userId === user.id;
   const isDraft = envelope.status === DocumentStatus.DRAFT;

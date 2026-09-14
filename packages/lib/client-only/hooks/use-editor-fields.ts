@@ -12,7 +12,7 @@ import { getFieldFormIdsForRecipientUpdate } from '@documenso/lib/utils/field-re
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Field } from '@prisma/client';
 import { FieldType } from '@prisma/client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -196,6 +196,11 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
     name: 'fields',
     keyName: 'react-hook-form-id',
   });
+  const localFieldsRef = useRef<TLocalField[]>(localFields);
+
+  useEffect(() => {
+    localFieldsRef.current = localFields;
+  }, [localFields]);
 
   const triggerFieldsUpdate = () => {
     void handleFieldsUpdate(form.getValues().fields);
@@ -207,7 +212,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
       return;
     }
 
-    const foundField = localFields.find((field) => field.formId === formId);
+    const foundField = localFieldsRef.current.find((field) => field.formId === formId);
     const recipient = envelope.recipients.find((recipient) => recipient.id === foundField?.recipientId);
 
     if (recipient) {
@@ -223,7 +228,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
   };
 
   const setSelectedFieldFormIds = (formIds: string[]) => {
-    const availableFieldFormIds = new Set(localFields.map((field) => field.formId));
+    const availableFieldFormIds = new Set(localFieldsRef.current.map((field) => field.formId));
 
     setSelectedFieldFormIdsState([...new Set(formIds)].filter((formId) => availableFieldFormIds.has(formId)));
   };
@@ -236,12 +241,17 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         ...restrictFieldPosValues(fieldData),
       };
 
+      const fields = [...localFieldsRef.current, field];
+
+      // `append` schedules the form update. Keep the current field snapshot in
+      // sync immediately so canvas handlers can include a just-created field.
+      localFieldsRef.current = fields;
       append(field);
-      triggerFieldsUpdate();
+      void handleFieldsUpdate(fields);
       setSelectedField(field.formId, true);
       return field;
     },
-    [append, triggerFieldsUpdate, setSelectedField],
+    [append, handleFieldsUpdate, setSelectedField],
   );
 
   const removeFieldsByFormId = useCallback(
@@ -276,11 +286,12 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
 
   const updateFieldByFormId = useCallback(
     (formId: string, updates: Partial<TLocalField>) => {
-      const index = localFields.findIndex((field) => field.formId === formId);
+      const fields = localFieldsRef.current;
+      const index = fields.findIndex((field) => field.formId === formId);
 
       if (index !== -1) {
         const updatedField = {
-          ...localFields[index],
+          ...fields[index],
           ...updates,
         };
 
@@ -291,20 +302,29 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         triggerFieldsUpdate();
       }
     },
-    [localFields, update, triggerFieldsUpdate],
+    [update, triggerFieldsUpdate],
   );
 
   const updateFieldsRecipient = useCallback(
     (formIds: string[], recipientId: number) => {
-      const fieldFormIdsToUpdate = getFieldFormIdsForRecipientUpdate(localFields, formIds);
-      const fieldsToUpdate = localFields.filter((field) => fieldFormIdsToUpdate.includes(field.formId));
+      const fields = localFieldsRef.current;
+      const fieldFormIdsToUpdate = getFieldFormIdsForRecipientUpdate(fields, formIds);
 
-      for (const field of fieldsToUpdate) {
-        if (field.recipientId === recipientId && (!field.fieldGroup || field.fieldGroup.recipientId === recipientId)) {
-          continue;
+      let hasUpdates = false;
+
+      const updatedFields = fields.map((field) => {
+        if (!fieldFormIdsToUpdate.includes(field.formId)) {
+          return field;
         }
 
-        updateFieldByFormId(field.formId, {
+        if (field.recipientId === recipientId && (!field.fieldGroup || field.fieldGroup.recipientId === recipientId)) {
+          return field;
+        }
+
+        hasUpdates = true;
+
+        return {
+          ...field,
           recipientId,
           fieldGroup: field.fieldGroup
             ? {
@@ -312,10 +332,17 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
                 recipientId,
               }
             : field.fieldGroup,
-        });
+        };
+      });
+
+      if (!hasUpdates) {
+        return;
       }
+
+      replace(updatedFields);
+      void handleFieldsUpdate(updatedFields);
     },
-    [localFields, updateFieldByFormId],
+    [handleFieldsUpdate, replace],
   );
 
   const toggleFieldOption = useCallback(
@@ -544,7 +571,8 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
               };
             })
           : [{ id: 1, checked: false, value: '' }];
-      const currentIndex = localFields.findIndex((candidate) => candidate.formId === field.formId);
+      const fields = localFieldsRef.current;
+      const currentIndex = fields.findIndex((candidate) => candidate.formId === field.formId);
 
       if (currentIndex === -1) {
         return [];
@@ -592,15 +620,15 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         }),
       );
 
-      const newFields = [...localFields] as unknown as TLocalField[];
+      const newFields = [...fields] as unknown as TLocalField[];
       newFields.splice(currentIndex, 1, ...createdFields);
       replace(newFields as never);
-      triggerFieldsUpdate();
+      void handleFieldsUpdate(newFields);
       setSelectedField(createdFields[0]?.formId ?? null, true);
 
       return createdFields;
     },
-    [envelope.id, localFields, replace, triggerFieldsUpdate, updateFieldByFormId],
+    [envelope.id, handleFieldsUpdate, replace, updateFieldByFormId],
   );
 
   const assignFieldToGroup = useCallback(
@@ -620,9 +648,10 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
         return;
       }
 
-      const existingGroupField = localFields.find((candidate) => candidate.fieldGroupId === group.id);
+      const fields = localFieldsRef.current;
+      const existingGroupField = fields.find((candidate) => candidate.fieldGroupId === group.id);
       const existingGroupMeta = existingGroupField?.fieldMeta;
-      const existingGroupOptions = localFields
+      const existingGroupOptions = fields
         .filter((candidate) => candidate.fieldGroupId === group.id && candidate.formId !== field.formId)
         .flatMap(getFieldOptions);
       const fieldMetaWithUniqueOptionId =
@@ -662,7 +691,7 @@ export const useEditorFields = ({ envelope, handleFieldsUpdate }: EditorFieldsPr
           : fieldMetaWithUniqueOptionId,
       });
     },
-    [createFieldGroup, localFields, updateFieldByFormId],
+    [createFieldGroup, updateFieldByFormId],
   );
 
   const updateFieldGroupValidation = useCallback(

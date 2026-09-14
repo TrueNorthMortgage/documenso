@@ -50,6 +50,7 @@ export const appMiddleware = async (c: Context, next: Next) => {
     debug.log('Setting preferred team url cookie');
 
     setCookie(c, 'preferred-team-url', pathname.split('/')[2], {
+      path: '/',
       sameSite: 'lax',
     });
 

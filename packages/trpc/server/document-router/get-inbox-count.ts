@@ -1,3 +1,4 @@
+import { normalizeEmail } from '@documenso/lib/utils/email';
 import { prisma } from '@documenso/prisma';
 import { DocumentStatus, EnvelopeType, RecipientRole } from '@prisma/client';
 
@@ -10,7 +11,7 @@ export const getInboxCountRoute = authenticatedProcedure
   .query(async ({ input, ctx }) => {
     const { readStatus } = input ?? {};
 
-    const userEmail = ctx.user.email;
+    const userEmail = normalizeEmail(ctx.user.email);
 
     const count = await prisma.recipient.count({
       where: {

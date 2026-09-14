@@ -6,7 +6,7 @@ import { OrganisationGroupType, OrganisationMemberRole, TeamMemberRole } from '@
 const VALID_ORGANISATION_ROLES = new Set(Object.values(OrganisationMemberRole));
 const VALID_TEAM_ROLES = new Set(Object.values(TeamMemberRole));
 
-type AutoProvisionResult =
+export type AutoProvisionResult =
   | {
       provisioned: false;
       teamUrl?: undefined;
@@ -249,8 +249,13 @@ export const provisionOidcUser = async ({
   };
 };
 
-export const getAutoProvisionRedirectPath = (redirectPath: string, provisioning: AutoProvisionResult) => {
+export const getAutoProvisionRedirectPath = (
+  redirectPath: string,
+  provisioning: AutoProvisionResult,
+  hasPreferredTeam = false,
+) => {
   if (
+    hasPreferredTeam ||
     env('SELF_HOSTED_OIDC_AUTO_PROVISION_REDIRECT_TO_TEAM') !== 'true' ||
     !provisioning.provisioned ||
     !provisioning.teamUrl ||

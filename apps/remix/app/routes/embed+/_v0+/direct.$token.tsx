@@ -8,6 +8,7 @@ import { getOrganisationClaimByTeamId } from '@documenso/lib/server-only/organis
 import { getTemplateByDirectLinkToken } from '@documenso/lib/server-only/template/get-template-by-direct-link-token';
 import { DocumentAccessAuth } from '@documenso/lib/types/document-auth';
 import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
+import { isSameEmail } from '@documenso/lib/utils/email';
 import { prisma } from '@documenso/prisma';
 import { data } from 'react-router';
 import { match } from 'ts-pattern';
@@ -176,7 +177,7 @@ async function handleV2Loader({ params, request }: Route.LoaderArgs) {
 
   const isAccessAuthValid = derivedRecipientAccessAuth.every((accesssAuth) =>
     match(accesssAuth)
-      .with(DocumentAccessAuth.ACCOUNT, () => user && user.email === recipient.email)
+      .with(DocumentAccessAuth.ACCOUNT, () => user && isSameEmail(user.email, recipient.email))
       .with(DocumentAccessAuth.TWO_FACTOR_AUTH, () => false) // Not supported for direct links
       .exhaustive(),
   );
