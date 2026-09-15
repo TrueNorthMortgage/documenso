@@ -223,6 +223,7 @@ export const MultiSignDocumentSigningView = ({
                       presignToken: undefined,
                     })}
                     scrollParentRef="window"
+                    showZoomControls
                     onDocumentLoad={() => {
                       setHasDocumentLoaded(true);
                       onDocumentReady?.();

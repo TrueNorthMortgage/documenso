@@ -1,13 +1,23 @@
 import type { ImageLoadingState, PageRenderData } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import { PDF_VIEWER_PAGE_CLASSNAME } from '@documenso/lib/constants/pdf-viewer';
+import {
+  DEFAULT_PDF_ZOOM_LEVEL,
+  getCenteredPdfZoomScrollLeft,
+  getNextPdfZoomLevel,
+  PDF_ZOOM_LEVELS,
+  type PdfZoomLevel,
+} from '@documenso/lib/utils/pdf-zoom';
 import { cn } from '@documenso/ui/lib/utils';
+import { Button } from '@documenso/ui/primitives/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { Trans, useLingui } from '@lingui/react/macro';
+import { ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 import pMap from 'p-map';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?url';
 import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import type { ScrollTarget } from '../virtual-list/use-virtual-list';
 import { useVirtualList } from '../virtual-list/use-virtual-list';
@@ -56,6 +66,18 @@ export type PDFViewerProps = {
    * for rendering fields.
    */
   customPageRenderer?: React.FunctionComponent<{ pageData: PageRenderData }>;
+
+  /** Show zoom controls above the PDF pages. */
+  showZoomControls?: boolean;
+
+  /** Maximum page width used for fit-to-width scaling. */
+  maxFitWidth?: number;
+
+  /** Controlled zoom level. */
+  zoomLevel?: PdfZoomLevel;
+
+  /** Called when the zoom level changes. */
+  onZoomLevelChange?: (zoomLevel: PdfZoomLevel) => void;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 export default function PDFViewer({
@@ -64,6 +86,10 @@ export default function PDFViewer({
   scrollParentRef,
   onDocumentLoad,
   customPageRenderer,
+  showZoomControls = false,
+  maxFitWidth,
+  zoomLevel: controlledZoomLevel,
+  onZoomLevelChange,
   ...props
 }: PDFViewerProps) {
   const { t } = useLingui();
@@ -76,6 +102,17 @@ export default function PDFViewer({
   const pdfRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
 
   const [pages, setPages] = useState<PageMeta[]>([]);
+  const [internalZoomLevel, setInternalZoomLevel] = useState<PdfZoomLevel>(DEFAULT_PDF_ZOOM_LEVEL);
+  const zoomLevel = controlledZoomLevel ?? internalZoomLevel;
+  const previousZoomLevelRef = useRef(zoomLevel);
+
+  const updateZoomLevel = (nextZoomLevel: PdfZoomLevel) => {
+    if (controlledZoomLevel === undefined) {
+      setInternalZoomLevel(nextZoomLevel);
+    }
+
+    onZoomLevelChange?.(nextZoomLevel);
+  };
 
   useEffect(() => {
     if (!data) {
@@ -180,6 +217,58 @@ export default function PDFViewer({
   const isLoading = loadingState === 'loading';
   const hasError = loadingState === 'error';
 
+  useLayoutEffect(() => {
+    const previousZoomLevel = previousZoomLevelRef.current;
+
+    if (previousZoomLevel === zoomLevel || loadingState !== 'loaded' || !$el.current) {
+      return;
+    }
+
+    const viewer = $el.current;
+    const viewerWidth = viewer.clientWidth;
+    const pageFitWidth = Math.min(viewerWidth, maxFitWidth ?? viewerWidth);
+
+    if (viewerWidth <= 0) {
+      return;
+    }
+
+    const viewerRect = viewer.getBoundingClientRect();
+
+    if (scrollParentRef === 'window') {
+      const currentScrollLeft = window.scrollX;
+      const nextScrollLeft = getCenteredPdfZoomScrollLeft({
+        currentScrollLeft,
+        viewportWidth: window.innerWidth,
+        viewerOffset: viewerRect.left + currentScrollLeft,
+        viewerWidth,
+        pageFitWidth,
+        currentZoomLevel: previousZoomLevel,
+        nextZoomLevel: zoomLevel,
+        maxScrollLeft: document.documentElement.scrollWidth - window.innerWidth,
+      });
+
+      window.scrollTo({ left: nextScrollLeft, top: window.scrollY });
+    } else if (scrollParentRef.current) {
+      const scrollContainer = scrollParentRef.current;
+      const scrollContainerRect = scrollContainer.getBoundingClientRect();
+      const currentScrollLeft = scrollContainer.scrollLeft;
+      const nextScrollLeft = getCenteredPdfZoomScrollLeft({
+        currentScrollLeft,
+        viewportWidth: scrollContainer.clientWidth,
+        viewerOffset: currentScrollLeft + viewerRect.left - scrollContainerRect.left,
+        viewerWidth,
+        pageFitWidth,
+        currentZoomLevel: previousZoomLevel,
+        nextZoomLevel: zoomLevel,
+        maxScrollLeft: scrollContainer.scrollWidth - scrollContainer.clientWidth,
+      });
+
+      scrollContainer.scrollLeft = nextScrollLeft;
+    }
+
+    previousZoomLevelRef.current = zoomLevel;
+  }, [loadingState, maxFitWidth, scrollParentRef, zoomLevel]);
+
   if (!data) {
     return (
       <div ref={$el} className={cn('h-full w-full', className)} {...props}>
@@ -191,7 +280,59 @@ export default function PDFViewer({
   }
 
   return (
-    <div ref={$el} className={cn('h-full w-full', className)} {...props}>
+    <div
+      ref={$el}
+      className={cn(showZoomControls ? 'min-h-full w-full flex-shrink-0' : 'h-full w-full', className)}
+      {...props}
+    >
+      {showZoomControls && (
+        <div className="sticky top-0 z-20 w-full">
+          <div
+            className="mx-auto flex items-center justify-center gap-1 border-b bg-background/95 px-2 py-1 backdrop-blur"
+            style={{
+              width: maxFitWidth ? `min(${zoomLevel}%, ${(maxFitWidth * zoomLevel) / 100}px)` : `${zoomLevel}%`,
+            }}
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              aria-label={t`Zoom out`}
+              disabled={zoomLevel === PDF_ZOOM_LEVELS[0]}
+              onClick={() => updateZoomLevel(getNextPdfZoomLevel(zoomLevel, 'out'))}
+            >
+              <ZoomOutIcon className="h-4 w-4" />
+            </Button>
+
+            <Select value={String(zoomLevel)} onValueChange={(value) => updateZoomLevel(Number(value) as PdfZoomLevel)}>
+              <SelectTrigger className="h-8 w-[5.25rem]" aria-label={t`Zoom level`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                {PDF_ZOOM_LEVELS.map((level) => (
+                  <SelectItem key={level} value={String(level)}>
+                    {level}%
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              aria-label={t`Zoom in`}
+              disabled={zoomLevel === PDF_ZOOM_LEVELS[PDF_ZOOM_LEVELS.length - 1]}
+              onClick={() => updateZoomLevel(getNextPdfZoomLevel(zoomLevel, 'in'))}
+            >
+              <ZoomInIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Loading State */}
       {isLoading && <PdfViewerLoadingState />}
 
@@ -207,6 +348,8 @@ export default function PDFViewer({
           pages={pages}
           pdf={pdfRef.current}
           customPageRenderer={customPageRenderer}
+          zoomLevel={showZoomControls ? zoomLevel : DEFAULT_PDF_ZOOM_LEVEL}
+          maxFitWidth={showZoomControls ? maxFitWidth : undefined}
         />
       )}
     </div>
@@ -220,6 +363,8 @@ type VirtualizedPageListProps = {
   numPages: number;
   pdf: pdfjsLib.PDFDocumentProxy;
   customPageRenderer?: React.FunctionComponent<{ pageData: PageRenderData }>;
+  zoomLevel: PdfZoomLevel;
+  maxFitWidth?: number;
 };
 
 const VirtualizedPageList = ({
@@ -229,6 +374,8 @@ const VirtualizedPageList = ({
   numPages,
   pdf,
   customPageRenderer,
+  zoomLevel,
+  maxFitWidth,
 }: VirtualizedPageListProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -239,10 +386,11 @@ const VirtualizedPageList = ({
     itemCount: numPages,
     itemSize: (index, width) => {
       const pageMeta = pages[index];
+      const fitWidth = Math.min(width, maxFitWidth ?? width);
 
-      // Calculate height based on aspect ratio and available width
+      // Calculate height from the fit-to-width size and current zoom level.
       const aspectRatio = pageMeta.height / pageMeta.width;
-      const scaledHeight = width * aspectRatio;
+      const scaledHeight = fitWidth * (zoomLevel / 100) * aspectRatio;
 
       // Add 32px for the page number text and margins (my-2 = 8px * 2 + text height ~16px)
       // Add additional 2px for the top and bottom borders.
@@ -269,12 +417,14 @@ const VirtualizedPageList = ({
         const index = virtualItem.index;
         const pageMeta = pages[index];
         const pageNumber = index + 1;
+        const fitWidth = Math.min(constraintWidth, maxFitWidth ?? constraintWidth);
 
-        // Calculate scale based on constraint width
-        const scale = constraintWidth / pageMeta.width;
+        // Calculate scale from the fit-to-width size and current zoom level.
+        const scale = (fitWidth * (zoomLevel / 100)) / pageMeta.width;
 
         const scaledWidth = Math.floor(pageMeta.width * scale);
         const scaledHeight = Math.floor(pageMeta.height * scale);
+        const contentWidth = Math.max(constraintWidth, Math.floor(fitWidth * (zoomLevel / 100)));
 
         return (
           <div
@@ -283,27 +433,31 @@ const VirtualizedPageList = ({
               position: 'absolute',
               top: 0,
               left: 0,
-              width: constraintWidth,
+              display: 'flex',
+              justifyContent: 'center',
+              width: contentWidth,
               height: `${virtualItem.size}px`,
               transform: `translateY(${virtualItem.start}px)`,
             }}
           >
-            <PdfViewerPage
-              unscaledWidth={pageMeta.width}
-              unscaledHeight={pageMeta.height}
-              scaledWidth={scaledWidth}
-              scaledHeight={scaledHeight}
-              pageNumber={pageNumber}
-              pdf={pdf}
-              scale={scale}
-              customPageRenderer={customPageRenderer}
-            />
+            <div className="flex flex-col items-center">
+              <PdfViewerPage
+                unscaledWidth={pageMeta.width}
+                unscaledHeight={pageMeta.height}
+                scaledWidth={scaledWidth}
+                scaledHeight={scaledHeight}
+                pageNumber={pageNumber}
+                pdf={pdf}
+                scale={scale}
+                customPageRenderer={customPageRenderer}
+              />
 
-            <p className="my-2 text-center text-[11px] text-muted-foreground/80">
-              <Trans>
-                Page {pageNumber} of {numPages}
-              </Trans>
-            </p>
+              <p className="my-2 text-center text-[11px] text-muted-foreground/80">
+                <Trans>
+                  Page {pageNumber} of {numPages}
+                </Trans>
+              </p>
+            </div>
           </div>
         );
       })}
@@ -343,7 +497,10 @@ const PdfViewerPage = ({
   });
 
   return (
-    <div className="relative w-full rounded border border-border" style={{ width: scaledWidth, height: scaledHeight }}>
+    <div
+      className="relative w-full flex-shrink-0 rounded border border-border"
+      style={{ width: scaledWidth, height: scaledHeight }}
+    >
       {CustomPageRenderer && imageLoadingState === 'loaded' && (
         <CustomPageRenderer
           pageData={{
@@ -373,6 +530,7 @@ const usePdfPageImage = ({ pageNumber, pdf, scale, scaledWidth, scaledHeight }: 
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const renderedResolutionRef = useRef<number | null>(null);
+  const renderedScaleRef = useRef<number | null>(null);
   const renderedPageNumberRef = useRef<number | null>(null);
   const renderedPdfRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
 
@@ -392,6 +550,7 @@ const usePdfPageImage = ({ pageNumber, pdf, scale, scaledWidth, scaledHeight }: 
       return (
         renderedPdfRef.current === pdf &&
         renderedPageNumberRef.current === pageNumber &&
+        renderedScaleRef.current === scale &&
         renderedResolutionRef.current === resolution
       );
     };
@@ -399,6 +558,7 @@ const usePdfPageImage = ({ pageNumber, pdf, scale, scaledWidth, scaledHeight }: 
     const setRenderedImageMeta = (resolution: number) => {
       renderedPdfRef.current = pdf;
       renderedPageNumberRef.current = pageNumber;
+      renderedScaleRef.current = scale;
       renderedResolutionRef.current = resolution;
     };
 

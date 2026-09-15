@@ -1,4 +1,5 @@
 import { DocumentSignatureType } from '@documenso/lib/constants/document';
+import { AppError } from '@documenso/lib/errors/app-error';
 import {
   type TBaseEmbedAuthoringSchema,
   ZBaseEmbedAuthoringSchema,
@@ -125,7 +126,7 @@ export default function EmbeddingAuthoringDocumentCreatePage() {
       toast({
         variant: 'destructive',
         title: _('Error'),
-        description: _('Failed to create document'),
+        description: AppError.parseError(err).userMessage || _('Failed to create document'),
       });
     }
   };

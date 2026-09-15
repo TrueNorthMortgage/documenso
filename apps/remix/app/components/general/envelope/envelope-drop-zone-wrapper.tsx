@@ -112,6 +112,11 @@ export const EnvelopeDropZoneWrapper = ({ children, type, className }: EnvelopeD
       const errorMessage = match(error.code)
         .with('INVALID_DOCUMENT_FILE', () => t`You cannot upload encrypted PDFs.`)
         .with(
+          AppErrorCode.UNSUPPORTED_XFA_PDF,
+          () =>
+            t`This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.`,
+        )
+        .with(
           AppErrorCode.LIMIT_EXCEEDED,
           () => t`You have reached your document limit for this month. Please upgrade your plan.`,
         )

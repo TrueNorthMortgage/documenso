@@ -41,6 +41,10 @@ export const ZTeamNameSchema = z
     message: 'Team name cannot contain URLs.',
   });
 
+export const ZTeamDisplayNameSchema = z.string().trim().max(255, {
+  message: 'Team display name must not exceed 255 characters.',
+});
+
 export const ZCreateTeamEmailVerificationMutationSchema = z.object({
   teamId: z.number(),
   name: ZNameSchema,

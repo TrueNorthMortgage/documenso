@@ -1,6 +1,6 @@
 import { PDF, PdfDict, PdfRef } from '@libpdf/core';
 
-import { AppError } from '../../errors/app-error';
+import { AppError, AppErrorCode } from '../../errors/app-error';
 import { rasterizePdf } from './rasterize-pdf';
 
 const removeWidgetAnnotations = (pdfDoc: PDF) => {
@@ -41,6 +41,17 @@ export const normalizePdf = async (pdf: Buffer, options: { flattenForm?: boolean
   if (pdfDoc.isEncrypted) {
     throw new AppError('INVALID_DOCUMENT_FILE', {
       message: 'The document is encrypted',
+    });
+  }
+
+  const acroForm = pdfDoc.getCatalog().getDict('AcroForm', (ref) => pdfDoc.getObject(ref));
+
+  if (acroForm?.has('XFA')) {
+    throw new AppError(AppErrorCode.UNSUPPORTED_XFA_PDF, {
+      message: 'XFA-based PDF forms are not supported',
+      userMessage:
+        'This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.',
+      statusCode: 400,
     });
   }
 

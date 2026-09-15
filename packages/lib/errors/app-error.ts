@@ -9,6 +9,7 @@ export enum AppErrorCode {
   EXPIRED_CODE = 'EXPIRED_CODE',
   INVALID_BODY = 'INVALID_BODY',
   INVALID_REQUEST = 'INVALID_REQUEST',
+  UNSUPPORTED_XFA_PDF = 'UNSUPPORTED_XFA_PDF',
   RECIPIENT_EXPIRED = 'RECIPIENT_EXPIRED',
   LIMIT_EXCEEDED = 'LIMIT_EXCEEDED',
   NOT_FOUND = 'NOT_FOUND',
@@ -35,6 +36,7 @@ export const genericErrorCodeToTrpcErrorCodeMap: Record<string, { code: string; 
   [AppErrorCode.EXPIRED_CODE]: { code: 'BAD_REQUEST', status: 400 },
   [AppErrorCode.INVALID_BODY]: { code: 'BAD_REQUEST', status: 400 },
   [AppErrorCode.INVALID_REQUEST]: { code: 'BAD_REQUEST', status: 400 },
+  [AppErrorCode.UNSUPPORTED_XFA_PDF]: { code: 'BAD_REQUEST', status: 400 },
   [AppErrorCode.INVALID_CAPTCHA]: { code: 'BAD_REQUEST', status: 400 },
   [AppErrorCode.NOT_FOUND]: { code: 'NOT_FOUND', status: 404 },
   [AppErrorCode.NOT_IMPLEMENTED]: { code: 'INTERNAL_SERVER_ERROR', status: 501 },
@@ -235,6 +237,7 @@ export class AppError extends Error {
       .with(
         AppErrorCode.INVALID_BODY,
         AppErrorCode.INVALID_REQUEST,
+        AppErrorCode.UNSUPPORTED_XFA_PDF,
         AppErrorCode.ENVELOPE_DRAFT,
         AppErrorCode.ENVELOPE_COMPLETED,
         AppErrorCode.ENVELOPE_REJECTED,

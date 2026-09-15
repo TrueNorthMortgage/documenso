@@ -25,6 +25,7 @@ import { isSameEmail } from '../../../utils/email';
 import { unsafeBuildEnvelopeIdQuery } from '../../../utils/envelope';
 import { renderCustomEmailTemplate } from '../../../utils/render-custom-email-template';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
+import { getTeamDisplayName } from '../../../utils/teams';
 import type { JobRunIO } from '../../client/_internal/job';
 import type { TSendSigningEmailJobDefinition } from './send-signing-email';
 
@@ -59,6 +60,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
           select: {
             teamEmail: true,
             name: true,
+            displayName: true,
           },
         },
       },
@@ -71,6 +73,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
   ]);
 
   const { documentMeta, team } = envelope;
+  const teamDisplayName = getTeamDisplayName(team);
 
   if (recipient.role === RecipientRole.CC) {
     return;
@@ -123,7 +126,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
   }
 
   if (organisationType === OrganisationType.ORGANISATION) {
-    emailSubject = i18n._(msg`${team.name} invited you to ${recipientActionVerb} a document`);
+    emailSubject = i18n._(msg`${teamDisplayName} invited you to ${recipientActionVerb} a document`);
     emailMessage = customEmail?.message ?? '';
 
     if (!emailMessage) {
@@ -131,8 +134,8 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
 
       emailMessage = i18n._(
         settings.includeSenderDetails
-          ? msg`${inviterName} on behalf of "${team.name}" has invited you to ${recipientActionVerb} the document "${envelope.title}".`
-          : msg`${team.name} has invited you to ${recipientActionVerb} the document "${envelope.title}".`,
+          ? msg`${inviterName} on behalf of "${teamDisplayName}" has invited you to ${recipientActionVerb} the document "${envelope.title}".`
+          : msg`${teamDisplayName} has invited you to ${recipientActionVerb} the document "${envelope.title}".`,
       );
     }
   }
@@ -157,7 +160,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
     role: recipient.role,
     selfSigner,
     organisationType,
-    teamName: team?.name,
+    teamName: teamDisplayName,
     teamEmail: team?.teamEmail?.email,
     includeSenderDetails: settings.includeSenderDetails,
   });

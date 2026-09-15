@@ -257,15 +257,15 @@ export const DocumentSigningPageViewV2 = () => {
             <EnvelopeRendererFileSelector className="bg-background lg:hidden" fields={remainingFields} />
           )}
 
-          <div className="min-h-0 flex-1 overflow-y-auto" ref={scrollableContainerRef}>
+          <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]" ref={scrollableContainerRef}>
             <div className="flex flex-col">
               {/* Document View */}
               <div className="embed--DocumentViewer flex flex-col items-center justify-center p-2 sm:mt-4 sm:p-4">
                 {currentEnvelopeItem ? (
                   <EnvelopePdfViewer
-                    key={currentEnvelopeItem.id}
                     customPageRenderer={EnvelopeSignerPageRenderer}
                     scrollParentRef={scrollableContainerRef}
+                    showZoomControls
                     errorMessage={PDF_VIEWER_ERROR_MESSAGES.signing}
                   />
                 ) : (

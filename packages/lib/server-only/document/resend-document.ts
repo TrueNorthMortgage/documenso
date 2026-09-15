@@ -27,6 +27,7 @@ import { isSameEmail } from '../../utils/email';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
+import { getTeamDisplayName } from '../../utils/teams';
 import { getEmailContext } from '../email/get-email-context';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
@@ -67,6 +68,7 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
         select: {
           teamEmail: true,
           name: true,
+          displayName: true,
         },
       },
     },
@@ -75,6 +77,8 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
   if (!envelope) {
     throw new Error('Document not found');
   }
+
+  const teamDisplayName = getTeamDisplayName(envelope.team);
 
   if (envelope.recipients.length === 0) {
     throw new Error('Document has no recipients');
@@ -156,11 +160,11 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
       }
 
       if (organisationType === OrganisationType.ORGANISATION) {
-        emailSubject = i18n._(msg`Reminder: ${envelope.team.name} invited you to ${recipientActionVerb} a document`);
+        emailSubject = i18n._(msg`Reminder: ${teamDisplayName} invited you to ${recipientActionVerb} a document`);
         emailMessage =
           envelope.documentMeta.message ||
           i18n._(
-            msg`${user.name || user.email} on behalf of "${envelope.team.name}" has invited you to ${recipientActionVerb} the document "${envelope.title}".`,
+            msg`${user.name || user.email} on behalf of "${teamDisplayName}" has invited you to ${recipientActionVerb} the document "${envelope.title}".`,
           );
       }
 
@@ -186,7 +190,7 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
         role: recipient.role,
         selfSigner,
         organisationType,
-        teamName: envelope.team?.name,
+        teamName: teamDisplayName,
       });
 
       const [html, text] = await Promise.all([

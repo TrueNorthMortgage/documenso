@@ -18,17 +18,19 @@ import type { z } from 'zod';
 export type UpdateTeamDialogProps = {
   teamId: number;
   teamName: string;
+  teamDisplayName: string;
   teamUrl: string;
 };
 
 const ZTeamUpdateFormSchema = ZUpdateTeamRequestSchema.shape.data.pick({
   name: true,
+  displayName: true,
   url: true,
 });
 
 type TTeamUpdateFormSchema = z.infer<typeof ZTeamUpdateFormSchema>;
 
-export const TeamUpdateForm = ({ teamId, teamName, teamUrl }: UpdateTeamDialogProps) => {
+export const TeamUpdateForm = ({ teamId, teamName, teamDisplayName, teamUrl }: UpdateTeamDialogProps) => {
   const navigate = useNavigate();
   const { _ } = useLingui();
   const { toast } = useToast();
@@ -37,17 +39,19 @@ export const TeamUpdateForm = ({ teamId, teamName, teamUrl }: UpdateTeamDialogPr
     resolver: zodResolver(ZTeamUpdateFormSchema),
     defaultValues: {
       name: teamName,
+      displayName: teamDisplayName,
       url: teamUrl,
     },
   });
 
   const { mutateAsync: updateTeam } = trpc.team.update.useMutation();
 
-  const onFormSubmit = async ({ name, url }: TTeamUpdateFormSchema) => {
+  const onFormSubmit = async ({ name, displayName, url }: TTeamUpdateFormSchema) => {
     try {
       await updateTeam({
         data: {
           name,
+          displayName,
           url,
         },
         teamId,
@@ -61,6 +65,7 @@ export const TeamUpdateForm = ({ teamId, teamName, teamUrl }: UpdateTeamDialogPr
 
       form.reset({
         name,
+        displayName,
         url,
       });
 
@@ -104,6 +109,25 @@ export const TeamUpdateForm = ({ teamId, teamName, teamUrl }: UpdateTeamDialogPr
                 <FormControl>
                   <Input className="bg-background" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="displayName"
+            render={({ field }) => (
+              <FormItem className="mt-4">
+                <FormLabel>
+                  <Trans>Team Display Name</Trans>
+                </FormLabel>
+                <FormControl>
+                  <Input className="bg-background" {...field} />
+                </FormControl>
+                <span className="font-normal text-foreground/50 text-xs">
+                  <Trans>Used in document emails. If left blank, your team name will be used.</Trans>
+                </span>
                 <FormMessage />
               </FormItem>
             )}

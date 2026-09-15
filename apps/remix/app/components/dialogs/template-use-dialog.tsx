@@ -202,6 +202,11 @@ export function TemplateUseDialog({
       const errorMessage = match(error.code)
         .with('DOCUMENT_SEND_FAILED', () => msg`The document was created but could not be sent to recipients.`)
         .with(
+          AppErrorCode.UNSUPPORTED_XFA_PDF,
+          () =>
+            msg`This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.`,
+        )
+        .with(
           AppErrorCode.INVALID_BODY,
           AppErrorCode.INVALID_REQUEST,
           () =>

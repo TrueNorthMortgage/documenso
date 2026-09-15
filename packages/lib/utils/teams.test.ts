@@ -1,7 +1,17 @@
 import { DocumentVisibility, TeamMemberRole } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
-import { canManageFolder, canManageTemplate, canUpdateTeamDocumentVisibility } from './teams';
+import { canManageFolder, canManageTemplate, canUpdateTeamDocumentVisibility, getTeamDisplayName } from './teams';
+
+describe('getTeamDisplayName', () => {
+  it('uses the configured display name when present', () => {
+    expect(getTeamDisplayName({ name: 'Internal Team', displayName: 'Customer Brand' })).toBe('Customer Brand');
+  });
+
+  it.each([undefined, null, '', '   '])('falls back to the team name when display name is %s', (displayName) => {
+    expect(getTeamDisplayName({ name: 'Internal Team', displayName })).toBe('Internal Team');
+  });
+});
 
 describe('canUpdateTeamDocumentVisibility', () => {
   it('allows members to update manager-and-above visibility', () => {

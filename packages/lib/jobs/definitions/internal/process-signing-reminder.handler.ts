@@ -25,6 +25,7 @@ import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../
 import { createDocumentAuditLogData } from '../../../utils/document-audit-logs';
 import { renderCustomEmailTemplate } from '../../../utils/render-custom-email-template';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
+import { getTeamDisplayName } from '../../../utils/teams';
 import type { JobRunIO } from '../../client/_internal/job';
 import type { TProcessSigningReminderJobDefinition } from './process-signing-reminder';
 
@@ -70,6 +71,7 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
           team: {
             select: {
               name: true,
+              displayName: true,
             },
           },
         },
@@ -116,7 +118,9 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
   let emailSubject = i18n._(msg`Reminder: Please ${recipientActionVerb} the document "${envelope.title}"`);
 
   if (organisationType === OrganisationType.ORGANISATION) {
-    emailSubject = i18n._(msg`Reminder: ${envelope.team.name} invited you to ${recipientActionVerb} a document`);
+    emailSubject = i18n._(
+      msg`Reminder: ${getTeamDisplayName(envelope.team)} invited you to ${recipientActionVerb} a document`,
+    );
   }
 
   const customEmailTemplate = {

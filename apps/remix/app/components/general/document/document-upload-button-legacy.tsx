@@ -133,6 +133,11 @@ export const DocumentUploadButtonLegacy = ({ className, type }: DocumentUploadBu
       const errorMessage = match(error.code)
         .with('INVALID_DOCUMENT_FILE', () => msg`You cannot upload encrypted PDFs.`)
         .with(
+          AppErrorCode.UNSUPPORTED_XFA_PDF,
+          () =>
+            msg`This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.`,
+        )
+        .with(
           AppErrorCode.LIMIT_EXCEEDED,
           () => msg`You have reached your document limit for this month. Please upgrade your plan.`,
         )

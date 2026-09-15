@@ -1,3 +1,4 @@
+import { AppError } from '@documenso/lib/errors/app-error';
 import {
   type TBaseEmbedAuthoringSchema,
   ZBaseEmbedAuthoringSchema,
@@ -118,7 +119,7 @@ export default function EmbeddingAuthoringTemplateCreatePage() {
       toast({
         variant: 'destructive',
         title: _('Error'),
-        description: _('Failed to create template'),
+        description: AppError.parseError(err).userMessage || _('Failed to create template'),
       });
     }
   };

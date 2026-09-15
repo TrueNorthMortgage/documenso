@@ -14,7 +14,7 @@ import { extractDerivedDocumentEmailSettings } from '../../types/document-email'
 import { createDocumentAuditLogData } from '../../utils/document-audit-logs';
 import { canRecipientBeModified, isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
-import { buildTeamWhereQuery } from '../../utils/teams';
+import { buildTeamWhereQuery, getTeamDisplayName } from '../../utils/teams';
 import { getEmailContext } from '../email/get-email-context';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { assertCanManageTemplate } from '../template/validate-template-access';
@@ -153,7 +153,7 @@ export const deleteEnvelopeRecipient = async ({
 
     const template = createElement(RecipientRemovedFromDocumentTemplate, {
       documentName: envelope.title,
-      inviterName: envelope.team?.name || user.name || undefined,
+      inviterName: envelope.team ? getTeamDisplayName(envelope.team) : user.name || undefined,
       assetBaseUrl,
     });
 

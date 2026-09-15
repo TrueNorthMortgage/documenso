@@ -147,6 +147,7 @@ export const DirectTemplatePageView = ({
               presignToken: undefined,
             })}
             scrollParentRef="window"
+            showZoomControls
             onDocumentLoad={() => setIsDocumentPdfLoaded(true)}
           />
         </CardContent>
