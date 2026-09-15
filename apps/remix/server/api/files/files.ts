@@ -51,6 +51,20 @@ export const filesRoute = new Hono<HonoEnv>()
       return c.json(result);
     } catch (error) {
       console.error('Upload failed:', error);
+
+      if (error instanceof AppError) {
+        const { status, body } = AppError.toRestAPIError(error);
+
+        return c.json(
+          {
+            code: error.code,
+            message: body.message,
+            userMessage: error.userMessage,
+          },
+          status,
+        );
+      }
+
       return c.json({ error: 'Upload failed' }, 500);
     }
   })

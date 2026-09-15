@@ -30,6 +30,14 @@ export const putPdfFile = async (file: File) => {
 
   if (!response.ok) {
     console.error('Upload failed:', response.statusText);
+
+    const errorResponse: unknown = await response.json().catch(() => undefined);
+    const appError = AppError.parseFromJSON(errorResponse);
+
+    if (appError) {
+      throw appError;
+    }
+
     throw new AppError('UPLOAD_FAILED');
   }
 

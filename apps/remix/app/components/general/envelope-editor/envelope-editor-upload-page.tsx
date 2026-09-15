@@ -3,7 +3,7 @@ import { useEnvelopeAutosave } from '@documenso/lib/client-only/hooks/use-envelo
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/organisation';
 import { APP_DOCUMENT_UPLOAD_SIZE_LIMIT } from '@documenso/lib/constants/app';
-import { AppError } from '@documenso/lib/errors/app-error';
+import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import type { TEditorEnvelope } from '@documenso/lib/types/envelope-editor';
 import { nanoid } from '@documenso/lib/universal/id';
 import { megabytesToBytes } from '@documenso/lib/universal/unit-convertions';
@@ -265,6 +265,18 @@ export const EnvelopeEditorUploadPage = () => {
         ),
       );
 
+      const appError = AppError.parseError(error);
+
+      if (appError.code === AppErrorCode.UNSUPPORTED_XFA_PDF) {
+        toast({
+          title: t`Upload failed`,
+          description:
+            appError.userMessage ||
+            t`This PDF uses an XFA form, which Documenso cannot display reliably. Open it in Adobe Acrobat, print it to a new PDF, then upload that copy.`,
+          variant: 'destructive',
+        });
+      }
+
       throw error;
     });
 
@@ -337,7 +349,7 @@ export const EnvelopeEditorUploadPage = () => {
 
       toast({
         title: t`Replace failed`,
-        description: t`Something went wrong while replacing the PDF`,
+        description: AppError.parseError(error).userMessage || t`Something went wrong while replacing the PDF`,
         duration: 5000,
         variant: 'destructive',
       });
