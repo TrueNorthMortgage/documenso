@@ -204,7 +204,7 @@ export function TemplateUseDialog({
         .with(
           AppErrorCode.UNSUPPORTED_XFA_PDF,
           () =>
-            msg`This PDF uses an XFA form, which Documenso cannot display reliably. Open it in Adobe Acrobat, print it to a new PDF, then upload that copy.`,
+            msg`This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.`,
         )
         .with(
           AppErrorCode.INVALID_BODY,

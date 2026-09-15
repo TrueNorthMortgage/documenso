@@ -53,7 +53,7 @@ describe('normalizePdf', () => {
     await expect(normalizePdf(xfaPdf)).rejects.toMatchObject({
       code: AppErrorCode.UNSUPPORTED_XFA_PDF,
       userMessage:
-        'This PDF uses an XFA form, which Documenso cannot display reliably. Open it in Adobe Acrobat, print it to a new PDF, then upload that copy.',
+        'This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.',
     });
   });
 });

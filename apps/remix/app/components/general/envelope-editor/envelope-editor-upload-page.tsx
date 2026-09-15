@@ -272,7 +272,7 @@ export const EnvelopeEditorUploadPage = () => {
           title: t`Upload failed`,
           description:
             appError.userMessage ||
-            t`This PDF uses an XFA form, which Documenso cannot display reliably. Open it in Adobe Acrobat, print it to a new PDF, then upload that copy.`,
+            t`This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.`,
           variant: 'destructive',
         });
       }

@@ -50,7 +50,7 @@ export const normalizePdf = async (pdf: Buffer, options: { flattenForm?: boolean
     throw new AppError(AppErrorCode.UNSUPPORTED_XFA_PDF, {
       message: 'XFA-based PDF forms are not supported',
       userMessage:
-        'This PDF uses an XFA form, which Documenso cannot display reliably. Open it in Adobe Acrobat, print it to a new PDF, then upload that copy.',
+        'This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.',
       statusCode: 400,
     });
   }
