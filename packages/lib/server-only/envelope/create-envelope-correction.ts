@@ -2,7 +2,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-log
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { prisma } from '@documenso/prisma';
-import { DocumentStatus, EnvelopeType, WebhookTriggerEvents } from '@prisma/client';
+import { DocumentStatus, EnvelopeType, Prisma, WebhookTriggerEvents } from '@prisma/client';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { jobs } from '../../jobs/client';
@@ -34,70 +34,89 @@ export const createEnvelopeCorrection = async ({
     type: EnvelopeType.DOCUMENT,
   });
 
-  const envelope = await prisma.envelope.findFirst({
-    where: envelopeWhereInput,
+  const { cancelledEnvelope, duplicatedEnvelope } = await prisma.$transaction(
+    async (tx) => {
+      const envelope = await tx.envelope.findFirst({
+        where: envelopeWhereInput,
+        include: {
+          recipients: true,
+        },
+      });
+
+      if (!envelope) {
+        throw new AppError(AppErrorCode.NOT_FOUND, {
+          message: 'Envelope not found',
+        });
+      }
+
+      if (envelope.status !== DocumentStatus.PENDING || envelope.completedAt || envelope.deletedAt) {
+        throw new AppError(AppErrorCode.INVALID_REQUEST, {
+          message: 'Only active pending envelopes can be corrected',
+        });
+      }
+
+      if (envelope.internalVersion !== 2 || !hasCompletedRecipient(envelope.recipients)) {
+        throw new AppError(AppErrorCode.INVALID_REQUEST, {
+          message: 'A corrected copy is only required after a recipient has completed the envelope',
+        });
+      }
+
+      const duplicatedEnvelope = await duplicateEnvelope({
+        id,
+        userId,
+        teamId,
+        transaction: tx,
+        triggerDocumentCreatedWebhook: false,
+      });
+
+      const updatedEnvelope = await tx.envelope.update({
+        where: {
+          id: envelope.id,
+        },
+        data: {
+          status: DocumentStatus.REJECTED,
+          correctionStartedAt: null,
+        },
+        include: {
+          documentMeta: true,
+          recipients: true,
+        },
+      });
+
+      await tx.documentAuditLog.create({
+        data: createDocumentAuditLogData({
+          type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_STARTED,
+          envelopeId: envelope.id,
+          metadata: requestMetadata,
+          data: {},
+        }),
+      });
+
+      return {
+        cancelledEnvelope: updatedEnvelope,
+        duplicatedEnvelope,
+      };
+    },
+    {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    },
+  );
+
+  const correctedEnvelopeForWebhook = await prisma.envelope.findFirstOrThrow({
+    where: {
+      id: duplicatedEnvelope.id,
+    },
     include: {
       documentMeta: true,
       recipients: true,
     },
   });
 
-  if (!envelope) {
-    throw new AppError(AppErrorCode.NOT_FOUND, {
-      message: 'Envelope not found',
-    });
-  }
-
-  if (envelope.status !== DocumentStatus.PENDING || envelope.completedAt || envelope.deletedAt) {
-    throw new AppError(AppErrorCode.INVALID_REQUEST, {
-      message: 'Only active pending envelopes can be corrected',
-    });
-  }
-
-  if (envelope.internalVersion !== 2 || !hasCompletedRecipient(envelope.recipients)) {
-    throw new AppError(AppErrorCode.INVALID_REQUEST, {
-      message: 'A corrected copy is only required after a recipient has completed the envelope',
-    });
-  }
-
-  const duplicatedEnvelope = await duplicateEnvelope({
-    id,
-    userId,
-    teamId,
-  });
-
-  const cancelledEnvelope = await prisma.$transaction(async (tx) => {
-    const updatedEnvelope = await tx.envelope.update({
-      where: {
-        id: envelope.id,
-      },
-      data: {
-        status: DocumentStatus.REJECTED,
-        correctionStartedAt: null,
-      },
-      include: {
-        documentMeta: true,
-        recipients: true,
-      },
-    });
-
-    await tx.documentAuditLog.create({
-      data: createDocumentAuditLogData({
-        type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_STARTED,
-        envelopeId: envelope.id,
-        metadata: requestMetadata,
-        data: {},
-      }),
-    });
-
-    return updatedEnvelope;
-  });
-
   await Promise.all([
     jobs.triggerJob({
       name: 'send.document.cancelled.emails',
       payload: {
-        documentId: mapSecondaryIdToDocumentId(envelope.secondaryId),
+        documentId: mapSecondaryIdToDocumentId(cancelledEnvelope.secondaryId),
         cancellationReason: 'The document owner created a corrected signing package.',
         requestMetadata: requestMetadata.requestMetadata,
       },
@@ -105,6 +124,12 @@ export const createEnvelopeCorrection = async ({
     triggerWebhook({
       event: WebhookTriggerEvents.DOCUMENT_CANCELLED,
       data: ZWebhookDocumentSchema.parse(mapEnvelopeToWebhookDocumentPayload(cancelledEnvelope)),
+      userId,
+      teamId,
+    }),
+    triggerWebhook({
+      event: WebhookTriggerEvents.DOCUMENT_CREATED,
+      data: ZWebhookDocumentSchema.parse(mapEnvelopeToWebhookDocumentPayload(correctedEnvelopeForWebhook)),
       userId,
       teamId,
     }),
