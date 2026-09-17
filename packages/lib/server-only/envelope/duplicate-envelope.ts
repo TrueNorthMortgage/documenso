@@ -1,5 +1,5 @@
 import { prisma } from '@documenso/prisma';
-import { DocumentSource, EnvelopeType, WebhookTriggerEvents } from '@prisma/client';
+import { DocumentSource, EnvelopeType, type Prisma, WebhookTriggerEvents } from '@prisma/client';
 import pMap from 'p-map';
 import { omit } from 'remeda';
 
@@ -21,9 +21,19 @@ export interface DuplicateEnvelopeOptions {
     includeRecipients?: boolean;
     includeFields?: boolean;
   };
+  transaction?: Prisma.TransactionClient;
+  triggerDocumentCreatedWebhook?: boolean;
 }
 
-export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: DuplicateEnvelopeOptions) => {
+export const duplicateEnvelope = async ({
+  id,
+  userId,
+  teamId,
+  overrides,
+  transaction,
+  triggerDocumentCreatedWebhook = true,
+}: DuplicateEnvelopeOptions) => {
+  const db = transaction ?? prisma;
   const { duplicateAsTemplate = false, includeRecipients = true, includeFields = true } = overrides ?? {};
 
   const { envelopeWhereInput, team } = await getEnvelopeWhereInput({
@@ -72,13 +82,13 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
     teamId: true,
   } as const;
 
-  let envelope = await prisma.envelope.findFirst({
+  let envelope = await db.envelope.findFirst({
     where: envelopeWhereInput,
     select: envelopeSelect,
   });
 
   if (!envelope) {
-    envelope = await prisma.envelope.findFirst({
+    envelope = await db.envelope.findFirst({
       where: getOrganisationTemplateWhereInput({
         id,
         organisationId: team.organisationId,
@@ -104,15 +114,15 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
 
   const [{ legacyNumberId, secondaryId }, createdDocumentMeta] = await Promise.all([
     targetType === EnvelopeType.DOCUMENT
-      ? incrementDocumentId().then(({ documentId, formattedDocumentId }) => ({
+      ? incrementDocumentId(transaction).then(({ documentId, formattedDocumentId }) => ({
           legacyNumberId: documentId,
           secondaryId: formattedDocumentId,
         }))
-      : incrementTemplateId().then(({ templateId, formattedTemplateId }) => ({
+      : incrementTemplateId(transaction).then(({ templateId, formattedTemplateId }) => ({
           legacyNumberId: templateId,
           secondaryId: formattedTemplateId,
         })),
-    prisma.documentMeta.create({
+    db.documentMeta.create({
       data: {
         ...omit(envelope.documentMeta, ['id']),
         emailSettings: envelope.documentMeta.emailSettings || undefined,
@@ -125,7 +135,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
       ? 'PRIVATE'
       : (envelope.templateType ?? undefined);
 
-  const duplicatedEnvelope = await prisma.envelope.create({
+  const duplicatedEnvelope = await db.envelope.create({
     data: {
       id: prefixedId('envelope'),
       secondaryId,
@@ -155,7 +165,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
   // Duplicate the envelope items.
   await Promise.all(
     envelope.envelopeItems.map(async (envelopeItem) => {
-      const duplicatedDocumentData = await prisma.documentData.create({
+      const duplicatedDocumentData = await db.documentData.create({
         data: {
           type: envelopeItem.documentData.type,
           data: envelopeItem.documentData.initialData,
@@ -163,7 +173,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
         },
       });
 
-      const duplicatedEnvelopeItem = await prisma.envelopeItem.create({
+      const duplicatedEnvelopeItem = await db.envelopeItem.create({
         data: {
           id: prefixedId('envelope_item'),
           title: envelopeItem.title,
@@ -184,7 +194,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
     await pMap(
       envelope.recipients,
       async (recipient) => {
-        const duplicatedRecipient = await prisma.recipient.create({
+        const duplicatedRecipient = await db.recipient.create({
           data: {
             envelopeId: duplicatedEnvelope.id,
             email: recipient.email,
@@ -211,7 +221,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
             sourceGroups
               .filter((group) => !duplicatedFieldGroupIdsBySourceId.has(group.id))
               .map(async (group) => {
-                const duplicatedFieldGroup = await prisma.fieldGroup.create({
+                const duplicatedFieldGroup = await db.fieldGroup.create({
                   data: {
                     id: nanoid(12),
                     name: group.name,
@@ -239,7 +249,7 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
                 ? duplicatedFieldGroupIdsBySourceId.get(field.fieldGroup.id)
                 : undefined;
 
-              return prisma.field.create({
+              return db.field.create({
                 data: {
                   envelopeId: duplicatedEnvelope.id,
                   envelopeItemId: oldEnvelopeItemToNewEnvelopeItemIdMap[field.envelopeItemId],
@@ -293,12 +303,12 @@ export const duplicateEnvelope = async ({ id, userId, teamId, overrides }: Dupli
     );
 
     if (conditionalRules.length > 0) {
-      await prisma.conditionalFieldRule.createMany({ data: conditionalRules });
+      await db.conditionalFieldRule.createMany({ data: conditionalRules });
     }
   }
 
-  if (duplicatedEnvelope.type === EnvelopeType.DOCUMENT) {
-    const refetchedEnvelope = await prisma.envelope.findFirstOrThrow({
+  if (duplicatedEnvelope.type === EnvelopeType.DOCUMENT && triggerDocumentCreatedWebhook) {
+    const refetchedEnvelope = await db.envelope.findFirstOrThrow({
       where: {
         id: duplicatedEnvelope.id,
       },

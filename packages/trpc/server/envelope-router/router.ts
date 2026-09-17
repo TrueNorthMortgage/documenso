@@ -8,6 +8,7 @@ import { updateAttachmentRoute } from './attachment/update-attachment';
 import { bulkDeleteEnvelopesRoute } from './bulk-delete-envelopes';
 import { bulkMoveEnvelopesRoute } from './bulk-move-envelopes';
 import { createEnvelopeRoute } from './create-envelope';
+import { createEnvelopeCorrectionRoute } from './create-envelope-correction';
 import { createEnvelopeItemsRoute } from './create-envelope-items';
 import { deleteEnvelopeRoute } from './delete-envelope';
 import { deleteEnvelopeItemRoute } from './delete-envelope-item';
@@ -39,6 +40,7 @@ import { setEnvelopeFieldsRoute } from './set-envelope-fields';
 import { setEnvelopeRecipientsRoute } from './set-envelope-recipients';
 import { signEnvelopeFieldRoute } from './sign-envelope-field';
 import { signingStatusEnvelopeRoute } from './signing-status-envelope';
+import { startEnvelopeCorrectionRoute } from './start-envelope-correction';
 import { updateEnvelopeRoute } from './update-envelope';
 import { updateEnvelopeItemsRoute } from './update-envelope-items';
 import { useEnvelopeRoute } from './use-envelope';
@@ -99,6 +101,7 @@ export const envelopeRouter = router({
   get: getEnvelopeRoute,
   getMany: getEnvelopesByIdsRoute,
   create: createEnvelopeRoute,
+  createCorrection: createEnvelopeCorrectionRoute,
   pendingPrepare: pendingPreparationRoute,
   use: useEnvelopeRoute,
   update: updateEnvelopeRoute,
@@ -108,4 +111,5 @@ export const envelopeRouter = router({
   distribute: distributeEnvelopeRoute,
   redistribute: redistributeEnvelopeRoute,
   signingStatus: signingStatusEnvelopeRoute,
+  startCorrection: startEnvelopeCorrectionRoute,
 });

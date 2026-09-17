@@ -24,7 +24,8 @@ import { isDeepEqual } from 'remeda';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapFieldToLegacyField } from '../../utils/fields';
-import { canRecipientFieldsBeModified } from '../../utils/recipients';
+import { canRecipientFieldsBeModified, hasCompletedRecipient } from '../../utils/recipients';
+import { assertEnvelopeCanBeCorrected } from '../envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 
 export interface SetFieldsForDocumentOptions {
@@ -79,14 +80,33 @@ export const setFieldsForDocument = async ({
     });
   }
 
+  assertEnvelopeCanBeCorrected(envelope);
+
   const existingFields = envelope.fields;
+
+  const hasFieldStructureChanges =
+    existingFields.length !== fields.length ||
+    fields.some((field) => {
+      const existingField = existingFields.find((candidate) => candidate.id === field.id);
+
+      return !existingField || hasFieldBeenChanged(existingField, field);
+    });
+
+  if (hasFieldStructureChanges && hasCompletedRecipient(envelope.recipients)) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'Fields cannot be changed after a recipient has completed the document',
+    });
+  }
 
   const removedFields = existingFields.filter(
     (existingField) => !fields.find((field) => field.id === existingField.id),
   );
 
   for (const field of removedFields) {
-    if (!field.recipient || !canRecipientFieldsBeModified(field.recipient, existingFields)) {
+    if (
+      !field.recipient ||
+      !canRecipientFieldsBeModified(field.recipient, existingFields, Boolean(envelope.correctionStartedAt))
+    ) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: 'Cannot modify a field where the recipient has already interacted with the document',
       });
@@ -117,8 +137,13 @@ export const setFieldsForDocument = async ({
     // Check whether the existing field can be modified.
     if (existing && hasFieldBeenChanged(existing, field)) {
       const canModifyExistingRecipient =
-        existing.recipient && canRecipientFieldsBeModified(existing.recipient, existingFields);
-      const canModifyNewRecipient = canRecipientFieldsBeModified(recipient, existingFields);
+        existing.recipient &&
+        canRecipientFieldsBeModified(existing.recipient, existingFields, Boolean(envelope.correctionStartedAt));
+      const canModifyNewRecipient = canRecipientFieldsBeModified(
+        recipient,
+        existingFields,
+        Boolean(envelope.correctionStartedAt),
+      );
 
       if (!canModifyExistingRecipient || !canModifyNewRecipient) {
         throw new AppError(AppErrorCode.INVALID_REQUEST, {
@@ -128,7 +153,7 @@ export const setFieldsForDocument = async ({
     }
 
     // Prevent creating new fields when recipient has interacted with the document.
-    if (!existing && !canRecipientFieldsBeModified(recipient, existingFields)) {
+    if (!existing && !canRecipientFieldsBeModified(recipient, existingFields, Boolean(envelope.correctionStartedAt))) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: 'Cannot modify a field where the recipient has already interacted with the document',
       });

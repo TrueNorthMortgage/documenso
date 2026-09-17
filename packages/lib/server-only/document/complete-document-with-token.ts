@@ -28,6 +28,7 @@ import { extractDocumentAuthMethods } from '../../utils/document-auth';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapSecondaryIdToDocumentId, unsafeBuildEnvelopeIdQuery } from '../../utils/envelope';
 import { assertRecipientNotExpired } from '../../utils/recipients';
+import { assertEnvelopeNotCorrecting } from '../envelope/assert-envelope-not-correcting';
 import { getIsRecipientsTurnToSign } from '../recipient/get-is-recipient-turn';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
 import { isRecipientAuthorized } from './is-recipient-authorized';
@@ -86,6 +87,8 @@ export const completeDocumentWithToken = async ({
   if (envelope.status !== DocumentStatus.PENDING) {
     throw new Error(`Document ${envelope.id} must be pending`);
   }
+
+  assertEnvelopeNotCorrecting(envelope);
 
   if (envelope.recipients.length === 0) {
     throw new Error(`Document ${envelope.id} has no recipient with token ${token}`);

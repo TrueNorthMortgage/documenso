@@ -205,7 +205,7 @@ export const EnvelopeEditorRecipientForm = () => {
       return false;
     }
 
-    return utilCanRecipientBeModified(recipient, fields);
+    return utilCanRecipientBeModified(recipient, fields, Boolean(envelope.correctionStartedAt));
   };
 
   const onAddSigner = () => {

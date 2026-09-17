@@ -12,6 +12,7 @@ import { extractLegacyIds } from '../../universal/id';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapFieldToLegacyField } from '../../utils/fields';
 import { canRecipientBeModified } from '../../utils/recipients';
+import { assertEnvelopeCanBeCorrected } from '../envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { assertCanManageTemplate } from '../template/validate-template-access';
 
@@ -75,6 +76,8 @@ export const updateEnvelopeRecipients = async ({
     userId,
   });
 
+  assertEnvelopeCanBeCorrected(envelope);
+
   if (envelope.completedAt) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
       message: 'Envelope already complete',
@@ -101,7 +104,7 @@ export const updateEnvelopeRecipients = async ({
       });
     }
 
-    if (!canRecipientBeModified(originalRecipient, envelope.fields)) {
+    if (!canRecipientBeModified(originalRecipient, envelope.fields, Boolean(envelope.correctionStartedAt))) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: 'Cannot modify a recipient who has already interacted with the document',
       });

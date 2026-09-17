@@ -1293,7 +1293,9 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     }
 
     const recipient = envelope.recipients.find((r) => r.id === field.recipientId);
-    const isFieldEditable = recipient !== undefined && canRecipientFieldsBeModified(recipient, envelope.fields);
+    const isFieldEditable =
+      recipient !== undefined &&
+      canRecipientFieldsBeModified(recipient, envelope.fields, Boolean(envelope.correctionStartedAt));
     const groupFields = field.fieldGroupId
       ? editorFields.localFields.filter((candidate) => candidate.fieldGroupId === field.fieldGroupId)
       : [];
@@ -1707,7 +1709,11 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         unscaledBoxWidth > MIN_FIELD_WIDTH_PX &&
         unscaledBoxHeight > MIN_FIELD_HEIGHT_PX &&
         editorFields.selectedRecipient &&
-        canRecipientFieldsBeModified(editorFields.selectedRecipient, envelope.fields)
+        canRecipientFieldsBeModified(
+          editorFields.selectedRecipient,
+          envelope.fields,
+          Boolean(envelope.correctionStartedAt),
+        )
       ) {
         const pendingFieldCreation = new Konva.Rect({
           name: 'pending-field-creation',
@@ -2322,6 +2328,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
           }}
           recipients={envelope.recipients}
           fields={envelope.fields}
+          ignoreInsertedFields={Boolean(envelope.correctionStartedAt)}
         />
       </CommandDialog>
 
@@ -2483,6 +2490,7 @@ const FieldActionButtons = ({
           }}
           recipients={envelope.recipients}
           fields={envelope.fields}
+          ignoreInsertedFields={Boolean(envelope.correctionStartedAt)}
         />
       </CommandDialog>
     </div>

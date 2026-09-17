@@ -6,12 +6,12 @@ import { formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { Button } from '@documenso/ui/primitives/button';
 import { Trans } from '@lingui/react/macro';
 import { DocumentStatus, RecipientRole, SigningStatus } from '@prisma/client';
-import { CheckCircle, Download, Edit, EyeIcon, Pencil } from 'lucide-react';
+import { CheckCircle, Download, Edit, EyeIcon, FilePenLineIcon, Pencil } from 'lucide-react';
 import { Link } from 'react-router';
 import { match } from 'ts-pattern';
 
 import { useCurrentTeam } from '~/providers/team';
-
+import { EnvelopeCorrectDialog } from '../dialogs/envelope-correct-dialog';
 import { EnvelopeDownloadDialog } from '../dialogs/envelope-download-dialog';
 
 export type DocumentsTableActionButtonProps = {
@@ -37,6 +37,10 @@ export const DocumentsTableActionButton = ({ row }: DocumentsTableActionButtonPr
   const isSigned = recipient?.signingStatus === SigningStatus.SIGNED;
   const role = recipient?.role;
   const isCurrentTeamDocument = team && row.team?.url === team.url;
+  const canManageDocument = Boolean(isOwner || isCurrentTeamDocument);
+  const hasCompletedRecipients = row.recipients.some(
+    (item) => item.role !== RecipientRole.CC && item.signingStatus === SigningStatus.SIGNED,
+  );
 
   const documentsPath = formatDocumentsPath(team.url);
   const formatPath = `${documentsPath}/${row.envelopeId}/edit`;
@@ -64,6 +68,37 @@ export const DocumentsTableActionButton = ({ row }: DocumentsTableActionButtonPr
         </Link>
       </Button>
     ))
+    .with({ isPending: true }, () =>
+      canManageDocument ? (
+        row.internalVersion === 1 ? (
+          <Button className="w-32" asChild>
+            <Link to={formatPath}>
+              <Edit className="mr-2 -ml-1 h-4 w-4" />
+              <Trans>Edit</Trans>
+            </Link>
+          </Button>
+        ) : row.correctionStartedAt ? (
+          <Button className="w-32" asChild>
+            <Link to={formatPath}>
+              <FilePenLineIcon className="mr-2 -ml-1 h-4 w-4" />
+              <Trans>Continue</Trans>
+            </Link>
+          </Button>
+        ) : (
+          <EnvelopeCorrectDialog
+            envelopeId={row.envelopeId}
+            documentRootPath={documentsPath}
+            hasCompletedRecipients={hasCompletedRecipients}
+            trigger={
+              <Button className="w-32">
+                <FilePenLineIcon className="mr-2 -ml-1 h-4 w-4" />
+                <Trans>Correct</Trans>
+              </Button>
+            }
+          />
+        )
+      ) : null,
+    )
     .with({ isRecipient: true, isPending: true, isSigned: false }, () => (
       <Button className="w-32" asChild>
         <Link to={`/sign/${recipient?.token}`}>

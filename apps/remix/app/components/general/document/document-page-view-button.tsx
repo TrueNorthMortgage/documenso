@@ -6,10 +6,10 @@ import { formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { Button } from '@documenso/ui/primitives/button';
 import { Trans } from '@lingui/react/macro';
 import { DocumentStatus, RecipientRole, SigningStatus } from '@prisma/client';
-import { CheckCircle, Download, EyeIcon, Pencil } from 'lucide-react';
+import { CheckCircle, Download, EyeIcon, FilePenLineIcon, Pencil } from 'lucide-react';
 import { Link } from 'react-router';
 import { match } from 'ts-pattern';
-
+import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dialog';
 import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-dialog';
 
 export type DocumentPageViewButtonProps = {
@@ -25,6 +25,9 @@ export const DocumentPageViewButton = ({ envelope }: DocumentPageViewButtonProps
   const isPending = envelope.status === DocumentStatus.PENDING;
   const isComplete = isDocumentCompleted(envelope);
   const isSigned = recipient?.signingStatus === SigningStatus.SIGNED;
+  const hasCompletedRecipients = envelope.recipients.some(
+    (item) => item.role !== RecipientRole.CC && item.signingStatus === SigningStatus.SIGNED,
+  );
   const role = recipient?.role;
 
   const documentsPath = formatDocumentsPath(envelope.team.url);
@@ -62,6 +65,34 @@ export const DocumentPageViewButton = ({ envelope }: DocumentPageViewButtonProps
         </Link>
       </Button>
     ))
+    .with({ isPending: true, isComplete: false }, () =>
+      envelope.internalVersion === 1 ? (
+        <Button className="w-full" asChild>
+          <Link to={formatPath}>
+            <Trans>Edit</Trans>
+          </Link>
+        </Button>
+      ) : envelope.correctionStartedAt ? (
+        <Button className="w-full" asChild>
+          <Link to={formatPath}>
+            <FilePenLineIcon className="mr-2 -ml-1 h-4 w-4" />
+            <Trans>Continue correcting</Trans>
+          </Link>
+        </Button>
+      ) : (
+        <EnvelopeCorrectDialog
+          envelopeId={envelope.id}
+          documentRootPath={documentsPath}
+          hasCompletedRecipients={hasCompletedRecipients}
+          trigger={
+            <Button className="w-full">
+              <FilePenLineIcon className="mr-2 -ml-1 h-4 w-4" />
+              <Trans>Correct</Trans>
+            </Button>
+          }
+        />
+      ),
+    )
     .with({ isComplete: false }, () => (
       <Button className="w-full" asChild>
         <Link to={formatPath}>

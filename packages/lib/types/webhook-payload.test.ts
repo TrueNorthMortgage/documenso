@@ -14,6 +14,7 @@ describe('mapEnvelopeToWebhookDocumentPayload', () => {
       updatedAt: new Date(),
       completedAt: null,
       deletedAt: null,
+      correctionStartedAt: null,
       title: 'Test document',
       status: DocumentStatus.DRAFT,
       source: DocumentSource.DOCUMENT,

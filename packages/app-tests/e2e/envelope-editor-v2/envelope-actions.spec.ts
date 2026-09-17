@@ -160,6 +160,7 @@ const createPendingEnvelopeViaApi = async () => {
     team,
     envelopeId: createResponse.id,
     recipientEmail,
+    recipientToken: recipients[0].token,
   };
 };
 
@@ -228,36 +229,52 @@ test.describe('document editor', () => {
     await expect(page.getByText('The following signers are missing signature fields')).not.toBeVisible();
   });
 
-  test('resend document sends reminder', async ({ page }) => {
-    const { user, team, envelopeId, recipientEmail } = await createPendingEnvelopeViaApi();
+  test('correct document locks signing and preserves the signing link', async ({ page, context }) => {
+    const { user, team, envelopeId, recipientEmail, recipientToken } = await createPendingEnvelopeViaApi();
 
     await apiSignin({
       page,
       email: user.email,
-      redirectPath: `/t/${team.url}/documents/${envelopeId}/edit`,
+      redirectPath: `/t/${team.url}/documents/${envelopeId}`,
     });
 
-    await expect(page.getByRole('heading', { name: 'Documents' })).toBeVisible();
+    const recipientPage = await context.newPage();
+    await recipientPage.goto(`/sign/${recipientToken}`);
+    await expect(recipientPage.getByText('Correction in progress')).not.toBeVisible();
 
-    // Click the "Resend Document" sidebar action.
-    await page.locator('button[title="Resend Envelope"]').click();
+    await page.getByRole('button', { name: 'Correct', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Correct Document' })).toBeVisible();
+    await page.getByRole('button', { name: 'Start correction' }).click();
 
-    // The redistribute dialog should appear.
-    await expect(page.getByRole('heading', { name: 'Resend Document' })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/documents/${envelopeId}/edit`));
 
-    // The unsigned recipient should be listed.
+    const correctingEnvelope = await prisma.envelope.findUniqueOrThrow({
+      where: { id: envelopeId },
+    });
+
+    expect(correctingEnvelope.correctionStartedAt).not.toBeNull();
+
+    await expect(recipientPage.getByText('Correction in progress')).toBeVisible();
+    await expect(recipientPage.getByText(/Please try again later using the same link/)).toBeVisible();
+
+    await page.locator('button[title="Finish Correction"]').click();
+
+    await expect(page.getByRole('heading', { name: 'Finish Correction' })).toBeVisible();
+
     await expect(page.getByText(recipientEmail)).toBeVisible();
+    await expect(page.getByRole('checkbox').first()).toBeChecked();
 
-    // Select the recipient checkbox.
-    await page.getByRole('checkbox').first().click();
+    await page.getByRole('button', { name: 'Finish correction' }).click();
 
-    // Click "Send reminder".
-    await page.getByRole('button', { name: 'Send reminder' }).click();
-
-    // Assert toast appears.
     await expectToastTextToBeVisible(page, 'Envelope resent');
+    await expect(page).toHaveURL(new RegExp(`/documents/${envelopeId}$`));
 
-    // Verify a resend audit log entry was created in the database.
+    const correctedEnvelope = await prisma.envelope.findUniqueOrThrow({
+      where: { id: envelopeId },
+    });
+
+    expect(correctedEnvelope.correctionStartedAt).toBeNull();
+
     const auditLog = await prisma.documentAuditLog.findFirst({
       where: {
         envelopeId,
@@ -267,8 +284,52 @@ test.describe('document editor', () => {
     });
 
     expect(auditLog).not.toBeNull();
-    expect((auditLog!.data as Record<string, unknown>).isResending).toBe(true);
-    expect((auditLog!.data as Record<string, unknown>).recipientEmail).toBe(recipientEmail);
+    expect((auditLog?.data as Record<string, unknown>).isResending).toBe(true);
+    expect((auditLog?.data as Record<string, unknown>).recipientEmail).toBe(recipientEmail);
+
+    await expect(recipientPage.getByText('Correction in progress')).not.toBeVisible();
+    await recipientPage.close();
+  });
+
+  test('correct document creates a fresh draft after a recipient has completed', async ({ page }) => {
+    const { user, team, envelopeId } = await createPendingEnvelopeViaApi();
+
+    await prisma.recipient.updateMany({
+      where: { envelopeId },
+      data: { signingStatus: 'SIGNED' },
+    });
+
+    await apiSignin({
+      page,
+      email: user.email,
+      redirectPath: `/t/${team.url}/documents/${envelopeId}`,
+    });
+
+    await page.getByRole('button', { name: 'Correct', exact: true }).click();
+    await expect(page.getByText('One or more recipients have completed their action.')).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel and create copy' }).click();
+
+    await expect(page).toHaveURL(/\/documents\/.*\/edit/);
+
+    const correctedEnvelopeId = new URL(page.url()).pathname.split('/').at(-2);
+
+    if (!correctedEnvelopeId) {
+      throw new Error('Corrected envelope ID was not found in the editor URL');
+    }
+
+    expect(correctedEnvelopeId).not.toBe(envelopeId);
+
+    const [originalEnvelope, correctedEnvelope] = await Promise.all([
+      prisma.envelope.findUniqueOrThrow({ where: { id: envelopeId } }),
+      prisma.envelope.findUniqueOrThrow({
+        where: { id: correctedEnvelopeId },
+        include: { recipients: true },
+      }),
+    ]);
+
+    expect(originalEnvelope.status).toBe(DocumentStatus.REJECTED);
+    expect(correctedEnvelope.status).toBe(DocumentStatus.DRAFT);
+    expect(correctedEnvelope.recipients.every((recipient) => recipient.signingStatus === 'NOT_SIGNED')).toBe(true);
   });
 
   test('duplicate document', async ({ page }) => {

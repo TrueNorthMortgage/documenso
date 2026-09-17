@@ -1428,19 +1428,25 @@ export const EnvelopeEditorFieldsPage = () => {
                 onSelectedRecipientChange={handleRecipientChange}
                 recipients={envelope.recipients}
                 fields={envelope.fields}
+                ignoreInsertedFields={Boolean(envelope.correctionStartedAt)}
                 className="w-full"
                 align="end"
               />
 
-              {selectedRecipient && !canRecipientFieldsBeModified(selectedRecipient, envelope.fields) && (
-                <Alert className="mt-4" variant="warning">
-                  <AlertDescription>
-                    <Trans>
-                      This recipient can no longer be modified as they have signed a field, or completed the document.
-                    </Trans>
-                  </AlertDescription>
-                </Alert>
-              )}
+              {selectedRecipient &&
+                !canRecipientFieldsBeModified(
+                  selectedRecipient,
+                  envelope.fields,
+                  Boolean(envelope.correctionStartedAt),
+                ) && (
+                  <Alert className="mt-4" variant="warning">
+                    <AlertDescription>
+                      <Trans>
+                        This recipient can no longer be modified as they have signed a field, or completed the document.
+                      </Trans>
+                    </AlertDescription>
+                  </Alert>
+                )}
             </section>
 
             <Separator className="my-4" />

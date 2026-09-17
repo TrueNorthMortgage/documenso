@@ -122,7 +122,14 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
   ).recipientSigningRequest;
 
   if (!isRecipientSigningRequestEmailEnabled) {
-    return envelope;
+    if (envelope.correctionStartedAt) {
+      await finishEnvelopeCorrection(envelope.id, requestMetadata);
+    }
+
+    return {
+      ...envelope,
+      correctionStartedAt: null,
+    };
   }
 
   const { branding, emailLanguage, organisationType, senderEmail, replyToEmail } = await getEmailContext({
@@ -246,5 +253,34 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
     teamId: envelope.teamId,
   });
 
-  return envelope;
+  if (envelope.correctionStartedAt) {
+    await finishEnvelopeCorrection(envelope.id, requestMetadata);
+  }
+
+  return {
+    ...envelope,
+    correctionStartedAt: null,
+  };
+};
+
+const finishEnvelopeCorrection = async (envelopeId: string, requestMetadata: ApiRequestMetadata) => {
+  await prisma.$transaction(async (tx) => {
+    await tx.envelope.update({
+      where: {
+        id: envelopeId,
+      },
+      data: {
+        correctionStartedAt: null,
+      },
+    });
+
+    await tx.documentAuditLog.create({
+      data: createDocumentAuditLogData({
+        type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_COMPLETED,
+        envelopeId,
+        metadata: requestMetadata,
+        data: {},
+      }),
+    });
+  });
 };

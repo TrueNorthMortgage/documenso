@@ -9,6 +9,7 @@ import { createDocumentAuditLogData } from '../../utils/document-audit-logs';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapSecondaryIdToDocumentId, unsafeBuildEnvelopeIdQuery } from '../../utils/envelope';
 import { assertRecipientNotExpired } from '../../utils/recipients';
+import { assertEnvelopeNotCorrecting } from '../envelope/assert-envelope-not-correcting';
 
 export type RejectDocumentWithTokenOptions = {
   token: string;
@@ -42,6 +43,8 @@ export async function rejectDocumentWithToken({ token, id, reason, requestMetada
       message: `Document ${envelope.id} must be pending to reject`,
     });
   }
+
+  assertEnvelopeNotCorrecting(envelope);
 
   assertRecipientNotExpired(recipient);
 

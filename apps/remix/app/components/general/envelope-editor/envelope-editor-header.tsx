@@ -136,7 +136,7 @@ export default function EnvelopeEditorHeader() {
                 ))
                 .with(DocumentStatus.PENDING, () => (
                   <Badge variant="secondary" className="shrink-0">
-                    <Trans>Pending</Trans>
+                    {envelope.correctionStartedAt ? <Trans>Correcting</Trans> : <Trans>Pending</Trans>}
                   </Badge>
                 ))
                 .with(DocumentStatus.COMPLETED, () => (
@@ -208,10 +208,11 @@ export default function EnvelopeEditorHeader() {
 
                 <EnvelopeRedistributeDialog
                   envelope={envelope}
+                  documentRootPath={relativePath.documentRootPath}
                   trigger={
                     <Button size="sm">
                       <SendIcon className="mr-2 h-4 w-4" />
-                      <Trans>Resend Document</Trans>
+                      {envelope.correctionStartedAt ? <Trans>Finish Correction</Trans> : <Trans>Resend Document</Trans>}
                     </Button>
                   }
                 />

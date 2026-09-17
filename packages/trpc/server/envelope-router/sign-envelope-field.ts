@@ -1,6 +1,7 @@
 import { isBase64Image } from '@documenso/lib/constants/signatures';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { validateFieldAuth } from '@documenso/lib/server-only/document/validate-field-auth';
+import { assertEnvelopeNotCorrecting } from '@documenso/lib/server-only/envelope/assert-envelope-not-correcting';
 import { assertConditionalFieldIsVisible } from '@documenso/lib/server-only/field/assert-conditional-field-visible';
 import { autoInsertConditionalFieldDefaults } from '@documenso/lib/server-only/field/auto-insert-conditional-field-defaults';
 import { clearHiddenConditionalFields } from '@documenso/lib/server-only/field/clear-hidden-conditional-fields';
@@ -221,6 +222,8 @@ export const signEnvelopeFieldRoute = procedure
         message: `Document ${envelope.id} must be pending for signing`,
       });
     }
+
+    assertEnvelopeNotCorrecting(envelope);
 
     if (recipient.signingStatus === SigningStatus.SIGNED || field.recipient.signingStatus === SigningStatus.SIGNED) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {

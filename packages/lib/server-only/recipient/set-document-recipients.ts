@@ -19,9 +19,10 @@ import { NEXT_PUBLIC_WEBAPP_URL } from '../../constants/app';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { extractDerivedDocumentEmailSettings } from '../../types/document-email';
 import { type EnvelopeIdOptions, mapSecondaryIdToDocumentId } from '../../utils/envelope';
-import { canRecipientBeModified, isRecipientEmailValidForSending } from '../../utils/recipients';
+import { canRecipientBeModified, hasCompletedRecipient, isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { getEmailContext } from '../email/get-email-context';
+import { assertEnvelopeCanBeCorrected } from '../envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 
 export interface SetDocumentRecipientsOptions {
@@ -83,6 +84,8 @@ export const setDocumentRecipients = async ({
     throw new Error('Document already complete');
   }
 
+  assertEnvelopeCanBeCorrected(envelope);
+
   const { branding, emailLanguage, senderEmail, replyToEmail } = await getEmailContext({
     emailType: 'RECIPIENT',
     source: {
@@ -114,15 +117,26 @@ export const setDocumentRecipients = async ({
     (existingRecipient) => !normalizedRecipients.find((recipient) => recipient.id === existingRecipient.id),
   );
 
+  const hasAddedRecipients = normalizedRecipients.some(
+    (recipient) => !existingRecipients.some((existingRecipient) => existingRecipient.id === recipient.id),
+  );
+
+  if ((hasAddedRecipients || removedRecipients.length > 0) && hasCompletedRecipient(existingRecipients)) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'Recipients cannot be added or removed after a recipient has completed the document',
+    });
+  }
+
   const linkedRecipients = normalizedRecipients.map((recipient) => {
     const existing = existingRecipients.find((existingRecipient) => existingRecipient.id === recipient.id);
 
-    const canPersistedRecipientBeModified = existing && canRecipientBeModified(existing, envelope.fields);
+    const canPersistedRecipientBeModified =
+      existing && canRecipientBeModified(existing, envelope.fields, Boolean(envelope.correctionStartedAt));
 
     if (
       existing &&
       hasRecipientBeenChanged(existing, recipient) &&
-      !canRecipientBeModified(existing, envelope.fields)
+      !canRecipientBeModified(existing, envelope.fields, Boolean(envelope.correctionStartedAt))
     ) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: 'Cannot modify a recipient who has already interacted with the document',

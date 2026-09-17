@@ -8,7 +8,8 @@ import { EnvelopeType, type FieldType } from '@prisma/client';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapFieldToLegacyField } from '../../utils/fields';
-import { canRecipientFieldsBeModified } from '../../utils/recipients';
+import { canRecipientFieldsBeModified, hasCompletedRecipient } from '../../utils/recipients';
+import { assertEnvelopeCanBeCorrected } from '../envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { assertCanManageTemplate } from '../template/validate-template-access';
 
@@ -68,9 +69,17 @@ export const updateEnvelopeFields = async ({
     userId,
   });
 
+  assertEnvelopeCanBeCorrected(envelope);
+
   if (envelope.completedAt) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
       message: 'Envelope already complete',
+    });
+  }
+
+  if (envelope.type === EnvelopeType.DOCUMENT && hasCompletedRecipient(envelope.recipients)) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'Fields cannot be changed after a recipient has completed the document',
     });
   }
 
@@ -93,7 +102,7 @@ export const updateEnvelopeFields = async ({
     }
 
     // Check whether the recipient associated with the field can be modified.
-    if (!canRecipientFieldsBeModified(recipient, envelope.fields)) {
+    if (!canRecipientFieldsBeModified(recipient, envelope.fields, Boolean(envelope.correctionStartedAt))) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: 'Cannot modify a field where the recipient has already interacted with the document',
       });

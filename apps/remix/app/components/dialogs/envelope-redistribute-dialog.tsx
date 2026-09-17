@@ -24,14 +24,16 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { DocumentStatus, EnvelopeType, SigningStatus } from '@prisma/client';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router';
 import * as z from 'zod';
 
 import { StackAvatar } from '../general/stack-avatar';
 
 export type EnvelopeRedistributeDialogProps = {
-  envelope: Pick<TEnvelope, 'id' | 'userId' | 'teamId' | 'status' | 'type' | 'documentMeta'> & {
+  envelope: Pick<TEnvelope, 'id' | 'userId' | 'teamId' | 'status' | 'type' | 'documentMeta' | 'correctionStartedAt'> & {
     recipients: TEnvelopeRecipientLite[];
   };
+  documentRootPath: string;
   trigger?: React.ReactNode;
 };
 
@@ -43,11 +45,16 @@ export const ZEnvelopeRedistributeFormSchema = z.object({
 
 export type TEnvelopeRedistributeFormSchema = z.infer<typeof ZEnvelopeRedistributeFormSchema>;
 
-export const EnvelopeRedistributeDialog = ({ envelope, trigger }: EnvelopeRedistributeDialogProps) => {
+export const EnvelopeRedistributeDialog = ({
+  envelope,
+  documentRootPath,
+  trigger,
+}: EnvelopeRedistributeDialogProps) => {
   const recipients = envelope.recipients;
 
   const { toast } = useToast();
   const { t } = useLingui();
+  const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -76,7 +83,11 @@ export const EnvelopeRedistributeDialog = ({ envelope, trigger }: EnvelopeRedist
       });
 
       setIsOpen(false);
-    } catch (err) {
+
+      if (envelope.correctionStartedAt) {
+        await navigate(`${documentRootPath}/${envelope.id}`);
+      }
+    } catch (_err) {
       toast({
         title: t`Something went wrong`,
         description: t`This envelope could not be resent at this time. Please try again.`,
@@ -87,10 +98,17 @@ export const EnvelopeRedistributeDialog = ({ envelope, trigger }: EnvelopeRedist
   };
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen && envelope.correctionStartedAt) {
+      form.setValue(
+        'recipients',
+        recipients
+          .filter((recipient) => recipient.signingStatus === SigningStatus.NOT_SIGNED)
+          .map((recipient) => recipient.id),
+      );
+    } else if (!isOpen) {
       form.reset();
     }
-  }, [isOpen]);
+  }, [envelope.correctionStartedAt, isOpen, recipients]);
 
   if (envelope.status !== DocumentStatus.PENDING || envelope.type !== EnvelopeType.DOCUMENT) {
     return null;
@@ -103,11 +121,15 @@ export const EnvelopeRedistributeDialog = ({ envelope, trigger }: EnvelopeRedist
       <DialogContent className="max-w-md" hideClose>
         <DialogHeader>
           <DialogTitle>
-            <Trans>Resend Document</Trans>
+            {envelope.correctionStartedAt ? <Trans>Finish Correction</Trans> : <Trans>Resend Document</Trans>}
           </DialogTitle>
 
           <DialogDescription>
-            <Trans>Send reminders to the following recipients</Trans>
+            {envelope.correctionStartedAt ? (
+              <Trans>Make the corrected document available and notify all outstanding recipients</Trans>
+            ) : (
+              <Trans>Send reminders to the following recipients</Trans>
+            )}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -164,7 +186,7 @@ export const EnvelopeRedistributeDialog = ({ envelope, trigger }: EnvelopeRedist
                 </DialogClose>
 
                 <Button loading={isSubmitting} type="submit">
-                  <Trans>Send reminder</Trans>
+                  {envelope.correctionStartedAt ? <Trans>Finish correction</Trans> : <Trans>Send reminder</Trans>}
                 </Button>
               </DialogFooter>
             </fieldset>

@@ -395,6 +395,7 @@ model Envelope {
   updatedAt   DateTime  @updatedAt
   completedAt DateTime?
   deletedAt   DateTime?
+  correctionStartedAt DateTime?
 
   title   String
   status  DocumentStatus @default(DRAFT)

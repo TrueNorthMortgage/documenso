@@ -22,6 +22,7 @@ export interface EnvelopeRecipientSelectorProps {
   onSelectedRecipientChange: (recipient: TEnvelopeRecipientLite) => void;
   recipients: TEnvelopeRecipientLite[];
   fields: Field[];
+  ignoreInsertedFields?: boolean;
   align?: 'center' | 'end' | 'start';
 }
 
@@ -31,6 +32,7 @@ export const EnvelopeRecipientSelector = ({
   onSelectedRecipientChange,
   recipients,
   fields,
+  ignoreInsertedFields = false,
   align = 'start',
 }: EnvelopeRecipientSelectorProps) => {
   const { i18n } = useLingui();
@@ -66,6 +68,7 @@ export const EnvelopeRecipientSelector = ({
       <PopoverContent className="p-0" align={align}>
         <EnvelopeRecipientSelectorCommand
           fields={fields}
+          ignoreInsertedFields={ignoreInsertedFields}
           selectedRecipient={selectedRecipient}
           onSelectedRecipientChange={(recipient) => {
             onSelectedRecipientChange(recipient);
@@ -84,6 +87,7 @@ interface EnvelopeRecipientSelectorCommandProps {
   onSelectedRecipientChange: (recipient: TEnvelopeRecipientLite) => void;
   recipients: TEnvelopeRecipientLite[];
   fields: Field[];
+  ignoreInsertedFields?: boolean;
   placeholder?: string;
 }
 
@@ -93,6 +97,7 @@ export const EnvelopeRecipientSelectorCommand = ({
   onSelectedRecipientChange,
   recipients,
   fields,
+  ignoreInsertedFields = false,
   placeholder,
 }: EnvelopeRecipientSelectorCommandProps) => {
   const { t, i18n } = useLingui();
@@ -132,9 +137,9 @@ export const EnvelopeRecipientSelectorCommand = ({
       const recipient = recipients.find((r) => r.id === recipientId);
       const recipientFields = fields.filter((f) => f.recipientId === recipientId);
 
-      return !recipient || !canRecipientFieldsBeModified(recipient, recipientFields);
+      return !recipient || !canRecipientFieldsBeModified(recipient, recipientFields, ignoreInsertedFields);
     },
-    [fields, recipients],
+    [fields, recipients, ignoreInsertedFields],
   );
 
   const getRecipientLabel = useCallback(

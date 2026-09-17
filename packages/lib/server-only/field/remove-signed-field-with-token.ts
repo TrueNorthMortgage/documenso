@@ -1,3 +1,4 @@
+import { assertEnvelopeNotCorrecting } from '@documenso/lib/server-only/envelope/assert-envelope-not-correcting';
 import { clearHiddenConditionalFields } from '@documenso/lib/server-only/field/clear-hidden-conditional-fields';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import type { RequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
@@ -57,6 +58,8 @@ export const removeSignedFieldWithToken = async ({
   if (envelope.status !== DocumentStatus.PENDING) {
     throw new Error(`Document ${envelope.id} must be pending`);
   }
+
+  assertEnvelopeNotCorrecting(envelope);
 
   assertRecipientNotExpired(recipient);
 
