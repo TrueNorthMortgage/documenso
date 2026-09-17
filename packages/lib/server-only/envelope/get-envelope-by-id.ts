@@ -5,6 +5,7 @@ import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { unsafeBuildEnvelopeIdQuery } from '../../utils/envelope';
+import { mapRecipientEmailDelivery } from '../recipient/map-recipient-email-delivery';
 import { getTeamById } from '../team/get-team';
 
 export type GetEnvelopeByIdOptions = {
@@ -57,6 +58,12 @@ export const getEnvelopeById = async ({ id, userId, teamId, type }: GetEnvelopeB
         },
       },
       recipients: {
+        include: {
+          emailDeliveries: {
+            orderBy: { attemptedAt: 'desc' },
+            take: 1,
+          },
+        },
         orderBy: {
           id: 'asc',
         },
@@ -92,6 +99,7 @@ export const getEnvelopeById = async ({ id, userId, teamId, type }: GetEnvelopeB
 
   return {
     ...envelope,
+    recipients: envelope.recipients.map(mapRecipientEmailDelivery),
     user: {
       id: envelope.user.id,
       name: envelope.user.name || '',

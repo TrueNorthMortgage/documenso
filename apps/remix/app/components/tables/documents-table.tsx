@@ -10,9 +10,11 @@ import { DataTable } from '@documenso/ui/primitives/data-table';
 import { DataTablePagination } from '@documenso/ui/primitives/data-table-pagination';
 import { Skeleton } from '@documenso/ui/primitives/skeleton';
 import { TableCell } from '@documenso/ui/primitives/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@documenso/ui/primitives/tooltip';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Loader } from 'lucide-react';
+import { EmailDeliveryStatus } from '@prisma/client';
+import { AlertTriangleIcon, Loader } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useMemo, useTransition } from 'react';
 import { Link } from 'react-router';
@@ -212,6 +214,7 @@ type DataTableTitleProps = {
 };
 
 const DataTableTitle = ({ row, teamUrl, teamEmail }: DataTableTitleProps) => {
+  const { _ } = useLingui();
   const { user } = useSession();
 
   const recipient = findRecipientByEmail({
@@ -226,8 +229,13 @@ const DataTableTitle = ({ row, teamUrl, teamEmail }: DataTableTitleProps) => {
 
   const documentsPath = formatDocumentsPath(teamUrl);
   const formatPath = `${documentsPath}/${row.envelopeId}`;
+  const failedDeliveryCount = row.recipients.filter(
+    (recipient) =>
+      recipient.latestEmailDelivery?.status === EmailDeliveryStatus.FAILED ||
+      recipient.latestEmailDelivery?.status === EmailDeliveryStatus.COMPLAINED,
+  ).length;
 
-  return match({
+  const title = match({
     isOwner,
     isRecipient,
     isCurrentTeamDocument,
@@ -253,4 +261,24 @@ const DataTableTitle = ({ row, teamUrl, teamEmail }: DataTableTitleProps) => {
     .otherwise(() => (
       <span className="block max-w-[10rem] truncate font-medium hover:underline md:max-w-[20rem]">{row.title}</span>
     ));
+
+  return (
+    <div className="flex items-center gap-2">
+      {title}
+
+      {failedDeliveryCount > 0 && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <AlertTriangleIcon
+                className="h-4 w-4 shrink-0 text-destructive"
+                aria-label={_(msg`Email delivery failed`)}
+              />
+            </TooltipTrigger>
+            <TooltipContent>{_(msg`Email delivery failed for ${failedDeliveryCount} recipient(s)`)}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+    </div>
+  );
 };

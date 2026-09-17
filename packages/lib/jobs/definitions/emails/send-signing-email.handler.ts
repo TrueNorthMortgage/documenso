@@ -6,6 +6,7 @@ import { msg } from '@lingui/core/macro';
 import {
   DocumentSource,
   DocumentStatus,
+  EmailDeliveryType,
   EnvelopeType,
   OrganisationType,
   RecipientRole,
@@ -17,6 +18,7 @@ import { getI18nInstance } from '../../../client-only/providers/i18n-server';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../../constants/app';
 import { RECIPIENT_ROLE_TO_EMAIL_TYPE, RECIPIENT_ROLES_DESCRIPTION } from '../../../constants/recipient-roles';
 import { getEmailContext } from '../../../server-only/email/get-email-context';
+import { trackRecipientEmailDelivery } from '../../../server-only/email/prepare-recipient-email-delivery';
 import { updateRecipientNextReminder } from '../../../server-only/recipient/update-recipient-next-reminder';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '../../../types/document-audit-logs';
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
@@ -176,16 +178,24 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
         }),
       ]);
 
-      await mailer.sendMail({
-        to: {
-          name: recipient.name,
-          address: recipient.email,
-        },
-        from: senderEmail,
-        replyTo: replyToEmail,
-        subject: renderCustomEmailTemplate(documentMeta?.subject || emailSubject, customEmailTemplate),
-        html,
-        text,
+      await trackRecipientEmailDelivery({
+        envelopeId: envelope.id,
+        recipientId: recipient.id,
+        email: recipient.email,
+        type: EmailDeliveryType.SIGNING_REQUEST,
+        sendEmail: async (headers) =>
+          await mailer.sendMail({
+            to: {
+              name: recipient.name,
+              address: recipient.email,
+            },
+            from: senderEmail,
+            replyTo: replyToEmail,
+            subject: renderCustomEmailTemplate(documentMeta?.subject || emailSubject, customEmailTemplate),
+            html,
+            text,
+            headers,
+          }),
       });
     });
   }

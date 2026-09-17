@@ -410,6 +410,7 @@ model Envelope {
   fieldGroups   FieldGroup[]
   shareLinks    DocumentShareLink[]
   auditLogs     DocumentAuditLog[]
+  emailDeliveries RecipientEmailDelivery[]
 
   // Envelope settings
   authOptions Json? /// [DocumentAuthOptions] @zod.custom.use(ZDocumentAuthOptionsSchema)
@@ -623,32 +624,45 @@ enum RecipientRole {
   ASSISTANT
 }
 
+enum EmailDeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  COMPLAINED
+}
+
+enum EmailDeliveryType {
+  SIGNING_REQUEST
+  REMINDER
+}
+
 /// @zod.import(["import { ZRecipientAuthOptionsSchema } from '@documenso/lib/types/document-auth';"])
 model Recipient {
-  id                   Int           @id @default(autoincrement())
-  envelopeId           String
-  email                String        @db.VarChar(255)
-  name                 String        @default("") @db.VarChar(255)
-  token                String
-  documentDeletedAt    DateTime?
-  expired              DateTime? // deprecated Not in use. To be removed in a future migration.
-  expiresAt            DateTime?
-  expirationNotifiedAt DateTime?
-  sentAt               DateTime?
-  signedAt             DateTime?
-  lastReminderSentAt   DateTime?
-  nextReminderAt       DateTime?
-  authOptions          Json? /// [RecipientAuthOptions] @zod.custom.use(ZRecipientAuthOptionsSchema)
-  signingOrder         Int? /// @zod.number.describe("The order in which the recipient should sign the document. Only works if the document is set to sequential signing.")
-  rejectionReason      String?
-  role                 RecipientRole @default(SIGNER)
-  readStatus           ReadStatus    @default(NOT_OPENED)
-  signingStatus        SigningStatus @default(NOT_SIGNED)
-  sendStatus           SendStatus    @default(NOT_SENT)
-  envelope             Envelope      @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
-  fields               Field[]
-  fieldGroups          FieldGroup[]
-  signatures           Signature[]
+  id                            Int           @id @default(autoincrement())
+  envelopeId                    String
+  email                         String        @db.VarChar(255)
+  name                          String        @default("") @db.VarChar(255)
+  token                         String
+  documentDeletedAt             DateTime?
+  expired                       DateTime? // deprecated Not in use. To be removed in a future migration.
+  expiresAt                     DateTime?
+  expirationNotifiedAt          DateTime?
+  sentAt                        DateTime?
+  signedAt                      DateTime?
+  lastReminderSentAt            DateTime?
+  nextReminderAt                DateTime?
+  authOptions                   Json? /// [RecipientAuthOptions] @zod.custom.use(ZRecipientAuthOptionsSchema)
+  signingOrder                  Int? /// @zod.number.describe("The order in which the recipient should sign the document. Only works if the document is set to sequential signing.")
+  rejectionReason               String?
+  role                          RecipientRole @default(SIGNER)
+  readStatus                    ReadStatus    @default(NOT_OPENED)
+  signingStatus                 SigningStatus @default(NOT_SIGNED)
+  sendStatus                    SendStatus    @default(NOT_SENT)
+  envelope                      Envelope      @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  fields                        Field[]
+  fieldGroups                   FieldGroup[]
+  signatures                    Signature[]
+  emailDeliveries               RecipientEmailDelivery[]
 
   @@index([token])
   @@index([email])
@@ -661,6 +675,33 @@ model Recipient {
   @@index([nextReminderAt])
   @@index([email(ops: raw("gin_trgm_ops"))], map: "Recipient_email_trgm_idx", type: Gin)
   @@index([name(ops: raw("gin_trgm_ops"))], map: "Recipient_name_trgm_idx", type: Gin)
+}
+
+model RecipientEmailDelivery {
+  id                String              @id @default(cuid())
+  email             String              @db.VarChar(255)
+  type              EmailDeliveryType
+  status            EmailDeliveryStatus @default(PENDING)
+  provider          String              @default("postmark")
+  providerMessageId String?
+  attemptedAt       DateTime            @default(now())
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  complainedAt      DateTime?
+  failureType       String?
+  failureReason     String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  envelopeId String
+  envelope   Envelope @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+
+  recipientId Int
+  recipient   Recipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, attemptedAt])
+  @@index([envelopeId])
+  @@index([providerMessageId])
 }
 
 enum FieldType {

@@ -6,6 +6,7 @@ import type { Expression, ExpressionBuilder, SelectQueryBuilder, SqlBool } from 
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import type { FindResultResponse } from '../../types/search-params';
 import { maskRecipientTokensForDocument } from '../../utils/mask-recipient-tokens-for-document';
+import { mapRecipientEmailDelivery } from '../recipient/map-recipient-email-delivery';
 import { getTeamById } from '../team/get-team';
 
 export type FindEnvelopesOptions = {
@@ -258,7 +259,15 @@ export const findEnvelopes = async ({
     orderBy: { [orderByColumn]: orderByDirection },
     include: {
       user: { select: { id: true, name: true, email: true } },
-      recipients: { orderBy: { id: 'asc' } },
+      recipients: {
+        include: {
+          emailDeliveries: {
+            orderBy: { attemptedAt: 'desc' },
+            take: 1,
+          },
+        },
+        orderBy: { id: 'asc' },
+      },
       team: { select: { id: true, url: true } },
     },
   });
@@ -269,7 +278,10 @@ export const findEnvelopes = async ({
 
   const maskedData = data.map((envelope) =>
     maskRecipientTokensForDocument({
-      document: envelope,
+      document: {
+        ...envelope,
+        recipients: envelope.recipients.map(mapRecipientEmailDelivery),
+      },
       user,
       currentTeamRole: team.currentTeamRole,
     }),

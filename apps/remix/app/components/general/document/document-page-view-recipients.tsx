@@ -13,7 +13,7 @@ import { useToast } from '@documenso/ui/primitives/use-toast';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import { DocumentStatus, RecipientRole, SigningStatus } from '@prisma/client';
+import { DocumentStatus, EmailDeliveryStatus, RecipientRole, SigningStatus } from '@prisma/client';
 import { TooltipArrow } from '@radix-ui/react-tooltip';
 import {
   AlertTriangle,
@@ -46,6 +46,11 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
   const canManageSigningLinks = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
 
   const recipients = envelope.recipients;
+  const hasFailedDeliveries = recipients.some(
+    (recipient) =>
+      recipient.latestEmailDelivery?.status === EmailDeliveryStatus.FAILED ||
+      recipient.latestEmailDelivery?.status === EmailDeliveryStatus.COMPLAINED,
+  );
   const [shouldHighlightCopyButtons, setShouldHighlightCopyButtons] = useState(false);
 
   // Check for action=view-tokens query parameter and set highlighting state
@@ -82,6 +87,17 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
         )}
       </div>
 
+      {hasFailedDeliveries && (
+        <div className="flex gap-2 border-destructive/30 border-t bg-destructive/10 px-4 py-3 text-destructive text-sm">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            <Trans>
+              One or more recipient emails need attention. Review the delivery details before resending the envelope.
+            </Trans>
+          </p>
+        </div>
+      )}
+
       <ul className="divide-y border-t text-muted-foreground">
         {recipients.length === 0 && (
           <li className="flex flex-col items-center justify-center py-6 text-sm">
@@ -101,7 +117,67 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
               }
             />
 
-            <div className="flex flex-row items-center">
+            <div className="flex flex-row items-center gap-2">
+              {recipient.latestEmailDelivery?.status === EmailDeliveryStatus.DELIVERED && (
+                <PopoverHover
+                  trigger={
+                    <Badge variant="default">
+                      <MailIcon className="mr-1 h-3 w-3" />
+                      <Trans>Email delivered</Trans>
+                    </Badge>
+                  }
+                >
+                  <p className="max-w-80 text-muted-foreground text-sm">
+                    <Trans>The recipient's mail server accepted the email.</Trans>
+                  </p>
+                </PopoverHover>
+              )}
+
+              {recipient.latestEmailDelivery?.status === EmailDeliveryStatus.FAILED && (
+                <PopoverHover
+                  trigger={
+                    <Badge variant="destructive">
+                      <AlertTriangle className="mr-1 h-3 w-3" />
+                      <Trans>Delivery failed</Trans>
+                    </Badge>
+                  }
+                >
+                  <p className="font-medium text-sm">
+                    <Trans>Email delivery failed</Trans>
+                  </p>
+                  <p className="mt-1 max-w-80 text-muted-foreground text-sm">
+                    {recipient.latestEmailDelivery.failureReason || (
+                      <Trans>The recipient's mail server rejected the email.</Trans>
+                    )}
+                  </p>
+                  <p className="mt-2 text-muted-foreground text-xs">
+                    {i18n.date(
+                      recipient.latestEmailDelivery.failedAt || recipient.latestEmailDelivery.attemptedAt,
+                      DateTime.DATETIME_MED,
+                    )}
+                    {recipient.latestEmailDelivery.failureType ? ` · ${recipient.latestEmailDelivery.failureType}` : ''}
+                  </p>
+                </PopoverHover>
+              )}
+
+              {recipient.latestEmailDelivery?.status === EmailDeliveryStatus.COMPLAINED && (
+                <PopoverHover
+                  trigger={
+                    <Badge variant="destructive">
+                      <AlertTriangle className="mr-1 h-3 w-3" />
+                      <Trans>Marked as spam</Trans>
+                    </Badge>
+                  }
+                >
+                  <p className="font-medium text-sm">
+                    <Trans>The recipient marked this email as spam</Trans>
+                  </p>
+                  <p className="mt-1 max-w-80 text-muted-foreground text-sm">
+                    {recipient.latestEmailDelivery.failureReason}
+                  </p>
+                </PopoverHover>
+              )}
+
               {envelope.status !== DocumentStatus.DRAFT && recipient.signingStatus === SigningStatus.SIGNED && (
                 <Badge variant="default">
                   {match(recipient.role)
@@ -158,6 +234,8 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
 
               {envelope.status !== DocumentStatus.DRAFT &&
                 recipient.signingStatus === SigningStatus.NOT_SIGNED &&
+                recipient.latestEmailDelivery?.status !== EmailDeliveryStatus.FAILED &&
+                recipient.latestEmailDelivery?.status !== EmailDeliveryStatus.COMPLAINED &&
                 !isRecipientExpired(recipient) &&
                 (recipient.expiresAt ? (
                   <PopoverHover

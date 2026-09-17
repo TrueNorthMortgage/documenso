@@ -10,6 +10,7 @@ import { prisma } from '@documenso/prisma';
 import { msg } from '@lingui/core/macro';
 import {
   DocumentStatus,
+  EmailDeliveryType,
   EnvelopeType,
   OrganisationType,
   RecipientRole,
@@ -29,6 +30,7 @@ import { isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { getTeamDisplayName } from '../../utils/teams';
 import { getEmailContext } from '../email/get-email-context';
+import { trackRecipientEmailDelivery } from '../email/prepare-recipient-email-delivery';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
 
@@ -205,20 +207,33 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
         }),
       ]);
 
-      // Send email outside any transaction to avoid holding a connection
-      // open during network I/O.
-      await mailer.sendMail({
-        to: {
-          address: email,
-          name,
-        },
-        from: senderEmail,
-        replyTo: replyToEmail,
-        subject: envelope.documentMeta.subject
-          ? renderCustomEmailTemplate(i18n._(msg`Reminder: ${envelope.documentMeta.subject}`), customEmailTemplate)
-          : emailSubject,
-        html,
-        text,
+      await trackRecipientEmailDelivery({
+        envelopeId: envelope.id,
+        recipientId: recipient.id,
+        email: recipient.email,
+        type: EmailDeliveryType.SIGNING_REQUEST,
+        // Send email outside any transaction to avoid holding a connection
+        // open during network I/O.
+        sendEmail: async (headers) =>
+          await mailer.sendMail({
+            to: {
+              address: email,
+              name,
+            },
+            from: senderEmail,
+            replyTo: replyToEmail,
+            subject: envelope.documentMeta.subject
+              ? renderCustomEmailTemplate(i18n._(msg`Reminder: ${envelope.documentMeta.subject}`), customEmailTemplate)
+              : emailSubject,
+            html,
+            text,
+            headers,
+          }),
+      });
+
+      await prisma.recipient.update({
+        where: { id: recipient.id },
+        data: { sentAt: new Date() },
       });
 
       await prisma.documentAuditLog.create({

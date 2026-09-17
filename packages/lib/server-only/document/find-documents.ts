@@ -17,6 +17,7 @@ import { match } from 'ts-pattern';
 import type { FindResultResponse } from '../../types/search-params';
 import { normalizeEmail } from '../../utils/email';
 import { maskRecipientTokensForDocument } from '../../utils/mask-recipient-tokens-for-document';
+import { mapRecipientEmailDelivery } from '../recipient/map-recipient-email-delivery';
 import { getTeamById } from '../team/get-team';
 
 export type PeriodSelectorValue = '' | '7d' | '14d' | '30d';
@@ -491,7 +492,14 @@ export const findDocuments = async ({
     orderBy: { [orderByColumn]: orderByDirection },
     include: {
       user: { select: { id: true, name: true, email: true } },
-      recipients: true,
+      recipients: {
+        include: {
+          emailDeliveries: {
+            orderBy: { attemptedAt: 'desc' },
+            take: 1,
+          },
+        },
+      },
       team: { select: { id: true, url: true } },
       envelopeItems: {
         select: { id: true, envelopeId: true, title: true, order: true },
@@ -505,7 +513,10 @@ export const findDocuments = async ({
 
   const maskedData = data.map((document) =>
     maskRecipientTokensForDocument({
-      document,
+      document: {
+        ...document,
+        recipients: document.recipients.map(mapRecipientEmailDelivery),
+      },
       user,
       currentTeamRole: team?.currentTeamRole,
     }),
@@ -517,5 +528,5 @@ export const findDocuments = async ({
     currentPage: Math.max(page, 1),
     perPage,
     totalPages: Math.ceil(totalCount / perPage),
-  } satisfies FindResultResponse<typeof data>;
+  } satisfies FindResultResponse<typeof maskedData>;
 };

@@ -1,10 +1,27 @@
 import { RecipientSchema } from '@documenso/prisma/generated/zod/modelSchema/RecipientSchema';
 import { TeamSchema } from '@documenso/prisma/generated/zod/modelSchema/TeamSchema';
 import { UserSchema } from '@documenso/prisma/generated/zod/modelSchema/UserSchema';
+import { EmailDeliveryStatus, EmailDeliveryType } from '@prisma/client';
 import { z } from 'zod';
 
 import { zEmail } from '../utils/zod';
 import { ZFieldSchema } from './field';
+
+export const ZRecipientEmailDeliverySchema = z.object({
+  id: z.string(),
+  status: z.nativeEnum(EmailDeliveryStatus),
+  type: z.nativeEnum(EmailDeliveryType),
+  attemptedAt: z.coerce.date(),
+  deliveredAt: z.coerce.date().nullable(),
+  failedAt: z.coerce.date().nullable(),
+  complainedAt: z.coerce.date().nullable(),
+  failureType: z.string().nullable(),
+  failureReason: z.string().nullable(),
+});
+
+const ZLatestRecipientEmailDeliverySchema = z.object({
+  latestEmailDelivery: ZRecipientEmailDeliverySchema.nullish(),
+});
 
 /**
  * The full recipient response schema.
@@ -30,6 +47,7 @@ export const ZRecipientSchema = RecipientSchema.pick({
   signingOrder: true,
   rejectionReason: true,
 }).extend({
+  ...ZLatestRecipientEmailDeliverySchema.shape,
   fields: ZFieldSchema.array(),
 
   // Backwards compatibility.
@@ -59,6 +77,7 @@ export const ZRecipientLiteSchema = RecipientSchema.pick({
   signingOrder: true,
   rejectionReason: true,
 }).extend({
+  ...ZLatestRecipientEmailDeliverySchema.shape,
   // Backwards compatibility.
   documentId: z.number().nullish(),
   templateId: z.number().nullish(),
@@ -86,6 +105,7 @@ export const ZRecipientManySchema = RecipientSchema.pick({
   signingOrder: true,
   rejectionReason: true,
 }).extend({
+  ...ZLatestRecipientEmailDeliverySchema.shape,
   user: UserSchema.pick({
     id: true,
     name: true,
@@ -123,5 +143,6 @@ export type TRecipientMany = z.infer<typeof ZRecipientManySchema>;
 export type TEnvelopeRecipientSchema = z.infer<typeof ZEnvelopeRecipientSchema>;
 export type TEnvelopeRecipientLite = z.infer<typeof ZEnvelopeRecipientLiteSchema>;
 export type TEnvelopeRecipientMany = z.infer<typeof ZEnvelopeRecipientManySchema>;
+export type TRecipientEmailDelivery = z.infer<typeof ZRecipientEmailDeliverySchema>;
 
 export const ZRecipientEmailSchema = z.union([z.literal(''), zEmail('Invalid email').trim().toLowerCase().max(254)]);

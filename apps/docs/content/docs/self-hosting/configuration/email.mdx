@@ -125,7 +125,23 @@ NEXT_PRIVATE_SMTP_USERNAME="your-postmark-server-api-token"
 NEXT_PRIVATE_SMTP_PASSWORD="your-postmark-server-api-token"
 NEXT_PRIVATE_SMTP_FROM_ADDRESS="noreply@yourdomain.com"
 NEXT_PRIVATE_SMTP_FROM_NAME="Documenso"
+NEXT_PRIVATE_POSTMARK_WEBHOOK_USERNAME="your-webhook-username"
+NEXT_PRIVATE_POSTMARK_WEBHOOK_PASSWORD="your-webhook-password"
 ```
+
+To show failed deliveries on envelopes, create a webhook for your Postmark transactional message stream:
+
+1. Set the webhook URL to `https://your-documenso-domain.com/api/postmark/webhook`.
+2. Enable the **Delivery**, **Bounce**, and **Spam complaint** triggers. Postmark uses bounce events for hard bounces,
+   soft bounces, blocked messages, transient failures, DNS errors, and other delivery failures.
+3. Configure HTTP Basic Authentication with the username and password from the environment variables above.
+4. Enable **SMTP API Error webhooks** in the Postmark server settings so messages rejected before delivery, such as
+   sends to an already-suppressed address, are included in bounce webhooks.
+
+Documenso correlates Postmark events with the exact signing request or reminder using metadata added to each email.
+Delivery tracking is separate from Documenso's **Opened** status, which records actual envelope access. A corrected
+address or a new send attempt becomes the recipient's current delivery state without overwriting earlier attempts.
+Postmark Open and Link click events are ignored because Documenso already records actual envelope access.
 
 ### SMTP with API Key (smtp-api)
 

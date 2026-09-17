@@ -5,6 +5,7 @@ import { msg } from '@lingui/core/macro';
 import {
   DocumentDistributionMethod,
   DocumentStatus,
+  EmailDeliveryType,
   OrganisationType,
   RecipientRole,
   SendStatus,
@@ -17,6 +18,7 @@ import { getI18nInstance } from '../../../client-only/providers/i18n-server';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../../constants/app';
 import { RECIPIENT_ROLES_DESCRIPTION } from '../../../constants/recipient-roles';
 import { getEmailContext } from '../../../server-only/email/get-email-context';
+import { trackRecipientEmailDelivery } from '../../../server-only/email/prepare-recipient-email-delivery';
 import { updateRecipientNextReminder } from '../../../server-only/recipient/update-recipient-next-reminder';
 import { triggerWebhook } from '../../../server-only/webhooks/trigger/trigger-webhook';
 import { DOCUMENT_AUDIT_LOG_TYPE, DOCUMENT_EMAIL_TYPE } from '../../../types/document-audit-logs';
@@ -165,16 +167,24 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
     }),
   ]);
 
-  await mailer.sendMail({
-    to: {
-      name: recipient.name,
-      address: recipient.email,
-    },
-    from: senderEmail,
-    replyTo: replyToEmail,
-    subject: emailSubject,
-    html,
-    text,
+  await trackRecipientEmailDelivery({
+    envelopeId: envelope.id,
+    recipientId: recipient.id,
+    email: recipient.email,
+    type: EmailDeliveryType.REMINDER,
+    sendEmail: async (headers) =>
+      await mailer.sendMail({
+        to: {
+          name: recipient.name,
+          address: recipient.email,
+        },
+        from: senderEmail,
+        replyTo: replyToEmail,
+        subject: emailSubject,
+        html,
+        text,
+        headers,
+      }),
   });
 
   await prisma.documentAuditLog.create({
