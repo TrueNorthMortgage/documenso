@@ -1,6 +1,7 @@
 import type { EnvelopeEditorStep } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { mapSecondaryIdToTemplateId } from '@documenso/lib/utils/envelope';
+import { hasCompletedRecipient } from '@documenso/lib/utils/recipients';
 import { cn } from '@documenso/ui/lib/utils';
 import { Button } from '@documenso/ui/primitives/button';
 import { Separator } from '@documenso/ui/primitives/separator';
@@ -104,12 +105,13 @@ export const EnvelopeEditor = () => {
 
   const envelopeEditorSteps = useMemo(() => {
     const steps: EnvelopeEditorStepData[] = [];
+    const isFieldStructureLocked = isDocument && hasCompletedRecipient(envelope.recipients);
 
     if (allowUploadAndRecipientStep) {
       steps.push(UPLOAD_STEP);
     }
 
-    if (allowAddFieldsStep) {
+    if (allowAddFieldsStep && !isFieldStructureLocked) {
       steps.push(ADD_FIELDS_STEP);
     }
 
@@ -121,7 +123,7 @@ export const EnvelopeEditor = () => {
       ...step,
       order: index + 1,
     }));
-  }, [editorConfig]);
+  }, [allowAddFieldsStep, allowPreviewStep, allowUploadAndRecipientStep, envelope.recipients, isDocument]);
 
   const searchParamsStep = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -364,13 +366,23 @@ export const EnvelopeEditor = () => {
 
                 <EnvelopeRedistributeDialog
                   envelope={envelope}
+                  documentRootPath={relativePath.documentRootPath}
                   trigger={
-                    <Button variant="ghost" size="sm" className="w-full justify-start" title={t(msg`Resend Envelope`)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start"
+                      title={envelope.correctionStartedAt ? t(msg`Finish Correction`) : t(msg`Resend Envelope`)}
+                    >
                       <SendIcon className="h-4 w-4" />
 
                       {!minimizeLeftSidebar && (
                         <span className="ml-2">
-                          <Trans>Resend Document</Trans>
+                          {envelope.correctionStartedAt ? (
+                            <Trans>Finish Correction</Trans>
+                          ) : (
+                            <Trans>Resend Document</Trans>
+                          )}
                         </span>
                       )}
                     </Button>

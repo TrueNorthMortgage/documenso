@@ -9,7 +9,8 @@ import { EnvelopeType, RecipientRole, SendStatus, SigningStatus } from '@prisma/
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
-import { mapRecipientToLegacyRecipient } from '../../utils/recipients';
+import { hasCompletedRecipient, mapRecipientToLegacyRecipient } from '../../utils/recipients';
+import { assertEnvelopeCanBeCorrected } from '../envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { assertCanManageTemplate } from '../template/validate-template-access';
 
@@ -71,9 +72,17 @@ export const createEnvelopeRecipients = async ({
     userId,
   });
 
+  assertEnvelopeCanBeCorrected(envelope);
+
   if (envelope.completedAt) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
       message: 'Envelope already complete',
+    });
+  }
+
+  if (envelope.type === EnvelopeType.DOCUMENT && hasCompletedRecipient(envelope.recipients)) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'Recipients cannot be added after a recipient has completed the document',
     });
   }
 

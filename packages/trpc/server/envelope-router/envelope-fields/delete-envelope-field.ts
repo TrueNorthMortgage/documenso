@@ -1,9 +1,10 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
+import { assertEnvelopeCanBeCorrected } from '@documenso/lib/server-only/envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '@documenso/lib/server-only/envelope/get-envelope-by-id';
 import { assertCanManageTemplate } from '@documenso/lib/server-only/template/validate-template-access';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
-import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
+import { canRecipientFieldsBeModified, hasCompletedRecipient } from '@documenso/lib/utils/recipients';
 import { prisma } from '@documenso/prisma';
 import { EnvelopeType } from '@prisma/client';
 
@@ -83,14 +84,28 @@ export const deleteEnvelopeFieldRoute = authenticatedProcedure
       userId: user.id,
     });
 
+    assertEnvelopeCanBeCorrected(envelope);
+
     if (envelope.completedAt) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: 'Envelope already complete',
       });
     }
 
+    if (envelope.type === EnvelopeType.DOCUMENT && hasCompletedRecipient(envelope.recipients)) {
+      throw new AppError(AppErrorCode.INVALID_REQUEST, {
+        message: 'Fields cannot be deleted after a recipient has completed the document',
+      });
+    }
+
     // Check whether the recipient associated with the field can have new fields created.
-    if (!canRecipientFieldsBeModified(recipientWithFields, recipientWithFields.fields)) {
+    if (
+      !canRecipientFieldsBeModified(
+        recipientWithFields,
+        recipientWithFields.fields,
+        Boolean(envelope.correctionStartedAt),
+      )
+    ) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: 'Recipient has already interacted with the document.',
       });

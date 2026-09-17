@@ -11,7 +11,8 @@ import { EnvelopeType } from '@prisma/client';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapFieldToLegacyField } from '../../utils/fields';
-import { canRecipientFieldsBeModified } from '../../utils/recipients';
+import { canRecipientFieldsBeModified, hasCompletedRecipient } from '../../utils/recipients';
+import { assertEnvelopeCanBeCorrected } from '../envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { type BoundingBox, whiteoutRegions } from '../pdf/auto-place-fields';
 import { assertCanManageTemplate } from '../template/validate-template-access';
@@ -101,9 +102,17 @@ export const createEnvelopeFields = async ({
     userId,
   });
 
+  assertEnvelopeCanBeCorrected(envelope);
+
   if (envelope.type === EnvelopeType.DOCUMENT && envelope.completedAt) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
       message: 'Envelope already complete',
+    });
+  }
+
+  if (envelope.type === EnvelopeType.DOCUMENT && hasCompletedRecipient(envelope.recipients)) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'Fields cannot be added after a recipient has completed the document',
     });
   }
 
@@ -162,7 +171,7 @@ export const createEnvelopeFields = async ({
     }
 
     // Check whether the recipient associated with the field can have new fields created.
-    if (!canRecipientFieldsBeModified(recipient, envelope.fields)) {
+    if (!canRecipientFieldsBeModified(recipient, envelope.fields, Boolean(envelope.correctionStartedAt))) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: 'Recipient type cannot have fields, or they have already interacted with the document.',
       });

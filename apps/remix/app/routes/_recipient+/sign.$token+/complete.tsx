@@ -128,10 +128,10 @@ export default function CompletedSigningPage({ loaderData }: Route.ComponentProp
     {
       refetchInterval: 3000,
       initialData: match(document?.status)
-        .with(DocumentStatus.COMPLETED, () => ({ status: 'COMPLETED' }) as const)
-        .with(DocumentStatus.REJECTED, () => ({ status: 'REJECTED' }) as const)
-        .with(DocumentStatus.PENDING, () => ({ status: 'PENDING' }) as const)
-        .otherwise(() => ({ status: 'PENDING' }) as const),
+        .with(DocumentStatus.COMPLETED, () => ({ status: 'COMPLETED', isCorrecting: false }) as const)
+        .with(DocumentStatus.REJECTED, () => ({ status: 'REJECTED', isCorrecting: false }) as const)
+        .with(DocumentStatus.PENDING, () => ({ status: 'PENDING', isCorrecting: false }) as const)
+        .otherwise(() => ({ status: 'PENDING', isCorrecting: false }) as const),
     },
   );
 

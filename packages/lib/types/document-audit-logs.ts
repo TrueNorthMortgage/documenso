@@ -29,6 +29,8 @@ export const ZDocumentAuditLogTypeSchema = z.enum([
 
   // Document events.
   'DOCUMENT_COMPLETED', // When the document is sealed and fully completed.
+  'DOCUMENT_CORRECTION_COMPLETED', // When the owner finishes correcting a pending document.
+  'DOCUMENT_CORRECTION_STARTED', // When the owner starts correcting a pending document.
   'DOCUMENT_CREATED', // When the document is created.
   'DOCUMENT_DELETED', // When the document is soft deleted.
   'DOCUMENT_FIELDS_AUTO_INSERTED', // When a field is auto inserted during send due to default values (radio/dropdown/checkbox).
@@ -596,6 +598,22 @@ export const ZDocumentAuditLogEventDocumentSentSchema = z.object({
 });
 
 /**
+ * Event: Document correction started.
+ */
+export const ZDocumentAuditLogEventDocumentCorrectionStartedSchema = z.object({
+  type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_STARTED),
+  data: z.object({}),
+});
+
+/**
+ * Event: Document correction completed.
+ */
+export const ZDocumentAuditLogEventDocumentCorrectionCompletedSchema = z.object({
+  type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_COMPLETED),
+  data: z.object({}),
+});
+
+/**
  * Event: Document title updated.
  */
 export const ZDocumentAuditLogEventDocumentTitleUpdatedSchema = z.object({
@@ -741,6 +759,8 @@ export const ZDocumentAuditLogSchema = ZDocumentAuditLogBaseSchema.and(
     ZDocumentAuditLogEventEnvelopeItemPdfReplacedSchema,
     ZDocumentAuditLogEventEmailSentSchema,
     ZDocumentAuditLogEventDocumentCompletedSchema,
+    ZDocumentAuditLogEventDocumentCorrectionCompletedSchema,
+    ZDocumentAuditLogEventDocumentCorrectionStartedSchema,
     ZDocumentAuditLogEventDocumentCreatedSchema,
     ZDocumentAuditLogEventDocumentDeletedSchema,
     ZDocumentAuditLogEventDocumentMovedToTeamSchema,

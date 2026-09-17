@@ -115,8 +115,8 @@ export const EnvelopeEditorFieldDragDrop = ({
       return false;
     }
 
-    return !canRecipientFieldsBeModified(selectedSigner, fields);
-  }, [selectedRecipientId, envelope.recipients, envelope.fields]);
+    return !canRecipientFieldsBeModified(selectedSigner, fields, Boolean(envelope.correctionStartedAt));
+  }, [selectedRecipientId, envelope.recipients, envelope.fields, envelope.correctionStartedAt]);
 
   const [isFieldWithinBounds, setIsFieldWithinBounds] = useState(false);
   const [coords, setCoords] = useState({

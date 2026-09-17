@@ -239,7 +239,7 @@ export type EnvelopeItemPermissions = {
 };
 
 export const getEnvelopeItemPermissions = (
-  envelope: Pick<Envelope, 'completedAt' | 'deletedAt' | 'type' | 'status'>,
+  envelope: Pick<Envelope, 'completedAt' | 'correctionStartedAt' | 'deletedAt' | 'type' | 'status'>,
   recipients: Pick<Recipient, 'role' | 'signingStatus' | 'sendStatus'>[],
 ): EnvelopeItemPermissions => {
   // Always reject completed/rejected/deleted envelopes.
@@ -273,6 +273,10 @@ export const getEnvelopeItemPermissions = (
         recipient.sendStatus === SendStatus.SENT),
   );
 
+  const hasCompletedRecipient = recipients.some(
+    (recipient) => recipient.role !== RecipientRole.CC && recipient.signingStatus === SigningStatus.SIGNED,
+  );
+
   return match(envelope.status)
     .with(DocumentStatus.DRAFT, () => ({
       canTitleBeChanged: true,
@@ -281,8 +285,8 @@ export const getEnvelopeItemPermissions = (
     }))
     .with(DocumentStatus.PENDING, () => ({
       canTitleBeChanged: true,
-      canFileBeChanged: false,
-      canOrderBeChanged: !hasActiveRecipients, // Only allow order changes if no active recipients.
+      canFileBeChanged: Boolean(envelope.correctionStartedAt) && !hasCompletedRecipient,
+      canOrderBeChanged: (Boolean(envelope.correctionStartedAt) && !hasCompletedRecipient) || !hasActiveRecipients,
     }))
     .exhaustive();
 };

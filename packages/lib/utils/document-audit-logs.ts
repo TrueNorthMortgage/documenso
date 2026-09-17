@@ -465,6 +465,16 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
       you: msg`You sent the document`,
       user: msg`${user} sent the document`,
     }))
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_STARTED }, () => ({
+      anonymous: msg`Document correction started`,
+      you: msg`You started correcting the document`,
+      user: msg`${user} started correcting the document`,
+    }))
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_COMPLETED }, () => ({
+      anonymous: msg`Document correction completed`,
+      you: msg`You finished correcting the document`,
+      user: msg`${user} finished correcting the document`,
+    }))
     .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_MOVED_TO_TEAM }, () => ({
       anonymous: msg({
         message: `Document moved to team`,

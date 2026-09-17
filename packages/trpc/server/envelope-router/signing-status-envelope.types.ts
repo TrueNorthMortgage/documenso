@@ -8,6 +8,7 @@ export const ZSigningStatusEnvelopeRequestSchema = z.object({
 
 export const ZSigningStatusEnvelopeResponseSchema = z.object({
   status: EnvelopeSigningStatus.describe('The current signing status of the envelope'),
+  isCorrecting: z.boolean().describe('Whether the envelope owner is currently correcting the envelope'),
 });
 
 export type TSigningStatusEnvelopeRequest = z.infer<typeof ZSigningStatusEnvelopeRequestSchema>;

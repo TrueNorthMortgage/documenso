@@ -32,6 +32,7 @@ export const ZEnvelopeForSigningResponse = z.object({
     completedAt: true,
     updatedAt: true,
     deletedAt: true,
+    correctionStartedAt: true,
     title: true,
     authOptions: true,
     userId: true,

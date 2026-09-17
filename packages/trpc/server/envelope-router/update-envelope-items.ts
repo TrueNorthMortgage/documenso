@@ -1,4 +1,5 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
+import { assertEnvelopeCanBeCorrected } from '@documenso/lib/server-only/envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '@documenso/lib/server-only/envelope/get-envelope-by-id';
 import { UNSAFE_updateEnvelopeItems } from '@documenso/lib/server-only/envelope-item/update-envelope-items';
 import { assertCanManageTemplate } from '@documenso/lib/server-only/template/validate-template-access';
@@ -56,6 +57,8 @@ export const updateEnvelopeItemsRoute = authenticatedProcedure
       currentTeamRole: team.currentTeamRole,
       userId: user.id,
     });
+
+    assertEnvelopeCanBeCorrected(envelope);
 
     if (data.length === 0) {
       throw new AppError(AppErrorCode.INVALID_BODY, {

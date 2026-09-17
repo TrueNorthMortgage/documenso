@@ -38,6 +38,7 @@ export const LegacyDocumentSchema = z.object({
   updatedAt: z.coerce.date(),
   completedAt: z.coerce.date().nullable(),
   deletedAt: z.coerce.date().nullable(),
+  correctionStartedAt: z.coerce.date().nullable(),
   templateId: z.number().nullable(),
   useLegacyFieldInsertion: z.boolean(),
   folderId: z.string().nullable(),

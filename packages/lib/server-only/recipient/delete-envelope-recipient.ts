@@ -12,10 +12,11 @@ import { NEXT_PUBLIC_WEBAPP_URL } from '../../constants/app';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { extractDerivedDocumentEmailSettings } from '../../types/document-email';
 import { createDocumentAuditLogData } from '../../utils/document-audit-logs';
-import { canRecipientBeModified, isRecipientEmailValidForSending } from '../../utils/recipients';
+import { canRecipientBeModified, hasCompletedRecipient, isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { buildTeamWhereQuery, getTeamDisplayName } from '../../utils/teams';
 import { getEmailContext } from '../email/get-email-context';
+import { assertEnvelopeCanBeCorrected } from '../envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { assertCanManageTemplate } from '../template/validate-template-access';
 
@@ -45,9 +46,6 @@ export const deleteEnvelopeRecipient = async ({
       documentMeta: true,
       team: true,
       recipients: {
-        where: {
-          id: recipientId,
-        },
         include: {
           fields: true,
         },
@@ -84,7 +82,7 @@ export const deleteEnvelopeRecipient = async ({
     });
   }
 
-  const recipientToDelete = envelope.recipients[0];
+  const recipientToDelete = envelope.recipients.find((recipient) => recipient.id === recipientId);
 
   if (!recipientToDelete || recipientToDelete.id !== recipientId) {
     throw new AppError(AppErrorCode.NOT_FOUND, {
@@ -92,7 +90,13 @@ export const deleteEnvelopeRecipient = async ({
     });
   }
 
-  if (!canRecipientBeModified(recipientToDelete, recipientToDelete.fields)) {
+  if (envelope.type === EnvelopeType.DOCUMENT && hasCompletedRecipient(envelope.recipients)) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'Recipients cannot be deleted after a recipient has completed the document',
+    });
+  }
+
+  if (!canRecipientBeModified(recipientToDelete, recipientToDelete.fields, Boolean(envelope.correctionStartedAt))) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
       message: 'Recipient has already interacted with the document.',
     });
@@ -114,6 +118,8 @@ export const deleteEnvelopeRecipient = async ({
     currentTeamRole: team.currentTeamRole,
     userId,
   });
+
+  assertEnvelopeCanBeCorrected(envelope);
 
   const deletedRecipient = await prisma.$transaction(async (tx) => {
     if (envelope.type === EnvelopeType.DOCUMENT) {

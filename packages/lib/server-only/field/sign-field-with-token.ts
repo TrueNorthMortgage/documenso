@@ -30,6 +30,7 @@ import type { RequestMetadata } from '../../universal/extract-request-metadata';
 import { createDocumentAuditLogData } from '../../utils/document-audit-logs';
 import { assertRecipientNotExpired } from '../../utils/recipients';
 import { validateFieldAuth } from '../document/validate-field-auth';
+import { assertEnvelopeNotCorrecting } from '../envelope/assert-envelope-not-correcting';
 
 export type SignFieldWithTokenOptions = {
   token: string;
@@ -115,6 +116,8 @@ export const signFieldWithToken = async ({
   if (envelope.status !== DocumentStatus.PENDING) {
     throw new Error(`Document ${envelope.id} must be pending for signing`);
   }
+
+  assertEnvelopeNotCorrecting(envelope);
 
   assertRecipientNotExpired(recipient);
 

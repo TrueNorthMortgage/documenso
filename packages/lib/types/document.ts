@@ -29,6 +29,7 @@ export const ZDocumentSchema = LegacyDocumentSchema.pick({
   updatedAt: true,
   completedAt: true,
   deletedAt: true,
+  correctionStartedAt: true,
   teamId: true,
   folderId: true,
 }).extend({
@@ -113,6 +114,7 @@ export const ZDocumentLiteSchema = LegacyDocumentSchema.pick({
   updatedAt: true,
   completedAt: true,
   deletedAt: true,
+  correctionStartedAt: true,
   teamId: true,
   folderId: true,
   useLegacyFieldInsertion: true,
@@ -146,6 +148,7 @@ export const ZDocumentManySchema = LegacyDocumentSchema.pick({
   updatedAt: true,
   completedAt: true,
   deletedAt: true,
+  correctionStartedAt: true,
   teamId: true,
   folderId: true,
   useLegacyFieldInsertion: true,

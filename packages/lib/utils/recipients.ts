@@ -45,6 +45,7 @@ export const formatSigningLink = (token: string) => `${NEXT_PUBLIC_WEBAPP_URL()}
 export const canRecipientBeModified = (
   recipient: TRecipientLite,
   fields: Pick<Field, 'recipientId' | 'inserted'>[],
+  ignoreInsertedFields = false,
 ) => {
   if (!recipient) {
     return false;
@@ -61,7 +62,7 @@ export const canRecipientBeModified = (
   }
 
   // Deny if the recipient has inserted any fields.
-  if (fields.some((field) => field.recipientId === recipient.id && field.inserted)) {
+  if (!ignoreInsertedFields && fields.some((field) => field.recipientId === recipient.id && field.inserted)) {
     return false;
   }
 
@@ -78,13 +79,23 @@ export const canRecipientBeModified = (
 export const canRecipientFieldsBeModified = (
   recipient: TRecipientLite,
   fields: Pick<Field, 'recipientId' | 'inserted'>[],
+  ignoreInsertedFields = false,
 ) => {
-  if (!canRecipientBeModified(recipient, fields)) {
+  if (!canRecipientBeModified(recipient, fields, ignoreInsertedFields)) {
     return false;
   }
 
   return recipient.role !== RecipientRole.VIEWER && recipient.role !== RecipientRole.CC;
 };
+
+/**
+ * Whether a non-CC recipient has completed their action on the envelope.
+ * Once true, the envelope's document and field structure must remain immutable.
+ */
+export const hasCompletedRecipient = (recipients: Pick<TRecipientLite, 'role' | 'signingStatus'>[]) =>
+  recipients.some(
+    (recipient) => recipient.role !== RecipientRole.CC && recipient.signingStatus === SigningStatus.SIGNED,
+  );
 
 export const mapRecipientToLegacyRecipient = (
   recipient: TRecipientLite,

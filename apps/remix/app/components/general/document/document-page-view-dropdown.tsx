@@ -1,6 +1,5 @@
 import { useSession } from '@documenso/lib/client-only/providers/session';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
-import { isDocumentCompleted } from '@documenso/lib/utils/document';
 import { isSameEmail } from '@documenso/lib/utils/email';
 import { getEnvelopeItemPermissions, mapSecondaryIdToDocumentId } from '@documenso/lib/utils/envelope';
 import { canExecuteTeamAction, formatDocumentsPath } from '@documenso/lib/utils/teams';
@@ -13,12 +12,23 @@ import {
   DropdownMenuTrigger,
 } from '@documenso/ui/primitives/dropdown-menu';
 import { Trans } from '@lingui/react/macro';
-import { DocumentStatus, EnvelopeType } from '@prisma/client';
-import { Copy, Download, Edit, FileOutputIcon, MoreHorizontal, Pencil, ScrollTextIcon, Trash2 } from 'lucide-react';
+import { DocumentStatus, EnvelopeType, RecipientRole, SigningStatus } from '@prisma/client';
+import {
+  Copy,
+  Download,
+  Edit,
+  FileOutputIcon,
+  FilePenLineIcon,
+  MoreHorizontal,
+  Pencil,
+  ScrollTextIcon,
+  Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { DocumentResendDialog } from '~/components/dialogs/document-resend-dialog';
+import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dialog';
 import { EnvelopeDeleteDialog } from '~/components/dialogs/envelope-delete-dialog';
 import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-dialog';
 import { EnvelopeDuplicateDialog } from '~/components/dialogs/envelope-duplicate-dialog';
@@ -48,7 +58,6 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
   const isDraft = envelope.status === DocumentStatus.DRAFT;
   const isPending = envelope.status === DocumentStatus.PENDING;
   const isDeleted = envelope.deletedAt !== null;
-  const isComplete = isDocumentCompleted(envelope);
   const isCurrentTeamDocument = team && envelope.teamId === team.id;
   const canManageDocument = Boolean(isOwner || isCurrentTeamDocument);
   const canManageSigningLinks = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
@@ -58,6 +67,9 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
   const documentsPath = formatDocumentsPath(team.url);
 
   const nonSignedRecipients = envelope.recipients.filter((item) => item.signingStatus !== 'SIGNED');
+  const hasCompletedRecipients = envelope.recipients.some(
+    (item) => item.role !== RecipientRole.CC && item.signingStatus === SigningStatus.SIGNED,
+  );
 
   return (
     <DropdownMenu>
@@ -70,7 +82,7 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
           <Trans>Action</Trans>
         </DropdownMenuLabel>
 
-        {(isOwner || isCurrentTeamDocument) && !isComplete && (
+        {(isOwner || isCurrentTeamDocument) && isDraft && (
           <DropdownMenuItem asChild>
             <Link to={`${documentsPath}/${envelope.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
@@ -78,6 +90,38 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
             </Link>
           </DropdownMenuItem>
         )}
+
+        {(isOwner || isCurrentTeamDocument) &&
+          isPending &&
+          (envelope.internalVersion === 1 ? (
+            <DropdownMenuItem asChild>
+              <Link to={`${documentsPath}/${envelope.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                <Trans>Edit</Trans>
+              </Link>
+            </DropdownMenuItem>
+          ) : envelope.correctionStartedAt ? (
+            <DropdownMenuItem asChild>
+              <Link to={`${documentsPath}/${envelope.id}/edit`}>
+                <FilePenLineIcon className="mr-2 h-4 w-4" />
+                <Trans>Continue correcting</Trans>
+              </Link>
+            </DropdownMenuItem>
+          ) : (
+            <EnvelopeCorrectDialog
+              envelopeId={envelope.id}
+              documentRootPath={documentsPath}
+              hasCompletedRecipients={hasCompletedRecipients}
+              trigger={
+                <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
+                  <div>
+                    <FilePenLineIcon className="mr-2 h-4 w-4" />
+                    <Trans>Correct</Trans>
+                  </div>
+                </DropdownMenuItem>
+              }
+            />
+          ))}
 
         {canManageDocument && canTitleBeChanged && (
           <DropdownMenuItem onClick={() => setRenameDialogOpen(true)}>

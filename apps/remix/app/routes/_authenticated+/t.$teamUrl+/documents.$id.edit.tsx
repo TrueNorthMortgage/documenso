@@ -6,7 +6,7 @@ import { Button } from '@documenso/ui/primitives/button';
 import { Spinner } from '@documenso/ui/primitives/spinner';
 import { msg } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { EnvelopeType } from '@prisma/client';
+import { DocumentStatus, EnvelopeType } from '@prisma/client';
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 
@@ -52,10 +52,17 @@ export default function EnvelopeEditorPage({ params }: Route.ComponentProps) {
       void navigate(pathPrefix, { replace: true });
     } else if (envelope.internalVersion !== 2) {
       void navigate(`${pathPrefix}/${envelope.id}/legacy_editor`, { replace: true });
+    } else if (envelope.status === DocumentStatus.PENDING && !envelope.correctionStartedAt) {
+      void navigate(`${pathPrefix}/${envelope.id}`, { replace: true });
     }
   }, [envelope, team, navigate]);
 
-  if (envelope && (envelope.teamId !== team.id || envelope.internalVersion !== 2)) {
+  if (
+    envelope &&
+    (envelope.teamId !== team.id ||
+      envelope.internalVersion !== 2 ||
+      (envelope.status === DocumentStatus.PENDING && !envelope.correctionStartedAt))
+  ) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center gap-2 text-foreground">
         <Spinner />

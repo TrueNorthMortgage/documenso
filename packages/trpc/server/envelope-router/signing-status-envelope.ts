@@ -53,12 +53,14 @@ export const signingStatusEnvelopeRoute = maybeAuthenticatedProcedure
     if (envelope.status === DocumentStatus.REJECTED) {
       return {
         status: 'REJECTED',
+        isCorrecting: false,
       };
     }
 
     if (envelope.status === DocumentStatus.COMPLETED) {
       return {
         status: 'COMPLETED',
+        isCorrecting: false,
       };
     }
 
@@ -71,10 +73,12 @@ export const signingStatusEnvelopeRoute = maybeAuthenticatedProcedure
     if (isComplete) {
       return {
         status: 'PROCESSING',
+        isCorrecting: Boolean(envelope.correctionStartedAt),
       };
     }
 
     return {
       status: 'PENDING',
+      isCorrecting: Boolean(envelope.correctionStartedAt),
     };
   });

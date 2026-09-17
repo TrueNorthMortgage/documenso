@@ -1,6 +1,5 @@
 import { RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-roles';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
-import { isDocumentCompleted } from '@documenso/lib/utils/document';
 import { formatSigningLink, isRecipientExpired } from '@documenso/lib/utils/recipients';
 import { canExecuteTeamAction } from '@documenso/lib/utils/teams';
 import { CopyTextButton } from '@documenso/ui/components/common/copy-text-button';
@@ -30,7 +29,7 @@ import { DateTime } from 'luxon';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { match } from 'ts-pattern';
-
+import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dialog';
 import { useCurrentTeam } from '~/providers/team';
 
 export type DocumentPageViewRecipientsProps = {
@@ -46,6 +45,9 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
   const canManageSigningLinks = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
 
   const recipients = envelope.recipients;
+  const hasCompletedRecipients = recipients.some(
+    (recipient) => recipient.role !== RecipientRole.CC && recipient.signingStatus === SigningStatus.SIGNED,
+  );
   const [shouldHighlightCopyButtons, setShouldHighlightCopyButtons] = useState(false);
 
   // Check for action=view-tokens query parameter and set highlighting state
@@ -71,7 +73,7 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
           <Trans>Recipients</Trans>
         </h1>
 
-        {!isDocumentCompleted(envelope.status) && (
+        {envelope.status === DocumentStatus.DRAFT && (
           <Link
             to={`${documentRootPath}/${envelope.id}/edit?step=signers`}
             title={_(msg`Modify recipients`)}
@@ -80,6 +82,32 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
             {recipients.length === 0 ? <PlusIcon className="ml-2 h-4 w-4" /> : <PenIcon className="ml-2 h-3 w-3" />}
           </Link>
         )}
+
+        {envelope.status === DocumentStatus.PENDING &&
+          (envelope.internalVersion === 1 || envelope.correctionStartedAt ? (
+            <Link
+              to={`${documentRootPath}/${envelope.id}/edit?step=upload`}
+              title={_(msg`Modify recipients`)}
+              className="flex flex-row items-center justify-between"
+            >
+              <PenIcon className="ml-2 h-3 w-3" />
+            </Link>
+          ) : (
+            <EnvelopeCorrectDialog
+              envelopeId={envelope.id}
+              documentRootPath={documentRootPath}
+              hasCompletedRecipients={hasCompletedRecipients}
+              trigger={
+                <button
+                  type="button"
+                  title={_(msg`Correct recipients`)}
+                  className="flex flex-row items-center justify-between"
+                >
+                  <PenIcon className="ml-2 h-3 w-3" />
+                </button>
+              }
+            />
+          ))}
       </div>
 
       <ul className="divide-y border-t text-muted-foreground">

@@ -22,10 +22,12 @@ import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
 import { isSameEmail } from '@documenso/lib/utils/email';
 import { isRecipientExpired } from '@documenso/lib/utils/recipients';
 import { prisma } from '@documenso/prisma';
+import { trpc } from '@documenso/trpc/react';
 import { SigningCard3D } from '@documenso/ui/components/signing-card';
 import { Trans } from '@lingui/react/macro';
 import { DocumentSigningOrder, DocumentStatus, RecipientRole, SigningStatus } from '@prisma/client';
 import { Clock8 } from 'lucide-react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { Link, redirect } from 'react-router';
 import { getOptionalLoaderContext } from 'server/utils/get-loader-session';
 import { match } from 'ts-pattern';
@@ -391,30 +393,36 @@ const SigningPageV1 = ({ data }: { data: Awaited<ReturnType<typeof handleV1Loade
   }
 
   return (
-    <DocumentSigningProvider
-      email={recipient.email}
-      fullName={isSameEmail(user?.email, recipient.email) ? user?.name : recipient.name}
-      signature={isSameEmail(user?.email, recipient.email) ? user?.signature : undefined}
-      typedSignatureEnabled={document.documentMeta?.typedSignatureEnabled}
-      uploadSignatureEnabled={document.documentMeta?.uploadSignatureEnabled}
-      drawSignatureEnabled={document.documentMeta?.drawSignatureEnabled}
+    <SigningCorrectionGuard
+      token={recipient.token}
+      documentTitle={document.title}
+      initialIsCorrecting={Boolean(document.correctionStartedAt)}
     >
-      <DocumentSigningAuthProvider documentAuthOptions={document.authOptions} recipient={recipient} user={user}>
-        {sessionData?.user && <AuthenticatedHeader />}
+      <DocumentSigningProvider
+        email={recipient.email}
+        fullName={isSameEmail(user?.email, recipient.email) ? user?.name : recipient.name}
+        signature={isSameEmail(user?.email, recipient.email) ? user?.signature : undefined}
+        typedSignatureEnabled={document.documentMeta?.typedSignatureEnabled}
+        uploadSignatureEnabled={document.documentMeta?.uploadSignatureEnabled}
+        drawSignatureEnabled={document.documentMeta?.drawSignatureEnabled}
+      >
+        <DocumentSigningAuthProvider documentAuthOptions={document.authOptions} recipient={recipient} user={user}>
+          {sessionData?.user && <AuthenticatedHeader />}
 
-        <div className="mt-8 mb-8 px-4 md:mt-12 md:mb-12 md:px-8">
-          <DocumentSigningPageViewV1
-            recipient={recipientWithFields}
-            document={document}
-            fields={fields}
-            completedFields={completedFields}
-            isRecipientsTurn={isRecipientsTurn}
-            allRecipients={allRecipients}
-            includeSenderDetails={includeSenderDetails}
-          />
-        </div>
-      </DocumentSigningAuthProvider>
-    </DocumentSigningProvider>
+          <div className="mt-8 mb-8 px-4 md:mt-12 md:mb-12 md:px-8">
+            <DocumentSigningPageViewV1
+              recipient={recipientWithFields}
+              document={document}
+              fields={fields}
+              completedFields={completedFields}
+              isRecipientsTurn={isRecipientsTurn}
+              allRecipients={allRecipients}
+              includeSenderDetails={includeSenderDetails}
+            />
+          </div>
+        </DocumentSigningAuthProvider>
+      </DocumentSigningProvider>
+    </SigningCorrectionGuard>
   );
 };
 
@@ -477,22 +485,96 @@ const SigningPageV2 = ({ data }: { data: Awaited<ReturnType<typeof handleV2Loade
   }
 
   return (
-    <EnvelopeSigningProvider
-      envelopeData={data.envelopeForSigning}
-      email={recipient.email}
-      fullName={isSameEmail(user?.email, recipient.email) ? user?.name : recipient.name}
-      signature={isSameEmail(user?.email, recipient.email) ? user?.signature : undefined}
+    <SigningCorrectionGuard
+      token={recipient.token}
+      documentTitle={envelope.title}
+      initialIsCorrecting={Boolean(envelope.correctionStartedAt)}
     >
-      <DocumentSigningAuthProvider documentAuthOptions={envelope.authOptions} recipient={recipient} user={user}>
-        <EnvelopeRenderProvider
-          version="current"
-          envelope={envelope}
-          envelopeItems={envelope.envelopeItems}
-          token={recipient.token}
-        >
-          <DocumentSigningPageViewV2 />
-        </EnvelopeRenderProvider>
-      </DocumentSigningAuthProvider>
-    </EnvelopeSigningProvider>
+      <EnvelopeSigningProvider
+        envelopeData={data.envelopeForSigning}
+        email={recipient.email}
+        fullName={isSameEmail(user?.email, recipient.email) ? user?.name : recipient.name}
+        signature={isSameEmail(user?.email, recipient.email) ? user?.signature : undefined}
+      >
+        <DocumentSigningAuthProvider documentAuthOptions={envelope.authOptions} recipient={recipient} user={user}>
+          <EnvelopeRenderProvider
+            version="current"
+            envelope={envelope}
+            envelopeItems={envelope.envelopeItems}
+            token={recipient.token}
+          >
+            <DocumentSigningPageViewV2 />
+          </EnvelopeRenderProvider>
+        </DocumentSigningAuthProvider>
+      </EnvelopeSigningProvider>
+    </SigningCorrectionGuard>
   );
 };
+
+const SigningCorrectionGuard = ({
+  token,
+  documentTitle,
+  initialIsCorrecting,
+  children,
+}: {
+  token: string;
+  documentTitle: string;
+  initialIsCorrecting: boolean;
+  children: ReactNode;
+}) => {
+  const hasObservedCorrection = useRef(initialIsCorrecting);
+
+  const { data } = trpc.envelope.signingStatus.useQuery(
+    { token },
+    {
+      refetchInterval: 3000,
+      initialData: {
+        status: 'PENDING',
+        isCorrecting: initialIsCorrecting,
+      },
+    },
+  );
+
+  useEffect(() => {
+    if (data.isCorrecting) {
+      hasObservedCorrection.current = true;
+      return;
+    }
+
+    if (hasObservedCorrection.current) {
+      window.location.reload();
+    }
+  }, [data.isCorrecting]);
+
+  if (data.isCorrecting) {
+    return <DocumentCorrectionInProgress documentTitle={documentTitle} />;
+  }
+
+  return children;
+};
+
+const DocumentCorrectionInProgress = ({ documentTitle }: { documentTitle: string }) => (
+  <div className="-mx-4 flex max-w-[100vw] flex-col items-center overflow-x-hidden px-4 pt-24 md:-mx-8 md:px-8 xl:pt-32">
+    <div className="flex size-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
+      <Clock8 className="size-8" />
+    </div>
+
+    <div className="mt-8 flex items-center text-center text-muted-foreground">
+      <Clock8 className="mr-2 h-5 w-5" />
+      <span className="text-sm">
+        <Trans>Correction in progress</Trans>
+      </span>
+    </div>
+
+    <h2 className="mt-6 max-w-[35ch] text-center font-semibold text-2xl leading-normal md:text-3xl lg:text-4xl">
+      <Trans>
+        <span className="mt-1.5 block">"{documentTitle}"</span>
+        is currently being corrected
+      </Trans>
+    </h2>
+
+    <p className="mt-2.5 max-w-[60ch] text-center font-medium text-muted-foreground/60 text-sm md:text-base">
+      <Trans>The document owner is making changes. Please try again later using the same link.</Trans>
+    </p>
+  </div>
+);

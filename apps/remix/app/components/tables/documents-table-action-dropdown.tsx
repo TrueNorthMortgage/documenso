@@ -23,6 +23,7 @@ import {
   Edit,
   EyeIcon,
   FileOutputIcon,
+  FilePenLineIcon,
   FolderInput,
   MoreHorizontal,
   Pencil,
@@ -32,6 +33,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 
 import { DocumentResendDialog } from '~/components/dialogs/document-resend-dialog';
+import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dialog';
 import { EnvelopeDeleteDialog } from '~/components/dialogs/envelope-delete-dialog';
 import { EnvelopeDuplicateDialog } from '~/components/dialogs/envelope-duplicate-dialog';
 import { EnvelopeSaveAsTemplateDialog } from '~/components/dialogs/envelope-save-as-template-dialog';
@@ -75,6 +77,7 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
   const { canTitleBeChanged } = getEnvelopeItemPermissions(
     {
       completedAt: row.completedAt,
+      correctionStartedAt: row.correctionStartedAt,
       deletedAt: row.deletedAt,
       type: EnvelopeType.DOCUMENT,
       status: row.status,
@@ -86,6 +89,9 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
   const formatPath = `${documentsPath}/${row.envelopeId}/edit`;
 
   const nonSignedRecipients = row.recipients.filter((item) => item.signingStatus !== 'SIGNED');
+  const hasCompletedRecipients = row.recipients.some(
+    (item) => item.role !== RecipientRole.CC && item.signingStatus === 'SIGNED',
+  );
 
   return (
     <DropdownMenu>
@@ -128,12 +134,46 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
             </DropdownMenuItem>
           )}
 
-        <DropdownMenuItem disabled={!canManageDocument || isComplete} asChild>
-          <Link to={formatPath}>
-            <Edit className="mr-2 h-4 w-4" />
-            <Trans>Edit</Trans>
-          </Link>
-        </DropdownMenuItem>
+        {isDraft && (
+          <DropdownMenuItem disabled={!canManageDocument} asChild>
+            <Link to={formatPath}>
+              <Edit className="mr-2 h-4 w-4" />
+              <Trans>Edit</Trans>
+            </Link>
+          </DropdownMenuItem>
+        )}
+
+        {isPending &&
+          canManageDocument &&
+          (row.internalVersion === 1 ? (
+            <DropdownMenuItem asChild>
+              <Link to={formatPath}>
+                <Edit className="mr-2 h-4 w-4" />
+                <Trans>Edit</Trans>
+              </Link>
+            </DropdownMenuItem>
+          ) : row.correctionStartedAt ? (
+            <DropdownMenuItem asChild>
+              <Link to={formatPath}>
+                <FilePenLineIcon className="mr-2 h-4 w-4" />
+                <Trans>Continue correcting</Trans>
+              </Link>
+            </DropdownMenuItem>
+          ) : (
+            <EnvelopeCorrectDialog
+              envelopeId={row.envelopeId}
+              documentRootPath={documentsPath}
+              hasCompletedRecipients={hasCompletedRecipients}
+              trigger={
+                <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
+                  <div>
+                    <FilePenLineIcon className="mr-2 h-4 w-4" />
+                    <Trans>Correct</Trans>
+                  </div>
+                </DropdownMenuItem>
+              }
+            />
+          ))}
 
         {canManageDocument && canTitleBeChanged && (
           <DropdownMenuItem onClick={() => setRenameDialogOpen(true)}>
