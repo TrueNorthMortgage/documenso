@@ -20,6 +20,7 @@ import { deleteEnvelopeFieldRoute } from './envelope-fields/delete-envelope-fiel
 import { getEnvelopeFieldRoute } from './envelope-fields/get-envelope-field';
 import { getEnvelopeFieldSignaturesRoute } from './envelope-fields/get-envelope-field-signatures';
 import { updateEnvelopeFieldsRoute } from './envelope-fields/update-envelope-fields';
+import { changeEnvelopeRecipientEmailRoute } from './envelope-recipients/change-envelope-recipient-email';
 import { createEnvelopeRecipientsRoute } from './envelope-recipients/create-envelope-recipients';
 import { deleteEnvelopeRecipientRoute } from './envelope-recipients/delete-envelope-recipient';
 import { getEnvelopeRecipientRoute } from './envelope-recipients/get-envelope-recipient';
@@ -69,6 +70,7 @@ export const envelopeRouter = router({
   recipient: {
     get: getEnvelopeRecipientRoute,
     createMany: createEnvelopeRecipientsRoute,
+    changeEmail: changeEnvelopeRecipientEmailRoute,
     updateMany: updateEnvelopeRecipientsRoute,
     delete: deleteEnvelopeRecipientRoute,
     set: setEnvelopeRecipientsRoute,
