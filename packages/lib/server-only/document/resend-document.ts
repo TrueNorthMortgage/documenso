@@ -2,6 +2,7 @@ import { mailer } from '@documenso/email/mailer';
 import { DocumentInviteEmailTemplate } from '@documenso/email/templates/document-invite';
 import { resolveExpiresAt } from '@documenso/lib/constants/envelope-expiration';
 import { RECIPIENT_ROLE_TO_EMAIL_TYPE, RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-roles';
+import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import type { TDocumentMeta } from '@documenso/lib/types/document-meta';
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
@@ -26,7 +27,7 @@ import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../
 import { isDocumentCompleted } from '../../utils/document';
 import { isSameEmail } from '../../utils/email';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
-import { isRecipientEmailValidForSending } from '../../utils/recipients';
+import { getRecipientsWithMissingFields, isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { getTeamDisplayName } from '../../utils/teams';
 import { getEmailContext } from '../email/get-email-context';
@@ -69,6 +70,8 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
         select: {
           id: true,
           envelopeItemId: true,
+          recipientId: true,
+          type: true,
         },
       },
       documentMeta: true,
@@ -107,6 +110,23 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
   }
 
   if (isCorrection) {
+    const recipientsWithMissingFields = getRecipientsWithMissingFields(envelope.recipients, envelope.fields);
+
+    if (recipientsWithMissingFields.length > 0) {
+      const missingRecipientDescriptions = recipientsWithMissingFields
+        .map((recipient) =>
+          recipient.name
+            ? `${recipient.name} (${recipient.email}, id: ${recipient.id})`
+            : `${recipient.email} (id: ${recipient.id})`,
+        )
+        .join(', ');
+
+      throw new AppError(AppErrorCode.INVALID_REQUEST, {
+        message: `The following recipients are missing required fields: ${missingRecipientDescriptions}. Signers must have at least one signature field.`,
+        userMessage: 'Add at least one signature field for every signer before finishing the correction.',
+      });
+    }
+
     await restoreCorrectionFieldDefaults({
       fields: envelope.fields,
       documentMeta: envelope.documentMeta,
