@@ -36,19 +36,19 @@ export const mapTemplateRecipientsByRole = <T extends TemplateRecipientReference
       .filter((recipient) => recipient.role === role)
       .sort((left, right) => left.id - right.id);
 
-    if (recipientsForRole.length > templateRecipientsForRole.length) {
-      return null;
-    }
+    templateRecipientsForRole.forEach((templateRecipient, index) => {
+      const recipient = recipientsForRole[index];
 
-    recipientsForRole.forEach((recipient, index) => {
-      const templateRecipient = templateRecipientsForRole[index];
+      if (!recipient) {
+        unmappedTemplateRecipientIds.push(templateRecipient.id);
+        return;
+      }
 
       recipientMap.set(templateRecipient.id, recipient.id);
     });
 
-    unmappedTemplateRecipientIds.push(
-      ...templateRecipientsForRole.slice(recipientsForRole.length).map((recipient) => recipient.id),
-    );
+    // Additional envelope recipients are intentionally left unmapped. Applying a template
+    // should not require the document owner to remove recipients that do not have fields in it.
   }
 
   return {
