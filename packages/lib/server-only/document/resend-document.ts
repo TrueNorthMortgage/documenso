@@ -3,6 +3,7 @@ import { DocumentInviteEmailTemplate } from '@documenso/email/templates/document
 import { resolveExpiresAt } from '@documenso/lib/constants/envelope-expiration';
 import { RECIPIENT_ROLE_TO_EMAIL_TYPE, RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-roles';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
+import type { TDocumentMeta } from '@documenso/lib/types/document-meta';
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { renderCustomEmailTemplate } from '@documenso/lib/utils/render-custom-email-template';
@@ -30,6 +31,7 @@ import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { getTeamDisplayName } from '../../utils/teams';
 import { getEmailContext } from '../email/get-email-context';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { autoInsertConditionalFieldDefaults } from '../field/auto-insert-conditional-field-defaults';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
 
 export type ResendDocumentOptions = {
@@ -63,6 +65,12 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
     where: envelopeWhereInput,
     include: {
       recipients: true,
+      fields: {
+        select: {
+          id: true,
+          envelopeItemId: true,
+        },
+      },
       documentMeta: true,
       team: {
         select: {
@@ -90,6 +98,19 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
 
   if (isDocumentCompleted(envelope.status)) {
     throw new Error('Can not send completed document');
+  }
+
+  const isCorrection = Boolean(envelope.correctionStartedAt);
+
+  if (recipients.length === 0 && !isCorrection) {
+    throw new Error('Select at least one recipient to resend the document');
+  }
+
+  if (isCorrection) {
+    await restoreCorrectionFieldDefaults({
+      fields: envelope.fields,
+      documentMeta: envelope.documentMeta,
+    });
   }
 
   // Refresh the expiresAt on each resent recipient.
@@ -175,6 +196,14 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
           );
       }
 
+      if (isCorrection) {
+        const correctionNotice = i18n._(
+          msg`This envelope has been updated with corrections. Please review the latest version before you continue.`,
+        );
+
+        emailMessage = emailMessage ? `${correctionNotice}\n\n${emailMessage}` : correctionNotice;
+      }
+
       const customEmailTemplate = {
         'signer.name': name,
         'signer.email': email,
@@ -246,12 +275,14 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
     }),
   );
 
-  await triggerWebhook({
-    event: WebhookTriggerEvents.DOCUMENT_REMINDER_SENT,
-    data: ZWebhookDocumentSchema.parse(mapEnvelopeToWebhookDocumentPayload(envelope)),
-    userId: envelope.userId,
-    teamId: envelope.teamId,
-  });
+  if (recipientsToRemind.length > 0) {
+    await triggerWebhook({
+      event: WebhookTriggerEvents.DOCUMENT_REMINDER_SENT,
+      data: ZWebhookDocumentSchema.parse(mapEnvelopeToWebhookDocumentPayload(envelope)),
+      userId: envelope.userId,
+      teamId: envelope.teamId,
+    });
+  }
 
   if (envelope.correctionStartedAt) {
     await finishEnvelopeCorrection(envelope.id, requestMetadata);
@@ -261,6 +292,35 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
     ...envelope,
     correctionStartedAt: null,
   };
+};
+
+const restoreCorrectionFieldDefaults = async ({
+  fields,
+  documentMeta,
+}: {
+  fields: { id: number; envelopeItemId: string }[];
+  documentMeta: Pick<TDocumentMeta, 'timezone' | 'dateFormat'> | null;
+}) => {
+  const fieldIdsByEnvelopeItem = new Map<string, number[]>();
+
+  for (const field of fields) {
+    const fieldIds = fieldIdsByEnvelopeItem.get(field.envelopeItemId) ?? [];
+    fieldIds.push(field.id);
+    fieldIdsByEnvelopeItem.set(field.envelopeItemId, fieldIds);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await Promise.all(
+      Array.from(fieldIdsByEnvelopeItem.entries()).map(async ([envelopeItemId, fieldIds]) => {
+        await autoInsertConditionalFieldDefaults({
+          tx,
+          envelopeItemId,
+          fieldIds,
+          documentMeta,
+        });
+      }),
+    );
+  });
 };
 
 const finishEnvelopeCorrection = async (envelopeId: string, requestMetadata: ApiRequestMetadata) => {

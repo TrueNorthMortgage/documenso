@@ -4,7 +4,7 @@ import { cn } from '@documenso/ui/lib/utils';
 import type { MessageDescriptor } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { CheckCircle2, Clock, File, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, File, FilePenLine, XCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react/dist/lucide-react';
 import type { HTMLAttributes } from 'react';
 
@@ -53,15 +53,23 @@ export const FRIENDLY_STATUS_MAP: Record<ExtendedDocumentStatus, FriendlyStatus>
   },
 };
 
+const CORRECTING_STATUS: FriendlyStatus = {
+  label: msg`Correcting`,
+  labelExtended: msg`Document being corrected`,
+  icon: FilePenLine,
+  color: 'text-orange-600 dark:text-orange-300',
+};
+
 export type DocumentStatusProps = HTMLAttributes<HTMLSpanElement> & {
   status: ExtendedDocumentStatus;
   inheritColor?: boolean;
+  isCorrecting?: boolean;
 };
 
-export const DocumentStatus = ({ className, status, inheritColor, ...props }: DocumentStatusProps) => {
+export const DocumentStatus = ({ className, status, inheritColor, isCorrecting, ...props }: DocumentStatusProps) => {
   const { _ } = useLingui();
 
-  const { label, icon: Icon, color } = FRIENDLY_STATUS_MAP[status];
+  const { label, icon: Icon, color } = isCorrecting ? CORRECTING_STATUS : FRIENDLY_STATUS_MAP[status];
 
   return (
     <span className={cn('flex items-center', className)} {...props}>

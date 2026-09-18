@@ -17,7 +17,9 @@ export const redistributeEnvelopeMeta: TrpcRouteMeta = {
 
 export const ZRedistributeEnvelopeRequestSchema = z.object({
   envelopeId: z.string(),
-  recipients: z.array(z.number()).min(1).describe('The IDs of the recipients to redistribute the envelope to.'),
+  recipients: z
+    .array(z.number())
+    .describe('The IDs of the recipients to notify. This may be empty when finishing a correction without email.'),
 });
 
 export const ZRedistributeEnvelopeResponseSchema = ZSuccessResponseSchema.extend({
