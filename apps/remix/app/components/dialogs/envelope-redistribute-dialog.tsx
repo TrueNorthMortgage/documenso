@@ -1,4 +1,5 @@
 import { getRecipientType } from '@documenso/lib/client-only/recipient-type';
+import { AppError } from '@documenso/lib/errors/app-error';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
 import type { TEnvelopeRecipientLite } from '@documenso/lib/types/recipient';
 import { recipientAbbreviation } from '@documenso/lib/utils/recipient-formatter';
@@ -88,10 +89,12 @@ export const EnvelopeRedistributeDialog = ({
       if (envelope.correctionStartedAt) {
         await navigate(`${documentRootPath}/${envelope.id}`);
       }
-    } catch (_err) {
+    } catch (err) {
+      const error = AppError.parseError(err);
+
       toast({
         title: t`Something went wrong`,
-        description: t`This envelope could not be resent at this time. Please try again.`,
+        description: error.userMessage || t`This envelope could not be resent at this time. Please try again.`,
         variant: 'destructive',
         duration: 7500,
       });
