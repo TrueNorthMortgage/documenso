@@ -42,6 +42,7 @@ import { viewedDocument } from './viewed-document';
 
 const recipient = {
   id: 10,
+  token: 'recipient-token',
   envelopeId: 'envelope_1',
   email: 'recipient@example.com',
   name: 'Recipient',
@@ -71,6 +72,7 @@ describe('viewedDocument', () => {
       expect.objectContaining({
         where: {
           id: recipient.id,
+          token: recipient.token,
           readStatus: {
             not: ReadStatus.OPENED,
           },

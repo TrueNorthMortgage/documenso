@@ -57,6 +57,7 @@ export const viewedDocument = async ({ token, recipientAccessAuth, requestMetada
     const { count: openedRecipientCount } = await tx.recipient.updateMany({
       where: {
         id: recipient.id,
+        token: recipient.token,
         readStatus: {
           not: ReadStatus.OPENED,
         },

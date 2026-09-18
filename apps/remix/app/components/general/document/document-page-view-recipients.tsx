@@ -12,7 +12,7 @@ import { useToast } from '@documenso/ui/primitives/use-toast';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import { DocumentStatus, RecipientRole, SigningStatus } from '@prisma/client';
+import { DocumentStatus, ReadStatus, RecipientRole, SigningStatus } from '@prisma/client';
 import { TooltipArrow } from '@radix-ui/react-tooltip';
 import {
   AlertTriangle,
@@ -29,6 +29,7 @@ import { DateTime } from 'luxon';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { match } from 'ts-pattern';
+import { ChangeEnvelopeRecipientEmailDialog } from '~/components/dialogs/change-envelope-recipient-email-dialog';
 import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dialog';
 import { useCurrentTeam } from '~/providers/team';
 
@@ -256,6 +257,16 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
+                )}
+
+              {envelope.status === DocumentStatus.PENDING &&
+                envelope.internalVersion === 2 &&
+                !envelope.correctionStartedAt &&
+                hasCompletedRecipients &&
+                recipient.role !== RecipientRole.CC &&
+                recipient.signingStatus === SigningStatus.NOT_SIGNED &&
+                recipient.readStatus === ReadStatus.NOT_OPENED && (
+                  <ChangeEnvelopeRecipientEmailDialog envelopeId={envelope.id} recipient={recipient} />
                 )}
             </div>
           </li>
