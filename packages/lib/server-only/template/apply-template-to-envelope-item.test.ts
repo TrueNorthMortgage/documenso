@@ -93,6 +93,29 @@ describe('resolveTemplateRecipients', () => {
     expect(result.unmappedTemplateRecipientIds).toEqual([]);
   });
 
+  it('maps template recipients without requiring every envelope recipient to be represented', () => {
+    const result = resolveTemplateRecipients({
+      templateRecipients: [
+        { id: 1, role: RecipientRole.SIGNER, signingOrder: null },
+        { id: 2, role: RecipientRole.SIGNER, signingOrder: null },
+      ],
+      recipients: [
+        { id: 10, role: RecipientRole.SIGNER, signingOrder: null },
+        { id: 20, role: RecipientRole.SIGNER, signingOrder: null },
+        { id: 30, role: RecipientRole.SIGNER, signingOrder: null },
+      ],
+      ignoreSigningOrder: true,
+    });
+
+    expect(result.recipientMap).toEqual(
+      new Map([
+        [1, 10],
+        [2, 20],
+      ]),
+    );
+    expect(result.unmappedTemplateRecipientIds).toEqual([]);
+  });
+
   it('maps available parallel recipients and reports missing recipients for creation', () => {
     const result = resolveTemplateRecipients({
       templateRecipients: [
