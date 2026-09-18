@@ -124,7 +124,12 @@ export default function DocumentPage({ params }: Route.ComponentProps) {
           </h1>
 
           <div className="mt-2.5 flex items-center gap-x-6">
-            <DocumentStatusComponent inheritColor status={envelope.status} className="text-muted-foreground" />
+            <DocumentStatusComponent
+              inheritColor
+              status={envelope.status}
+              isCorrecting={Boolean(envelope.correctionStartedAt)}
+              className="text-muted-foreground"
+            />
 
             {envelope.recipients.length > 0 && (
               <div className="flex items-center text-muted-foreground">
@@ -220,7 +225,9 @@ export default function DocumentPage({ params }: Route.ComponentProps) {
             <section className="flex flex-col rounded-xl border border-border bg-widget pt-6 pb-4">
               <div className="flex flex-row items-center justify-between px-4">
                 <h3 className="font-semibold text-2xl text-foreground">
-                  {t(FRIENDLY_STATUS_MAP[envelope.status].labelExtended)}
+                  {envelope.correctionStartedAt
+                    ? t(msg`Document being corrected`)
+                    : t(FRIENDLY_STATUS_MAP[envelope.status].labelExtended)}
                 </h3>
 
                 <DocumentPageViewDropdown envelope={envelope} />
@@ -234,6 +241,10 @@ export default function DocumentPage({ params }: Route.ComponentProps) {
                     <Trans>This document is currently a draft and has not been sent</Trans>
                   ))
                   .with(DocumentStatus.PENDING, () => {
+                    if (envelope.correctionStartedAt) {
+                      return <Trans>The document owner is making corrections</Trans>;
+                    }
+
                     const pendingRecipients = envelope.recipients.filter(
                       (recipient) => recipient.signingStatus === 'NOT_SIGNED',
                     );

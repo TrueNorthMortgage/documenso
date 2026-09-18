@@ -78,10 +78,10 @@ export const DocumentsTableActionButton = ({ row }: DocumentsTableActionButtonPr
             </Link>
           </Button>
         ) : row.correctionStartedAt ? (
-          <Button className="w-32" asChild>
+          <Button asChild>
             <Link to={formatPath}>
               <FilePenLineIcon className="mr-2 -ml-1 h-4 w-4" />
-              <Trans>Continue</Trans>
+              <Trans>Finish Correction</Trans>
             </Link>
           </Button>
         ) : (

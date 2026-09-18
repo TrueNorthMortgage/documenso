@@ -19,7 +19,6 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@documenso/ui/primitives/form/form';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { msg } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { DocumentStatus, EnvelopeType, SigningStatus } from '@prisma/client';
 import { useEffect, useState } from 'react';
@@ -38,9 +37,7 @@ export type EnvelopeRedistributeDialogProps = {
 };
 
 export const ZEnvelopeRedistributeFormSchema = z.object({
-  recipients: z.array(z.number()).min(1, {
-    message: msg`You must select at least one item`.id,
-  }),
+  recipients: z.array(z.number()),
 });
 
 export type TEnvelopeRedistributeFormSchema = z.infer<typeof ZEnvelopeRedistributeFormSchema>;
@@ -77,8 +74,12 @@ export const EnvelopeRedistributeDialog = ({
       await redistributeEnvelope({ envelopeId: envelope.id, recipients });
 
       toast({
-        title: t`Envelope resent`,
-        description: t`Your envelope has been resent successfully.`,
+        title: envelope.correctionStartedAt ? t`Correction finished` : t`Envelope resent`,
+        description: envelope.correctionStartedAt
+          ? recipients.length > 0
+            ? t`Your corrected envelope is now available and recipients have been notified.`
+            : t`Your corrected envelope is now available.`
+          : t`Your envelope has been resent successfully.`,
         duration: 5000,
       });
 
@@ -98,17 +99,10 @@ export const EnvelopeRedistributeDialog = ({
   };
 
   useEffect(() => {
-    if (isOpen && envelope.correctionStartedAt) {
-      form.setValue(
-        'recipients',
-        recipients
-          .filter((recipient) => recipient.signingStatus === SigningStatus.NOT_SIGNED)
-          .map((recipient) => recipient.id),
-      );
-    } else if (!isOpen) {
+    if (!isOpen) {
       form.reset();
     }
-  }, [envelope.correctionStartedAt, isOpen, recipients]);
+  }, [form, isOpen]);
 
   if (envelope.status !== DocumentStatus.PENDING || envelope.type !== EnvelopeType.DOCUMENT) {
     return null;
@@ -126,7 +120,7 @@ export const EnvelopeRedistributeDialog = ({
 
           <DialogDescription>
             {envelope.correctionStartedAt ? (
-              <Trans>Make the corrected document available and notify all outstanding recipients</Trans>
+              <Trans>Make the corrected document available. You can optionally notify outstanding recipients.</Trans>
             ) : (
               <Trans>Send reminders to the following recipients</Trans>
             )}
@@ -140,6 +134,16 @@ export const EnvelopeRedistributeDialog = ({
                 name="recipients"
                 render={({ field: { value, onChange } }) => (
                   <>
+                    {envelope.correctionStartedAt && (
+                      <div className="mb-2 px-3">
+                        <FormLabel className="font-medium">
+                          <Trans>Notify recipients (optional)</Trans>
+                        </FormLabel>
+                        <p className="text-muted-foreground text-sm">
+                          <Trans>Select recipients to email about the corrected envelope.</Trans>
+                        </p>
+                      </div>
+                    )}
                     {recipients
                       .filter((recipient) => recipient.signingStatus === SigningStatus.NOT_SIGNED)
                       .map((recipient) => (
