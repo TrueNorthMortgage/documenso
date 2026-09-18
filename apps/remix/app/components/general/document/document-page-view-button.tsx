@@ -5,7 +5,7 @@ import { isSameEmail } from '@documenso/lib/utils/email';
 import { formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { Button } from '@documenso/ui/primitives/button';
 import { Trans } from '@lingui/react/macro';
-import { DocumentStatus, RecipientRole, SigningStatus } from '@prisma/client';
+import { DocumentStatus, ReadStatus, RecipientRole, SigningStatus } from '@prisma/client';
 import { CheckCircle, Download, EyeIcon, FilePenLineIcon, Pencil } from 'lucide-react';
 import { Link } from 'react-router';
 import { match } from 'ts-pattern';
@@ -27,6 +27,12 @@ export const DocumentPageViewButton = ({ envelope }: DocumentPageViewButtonProps
   const isSigned = recipient?.signingStatus === SigningStatus.SIGNED;
   const hasCompletedRecipients = envelope.recipients.some(
     (item) => item.role !== RecipientRole.CC && item.signingStatus === SigningStatus.SIGNED,
+  );
+  const eligibleRecipients = envelope.recipients.filter(
+    (recipient) =>
+      recipient.role !== RecipientRole.CC &&
+      recipient.signingStatus === SigningStatus.NOT_SIGNED &&
+      recipient.readStatus === ReadStatus.NOT_OPENED,
   );
   const role = recipient?.role;
 
@@ -84,6 +90,7 @@ export const DocumentPageViewButton = ({ envelope }: DocumentPageViewButtonProps
           envelopeId={envelope.id}
           documentRootPath={documentsPath}
           hasCompletedRecipients={hasCompletedRecipients}
+          eligibleRecipients={eligibleRecipients}
           trigger={
             <Button className="w-full">
               <FilePenLineIcon className="mr-2 -ml-1 h-4 w-4" />
