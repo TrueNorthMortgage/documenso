@@ -98,6 +98,12 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
               envelopeId={envelope.id}
               documentRootPath={documentRootPath}
               hasCompletedRecipients={hasCompletedRecipients}
+              eligibleRecipients={recipients.filter(
+                (recipient) =>
+                  recipient.role !== RecipientRole.CC &&
+                  recipient.signingStatus === SigningStatus.NOT_SIGNED &&
+                  recipient.readStatus === ReadStatus.NOT_OPENED,
+              )}
               trigger={
                 <button
                   type="button"
@@ -266,7 +272,7 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
                 recipient.role !== RecipientRole.CC &&
                 recipient.signingStatus === SigningStatus.NOT_SIGNED &&
                 recipient.readStatus === ReadStatus.NOT_OPENED && (
-                  <ChangeEnvelopeRecipientEmailDialog envelopeId={envelope.id} recipient={recipient} />
+                  <ChangeEnvelopeRecipientEmailDialog envelopeId={envelope.id} recipients={[recipient]} />
                 )}
             </div>
           </li>

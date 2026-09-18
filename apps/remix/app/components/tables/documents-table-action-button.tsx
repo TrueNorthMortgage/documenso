@@ -5,7 +5,7 @@ import { findRecipientByEmail } from '@documenso/lib/utils/recipients';
 import { formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { Button } from '@documenso/ui/primitives/button';
 import { Trans } from '@lingui/react/macro';
-import { DocumentStatus, RecipientRole, SigningStatus } from '@prisma/client';
+import { DocumentStatus, ReadStatus, RecipientRole, SigningStatus } from '@prisma/client';
 import { CheckCircle, Download, Edit, EyeIcon, FilePenLineIcon, Pencil } from 'lucide-react';
 import { Link } from 'react-router';
 import { match } from 'ts-pattern';
@@ -40,6 +40,12 @@ export const DocumentsTableActionButton = ({ row }: DocumentsTableActionButtonPr
   const canManageDocument = Boolean(isOwner || isCurrentTeamDocument);
   const hasCompletedRecipients = row.recipients.some(
     (item) => item.role !== RecipientRole.CC && item.signingStatus === SigningStatus.SIGNED,
+  );
+  const eligibleRecipients = row.recipients.filter(
+    (recipient) =>
+      recipient.role !== RecipientRole.CC &&
+      recipient.signingStatus === SigningStatus.NOT_SIGNED &&
+      recipient.readStatus === ReadStatus.NOT_OPENED,
   );
 
   const documentsPath = formatDocumentsPath(team.url);
@@ -89,6 +95,7 @@ export const DocumentsTableActionButton = ({ row }: DocumentsTableActionButtonPr
             envelopeId={row.envelopeId}
             documentRootPath={documentsPath}
             hasCompletedRecipients={hasCompletedRecipients}
+            eligibleRecipients={eligibleRecipients}
             trigger={
               <Button className="w-32">
                 <FilePenLineIcon className="mr-2 -ml-1 h-4 w-4" />

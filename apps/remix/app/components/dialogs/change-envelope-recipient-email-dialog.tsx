@@ -13,6 +13,7 @@ import {
 } from '@documenso/ui/primitives/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
 import { Input } from '@documenso/ui/primitives/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
@@ -23,6 +24,7 @@ import { useRevalidator } from 'react-router';
 import { z } from 'zod';
 
 const ZChangeEnvelopeRecipientEmailFormSchema = z.object({
+  recipientId: z.number(),
   email: zEmail('Enter a valid email address.').trim().toLowerCase().max(254),
 });
 
@@ -30,17 +32,23 @@ type TChangeEnvelopeRecipientEmailFormSchema = z.infer<typeof ZChangeEnvelopeRec
 
 export type ChangeEnvelopeRecipientEmailDialogProps = {
   envelopeId: string;
-  recipient: {
+  recipients: {
     id: number;
     email: string;
-  };
+  }[];
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (_open: boolean) => void;
 };
 
 export const ChangeEnvelopeRecipientEmailDialog = ({
   envelopeId,
-  recipient,
+  recipients,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
 }: ChangeEnvelopeRecipientEmailDialogProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const { t } = useLingui();
   const { toast } = useToast();
   const { revalidate } = useRevalidator();
@@ -48,17 +56,34 @@ export const ChangeEnvelopeRecipientEmailDialog = ({
   const form = useForm<TChangeEnvelopeRecipientEmailFormSchema>({
     resolver: zodResolver(ZChangeEnvelopeRecipientEmailFormSchema),
     defaultValues: {
-      email: recipient.email,
+      recipientId: recipients[0]?.id,
+      email: recipients[0]?.email ?? '',
     },
   });
 
   const { mutateAsync: changeRecipientEmail } = trpc.envelope.recipient.changeEmail.useMutation();
 
-  const onFormSubmit = async ({ email }: TChangeEnvelopeRecipientEmailFormSchema) => {
+  const isOpen = controlledOpen ?? uncontrolledOpen;
+  const selectedRecipientId = form.watch('recipientId');
+  const selectedRecipient = recipients.find((recipient) => recipient.id === selectedRecipientId);
+
+  const setIsOpen = (value: boolean) => {
+    if (controlledOpen === undefined) {
+      setUncontrolledOpen(value);
+    }
+
+    onOpenChange?.(value);
+  };
+
+  const onFormSubmit = async ({ recipientId, email }: TChangeEnvelopeRecipientEmailFormSchema) => {
+    if (!recipientId) {
+      return;
+    }
+
     try {
       await changeRecipientEmail({
         envelopeId,
-        recipientId: recipient.id,
+        recipientId,
         email,
       });
 
@@ -82,18 +107,25 @@ export const ChangeEnvelopeRecipientEmailDialog = ({
 
   useEffect(() => {
     if (!isOpen) {
-      form.reset({ email: recipient.email });
+      form.reset({
+        recipientId: recipients[0]?.id,
+        email: recipients[0]?.email ?? '',
+      });
     }
-  }, [form, isOpen, recipient.email]);
+  }, [form, isOpen, recipients]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(value) => !form.formState.isSubmitting && setIsOpen(value)}>
-      <DialogTrigger asChild>
-        <Button type="button" variant="ghost" size="sm" className="ml-2 h-7 px-2">
-          <PencilIcon className="mr-1 h-3 w-3" />
-          <Trans>Change email</Trans>
-        </Button>
-      </DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+
+      {!trigger && controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          <Button type="button" variant="ghost" size="sm" className="ml-2 h-7 px-2">
+            <PencilIcon className="mr-1 h-3 w-3" />
+            <Trans>Change email</Trans>
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -108,6 +140,42 @@ export const ChangeEnvelopeRecipientEmailDialog = ({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onFormSubmit)}>
             <fieldset disabled={form.formState.isSubmitting}>
+              {recipients.length > 1 && (
+                <FormField
+                  control={form.control}
+                  name="recipientId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        <Trans>Recipient</Trans>
+                      </FormLabel>
+                      <Select
+                        value={field.value?.toString()}
+                        onValueChange={(value) => {
+                          const recipient = recipients.find((candidate) => candidate.id === Number(value));
+
+                          field.onChange(Number(value));
+                          form.setValue('email', recipient?.email ?? '');
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {recipients.map((recipient) => (
+                            <SelectItem key={recipient.id} value={recipient.id.toString()}>
+                              {recipient.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <FormField
                 control={form.control}
                 name="email"
@@ -117,7 +185,7 @@ export const ChangeEnvelopeRecipientEmailDialog = ({
                       <Trans>Email</Trans>
                     </FormLabel>
                     <FormControl>
-                      <Input type="email" autoComplete="email" {...field} />
+                      <Input type="email" autoComplete="email" {...field} disabled={!selectedRecipient} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

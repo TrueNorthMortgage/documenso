@@ -15,7 +15,7 @@ import {
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import { DocumentStatus, EnvelopeType, RecipientRole } from '@prisma/client';
+import { DocumentStatus, EnvelopeType, ReadStatus, RecipientRole, SigningStatus } from '@prisma/client';
 import {
   CheckCircle,
   Copy,
@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
-
+import { ChangeEnvelopeRecipientEmailDialog } from '~/components/dialogs/change-envelope-recipient-email-dialog';
 import { DocumentResendDialog } from '~/components/dialogs/document-resend-dialog';
 import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dialog';
 import { EnvelopeDeleteDialog } from '~/components/dialogs/envelope-delete-dialog';
@@ -91,6 +91,12 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
   const nonSignedRecipients = row.recipients.filter((item) => item.signingStatus !== 'SIGNED');
   const hasCompletedRecipients = row.recipients.some(
     (item) => item.role !== RecipientRole.CC && item.signingStatus === 'SIGNED',
+  );
+  const eligibleRecipients = row.recipients.filter(
+    (recipient) =>
+      recipient.role !== RecipientRole.CC &&
+      recipient.signingStatus === SigningStatus.NOT_SIGNED &&
+      recipient.readStatus === ReadStatus.NOT_OPENED,
   );
 
   return (
@@ -164,6 +170,7 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
               envelopeId={row.envelopeId}
               documentRootPath={documentsPath}
               hasCompletedRecipients={hasCompletedRecipients}
+              eligibleRecipients={eligibleRecipients}
               trigger={
                 <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
                   <div>
@@ -174,6 +181,26 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
               }
             />
           ))}
+
+        {isPending &&
+          canManageDocument &&
+          row.internalVersion === 2 &&
+          !row.correctionStartedAt &&
+          hasCompletedRecipients &&
+          eligibleRecipients.length > 0 && (
+            <ChangeEnvelopeRecipientEmailDialog
+              envelopeId={row.envelopeId}
+              recipients={eligibleRecipients}
+              trigger={
+                <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
+                  <div>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    <Trans>Change recipients</Trans>
+                  </div>
+                </DropdownMenuItem>
+              }
+            />
+          )}
 
         {canManageDocument && canTitleBeChanged && (
           <DropdownMenuItem onClick={() => setRenameDialogOpen(true)}>
