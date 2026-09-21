@@ -396,6 +396,7 @@ model Envelope {
   completedAt DateTime?
   deletedAt   DateTime?
   correctionStartedAt DateTime?
+  scheduledSendAt DateTime?
 
   title   String
   status  DocumentStatus @default(DRAFT)
@@ -445,6 +446,7 @@ model Envelope {
   @@index([teamId])
   @@index([folderId])
   @@index([createdAt])
+  @@index([scheduledSendAt])
 }
 
 enum PendingPreparationStatus {

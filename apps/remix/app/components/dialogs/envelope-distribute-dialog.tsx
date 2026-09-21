@@ -51,6 +51,7 @@ export type EnvelopeDistributeDialogProps = {
 };
 
 export const ZEnvelopeDistributeFormSchema = z.object({
+  scheduledSendAt: z.string().nullable(),
   meta: z.object({
     emailId: z.string().nullable(),
     emailReplyTo: z.preprocess((val) => (val === '' ? undefined : val), zEmail().optional()),
@@ -79,11 +80,13 @@ export const EnvelopeDistributeDialog = ({
 
   const [isOpen, setIsOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(Boolean(envelope.scheduledSendAt) && envelope.userId === user.id);
 
   const { mutateAsync: distributeEnvelope } = trpcReact.envelope.distribute.useMutation();
 
   const form = useForm<TEnvelopeDistributeFormSchema>({
     defaultValues: {
+      scheduledSendAt: envelope.scheduledSendAt ? formatLocalDateTime(envelope.scheduledSendAt) : null,
       meta: {
         emailId: envelope.documentMeta?.emailId ?? null,
         emailReplyTo: envelope.documentMeta?.emailReplyTo || undefined,
@@ -202,7 +205,16 @@ export const EnvelopeDistributeDialog = ({
 
   const onFormSubmit = async ({ meta }: TEnvelopeDistributeFormSchema) => {
     try {
-      await distributeEnvelope({ envelopeId: envelope.id, meta });
+      const scheduledSendAtValue = form.getValues('scheduledSendAt');
+
+      if (isScheduling && !scheduledSendAtValue) {
+        form.setError('scheduledSendAt', { message: t`Choose a date and time to schedule this envelope.` });
+        return;
+      }
+
+      const scheduledSendAt = isScheduling ? new Date(scheduledSendAtValue as string) : undefined;
+
+      await distributeEnvelope({ envelopeId: envelope.id, meta, scheduledSendAt });
 
       await onDistribute?.();
 
@@ -211,8 +223,10 @@ export const EnvelopeDistributeDialog = ({
       await navigate(redirectPath);
 
       toast({
-        title: t`Envelope distributed`,
-        description: t`Your envelope has been distributed successfully.`,
+        title: scheduledSendAt ? t`Envelope scheduled` : t`Envelope distributed`,
+        description: scheduledSendAt
+          ? t`Your envelope will be sent at the scheduled time.`
+          : t`Your envelope has been distributed successfully.`,
         duration: 5000,
       });
 
@@ -440,6 +454,45 @@ export const EnvelopeDistributeDialog = ({
                   </AnimatePresence>
                 </div>
 
+                {envelope.userId === user.id && (
+                  <div className="mt-4 rounded-lg border p-3">
+                    <label className="flex items-center gap-2 font-medium text-sm">
+                      <input
+                        type="checkbox"
+                        checked={isScheduling}
+                        onChange={(event) => setIsScheduling(event.target.checked)}
+                      />
+                      <Trans>Schedule send</Trans>
+                    </label>
+
+                    {isScheduling && (
+                      <FormField
+                        control={form.control}
+                        name="scheduledSendAt"
+                        render={({ field }) => (
+                          <FormItem className="mt-3">
+                            <FormLabel>
+                              <Trans>Send date and time</Trans>
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="datetime-local"
+                                min={formatLocalDateTime(new Date())}
+                                {...field}
+                                value={field.value ?? ''}
+                              />
+                            </FormControl>
+                            <p className="text-muted-foreground text-xs">
+                              <Trans>Times are shown in your local timezone.</Trans>
+                            </p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                  </div>
+                )}
+
                 <DialogFooter>
                   <DialogClose asChild>
                     <Button type="button" variant="secondary" disabled={isSubmitting}>
@@ -448,7 +501,7 @@ export const EnvelopeDistributeDialog = ({
                   </DialogClose>
 
                   <Button loading={isSubmitting} disabled={isSyncing} type="submit">
-                    <Trans>Send</Trans>
+                    {isScheduling ? <Trans>Schedule</Trans> : <Trans>Send</Trans>}
                   </Button>
                 </DialogFooter>
               </fieldset>
@@ -560,4 +613,9 @@ export const EnvelopeDistributeDialog = ({
       </DialogContent>
     </Dialog>
   );
+};
+
+const formatLocalDateTime = (date: Date) => {
+  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return offsetDate.toISOString().slice(0, 16);
 };

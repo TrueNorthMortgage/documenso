@@ -1,5 +1,7 @@
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
+import { useSession } from '@documenso/lib/client-only/providers/session';
 import { getEnvelopeItemPermissions, mapSecondaryIdToTemplateId } from '@documenso/lib/utils/envelope';
+import { trpc } from '@documenso/trpc/react';
 import { Badge } from '@documenso/ui/primitives/badge';
 import { Button } from '@documenso/ui/primitives/button';
 import { Separator } from '@documenso/ui/primitives/separator';
@@ -32,6 +34,7 @@ import { EnvelopeItemTitleInput } from './envelope-editor-title-input';
 
 export default function EnvelopeEditorHeader() {
   const { t } = useLingui();
+  const { user } = useSession();
 
   const {
     envelope,
@@ -67,6 +70,9 @@ export default function EnvelopeEditorHeader() {
 
     embedded?.onUpdate?.(latestEnvelope);
   };
+
+  const { mutateAsync: cancelScheduledSend, isPending: isCancellingScheduledSend } =
+    trpc.envelope.cancelScheduledSend.useMutation();
 
   return (
     <nav className="w-full border-border border-b bg-background px-4 py-3 md:px-6">
@@ -151,6 +157,12 @@ export default function EnvelopeEditorHeader() {
                 ))
                 .exhaustive()}
 
+            {envelope.scheduledSendAt && envelope.scheduledSendAt > new Date() && (
+              <Badge variant="secondary" className="shrink-0">
+                <Trans>Scheduled</Trans>
+              </Badge>
+            )}
+
             {autosaveError && (
               <>
                 <Badge variant="destructive" className="shrink-0">
@@ -201,10 +213,23 @@ export default function EnvelopeEditorHeader() {
                   trigger={
                     <Button size="sm">
                       <SendIcon className="mr-2 h-4 w-4" />
-                      <Trans>Send Document</Trans>
+                      {envelope.scheduledSendAt ? <Trans>Edit scheduled send</Trans> : <Trans>Send Document</Trans>}
                     </Button>
                   }
                 />
+
+                {envelope.userId === user.id && envelope.scheduledSendAt && envelope.scheduledSendAt > new Date() && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    loading={isCancellingScheduledSend}
+                    onClick={() => {
+                      void cancelScheduledSend({ envelopeId: envelope.id }).then(() => window.location.reload());
+                    }}
+                  >
+                    <Trans>Cancel scheduled send</Trans>
+                  </Button>
+                )}
 
                 <EnvelopeRedistributeDialog
                   envelope={envelope}

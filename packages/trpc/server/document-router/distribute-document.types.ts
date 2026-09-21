@@ -14,6 +14,10 @@ import { z } from 'zod';
 
 import type { TrpcRouteMeta } from '../trpc';
 
+const ZScheduledSendAtSchema = z.coerce.date().refine((date) => date > new Date(), {
+  message: 'Scheduled send time must be in the future.',
+});
+
 export const distributeDocumentMeta: TrpcRouteMeta = {
   openapi: {
     method: 'POST',
@@ -26,6 +30,7 @@ export const distributeDocumentMeta: TrpcRouteMeta = {
 
 export const ZDistributeDocumentRequestSchema = z.object({
   documentId: z.number().describe('The ID of the document to send.'),
+  scheduledSendAt: ZScheduledSendAtSchema.optional().describe('A future date and time at which to send the document.'),
   meta: z
     .object({
       subject: ZDocumentMetaSubjectSchema.optional(),
