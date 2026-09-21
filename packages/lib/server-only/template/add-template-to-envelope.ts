@@ -65,10 +65,15 @@ export const addTemplateToEnvelope = async ({
     getAccessibleTemplate({ templateId, userId, teamId }),
   ]);
 
-  if (!envelope || envelope.status !== DocumentStatus.DRAFT) {
+  const canAddTemplate =
+    envelope &&
+    (envelope.status === DocumentStatus.DRAFT ||
+      (envelope.status === DocumentStatus.PENDING && envelope.correctionStartedAt));
+
+  if (!canAddTemplate) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
-      message: 'Only draft documents can have templates added',
-      userMessage: 'Templates can only be added to draft documents.',
+      message: 'Templates can only be added to draft documents or active corrections',
+      userMessage: 'Start a correction before adding a template to a pending document.',
     });
   }
 
@@ -130,7 +135,7 @@ export const addTemplateToEnvelope = async ({
   for (const recipientId of recipientMap.values()) {
     const recipient = envelope.recipients.find((candidate) => candidate.id === recipientId);
 
-    if (recipient && !canRecipientFieldsBeModified(recipient, envelope.fields)) {
+    if (recipient && !canRecipientFieldsBeModified(recipient, envelope.fields, Boolean(envelope.correctionStartedAt))) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: `Recipient ${recipient.id} cannot be modified`,
         userMessage: 'One of the recipients can no longer have fields modified.',
