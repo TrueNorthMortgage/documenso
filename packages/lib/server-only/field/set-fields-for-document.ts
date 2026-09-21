@@ -18,7 +18,7 @@ import {
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import { createDocumentAuditLogData, diffFieldChanges } from '@documenso/lib/utils/document-audit-logs';
 import { prisma } from '@documenso/prisma';
-import { EnvelopeType, type Field, FieldGroupType, FieldType, SigningStatus } from '@prisma/client';
+import { EnvelopeType, type Field, FieldGroupType, FieldType } from '@prisma/client';
 import { isDeepEqual } from 'remeda';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
@@ -101,27 +101,6 @@ export const setFieldsForDocument = async ({
 
   const linkedFields = fields.map((field) => {
     const existing = existingFields.find((existingField) => existingField.id === field.id);
-
-    // The editor submits its complete local field collection on every autosave. During a
-    // correction, retain completed recipients' fields exactly as persisted so changes for
-    // an outstanding recipient are not rejected because a locked field was also submitted.
-    if (existing?.recipient?.signingStatus === SigningStatus.SIGNED && envelope.correctionStartedAt) {
-      return {
-        ...field,
-        recipientId: existing.recipientId,
-        envelopeItemId: existing.envelopeItemId,
-        type: existing.type,
-        pageNumber: existing.page,
-        pageX: existing.positionX.toNumber(),
-        pageY: existing.positionY.toNumber(),
-        pageWidth: existing.width.toNumber(),
-        pageHeight: existing.height.toNumber(),
-        fieldMeta: existing.fieldMeta || undefined,
-        fieldGroup: existing.fieldGroup,
-        _persisted: existing,
-        _recipient: existing.recipient,
-      };
-    }
 
     const recipient = envelope.recipients.find((recipient) => recipient.id === field.recipientId);
 
