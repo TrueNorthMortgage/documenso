@@ -107,7 +107,11 @@ export const DocumentsTable = ({
         header: _(msg`Status`),
         accessorKey: 'status',
         cell: ({ row }) => (
-          <DocumentStatus status={row.original.status} isCorrecting={Boolean(row.original.correctionStartedAt)} />
+          <DocumentStatus
+            status={row.original.status}
+            isCorrecting={Boolean(row.original.correctionStartedAt)}
+            isScheduled={Boolean(row.original.scheduledSendAt && row.original.scheduledSendAt > new Date())}
+          />
         ),
         size: 140,
       },

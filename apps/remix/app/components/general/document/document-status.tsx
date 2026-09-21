@@ -60,16 +60,35 @@ const CORRECTING_STATUS: FriendlyStatus = {
   color: 'text-orange-600 dark:text-orange-300',
 };
 
+const SCHEDULED_STATUS: FriendlyStatus = {
+  label: msg`Scheduled`,
+  labelExtended: msg`Document scheduled`,
+  icon: Clock,
+  color: 'text-purple-600 dark:text-purple-300',
+};
+
 export type DocumentStatusProps = HTMLAttributes<HTMLSpanElement> & {
   status: ExtendedDocumentStatus;
   inheritColor?: boolean;
   isCorrecting?: boolean;
+  isScheduled?: boolean;
 };
 
-export const DocumentStatus = ({ className, status, inheritColor, isCorrecting, ...props }: DocumentStatusProps) => {
+export const DocumentStatus = ({
+  className,
+  status,
+  inheritColor,
+  isCorrecting,
+  isScheduled,
+  ...props
+}: DocumentStatusProps) => {
   const { _ } = useLingui();
 
-  const { label, icon: Icon, color } = isCorrecting ? CORRECTING_STATUS : FRIENDLY_STATUS_MAP[status];
+  const {
+    label,
+    icon: Icon,
+    color,
+  } = isScheduled ? SCHEDULED_STATUS : isCorrecting ? CORRECTING_STATUS : FRIENDLY_STATUS_MAP[status];
 
   return (
     <span className={cn('flex items-center', className)} {...props}>
