@@ -206,9 +206,14 @@ export const EnvelopeDownloadDialog = ({
         </DialogHeader>
 
         {envelopeStatus === DocumentStatus.COMPLETED && envelopeItems.length > 0 && (
-          <Button onClick={() => void onDownloadAllSigned()} loading={isDownloadingAllSigned}>
+          <Button
+            className="w-fit text-xs"
+            size="sm"
+            onClick={() => void onDownloadAllSigned()}
+            loading={isDownloadingAllSigned}
+          >
             {!isDownloadingAllSigned && <DownloadIcon className="mr-2 h-4 w-4" />}
-            <Trans>Download all signed</Trans>
+            <Trans>Download all signed (ZIP)</Trans>
           </Button>
         )}
 
