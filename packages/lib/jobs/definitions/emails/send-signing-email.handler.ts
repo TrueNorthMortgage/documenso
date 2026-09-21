@@ -30,7 +30,7 @@ import type { JobRunIO } from '../../client/_internal/job';
 import type { TSendSigningEmailJobDefinition } from './send-signing-email';
 
 export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefinition; io: JobRunIO }) => {
-  const { userId, documentId, recipientId, requestMetadata } = payload;
+  const { userId, documentId, recipientId, isCorrection = false, isResending = false, requestMetadata } = payload;
 
   const [user, envelope, recipient] = await Promise.all([
     prisma.user.findFirstOrThrow({
@@ -140,6 +140,14 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
     }
   }
 
+  if (isCorrection) {
+    const correctionNotice = i18n._(
+      msg`This envelope has been updated with corrections. Please review the latest version before you continue.`,
+    );
+
+    emailMessage = emailMessage ? `${correctionNotice}\n\n${emailMessage}` : correctionNotice;
+  }
+
   const customEmailTemplate = {
     'signer.name': name,
     'signer.email': email,
@@ -224,7 +232,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
         recipientName: recipient.name,
         recipientEmail: recipient.email,
         recipientRole: recipient.role,
-        isResending: false,
+        isResending,
       },
     }),
   });

@@ -9,6 +9,8 @@ const SEND_SIGNING_EMAIL_JOB_DEFINITION_SCHEMA = z.object({
   userId: z.number(),
   documentId: z.number(),
   recipientId: z.number(),
+  isCorrection: z.boolean().optional(),
+  isResending: z.boolean().optional(),
   requestMetadata: ZRequestMetadataSchema.optional(),
 });
 
