@@ -296,6 +296,7 @@ const getSignedEnvelopeZipFileName = ({
 }: Pick<EnvelopeDownloadDialogProps, 'envelopeId' | 'envelopeTitle'>) => {
   const fallbackTitle = `envelope-${envelopeId.slice(-8)}`;
   const safeTitle = (envelopeTitle || fallbackTitle)
+    .replace(/\.[^/.]+$/, '')
     .replace(/[<>:"/\\|?*]/g, '-')
     .replace(/\s+/g, ' ')
     .trim()
