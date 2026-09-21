@@ -83,6 +83,8 @@ export const EnvelopeDistributeDialog = ({
   const [isScheduling, setIsScheduling] = useState(Boolean(envelope.scheduledSendAt) && envelope.userId === user.id);
 
   const { mutateAsync: distributeEnvelope } = trpcReact.envelope.distribute.useMutation();
+  const { mutateAsync: cancelScheduledSend, isPending: isCancellingScheduledSend } =
+    trpcReact.envelope.cancelScheduledSend.useMutation();
 
   const form = useForm<TEnvelopeDistributeFormSchema>({
     defaultValues: {
@@ -237,6 +239,31 @@ export const EnvelopeDistributeDialog = ({
       toast({
         title: t`Something went wrong`,
         description: error.userMessage || t`This envelope could not be distributed at this time. Please try again.`,
+        variant: 'destructive',
+        duration: 7500,
+      });
+    }
+  };
+
+  const onSaveAsDraft = async () => {
+    try {
+      await cancelScheduledSend({ envelopeId: envelope.id });
+
+      await navigate(`${documentRootPath}/${envelope.id}`);
+
+      toast({
+        title: t`Scheduled send cancelled`,
+        description: t`Your envelope is saved as a draft.`,
+        duration: 5000,
+      });
+
+      setIsOpen(false);
+    } catch (err) {
+      const error = AppError.parseError(err);
+
+      toast({
+        title: t`Something went wrong`,
+        description: error.userMessage || t`This scheduled send could not be cancelled. Please try again.`,
         variant: 'destructive',
         duration: 7500,
       });
@@ -500,9 +527,20 @@ export const EnvelopeDistributeDialog = ({
                     </Button>
                   </DialogClose>
 
-                  <Button loading={isSubmitting} disabled={isSyncing} type="submit">
-                    {isScheduling ? <Trans>Schedule</Trans> : <Trans>Send</Trans>}
-                  </Button>
+                  {envelope.scheduledSendAt && envelope.userId === user.id && !isScheduling ? (
+                    <Button
+                      type="button"
+                      loading={isCancellingScheduledSend}
+                      disabled={isSyncing || isSubmitting}
+                      onClick={() => void onSaveAsDraft()}
+                    >
+                      <Trans>Save as Draft</Trans>
+                    </Button>
+                  ) : (
+                    <Button loading={isSubmitting} disabled={isSyncing || isCancellingScheduledSend} type="submit">
+                      {isScheduling ? <Trans>Schedule</Trans> : <Trans>Send</Trans>}
+                    </Button>
+                  )}
                 </DialogFooter>
               </fieldset>
             </form>
