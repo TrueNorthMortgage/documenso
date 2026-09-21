@@ -105,7 +105,8 @@ export const EnvelopeEditor = () => {
 
   const envelopeEditorSteps = useMemo(() => {
     const steps: EnvelopeEditorStepData[] = [];
-    const isFieldStructureLocked = isDocument && hasCompletedRecipient(envelope.recipients);
+    const isFieldStructureLocked =
+      isDocument && hasCompletedRecipient(envelope.recipients) && !envelope.correctionStartedAt;
 
     if (allowUploadAndRecipientStep) {
       steps.push(UPLOAD_STEP);
