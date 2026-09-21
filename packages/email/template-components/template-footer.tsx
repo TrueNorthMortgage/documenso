@@ -1,3 +1,5 @@
+import { Fragment } from 'react';
+
 import { Section, Text } from '../components';
 import { useBranding } from '../providers/branding';
 
@@ -14,10 +16,10 @@ export const TemplateFooter = (_props: TemplateFooterProps) => {
         <Text className="my-8 text-slate-400 text-sm">
           {branding.brandingCompanyDetails.split('\n').map((line, idx) => {
             return (
-              <>
+              <Fragment key={`branding-company-detail-${idx}`}>
                 {idx > 0 && <br />}
                 {line}
-              </>
+              </Fragment>
             );
           })}
         </Text>
