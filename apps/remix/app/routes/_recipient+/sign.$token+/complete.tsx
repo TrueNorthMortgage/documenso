@@ -251,6 +251,7 @@ export default function CompletedSigningPage({ loaderData }: Route.ComponentProp
               {isDocumentCompleted(document) && (
                 <EnvelopeDownloadDialog
                   envelopeId={document.envelopeId}
+                  envelopeTitle={document.title}
                   envelopeStatus={document.status}
                   envelopeItems={document.envelopeItems}
                   token={recipient?.token}
