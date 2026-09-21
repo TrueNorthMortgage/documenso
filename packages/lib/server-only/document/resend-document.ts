@@ -3,6 +3,7 @@ import { DocumentInviteEmailTemplate } from '@documenso/email/templates/document
 import { resolveExpiresAt } from '@documenso/lib/constants/envelope-expiration';
 import { RECIPIENT_ROLE_TO_EMAIL_TYPE, RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-roles';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
+import { jobs } from '@documenso/lib/jobs/client';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import type { TDocumentMeta } from '@documenso/lib/types/document-meta';
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
@@ -26,7 +27,7 @@ import { extractDerivedDocumentEmailSettings } from '../../types/document-email'
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
 import { isDocumentCompleted } from '../../utils/document';
 import { isSameEmail } from '../../utils/email';
-import type { EnvelopeIdOptions } from '../../utils/envelope';
+import { type EnvelopeIdOptions, mapSecondaryIdToDocumentId } from '../../utils/envelope';
 import { getRecipientsWithMissingFields, isRecipientEmailValidForSending } from '../../utils/recipients';
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { getTeamDisplayName } from '../../utils/teams';
@@ -166,6 +167,40 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
     if (envelope.correctionStartedAt) {
       await finishEnvelopeCorrection(envelope.id, requestMetadata);
     }
+
+    return {
+      ...envelope,
+      correctionStartedAt: null,
+    };
+  }
+
+  if (isCorrection) {
+    await finishEnvelopeCorrection(envelope.id, requestMetadata);
+
+    const documentId = mapSecondaryIdToDocumentId(envelope.secondaryId);
+
+    await Promise.all(
+      recipientsToRemind.map(async (recipient) => {
+        await jobs.triggerJob({
+          name: 'send.signing.requested.email',
+          payload: {
+            userId,
+            documentId,
+            recipientId: recipient.id,
+            isCorrection: true,
+            isResending: true,
+            requestMetadata: requestMetadata.requestMetadata,
+          },
+        });
+      }),
+    );
+
+    await triggerWebhook({
+      event: WebhookTriggerEvents.DOCUMENT_REMINDER_SENT,
+      data: ZWebhookDocumentSchema.parse(mapEnvelopeToWebhookDocumentPayload(envelope)),
+      userId: envelope.userId,
+      teamId: envelope.teamId,
+    });
 
     return {
       ...envelope,
