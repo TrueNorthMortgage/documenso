@@ -260,6 +260,7 @@ export const ZEditorEnvelopeSchema = EnvelopeSchema.pick({
   completedAt: true,
   deletedAt: true,
   correctionStartedAt: true,
+  scheduledSendAt: true,
   title: true,
   authOptions: true,
   publicTitle: true,

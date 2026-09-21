@@ -297,6 +297,7 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
       },
       data: {
         status: DocumentStatus.PENDING,
+        scheduledSendAt: null,
       },
       include: {
         documentMeta: true,

@@ -1,5 +1,6 @@
 import { sendDocument } from '@documenso/lib/server-only/document/send-document';
 import { updateDocumentMeta } from '@documenso/lib/server-only/document-meta/upsert-document-meta';
+import { scheduleEnvelopeSend } from '@documenso/lib/server-only/envelope/schedule-envelope-send';
 import { getTeamById } from '@documenso/lib/server-only/team/get-team';
 import { maskRecipientTokensForDocument } from '@documenso/lib/utils/mask-recipient-tokens-for-document';
 import { formatSigningLink } from '@documenso/lib/utils/recipients';
@@ -17,7 +18,7 @@ export const distributeEnvelopeRoute = authenticatedProcedure
   .output(ZDistributeEnvelopeResponseSchema)
   .mutation(async ({ input, ctx }) => {
     const { teamId } = ctx;
-    const { envelopeId, meta = {} } = input;
+    const { envelopeId, meta = {}, scheduledSendAt } = input;
 
     ctx.logger.info({
       input: {
@@ -45,6 +46,17 @@ export const distributeEnvelopeRoute = authenticatedProcedure
         emailReplyTo: meta.emailReplyTo,
         requestMetadata: ctx.metadata,
       });
+    }
+
+    if (scheduledSendAt) {
+      const envelope = await scheduleEnvelopeSend({
+        userId: ctx.user.id,
+        id: { type: 'envelopeId', id: envelopeId },
+        teamId,
+        scheduledSendAt,
+      });
+
+      return { success: true, id: envelope.id, recipients: [] };
     }
 
     const envelope = await sendDocument({

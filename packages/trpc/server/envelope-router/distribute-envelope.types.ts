@@ -5,6 +5,10 @@ import { ZSuccessResponseSchema } from '../schema';
 import type { TrpcRouteMeta } from '../trpc';
 import { ZRecipientWithSigningUrlSchema } from './schema';
 
+const ZScheduledSendAtSchema = z.coerce.date().refine((date) => date > new Date(), {
+  message: 'Scheduled send time must be in the future.',
+});
+
 export const distributeEnvelopeMeta: TrpcRouteMeta = {
   openapi: {
     method: 'POST',
@@ -17,6 +21,7 @@ export const distributeEnvelopeMeta: TrpcRouteMeta = {
 
 export const ZDistributeEnvelopeRequestSchema = z.object({
   envelopeId: z.string().describe('The ID of the envelope to send.'),
+  scheduledSendAt: ZScheduledSendAtSchema.optional().describe('A future date and time at which to send the envelope.'),
   meta: ZDocumentMetaUpdateSchema.pick({
     subject: true,
     message: true,

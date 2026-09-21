@@ -1,5 +1,6 @@
 import { sendDocument } from '@documenso/lib/server-only/document/send-document';
 import { updateDocumentMeta } from '@documenso/lib/server-only/document-meta/upsert-document-meta';
+import { scheduleEnvelopeSend } from '@documenso/lib/server-only/envelope/schedule-envelope-send';
 import { mapEnvelopeToDocumentLite } from '@documenso/lib/utils/document';
 
 import { authenticatedProcedure } from '../trpc';
@@ -15,7 +16,7 @@ export const distributeDocumentRoute = authenticatedProcedure
   .output(ZDistributeDocumentResponseSchema)
   .mutation(async ({ input, ctx }) => {
     const { teamId } = ctx;
-    const { documentId, meta = {} } = input;
+    const { documentId, meta = {}, scheduledSendAt } = input;
 
     ctx.logger.info({
       input: {
@@ -43,6 +44,17 @@ export const distributeDocumentRoute = authenticatedProcedure
         emailReplyTo: meta.emailReplyTo,
         requestMetadata: ctx.metadata,
       });
+    }
+
+    if (scheduledSendAt) {
+      const envelope = await scheduleEnvelopeSend({
+        userId: ctx.user.id,
+        id: { type: 'documentId', id: documentId },
+        teamId,
+        scheduledSendAt,
+      });
+
+      return mapEnvelopeToDocumentLite(envelope);
     }
 
     const envelope = await sendDocument({
