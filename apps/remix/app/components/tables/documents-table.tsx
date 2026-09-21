@@ -111,6 +111,7 @@ export const DocumentsTable = ({
             status={row.original.status}
             isCorrecting={Boolean(row.original.correctionStartedAt)}
             isScheduled={Boolean(row.original.scheduledSendAt && row.original.scheduledSendAt > new Date())}
+            scheduledSendAt={row.original.scheduledSendAt}
           />
         ),
         size: 140,
