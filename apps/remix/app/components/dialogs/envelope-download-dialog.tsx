@@ -1,4 +1,6 @@
+import { downloadFile } from '@documenso/lib/client-only/download-file';
 import { downloadPDF } from '@documenso/lib/client-only/download-pdf';
+import { getEnvelopeItemPdfUrl } from '@documenso/lib/utils/envelope-download';
 import { trpc } from '@documenso/trpc/react';
 import { Button } from '@documenso/ui/primitives/button';
 import {
@@ -13,6 +15,7 @@ import { Skeleton } from '@documenso/ui/primitives/skeleton';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { DocumentStatus, type EnvelopeItem } from '@prisma/client';
+import { zipSync } from 'fflate';
 import { DownloadIcon, FileTextIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -61,6 +64,7 @@ export const EnvelopeDownloadDialog = ({
   const [isDownloadingState, setIsDownloadingState] = useState<{
     [envelopeItemIdAndVersion: string]: boolean;
   }>({});
+  const [isDownloadingAllSigned, setIsDownloadingAllSigned] = useState(false);
 
   const generateDownloadKey = (envelopeItemId: string, version: 'original' | 'signed' | 'pending') =>
     `${envelopeItemId}-${version}`;
@@ -145,6 +149,46 @@ export const EnvelopeDownloadDialog = ({
     }
   };
 
+  const onDownloadAllSigned = async () => {
+    if (isDownloadingAllSigned || envelopeItems.length === 0) {
+      return;
+    }
+
+    setIsDownloadingAllSigned(true);
+
+    try {
+      const fileEntries = await Promise.all(
+        envelopeItems.map(async (envelopeItem, index) => {
+          const response = await fetch(
+            getEnvelopeItemPdfUrl({ type: 'download', envelopeItem, token, version: 'signed' }),
+          );
+
+          if (!response.ok) {
+            throw new Error(`Failed to download envelope item ${envelopeItem.id}`);
+          }
+
+          return [getSignedFileName(envelopeItem.title, index), new Uint8Array(await response.arrayBuffer())] as const;
+        }),
+      );
+
+      downloadFile({
+        filename: 'signed-envelope-documents.zip',
+        data: new Blob([zipSync(Object.fromEntries(fileEntries))], { type: 'application/zip' }),
+      });
+    } catch (error) {
+      console.error(error);
+
+      toast({
+        title: t`Something went wrong`,
+        description: t`The signed documents could not be downloaded at this time. Please try again.`,
+        variant: 'destructive',
+        duration: 7500,
+      });
+    } finally {
+      setIsDownloadingAllSigned(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(value) => setOpen(value)}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -158,6 +202,13 @@ export const EnvelopeDownloadDialog = ({
             <Trans>Select the files you would like to download.</Trans>
           </DialogDescription>
         </DialogHeader>
+
+        {envelopeStatus === DocumentStatus.COMPLETED && envelopeItems.length > 0 && (
+          <Button onClick={() => void onDownloadAllSigned()} loading={isDownloadingAllSigned}>
+            {!isDownloadingAllSigned && <DownloadIcon className="mr-2 h-4 w-4" />}
+            <Trans>Download all signed</Trans>
+          </Button>
+        )}
 
         <div className="flex w-full flex-col gap-4 overflow-hidden">
           {isLoadingEnvelopeItems
@@ -229,4 +280,10 @@ export const EnvelopeDownloadDialog = ({
       </DialogContent>
     </Dialog>
   );
+};
+
+const getSignedFileName = (title: string, index: number) => {
+  const baseTitle = title.replace(/\.pdf$/i, '') || `document-${index + 1}`;
+
+  return `${String(index + 1).padStart(2, '0')}-${baseTitle}_signed.pdf`;
 };
