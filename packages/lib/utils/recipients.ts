@@ -90,7 +90,7 @@ export const canRecipientFieldsBeModified = (
 
 /**
  * Whether a non-CC recipient has completed their action on the envelope.
- * Once true, the envelope's document and field structure must remain immutable.
+ * Once true, document items must remain immutable and completed recipients cannot be changed.
  */
 export const hasCompletedRecipient = (recipients: Pick<TRecipientLite, 'role' | 'signingStatus'>[]) =>
   recipients.some(

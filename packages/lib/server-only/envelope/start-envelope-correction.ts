@@ -2,11 +2,10 @@ import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-log
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { prisma } from '@documenso/prisma';
-import { DocumentStatus, EnvelopeType, Prisma, RecipientRole, SigningStatus } from '@prisma/client';
+import { DocumentStatus, EnvelopeType, Prisma } from '@prisma/client';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
-import { hasCompletedRecipient } from '../../utils/recipients';
 import { getEnvelopeWhereInput } from './get-envelope-by-id';
 
 export type StartEnvelopeCorrectionOptions = {
@@ -68,14 +67,6 @@ export const startEnvelopeCorrection = async ({
           deletedAt: null,
           internalVersion: 2,
           correctionStartedAt: null,
-          recipients: {
-            none: {
-              role: {
-                not: RecipientRole.CC,
-              },
-              signingStatus: SigningStatus.SIGNED,
-            },
-          },
         },
         data: {
           correctionStartedAt: new Date(),
@@ -98,14 +89,6 @@ export const startEnvelopeCorrection = async ({
 
         if (refreshedEnvelope.correctionStartedAt) {
           return refreshedEnvelope;
-        }
-
-        if (hasCompletedRecipient(refreshedEnvelope.recipients)) {
-          throw new AppError(AppErrorCode.INVALID_REQUEST, {
-            message: 'A recipient completed this document before correction started',
-            userMessage:
-              'A recipient has completed this document. Refresh the page to create a corrected copy instead.',
-          });
         }
 
         throw new AppError(AppErrorCode.INVALID_REQUEST, {

@@ -4,7 +4,7 @@ import { getEnvelopeWhereInput } from '@documenso/lib/server-only/envelope/get-e
 import { assertCanManageTemplate } from '@documenso/lib/server-only/template/validate-template-access';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
-import { canRecipientFieldsBeModified, hasCompletedRecipient } from '@documenso/lib/utils/recipients';
+import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
 import { prisma } from '@documenso/prisma';
 import { EnvelopeType } from '@prisma/client';
 
@@ -89,12 +89,6 @@ export const deleteEnvelopeFieldRoute = authenticatedProcedure
     if (envelope.completedAt) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: 'Envelope already complete',
-      });
-    }
-
-    if (envelope.type === EnvelopeType.DOCUMENT && hasCompletedRecipient(envelope.recipients)) {
-      throw new AppError(AppErrorCode.INVALID_REQUEST, {
-        message: 'Fields cannot be deleted after a recipient has completed the document',
       });
     }
 

@@ -24,7 +24,7 @@ import { isDeepEqual } from 'remeda';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapFieldToLegacyField } from '../../utils/fields';
-import { canRecipientFieldsBeModified, hasCompletedRecipient } from '../../utils/recipients';
+import { canRecipientFieldsBeModified } from '../../utils/recipients';
 import { assertEnvelopeCanBeCorrected } from '../envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 
@@ -83,20 +83,6 @@ export const setFieldsForDocument = async ({
   assertEnvelopeCanBeCorrected(envelope);
 
   const existingFields = envelope.fields;
-
-  const hasFieldStructureChanges =
-    existingFields.length !== fields.length ||
-    fields.some((field) => {
-      const existingField = existingFields.find((candidate) => candidate.id === field.id);
-
-      return !existingField || hasFieldBeenChanged(existingField, field);
-    });
-
-  if (hasFieldStructureChanges && hasCompletedRecipient(envelope.recipients)) {
-    throw new AppError(AppErrorCode.INVALID_REQUEST, {
-      message: 'Fields cannot be changed after a recipient has completed the document',
-    });
-  }
 
   const removedFields = existingFields.filter(
     (existingField) => !fields.find((field) => field.id === existingField.id),

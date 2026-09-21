@@ -40,6 +40,7 @@ describe('getEnvelopeItemPermissions', () => {
     ]);
 
     expect(permissions.canFileBeChanged).toBe(false);
+    expect(permissions.canTitleBeChanged).toBe(false);
     expect(permissions.canOrderBeChanged).toBe(false);
   });
 });

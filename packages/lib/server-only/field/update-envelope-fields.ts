@@ -8,7 +8,7 @@ import { EnvelopeType, type FieldType } from '@prisma/client';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { mapFieldToLegacyField } from '../../utils/fields';
-import { canRecipientFieldsBeModified, hasCompletedRecipient } from '../../utils/recipients';
+import { canRecipientFieldsBeModified } from '../../utils/recipients';
 import { assertEnvelopeCanBeCorrected } from '../envelope/assert-envelope-can-be-corrected';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { assertCanManageTemplate } from '../template/validate-template-access';
@@ -74,12 +74,6 @@ export const updateEnvelopeFields = async ({
   if (envelope.completedAt) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
       message: 'Envelope already complete',
-    });
-  }
-
-  if (envelope.type === EnvelopeType.DOCUMENT && hasCompletedRecipient(envelope.recipients)) {
-    throw new AppError(AppErrorCode.INVALID_REQUEST, {
-      message: 'Fields cannot be changed after a recipient has completed the document',
     });
   }
 
