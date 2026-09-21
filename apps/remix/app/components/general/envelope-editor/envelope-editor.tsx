@@ -450,6 +450,7 @@ export const EnvelopeEditor = () => {
             {allowDownloadPDF && (
               <EnvelopeDownloadDialog
                 envelopeId={envelope.id}
+                envelopeTitle={envelope.title}
                 envelopeStatus={envelope.status}
                 isLegacy={envelope.internalVersion === 1}
                 envelopeItems={envelope.envelopeItems}

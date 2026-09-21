@@ -140,6 +140,7 @@ export const DocumentsTableActionButton = ({ row }: DocumentsTableActionButtonPr
     .with({ isComplete: true }, () => (
       <EnvelopeDownloadDialog
         envelopeId={row.envelopeId}
+        envelopeTitle={row.title}
         envelopeStatus={row.status}
         token={recipient?.token}
         trigger={

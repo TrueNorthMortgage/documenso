@@ -101,6 +101,7 @@ const MobileDropdownMenu = () => {
       <DropdownMenuContent align="end">
         <EnvelopeDownloadDialog
           envelopeId={envelope.id}
+          envelopeTitle={envelope.title}
           envelopeStatus={envelope.status}
           envelopeItems={envelope.envelopeItems}
           token={recipient.token}

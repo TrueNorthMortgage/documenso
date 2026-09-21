@@ -110,6 +110,7 @@ export const DocumentPageViewButton = ({ envelope }: DocumentPageViewButtonProps
     .with({ isComplete: true }, () => (
       <EnvelopeDownloadDialog
         envelopeId={envelope.id}
+        envelopeTitle={envelope.title}
         envelopeStatus={envelope.status}
         envelopeItems={envelope.envelopeItems}
         token={recipient?.token}

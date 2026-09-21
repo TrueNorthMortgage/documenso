@@ -33,6 +33,7 @@ export const ZDocumentSchema = LegacyDocumentSchema.pick({
   teamId: true,
   folderId: true,
 }).extend({
+  scheduledSendAt: z.coerce.date().nullable(),
   envelopeId: z.string(),
   internalVersion: z.number(),
 
@@ -119,6 +120,7 @@ export const ZDocumentLiteSchema = LegacyDocumentSchema.pick({
   folderId: true,
   useLegacyFieldInsertion: true,
 }).extend({
+  scheduledSendAt: z.coerce.date().nullable(),
   envelopeId: z.string(),
   internalVersion: z.number(),
 
@@ -153,6 +155,7 @@ export const ZDocumentManySchema = LegacyDocumentSchema.pick({
   folderId: true,
   useLegacyFieldInsertion: true,
 }).extend({
+  scheduledSendAt: z.coerce.date().nullable(),
   envelopeId: z.string(),
   internalVersion: z.number(),
 

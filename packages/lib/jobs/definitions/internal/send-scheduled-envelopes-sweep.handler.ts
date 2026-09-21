@@ -14,7 +14,7 @@ export const run = async ({ io }: { payload: TSendScheduledEnvelopesSweepJobDefi
     const envelopes = await tx.$queryRaw<{ id: string; userId: number; teamId: number }[]>(Prisma.sql`
       SELECT "id", "userId", "teamId"
       FROM "Envelope"
-      WHERE "status" = ${DocumentStatus.DRAFT}
+      WHERE "status" = CAST(${DocumentStatus.DRAFT} AS "DocumentStatus")
         AND "scheduledSendAt" <= ${now}
         AND "deletedAt" IS NULL
       ORDER BY "scheduledSendAt", "id"

@@ -23,6 +23,7 @@ type EnvelopeItemToDownload = Pick<EnvelopeItem, 'id' | 'envelopeId' | 'title' |
 
 type EnvelopeDownloadDialogProps = {
   envelopeId: string;
+  envelopeTitle?: string;
   envelopeStatus: DocumentStatus;
 
   /**
@@ -50,6 +51,7 @@ type EnvelopeDownloadDialogProps = {
 
 export const EnvelopeDownloadDialog = ({
   envelopeId,
+  envelopeTitle,
   envelopeStatus,
   isLegacy,
   envelopeItems: initialEnvelopeItems,
@@ -172,7 +174,7 @@ export const EnvelopeDownloadDialog = ({
       );
 
       downloadFile({
-        filename: 'signed-envelope-documents.zip',
+        filename: getSignedEnvelopeZipFileName({ envelopeId, envelopeTitle }),
         data: new Blob([zipSync(Object.fromEntries(fileEntries))], { type: 'application/zip' }),
       });
     } catch (error) {
@@ -286,4 +288,19 @@ const getSignedFileName = (title: string, index: number) => {
   const baseTitle = title.replace(/\.pdf$/i, '') || `document-${index + 1}`;
 
   return `${String(index + 1).padStart(2, '0')}-${baseTitle}_signed.pdf`;
+};
+
+const getSignedEnvelopeZipFileName = ({
+  envelopeId,
+  envelopeTitle,
+}: Pick<EnvelopeDownloadDialogProps, 'envelopeId' | 'envelopeTitle'>) => {
+  const fallbackTitle = `envelope-${envelopeId.slice(-8)}`;
+  const safeTitle = (envelopeTitle || fallbackTitle)
+    .replace(/[<>:"/\\|?*]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 100);
+  const date = new Date().toISOString().slice(0, 10);
+
+  return `${safeTitle || fallbackTitle}-signed-${date}.zip`;
 };

@@ -6,6 +6,7 @@ import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { CheckCircle2, Clock, File, FilePenLine, XCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react/dist/lucide-react';
+import { DateTime } from 'luxon';
 import type { HTMLAttributes } from 'react';
 
 type FriendlyStatus = {
@@ -60,27 +61,55 @@ const CORRECTING_STATUS: FriendlyStatus = {
   color: 'text-orange-600 dark:text-orange-300',
 };
 
+const SCHEDULED_STATUS: FriendlyStatus = {
+  label: msg`Scheduled`,
+  labelExtended: msg`Document scheduled`,
+  icon: Clock,
+  color: 'text-purple-600 dark:text-purple-300',
+};
+
 export type DocumentStatusProps = HTMLAttributes<HTMLSpanElement> & {
   status: ExtendedDocumentStatus;
   inheritColor?: boolean;
   isCorrecting?: boolean;
+  isScheduled?: boolean;
+  scheduledSendAt?: Date | null;
 };
 
-export const DocumentStatus = ({ className, status, inheritColor, isCorrecting, ...props }: DocumentStatusProps) => {
-  const { _ } = useLingui();
+export const DocumentStatus = ({
+  className,
+  status,
+  inheritColor,
+  isCorrecting,
+  isScheduled,
+  scheduledSendAt,
+  ...props
+}: DocumentStatusProps) => {
+  const { _, i18n } = useLingui();
 
-  const { label, icon: Icon, color } = isCorrecting ? CORRECTING_STATUS : FRIENDLY_STATUS_MAP[status];
+  const {
+    label,
+    icon: Icon,
+    color,
+  } = isScheduled ? SCHEDULED_STATUS : isCorrecting ? CORRECTING_STATUS : FRIENDLY_STATUS_MAP[status];
 
   return (
-    <span className={cn('flex items-center', className)} {...props}>
+    <span className={cn('flex items-start', className)} {...props}>
       {Icon && (
         <Icon
-          className={cn('mr-2 inline-block h-4 w-4', {
+          className={cn('mt-0.5 mr-2 inline-block h-4 w-4', {
             [color]: !inheritColor,
           })}
         />
       )}
-      {_(label)}
+      <span className="flex flex-col">
+        <span>{_(label)}</span>
+        {isScheduled && scheduledSendAt && (
+          <span className="text-muted-foreground text-xs">
+            {i18n.date(scheduledSendAt, { ...DateTime.DATETIME_SHORT, hourCycle: 'h12' })}
+          </span>
+        )}
+      </span>
     </span>
   );
 };
