@@ -284,7 +284,7 @@ export const getEnvelopeItemPermissions = (
       canOrderBeChanged: true,
     }))
     .with(DocumentStatus.PENDING, () => ({
-      canTitleBeChanged: true,
+      canTitleBeChanged: !hasCompletedRecipient,
       canFileBeChanged: Boolean(envelope.correctionStartedAt) && !hasCompletedRecipient,
       canOrderBeChanged: (Boolean(envelope.correctionStartedAt) && !hasCompletedRecipient) || !hasActiveRecipients,
     }))

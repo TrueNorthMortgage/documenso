@@ -74,7 +74,7 @@ export const deleteDocumentField = async ({ userId, teamId, fieldId, requestMeta
   }
 
   // Check whether the recipient associated with the field can have new fields created.
-  if (!canRecipientFieldsBeModified(recipient, recipient.fields)) {
+  if (!canRecipientFieldsBeModified(recipient, recipient.fields, Boolean(envelope.correctionStartedAt))) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
       message: 'Recipient has already interacted with the document.',
     });
