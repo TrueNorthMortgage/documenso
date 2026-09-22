@@ -99,10 +99,9 @@ export const DocumentsTable = ({
       {
         header: _(msg`Recipient`),
         accessorKey: 'recipient',
-        cell: ({ row }) => <RecipientCell recipients={row.original.recipients} documentStatus={row.original.status} />,
-        size: 260,
-        minSize: 260,
-        maxSize: 260,
+        cell: ({ row }) => (
+          <StackAvatarsWithTooltip recipients={row.original.recipients} documentStatus={row.original.status} />
+        ),
       },
       {
         header: _(msg`Status`),
@@ -213,26 +212,6 @@ export const DocumentsTable = ({
   );
 };
 
-type RecipientCellProps = {
-  recipients: DocumentsTableRow['recipients'];
-  documentStatus: DocumentsTableRow['status'];
-};
-
-const RecipientCell = ({ recipients, documentStatus }: RecipientCellProps) => {
-  const recipientDetails = recipients
-    .map((recipient) => (recipient.name ? `${recipient.name} (${recipient.email})` : recipient.email))
-    .join(', ');
-
-  return (
-    <div className="flex w-52 items-center gap-2">
-      <StackAvatarsWithTooltip recipients={recipients} documentStatus={documentStatus} />
-      <p className="line-clamp-2 min-w-0 text-[10px] leading-3" title={recipientDetails}>
-        {recipientDetails}
-      </p>
-    </div>
-  );
-};
-
 type DataTableTitleProps = {
   row: DocumentsTableRow;
   teamUrl: string;
@@ -255,7 +234,7 @@ const DataTableTitle = ({ row, teamUrl, teamEmail }: DataTableTitleProps) => {
   const documentsPath = formatDocumentsPath(teamUrl);
   const formatPath = `${documentsPath}/${row.envelopeId}`;
 
-  return match({
+  const title = match({
     isOwner,
     isRecipient,
     isCurrentTeamDocument,
@@ -281,4 +260,18 @@ const DataTableTitle = ({ row, teamUrl, teamEmail }: DataTableTitleProps) => {
     .otherwise(() => (
       <span className="block max-w-[10rem] truncate font-medium hover:underline md:max-w-[20rem]">{row.title}</span>
     ));
+
+  const recipientEmails = row.recipients.map((recipient) => recipient.email).join(', ');
+
+  return (
+    <div>
+      {title}
+      <p
+        className="max-w-[10rem] truncate text-[10px] text-muted-foreground leading-3 md:max-w-[20rem]"
+        title={recipientEmails}
+      >
+        {recipientEmails}
+      </p>
+    </div>
+  );
 };
