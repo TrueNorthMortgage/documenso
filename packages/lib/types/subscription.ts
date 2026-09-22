@@ -129,7 +129,7 @@ export const internalClaims: InternalClaims = {
     name: 'Free',
     teamCount: 1,
     memberCount: 1,
-    envelopeItemCount: 5,
+    envelopeItemCount: 20,
     locked: true,
     flags: {},
   },
@@ -138,7 +138,7 @@ export const internalClaims: InternalClaims = {
     name: 'Individual',
     teamCount: 1,
     memberCount: 1,
-    envelopeItemCount: 5,
+    envelopeItemCount: 20,
     locked: true,
     flags: {
       unlimitedDocuments: true,
@@ -150,7 +150,7 @@ export const internalClaims: InternalClaims = {
     name: 'Teams',
     teamCount: 1,
     memberCount: 5,
-    envelopeItemCount: 5,
+    envelopeItemCount: 20,
     locked: true,
     flags: {
       unlimitedDocuments: true,
@@ -164,7 +164,7 @@ export const internalClaims: InternalClaims = {
     name: 'Platform',
     teamCount: 1,
     memberCount: 0,
-    envelopeItemCount: 10,
+    envelopeItemCount: 20,
     locked: true,
     flags: {
       unlimitedDocuments: true,
@@ -183,7 +183,7 @@ export const internalClaims: InternalClaims = {
     name: 'Enterprise',
     teamCount: 0,
     memberCount: 0,
-    envelopeItemCount: 10,
+    envelopeItemCount: 20,
     locked: true,
     flags: {
       unlimitedDocuments: true,
@@ -204,7 +204,7 @@ export const internalClaims: InternalClaims = {
     name: 'Early Adopter',
     teamCount: 0,
     memberCount: 0,
-    envelopeItemCount: 5,
+    envelopeItemCount: 20,
     locked: true,
     flags: {
       unlimitedDocuments: true,

@@ -99,9 +99,7 @@ export const DocumentsTable = ({
       {
         header: _(msg`Recipient`),
         accessorKey: 'recipient',
-        cell: ({ row }) => (
-          <StackAvatarsWithTooltip recipients={row.original.recipients} documentStatus={row.original.status} />
-        ),
+        cell: ({ row }) => <RecipientCell recipients={row.original.recipients} documentStatus={row.original.status} />,
       },
       {
         header: _(msg`Status`),
@@ -208,6 +206,26 @@ export const DocumentsTable = ({
           <Loader className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
+    </div>
+  );
+};
+
+type RecipientCellProps = {
+  recipients: DocumentsTableRow['recipients'];
+  documentStatus: DocumentsTableRow['status'];
+};
+
+const RecipientCell = ({ recipients, documentStatus }: RecipientCellProps) => {
+  const recipientDetails = recipients
+    .map((recipient) => (recipient.name ? `${recipient.name} (${recipient.email})` : recipient.email))
+    .join(', ');
+
+  return (
+    <div className="flex min-w-48 items-center gap-3">
+      <StackAvatarsWithTooltip recipients={recipients} documentStatus={documentStatus} />
+      <span className="line-clamp-2 text-muted-foreground text-xs" title={recipientDetails}>
+        {recipientDetails}
+      </span>
     </div>
   );
 };

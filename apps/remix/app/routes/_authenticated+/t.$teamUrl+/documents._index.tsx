@@ -90,6 +90,13 @@ export default function DocumentsPage() {
     },
   );
 
+  const { data: foldersData } = trpc.folder.getFolders.useQuery({
+    type: FolderType.DOCUMENT,
+    parentId: folderId ?? null,
+  });
+
+  const currentFolder = foldersData?.breadcrumbs.at(-1);
+
   const getTabHref = (value: keyof typeof ExtendedDocumentStatus) => {
     const params = new URLSearchParams(searchParams);
 
@@ -138,9 +145,7 @@ export default function DocumentsPage() {
               <AvatarFallback className="text-muted-foreground text-xs">{team.name.slice(0, 1)}</AvatarFallback>
             </Avatar>
 
-            <h2 className="font-semibold text-4xl">
-              <Trans>Documents</Trans>
-            </h2>
+            <h2 className="font-semibold text-4xl">{currentFolder?.name ?? <Trans>Documents</Trans>}</h2>
           </div>
 
           <div className="-m-1 flex flex-wrap gap-x-4 gap-y-6 overflow-hidden p-1">
