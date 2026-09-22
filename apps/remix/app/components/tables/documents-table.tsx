@@ -21,6 +21,7 @@ import { match } from 'ts-pattern';
 import { DocumentStatus } from '~/components/general/document/document-status';
 import { useCurrentTeam } from '~/providers/team';
 
+import { StackAvatarsWithTooltip } from '../general/stack-avatars-with-tooltip';
 import { DocumentsTableActionButton } from './documents-table-action-button';
 import { DocumentsTableActionDropdown } from './documents-table-action-dropdown';
 
@@ -98,10 +99,9 @@ export const DocumentsTable = ({
       {
         header: _(msg`Recipient`),
         accessorKey: 'recipient',
-        cell: ({ row }) => <RecipientCell recipients={row.original.recipients} />,
-        size: 260,
-        minSize: 260,
-        maxSize: 260,
+        cell: ({ row }) => (
+          <StackAvatarsWithTooltip recipients={row.original.recipients} documentStatus={row.original.status} />
+        ),
       },
       {
         header: _(msg`Status`),
@@ -212,31 +212,6 @@ export const DocumentsTable = ({
   );
 };
 
-type RecipientCellProps = {
-  recipients: DocumentsTableRow['recipients'];
-};
-
-const RecipientCell = ({ recipients }: RecipientCellProps) => {
-  const recipientNames = recipients.map((recipient) => recipient.name || recipient.email).join(', ');
-  const recipientEmails = recipients
-    .filter((recipient) => recipient.name)
-    .map((recipient) => recipient.email)
-    .join(', ');
-
-  return (
-    <div className="w-52">
-      <p className="truncate font-medium text-sm" title={recipientNames}>
-        {recipientNames}
-      </p>
-      {recipientEmails && (
-        <p className="truncate text-muted-foreground text-xs" title={recipientEmails}>
-          {recipientEmails}
-        </p>
-      )}
-    </div>
-  );
-};
-
 type DataTableTitleProps = {
   row: DocumentsTableRow;
   teamUrl: string;
@@ -259,7 +234,7 @@ const DataTableTitle = ({ row, teamUrl, teamEmail }: DataTableTitleProps) => {
   const documentsPath = formatDocumentsPath(teamUrl);
   const formatPath = `${documentsPath}/${row.envelopeId}`;
 
-  return match({
+  const title = match({
     isOwner,
     isRecipient,
     isCurrentTeamDocument,
@@ -285,4 +260,18 @@ const DataTableTitle = ({ row, teamUrl, teamEmail }: DataTableTitleProps) => {
     .otherwise(() => (
       <span className="block max-w-[10rem] truncate font-medium hover:underline md:max-w-[20rem]">{row.title}</span>
     ));
+
+  const recipientEmails = row.recipients.map((recipient) => recipient.email).join(', ');
+
+  return (
+    <div>
+      {title}
+      <p
+        className="max-w-[10rem] truncate text-[10px] text-muted-foreground leading-3 md:max-w-[20rem]"
+        title={recipientEmails}
+      >
+        {recipientEmails}
+      </p>
+    </div>
+  );
 };
