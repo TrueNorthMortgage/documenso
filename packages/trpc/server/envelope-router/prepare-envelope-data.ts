@@ -30,7 +30,6 @@ export const prepareEnvelopeData = async ({
 
       const normalized = await normalizePdf(pdf, {
         flattenForm: payload.type !== 'TEMPLATE',
-        rasterize: payload.type !== 'TEMPLATE',
       });
       const { cleanedPdf, placeholders } = await extractPdfPlaceholders(normalized, { sourcePdf: pdf });
       const { documentData } = await putPdfFileServerSide({

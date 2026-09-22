@@ -28,7 +28,7 @@ const removeWidgetAnnotations = (pdfDoc: PDF) => {
 
 export const normalizePdf = async (pdf: Buffer, options: { flattenForm?: boolean; rasterize?: boolean } = {}) => {
   const shouldFlattenForm = options.flattenForm ?? true;
-  const shouldRasterize = options.rasterize ?? true;
+  const shouldRasterize = options.rasterize ?? false;
 
   const pdfDoc = await PDF.load(pdf).catch((e) => {
     console.error(`PDF normalization error: ${e.message}`);
@@ -65,6 +65,13 @@ export const normalizePdf = async (pdf: Buffer, options: { flattenForm?: boolean
         message: 'The document is not a valid PDF',
       });
     }
+  }
+
+  // Avoid rewriting PDFs that have no form work to do. This preserves the
+  // uploaded PDF's vector content, embedded fonts, image compression, and
+  // document metadata until it needs to be decorated for signing.
+  if (!shouldFlattenForm || !acroForm) {
+    return pdf;
   }
 
   pdfDoc.flattenLayers();

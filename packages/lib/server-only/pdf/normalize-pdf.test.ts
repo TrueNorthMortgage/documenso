@@ -8,13 +8,30 @@ import { normalizePdf } from './normalize-pdf';
 const readFixture = (name: string) => fs.readFileSync(new URL(`../../../../assets/${name}`, import.meta.url));
 
 describe('normalizePdf', () => {
-  it('rasterizes regular documents without retaining source fonts', async () => {
-    const normalized = await normalizePdf(readFixture('example.pdf'));
+  it('preserves regular documents without rasterizing or rewriting them', async () => {
+    const source = readFixture('example.pdf');
+    const normalized = await normalizePdf(source);
     const normalizedPdf = await PDF.load(normalized);
 
     expect(normalizedPdf.getPageCount()).toBe(1);
+    expect(normalized).toEqual(source);
+  });
+
+  it('only rasterizes documents when explicitly requested', async () => {
+    const normalized = await normalizePdf(readFixture('example.pdf'), { rasterize: true });
+
     expect(normalized.toString('latin1')).toContain('/Subtype /Image');
     expect(normalized.toString('latin1')).not.toContain('/Subtype /Font');
+  });
+
+  it('retains font resources when flattening an uploaded PDF for signing', async () => {
+    const pdf = await PDF.load(readFixture('example.pdf'));
+
+    pdf.flattenAll();
+
+    const sealed = Buffer.from(await pdf.save());
+
+    expect(sealed.toString('latin1')).toContain('/Type /Font');
   });
 
   it('keeps editable forms when rasterization is disabled', async () => {
@@ -25,6 +42,13 @@ describe('normalizePdf', () => {
     const normalizedPdf = await PDF.load(normalized);
 
     expect(normalizedPdf.getForm()).toBeDefined();
+  });
+
+  it('preserves editable forms when flattening is disabled', async () => {
+    const source = readFixture('form-fields-test.pdf');
+    const normalized = await normalizePdf(source, { flattenForm: false });
+
+    expect(normalized).toEqual(source);
   });
 
   it('flattens regular AcroForms when requested', async () => {
