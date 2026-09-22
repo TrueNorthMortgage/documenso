@@ -146,7 +146,14 @@ export default function PDFViewer({
           return;
         }
 
-        const loadedPdf = await pdfjsLib.getDocument({ data: result!, cMapUrl: '/static/cmaps/' }).promise;
+        const loadedPdf = await pdfjsLib.getDocument({
+          data: result!,
+          cMapUrl: '/static/cmaps/',
+          // Some valid PDFs embed Type 1 fonts that browser font engines fail to load,
+          // displaying their glyphs as boxes. Rendering PDF.js glyph paths avoids that
+          // limitation without changing the uploaded or signed PDF.
+          disableFontFace: true,
+        }).promise;
 
         if (isCancelled) {
           await loadedPdf.destroy();
