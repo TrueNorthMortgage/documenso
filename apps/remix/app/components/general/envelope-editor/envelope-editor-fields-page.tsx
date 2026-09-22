@@ -1466,7 +1466,7 @@ export const EnvelopeEditorFieldsPage = () => {
                 envelope={envelope}
                 envelopeItemId={currentEnvelopeItem.id}
                 onChanged={syncEnvelope}
-                disabled={envelope.status !== DocumentStatus.DRAFT}
+                disabled={!envelopeItemPermissions.canFileBeChanged}
               />
 
               {editorConfig.fields?.allowAIDetection && IS_AI_FEATURES_CONFIGURED() && (

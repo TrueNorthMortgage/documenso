@@ -12,6 +12,7 @@ import { extractDerivedDocumentEmailSettings } from '../../types/document-email'
 import type { RequestMetadata } from '../../universal/extract-request-metadata';
 import { getFileServerSide } from '../../universal/upload/get-file.server';
 import { createDocumentAuditLogData } from '../../utils/document-audit-logs';
+import { getPostmarkSafeEmailAttachments } from '../../utils/email-attachments';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
 import { unsafeBuildEnvelopeIdQuery } from '../../utils/envelope';
 import { isRecipientEmailValidForSending } from '../../utils/recipients';
@@ -24,6 +25,12 @@ export interface SendDocumentOptions {
   id: EnvelopeIdOptions;
   requestMetadata?: RequestMetadata;
 }
+
+type CompletedDocumentEmailAttachment = {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+};
 
 export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOptions) => {
   const envelope = await prisma.envelope.findUnique({
@@ -79,7 +86,7 @@ export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOp
 
   const { user: owner } = envelope;
 
-  const completedDocumentEmailAttachments = await Promise.all(
+  const completedDocumentEmailAttachments: CompletedDocumentEmailAttachment[] = await Promise.all(
     envelope.envelopeItems.map(async (envelopeItem) => {
       const file = await getFileServerSide(envelopeItem.documentData);
 
@@ -117,13 +124,13 @@ export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOp
     isOwnerDocumentCompletedEmailEnabled &&
     (!envelope.recipients.find((recipient) => recipient.email === owner.email) || !isDocumentCompletedEmailEnabled)
   ) {
-    const template = createElement(DocumentCompletedEmailTemplate, {
+    let template = createElement(DocumentCompletedEmailTemplate, {
       documentName: envelope.title,
       assetBaseUrl,
       downloadLink: documentOwnerDownloadLink,
     });
 
-    const [html, text] = await Promise.all([
+    let [html, text] = await Promise.all([
       renderEmailWithI18N(template, { lang: emailLanguage, branding }),
       renderEmailWithI18N(template, {
         lang: emailLanguage,
@@ -131,6 +138,29 @@ export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOp
         plainText: true,
       }),
     ]);
+    const attachments = getPostmarkSafeEmailAttachments({
+      attachments: completedDocumentEmailAttachments,
+      html,
+      text,
+    });
+    const isAttachmentOmitted = completedDocumentEmailAttachments.length > 0 && attachments.length === 0;
+
+    if (isAttachmentOmitted) {
+      template = createElement(DocumentCompletedEmailTemplate, {
+        documentName: envelope.title,
+        assetBaseUrl,
+        downloadLink: documentOwnerDownloadLink,
+        isAttachmentOmitted,
+      });
+      [html, text] = await Promise.all([
+        renderEmailWithI18N(template, { lang: emailLanguage, branding }),
+        renderEmailWithI18N(template, {
+          lang: emailLanguage,
+          branding,
+          plainText: true,
+        }),
+      ]);
+    }
 
     const i18n = await getI18nInstance(emailLanguage);
 
@@ -146,7 +176,7 @@ export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOp
       subject: i18n._(msg`Signing Complete!`),
       html,
       text,
-      attachments: completedDocumentEmailAttachments,
+      attachments,
     });
 
     await prisma.documentAuditLog.create({
@@ -183,7 +213,7 @@ export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOp
 
       const downloadLink = `${NEXT_PUBLIC_WEBAPP_URL()}/sign/${recipient.token}/complete`;
 
-      const template = createElement(DocumentCompletedEmailTemplate, {
+      let template = createElement(DocumentCompletedEmailTemplate, {
         documentName: envelope.title,
         assetBaseUrl,
         downloadLink: recipient.email === owner.email ? documentOwnerDownloadLink : downloadLink,
@@ -193,7 +223,7 @@ export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOp
             : undefined,
       });
 
-      const [html, text] = await Promise.all([
+      let [html, text] = await Promise.all([
         renderEmailWithI18N(template, { lang: emailLanguage, branding }),
         renderEmailWithI18N(template, {
           lang: emailLanguage,
@@ -201,6 +231,33 @@ export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOp
           plainText: true,
         }),
       ]);
+      const attachments = getPostmarkSafeEmailAttachments({
+        attachments: completedDocumentEmailAttachments,
+        html,
+        text,
+      });
+      const isAttachmentOmitted = completedDocumentEmailAttachments.length > 0 && attachments.length === 0;
+
+      if (isAttachmentOmitted) {
+        template = createElement(DocumentCompletedEmailTemplate, {
+          documentName: envelope.title,
+          assetBaseUrl,
+          downloadLink: recipient.email === owner.email ? documentOwnerDownloadLink : downloadLink,
+          customBody:
+            isDirectTemplate && envelope.documentMeta?.message
+              ? renderCustomEmailTemplate(envelope.documentMeta.message, customEmailTemplate)
+              : undefined,
+          isAttachmentOmitted,
+        });
+        [html, text] = await Promise.all([
+          renderEmailWithI18N(template, { lang: emailLanguage, branding }),
+          renderEmailWithI18N(template, {
+            lang: emailLanguage,
+            branding,
+            plainText: true,
+          }),
+        ]);
+      }
 
       const i18n = await getI18nInstance(emailLanguage);
 
@@ -219,7 +276,7 @@ export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOp
             : i18n._(msg`Signing Complete!`),
         html,
         text,
-        attachments: completedDocumentEmailAttachments,
+        attachments,
       });
 
       await prisma.documentAuditLog.create({

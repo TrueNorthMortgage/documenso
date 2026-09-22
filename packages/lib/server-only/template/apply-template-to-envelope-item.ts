@@ -3,9 +3,9 @@ import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-log
 import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 import { nanoid } from '@documenso/lib/universal/id';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
+import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
 import { prisma } from '@documenso/prisma';
 import {
-  DocumentStatus,
   EnvelopeType,
   type FieldGroup,
   type Prisma,
@@ -309,10 +309,13 @@ const getEnvelopeForTemplateAction = async ({
     },
   });
 
-  if (!envelope || envelope.status !== DocumentStatus.DRAFT) {
+  const canApplyTemplate = envelope && getEnvelopeItemPermissions(envelope, envelope.recipients).canFileBeChanged;
+
+  if (!canApplyTemplate) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
-      message: 'Only draft documents can have templates applied',
-      userMessage: 'Templates can only be applied to draft documents.',
+      message: 'Templates can only be applied to draft documents or active corrections before a recipient has signed',
+      userMessage:
+        'Templates can only be applied to draft documents or active corrections before a recipient has signed.',
     });
   }
 
@@ -390,7 +393,7 @@ export const applyTemplateToEnvelopeItem = async ({
   for (const recipientId of recipientMap.values()) {
     const recipient = envelope.recipients.find((candidate) => candidate.id === recipientId);
 
-    if (recipient && !canRecipientFieldsBeModified(recipient, envelope.fields)) {
+    if (recipient && !canRecipientFieldsBeModified(recipient, envelope.fields, Boolean(envelope.correctionStartedAt))) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
         message: `Recipient ${recipient.id} cannot be modified`,
         userMessage: 'One of the recipients can no longer have fields modified.',

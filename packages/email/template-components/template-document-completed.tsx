@@ -8,6 +8,7 @@ export interface TemplateDocumentCompletedProps {
   documentName: string;
   assetBaseUrl: string;
   customBody?: string;
+  isAttachmentOmitted?: boolean;
 }
 
 export const TemplateDocumentCompleted = ({
@@ -15,6 +16,7 @@ export const TemplateDocumentCompleted = ({
   documentName,
   assetBaseUrl,
   customBody,
+  isAttachmentOmitted = false,
 }: TemplateDocumentCompletedProps) => {
   const getAssetUrl = (path: string) => {
     return new URL(path, assetBaseUrl).toString();
@@ -41,6 +43,12 @@ export const TemplateDocumentCompleted = ({
         <Text className="my-1 text-center text-base text-slate-400">
           <Trans>Continue by downloading the document.</Trans>
         </Text>
+
+        {isAttachmentOmitted && (
+          <Text className="my-3 text-center text-base text-slate-400">
+            <Trans>The completed envelope was too large to attach to this email. Please download it instead.</Trans>
+          </Text>
+        )}
 
         <Section className="mt-8 mb-6 text-center">
           <Button

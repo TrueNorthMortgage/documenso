@@ -677,14 +677,22 @@ export const EnvelopeEditorUploadPage = () => {
                                   envelope={envelope}
                                   envelopeItemId={localFile.envelopeItemId}
                                   onChanged={syncEnvelope}
-                                  disabled={localFile.isReplacing || localFile.isUploading}
+                                  disabled={
+                                    !envelopeItemPermissions.canFileBeChanged ||
+                                    localFile.isReplacing ||
+                                    localFile.isUploading
+                                  }
                                   trigger={
                                     <Button
                                       type="button"
                                       variant="ghost"
                                       size="sm"
                                       title={t`Apply template`}
-                                      disabled={localFile.isReplacing || localFile.isUploading}
+                                      disabled={
+                                        !envelopeItemPermissions.canFileBeChanged ||
+                                        localFile.isReplacing ||
+                                        localFile.isUploading
+                                      }
                                     >
                                       <LayersIcon className="mr-2 h-4 w-4" />
                                       <Trans>Apply Template</Trans>
