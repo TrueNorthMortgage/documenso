@@ -21,6 +21,7 @@ import { match } from 'ts-pattern';
 import { DocumentStatus } from '~/components/general/document/document-status';
 import { useCurrentTeam } from '~/providers/team';
 
+import { StackAvatarsWithTooltip } from '../general/stack-avatars-with-tooltip';
 import { DocumentsTableActionButton } from './documents-table-action-button';
 import { DocumentsTableActionDropdown } from './documents-table-action-dropdown';
 
@@ -98,7 +99,7 @@ export const DocumentsTable = ({
       {
         header: _(msg`Recipient`),
         accessorKey: 'recipient',
-        cell: ({ row }) => <RecipientCell recipients={row.original.recipients} />,
+        cell: ({ row }) => <RecipientCell recipients={row.original.recipients} documentStatus={row.original.status} />,
         size: 260,
         minSize: 260,
         maxSize: 260,
@@ -214,25 +215,20 @@ export const DocumentsTable = ({
 
 type RecipientCellProps = {
   recipients: DocumentsTableRow['recipients'];
+  documentStatus: DocumentsTableRow['status'];
 };
 
-const RecipientCell = ({ recipients }: RecipientCellProps) => {
-  const recipientNames = recipients.map((recipient) => recipient.name || recipient.email).join(', ');
-  const recipientEmails = recipients
-    .filter((recipient) => recipient.name)
-    .map((recipient) => recipient.email)
+const RecipientCell = ({ recipients, documentStatus }: RecipientCellProps) => {
+  const recipientDetails = recipients
+    .map((recipient) => (recipient.name ? `${recipient.name} (${recipient.email})` : recipient.email))
     .join(', ');
 
   return (
-    <div className="w-52">
-      <p className="truncate font-medium text-sm" title={recipientNames}>
-        {recipientNames}
+    <div className="flex w-52 items-center gap-2">
+      <StackAvatarsWithTooltip recipients={recipients} documentStatus={documentStatus} />
+      <p className="line-clamp-2 min-w-0 text-[10px] leading-3" title={recipientDetails}>
+        {recipientDetails}
       </p>
-      {recipientEmails && (
-        <p className="truncate text-muted-foreground text-xs" title={recipientEmails}>
-          {recipientEmails}
-        </p>
-      )}
     </div>
   );
 };
