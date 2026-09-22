@@ -145,7 +145,7 @@ export default function DocumentsPage() {
               <AvatarFallback className="text-muted-foreground text-xs">{team.name.slice(0, 1)}</AvatarFallback>
             </Avatar>
 
-            <h2 className="font-semibold text-4xl">{currentFolder?.name ?? <Trans>Documents</Trans>}</h2>
+            <h2 className="font-semibold text-4xl">{currentFolder?.name ?? <Trans>Home</Trans>}</h2>
           </div>
 
           <div className="-m-1 flex flex-wrap gap-x-4 gap-y-6 overflow-hidden p-1">
