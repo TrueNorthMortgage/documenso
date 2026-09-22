@@ -261,16 +261,18 @@ const DataTableTitle = ({ row, teamUrl, teamEmail }: DataTableTitleProps) => {
       <span className="block max-w-[10rem] truncate font-medium hover:underline md:max-w-[20rem]">{row.title}</span>
     ));
 
-  const recipientEmails = row.recipients.map((recipient) => recipient.email).join(', ');
+  const recipientDetails = row.recipients
+    .map((recipient) => (recipient.name ? `${recipient.name} (${recipient.email})` : recipient.email))
+    .join(', ');
 
   return (
     <div>
       {title}
       <p
         className="max-w-[10rem] truncate text-[10px] text-muted-foreground leading-3 md:max-w-[20rem]"
-        title={recipientEmails}
+        title={recipientDetails}
       >
-        {recipientEmails}
+        {recipientDetails}
       </p>
     </div>
   );
