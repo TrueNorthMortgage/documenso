@@ -195,7 +195,7 @@ export const EnvelopeDownloadDialog = ({
     <Dialog open={open} onOpenChange={(value) => setOpen(value)}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
 
-      <DialogContent>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col">
         <DialogHeader>
           <DialogTitle>
             <Trans>Download Files</Trans>
@@ -217,7 +217,7 @@ export const EnvelopeDownloadDialog = ({
           </Button>
         )}
 
-        <div className="flex w-full flex-col gap-4 overflow-hidden">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-4 overflow-y-auto pr-1">
           {isLoadingEnvelopeItems
             ? Array.from({ length: 1 }).map((_, index) => (
                 <div key={index} className="flex items-center gap-2 rounded-lg border border-border bg-card p-4">
