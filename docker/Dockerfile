@@ -10,7 +10,7 @@ ENV NO_UPDATE_NOTIFIER=1
 
 RUN apk add --no-cache openssl
 RUN apk add --no-cache font-freefont
-RUN npm install -g npm@11.11.0
+RUN npm install -g npm@12.1.0
 
 
 ###########################
