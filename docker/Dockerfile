@@ -1,7 +1,7 @@
 ###########################
 #     BASE CONTAINER      #
 ###########################
-FROM node:22.23.0-alpine3.23 AS base
+FROM node:22.23.2-alpine3.23 AS base
 
 ENV NPM_CONFIG_AUDIT=false
 ENV NPM_CONFIG_FUND=false
@@ -25,7 +25,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN npm install -g "turbo@^1.9.3"
+RUN npm install -g "turbo@^2.9.14"
 
 # Outputs to the /out folder
 # source: https://turbo.build/repo/docs/reference/command-line-reference/prune#--docker
