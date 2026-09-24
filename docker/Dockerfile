@@ -1,7 +1,7 @@
 ###########################
 #     BASE CONTAINER      #
 ###########################
-FROM node:22.23.0-alpine3.23 AS base
+FROM node:22.23.2-alpine3.23 AS base
 
 ENV NPM_CONFIG_AUDIT=false
 ENV NPM_CONFIG_FUND=false
@@ -10,7 +10,7 @@ ENV NO_UPDATE_NOTIFIER=1
 
 RUN apk add --no-cache openssl
 RUN apk add --no-cache font-freefont
-RUN npm install -g npm@11.11.0
+RUN npm install -g npm@12.1.0
 
 
 ###########################
@@ -25,7 +25,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN npm install -g "turbo@^1.9.3"
+RUN npm install -g "turbo@^2.9.14"
 
 # Outputs to the /out folder
 # source: https://turbo.build/repo/docs/reference/command-line-reference/prune#--docker
@@ -85,7 +85,7 @@ COPY --from=builder /app/out/full/ .
 # Finally copy the turbo.json file so that we can run turbo commands
 COPY turbo.json turbo.json
 
-RUN npm install -g "turbo@^1.9.3"
+RUN npm install -g "turbo@^2.9.14"
 
 # Keep the build-only heap increase scoped to the image build.
 RUN NODE_OPTIONS=--max-old-space-size=4096 turbo run build --filter=@documenso/remix...
