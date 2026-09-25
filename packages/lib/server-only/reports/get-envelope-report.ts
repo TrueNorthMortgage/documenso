@@ -16,6 +16,7 @@ type GetEnvelopeReportOptions = {
   range: ReportRange;
   bucket: ReportBucket;
   teamId?: number;
+  calendarYear?: number;
 };
 
 const rangeInDays: Record<Exclude<ReportRange, 'calendar-year'>, number> = {
@@ -48,7 +49,14 @@ const getBucketDate = (key: string, bucket: ReportBucket) => {
   return new Date(`${key}T00:00:00.000Z`);
 };
 
-export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId }: GetEnvelopeReportOptions) => {
+export const getEnvelopeReport = async ({
+  userId,
+  teamUrl,
+  range,
+  bucket,
+  teamId,
+  calendarYear,
+}: GetEnvelopeReportOptions) => {
   const currentTeam = await getTeamByUrl({ userId, teamUrl });
 
   const organisationRole = await getMemberOrganisationRole({
@@ -72,10 +80,15 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
   });
   const scopedTeamId = canViewOrganisation ? teamId : currentTeam.id;
   const startDate = new Date();
+  const currentYear = startDate.getUTCFullYear();
+  const selectedCalendarYear =
+    calendarYear && calendarYear >= 2000 && calendarYear <= currentYear ? calendarYear : currentYear;
+  let endDate: Date | undefined;
 
   if (range === 'calendar-year') {
-    startDate.setUTCMonth(0, 1);
+    startDate.setUTCFullYear(selectedCalendarYear, 0, 1);
     startDate.setUTCHours(0, 0, 0, 0);
+    endDate = new Date(Date.UTC(selectedCalendarYear + 1, 0, 1));
   } else {
     startDate.setUTCDate(startDate.getUTCDate() - rangeInDays[range]);
     startDate.setUTCHours(0, 0, 0, 0);
@@ -85,7 +98,7 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
     where: {
       type: EnvelopeType.DOCUMENT,
       deletedAt: null,
-      createdAt: { gte: startDate },
+      createdAt: { gte: startDate, ...(endDate ? { lt: endDate } : {}) },
       team: {
         organisationId: currentTeam.organisationId,
         ...(scopedTeamId ? { id: scopedTeamId } : {}),
@@ -201,6 +214,7 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
     selectedTeamId: scopedTeamId ?? null,
     range,
     bucket,
+    calendarYear: selectedCalendarYear,
     metrics: {
       total: envelopes.length,
       completed: totals.COMPLETED,

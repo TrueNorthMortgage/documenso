@@ -20,6 +20,7 @@ type ReportData = {
   canViewOrganisation: boolean;
   selectedTeamId: number | null;
   range: '7d' | '30d' | '90d' | '365d' | 'calendar-year';
+  calendarYear: number;
   bucket: 'day' | 'week' | 'month';
   metrics: {
     total: number;
@@ -66,6 +67,9 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
     { label: 'Opened', count: report.recipientFunnel.opened },
     { label: 'Signed', count: report.recipientFunnel.signed },
   ];
+  const calendarYears = Array.from({ length: new Date().getUTCFullYear() - 2000 + 1 }, (_, index) =>
+    (new Date().getUTCFullYear() - index).toString(),
+  );
 
   return (
     <div className="space-y-6">
@@ -89,6 +93,20 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
             <SelectItem value="month">Monthly</SelectItem>
           </SelectContent>
         </Select>
+        {report.range === 'calendar-year' && (
+          <Select value={report.calendarYear.toString()} onValueChange={(value) => updateFilter('year', value)}>
+            <SelectTrigger className="w-full lg:w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {calendarYears.map((year) => (
+                <SelectItem value={year} key={year}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {report.canViewOrganisation && (
           <Select
             value={report.selectedTeamId?.toString() ?? 'all'}
