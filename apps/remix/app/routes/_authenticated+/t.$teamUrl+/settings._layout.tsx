@@ -1,12 +1,24 @@
 import { getSession } from '@documenso/auth/server/lib/utils/get-session';
+import { useSession } from '@documenso/lib/client-only/providers/session';
+import { getMemberOrganisationRole } from '@documenso/lib/server-only/team/get-member-roles';
 import { getTeamByUrl } from '@documenso/lib/server-only/team/get-team';
+import { canExecuteOrganisationAction } from '@documenso/lib/utils/organisations';
 import { canExecuteTeamAction } from '@documenso/lib/utils/teams';
 import { cn } from '@documenso/ui/lib/utils';
 import { Button } from '@documenso/ui/primitives/button';
 import { msg } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { BracesIcon, Globe2Icon, GroupIcon, Settings2Icon, SettingsIcon, Users2Icon, WebhookIcon } from 'lucide-react';
-import { Link, NavLink, Outlet, redirect } from 'react-router';
+import {
+  BarChart3Icon,
+  BracesIcon,
+  Globe2Icon,
+  GroupIcon,
+  Settings2Icon,
+  SettingsIcon,
+  Users2Icon,
+  WebhookIcon,
+} from 'lucide-react';
+import { Link, NavLink, Outlet, redirect, useLocation } from 'react-router';
 
 import { GenericErrorLayout } from '~/components/general/generic-error-layout';
 import { useCurrentTeam } from '~/providers/team';
@@ -26,7 +38,16 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     teamUrl: params.teamUrl,
   });
 
-  if (!team || !canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole)) {
+  const organisationRole = await getMemberOrganisationRole({
+    organisationId: team.organisationId,
+    reference: { type: 'User', id: session.user.id },
+  });
+  const isReportsRoute = new URL(request.url).pathname.endsWith('/settings/reports');
+  const canViewSettings =
+    canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole) ||
+    (isReportsRoute && canExecuteOrganisationAction('MANAGE_ORGANISATION', organisationRole));
+
+  if (!team || !canViewSettings) {
     throw redirect(`/t/${params.teamUrl}`);
   }
 }
@@ -39,6 +60,15 @@ export default function TeamsSettingsLayout() {
   const { t } = useLingui();
 
   const team = useCurrentTeam();
+  const { organisations } = useSession();
+  const { pathname } = useLocation();
+  const currentOrganisation = organisations.find((organisation) => organisation.id === team.organisationId);
+  const canManageTeam = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
+  const canViewSettings =
+    canManageTeam ||
+    (pathname.endsWith('/settings/reports') &&
+      currentOrganisation &&
+      canExecuteOrganisationAction('MANAGE_ORGANISATION', currentOrganisation.currentOrganisationRole));
 
   const teamSettingRoutes = [
     {
@@ -92,9 +122,14 @@ export default function TeamsSettingsLayout() {
       label: t`Webhooks`,
       icon: WebhookIcon,
     },
-  ];
+    {
+      path: `/t/${team.url}/settings/reports`,
+      label: t`Reports`,
+      icon: BarChart3Icon,
+    },
+  ].filter((route) => canManageTeam || route.path.endsWith('/settings/reports'));
 
-  if (!canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole)) {
+  if (!canViewSettings) {
     return (
       <GenericErrorLayout
         errorCode={401}
