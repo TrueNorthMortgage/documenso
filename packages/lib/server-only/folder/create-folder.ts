@@ -21,6 +21,14 @@ export const createFolder = async ({
   parentId,
   type = FolderType.DOCUMENT,
 }: CreateFolderOptions) => {
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    throw new AppError(AppErrorCode.INVALID_BODY, {
+      message: 'Folder name cannot be empty',
+    });
+  }
+
   // This indirectly verifies whether the user has access to the team.
   const settings = await getTeamSettings({ userId, teamId });
 
@@ -47,7 +55,7 @@ export const createFolder = async ({
 
   return await prisma.folder.create({
     data: {
-      name,
+      name: trimmedName,
       userId,
       teamId,
       parentId,

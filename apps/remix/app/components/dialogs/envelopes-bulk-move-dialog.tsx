@@ -62,7 +62,6 @@ export const EnvelopesBulkMoveDialog = ({
 
   const { data: folders, isLoading: isFoldersLoading } = trpc.folder.findFoldersInternal.useQuery(
     {
-      parentId: currentFolderId,
       type: envelopeType,
     },
     {
@@ -79,7 +78,7 @@ export const EnvelopesBulkMoveDialog = ({
       setSearchTerm('');
 
       form.reset({
-        folderId: currentFolderId,
+        folderId: currentFolderId ?? null,
       });
     }
   }, [open, currentFolderId]);

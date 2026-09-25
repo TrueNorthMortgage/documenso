@@ -58,13 +58,12 @@ export const DocumentMoveToFolderDialog = ({
   const form = useForm<TMoveDocumentFormSchema>({
     resolver: zodResolver(ZMoveDocumentFormSchema),
     defaultValues: {
-      folderId: currentFolderId,
+      folderId: currentFolderId ?? null,
     },
   });
 
   const { data: folders, isLoading: isFoldersLoading } = trpc.folder.findFoldersInternal.useQuery(
     {
-      parentId: currentFolderId,
       type: FolderType.DOCUMENT,
     },
     {
@@ -228,10 +227,7 @@ export const DocumentMoveToFolderDialog = ({
                 <Trans>Cancel</Trans>
               </Button>
 
-              <Button
-                type="submit"
-                disabled={isFoldersLoading || form.formState.isSubmitting || currentFolderId === null}
-              >
+              <Button type="submit" disabled={isFoldersLoading || form.formState.isSubmitting}>
                 <Trans>Move</Trans>
               </Button>
             </DialogFooter>

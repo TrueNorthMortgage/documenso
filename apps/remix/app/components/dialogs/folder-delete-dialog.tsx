@@ -33,11 +33,11 @@ export const FolderDeleteDialog = ({ folder, isOpen, onOpenChange }: FolderDelet
   const { toast } = useToast();
   const { mutateAsync: deleteFolder } = trpc.folder.deleteFolder.useMutation();
 
-  const deleteMessage = t`delete ${folder.name}`;
+  const deleteMessage = t`delete ${folder.name.trim()}`;
 
   const ZDeleteFolderFormSchema = z.object({
-    confirmText: z.literal(deleteMessage, {
-      errorMap: () => ({ message: t`You must type '${deleteMessage}' to confirm` }),
+    confirmText: z.string().refine((value) => value.trim() === deleteMessage, {
+      message: t`You must type '${deleteMessage}' to confirm`,
     }),
   });
 
