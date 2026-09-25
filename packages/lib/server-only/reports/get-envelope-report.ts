@@ -221,14 +221,6 @@ export const getEnvelopeReport = async ({
       { label: '4-7 days', count: turnaroundDistribution.fourToSevenDays },
       { label: '7+ days', count: turnaroundDistribution.overSevenDays },
     ],
-    slowestEnvelopes: envelopes
-      .filter((envelope) => envelope.status === DocumentStatus.PENDING)
-      .sort((first, second) => first.createdAt.getTime() - second.createdAt.getTime())
-      .slice(0, 5)
-      .map((envelope) => ({
-        title: envelope.title,
-        ageInDays: Math.max(1, Math.floor((Date.now() - envelope.createdAt.getTime()) / 86_400_000)),
-      })),
     templateEffectiveness: [...templates.entries()]
       .sort(([, first], [, second]) => second.count - first.count)
       .slice(0, 5)
