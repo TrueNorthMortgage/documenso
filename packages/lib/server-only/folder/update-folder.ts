@@ -20,6 +20,13 @@ export interface UpdateFolderOptions {
 
 export const updateFolder = async ({ userId, teamId, folderId, data }: UpdateFolderOptions) => {
   const { parentId, name, visibility, pinned } = data;
+  const trimmedName = name?.trim();
+
+  if (name !== undefined && !trimmedName) {
+    throw new AppError(AppErrorCode.INVALID_BODY, {
+      message: 'Folder name cannot be empty',
+    });
+  }
 
   const team = await getTeamById({ userId, teamId });
 
@@ -116,7 +123,7 @@ export const updateFolder = async ({ userId, teamId, folderId, data }: UpdateFol
       }),
     },
     data: {
-      name,
+      name: trimmedName,
       visibility,
       parentId,
       pinned,

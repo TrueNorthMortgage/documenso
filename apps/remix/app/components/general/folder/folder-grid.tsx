@@ -201,7 +201,6 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
       )}
 
       <FolderMoveDialog
-        foldersData={foldersData?.folders}
         folder={folderToMove}
         isOpen={isMovingFolder}
         onOpenChange={(open) => {

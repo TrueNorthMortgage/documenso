@@ -167,7 +167,6 @@ export default function DocumentsFoldersPage() {
       )}
 
       <FolderMoveDialog
-        foldersData={foldersData?.folders}
         folder={folderToMove}
         isOpen={isMovingFolder}
         onOpenChange={(open) => {

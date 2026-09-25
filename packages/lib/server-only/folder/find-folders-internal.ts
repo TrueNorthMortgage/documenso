@@ -1,9 +1,11 @@
 import { prisma } from '@documenso/prisma';
-import { EnvelopeType } from '@prisma/client';
+import { EnvelopeType, TeamMemberRole } from '@prisma/client';
 
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import type { TFolderType } from '../../types/folder-type';
 import { getTeamById } from '../team/get-team';
+
+const getOwnerName = (user: { name: string | null; email: string }) => user.name || user.email;
 
 export interface FindFoldersInternalOptions {
   userId: number;
@@ -20,6 +22,7 @@ export const findFoldersInternal = async ({ userId, teamId, parentId, type }: Fi
       in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole],
     },
   };
+  const canViewOwner = team.currentTeamRole === TeamMemberRole.ADMIN || team.currentTeamRole === TeamMemberRole.MANAGER;
 
   const whereClause = {
     AND: [
@@ -39,6 +42,14 @@ export const findFoldersInternal = async ({ userId, teamId, parentId, type }: Fi
         ...whereClause,
         ...(type ? { type } : {}),
       },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
       orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
     });
 
@@ -51,6 +62,14 @@ export const findFoldersInternal = async ({ userId, teamId, parentId, type }: Fi
                 parentId: folder.id,
                 teamId,
                 OR: [visibilityFilters, { userId }],
+              },
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    email: true,
+                  },
+                },
               },
               orderBy: {
                 createdAt: 'desc',
@@ -79,8 +98,9 @@ export const findFoldersInternal = async ({ userId, teamId, parentId, type }: Fi
             }),
           ]);
 
-          const subfoldersWithEmptySubfolders = subfolders.map((subfolder) => ({
+          const subfoldersWithEmptySubfolders = subfolders.map(({ user, ...subfolder }) => ({
             ...subfolder,
+            ...(canViewOwner ? { ownerName: getOwnerName(user) } : {}),
             subfolders: [],
             _count: {
               documents: 0,
@@ -89,8 +109,11 @@ export const findFoldersInternal = async ({ userId, teamId, parentId, type }: Fi
             },
           }));
 
+          const { user, ...folderData } = folder;
+
           return {
-            ...folder,
+            ...folderData,
+            ...(canViewOwner ? { ownerName: getOwnerName(user) } : {}),
             subfolders: subfoldersWithEmptySubfolders,
             _count: {
               documents: documentCount,

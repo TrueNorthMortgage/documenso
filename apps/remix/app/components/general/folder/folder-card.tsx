@@ -1,5 +1,10 @@
 import { useSession } from '@documenso/lib/client-only/providers/session';
-import { canManageFolder, formatDocumentsPath, formatTemplatesPath } from '@documenso/lib/utils/teams';
+import {
+  canExecuteTeamAction,
+  canManageFolder,
+  formatDocumentsPath,
+  formatTemplatesPath,
+} from '@documenso/lib/utils/teams';
 import { trpc } from '@documenso/trpc/react';
 import type { TFolderWithSubfolders } from '@documenso/trpc/server/folder-router/schema';
 import { Button } from '@documenso/ui/primitives/button';
@@ -60,6 +65,7 @@ export const FolderCard = ({ folder, onMove, onSettings, onDelete }: FolderCardP
     folderOwnerId: folder.userId,
     currentTeamRole: team.currentTeamRole,
   });
+  const canViewOwner = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
 
   return (
     <Link to={formatPath()} data-folder-id={folder.id} data-folder-name={folder.name}>
@@ -74,6 +80,12 @@ export const FolderCard = ({ folder, onMove, onSettings, onDelete }: FolderCardP
                   <span className="truncate">{folder.name}</span>
                   {folder.pinned && <PinIcon className="h-3 w-3 flex-shrink-0 text-documenso" />}
                 </h3>
+
+                {canViewOwner && folder.ownerName && (
+                  <p className="mt-1 truncate text-muted-foreground text-xs">
+                    <Trans>Owner: {folder.ownerName}</Trans>
+                  </p>
+                )}
 
                 <div className="mt-1 flex space-x-2 truncate text-muted-foreground text-xs">
                   <span>

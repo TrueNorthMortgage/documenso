@@ -15,6 +15,8 @@ export const ZFolderSchema = FolderSchema.pick({
   updatedAt: true,
   visibility: true,
   type: true,
+}).extend({
+  ownerName: z.string().nullable().optional(),
 });
 
 export type TFolder = z.infer<typeof ZFolderSchema>;
@@ -42,7 +44,7 @@ const ZFolderParentIdSchema = z
   .describe('The folder ID to place this folder within. Leave empty to place folder at the root level.');
 
 export const ZCreateFolderRequestSchema = z.object({
-  name: z.string(),
+  name: z.string().trim().min(1),
   parentId: ZFolderParentIdSchema.optional(),
   type: ZFolderTypeSchema.optional(),
 });
@@ -52,7 +54,7 @@ export const ZCreateFolderResponseSchema = ZFolderSchema;
 export const ZUpdateFolderRequestSchema = z.object({
   folderId: z.string().describe('The ID of the folder to update'),
   data: z.object({
-    name: z.string().optional().describe('The name of the folder'),
+    name: z.string().trim().min(1).optional().describe('The name of the folder'),
     parentId: ZFolderParentIdSchema.optional().nullable(),
     visibility: z.nativeEnum(DocumentVisibility).optional().describe('The visibility of the folder'),
     pinned: z.boolean().optional().describe('Whether the folder should be pinned'),
