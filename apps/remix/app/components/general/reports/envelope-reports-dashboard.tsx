@@ -40,7 +40,6 @@ type ReportData = {
     inProgress: number;
     rejected: number;
   }>;
-  recipientFunnel: { total: number; sent: number; opened: number; signed: number; declined: number };
   turnaroundDistribution: Array<{ label: string; count: number }>;
   slowestEnvelopes: Array<{ title: string; ageInDays: number }>;
   templateEffectiveness: Array<{ name: string; count: number; completionRate: number }>;
@@ -61,12 +60,6 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
     report.metrics.averageTurnaroundHours >= 48
       ? `${(report.metrics.averageTurnaroundHours / 24).toFixed(1)} days`
       : `${Math.round(report.metrics.averageTurnaroundHours)} hours`;
-  const recipientFunnelData = [
-    { label: 'Recipients', count: report.recipientFunnel.total },
-    { label: 'Sent', count: report.recipientFunnel.sent },
-    { label: 'Opened', count: report.recipientFunnel.opened },
-    { label: 'Signed', count: report.recipientFunnel.signed },
-  ];
   const calendarYears = Array.from({ length: new Date().getUTCFullYear() - 2000 + 1 }, (_, index) =>
     (new Date().getUTCFullYear() - index).toString(),
   );
@@ -169,24 +162,7 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recipient completion funnel</CardTitle>
-            <p className="text-muted-foreground text-sm">How recipients progress from delivery to signing.</p>
-          </CardHeader>
-          <CardContent className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={recipientFunnelData}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                <Tooltip />
-                <Bar dataKey="count" name="Recipients" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      <div className="grid gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Time to complete</CardTitle>

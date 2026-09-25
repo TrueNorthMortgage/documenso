@@ -1,5 +1,5 @@
 import { prisma } from '@documenso/prisma';
-import { DocumentStatus, EnvelopeType, ReadStatus, SendStatus, SigningStatus } from '@prisma/client';
+import { DocumentStatus, EnvelopeType } from '@prisma/client';
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { canExecuteOrganisationAction } from '../../utils/organisations';
@@ -114,7 +114,6 @@ export const getEnvelopeReport = async ({
       title: true,
       templateId: true,
       user: { select: { id: true, name: true, email: true } },
-      recipients: { select: { sendStatus: true, readStatus: true, signingStatus: true } },
     },
   });
 
@@ -125,7 +124,6 @@ export const getEnvelopeReport = async ({
   >();
   let completedTurnaroundHours = 0;
   let completedWithTurnaround = 0;
-  const recipientFunnel = { total: 0, sent: 0, opened: 0, signed: 0, declined: 0 };
   const turnaroundDistribution = { sameDay: 0, oneToThreeDays: 0, fourToSevenDays: 0, overSevenDays: 0 };
   const templates = new Map<string, { name: string; count: number; completed: number }>();
   const totals = { DRAFT: 0, PENDING: 0, COMPLETED: 0, REJECTED: 0 };
@@ -168,14 +166,6 @@ export const getEnvelopeReport = async ({
       templateStats.count += 1;
       templateStats.completed += envelope.status === DocumentStatus.COMPLETED ? 1 : 0;
       templates.set(templateKey, templateStats);
-    }
-
-    for (const recipient of envelope.recipients) {
-      recipientFunnel.total += 1;
-      recipientFunnel.sent += recipient.sendStatus === SendStatus.SENT ? 1 : 0;
-      recipientFunnel.opened += recipient.readStatus === ReadStatus.OPENED ? 1 : 0;
-      recipientFunnel.signed += recipient.signingStatus === SigningStatus.SIGNED ? 1 : 0;
-      recipientFunnel.declined += recipient.signingStatus === SigningStatus.REJECTED ? 1 : 0;
     }
 
     if (envelope.completedAt) {
@@ -225,7 +215,6 @@ export const getEnvelopeReport = async ({
       averageTurnaroundHours: completedWithTurnaround === 0 ? 0 : completedTurnaroundHours / completedWithTurnaround,
     },
     chartData,
-    recipientFunnel,
     turnaroundDistribution: [
       { label: 'Same day', count: turnaroundDistribution.sameDay },
       { label: '1-3 days', count: turnaroundDistribution.oneToThreeDays },
