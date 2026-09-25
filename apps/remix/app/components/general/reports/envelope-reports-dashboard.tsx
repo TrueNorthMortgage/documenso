@@ -20,6 +20,7 @@ type ReportData = {
   canViewOrganisation: boolean;
   selectedTeamId: number | null;
   range: '7d' | '30d' | '90d' | '365d' | 'calendar-year';
+  calendarYear: number;
   bucket: 'day' | 'week' | 'month';
   metrics: {
     total: number;
@@ -39,9 +40,7 @@ type ReportData = {
     inProgress: number;
     rejected: number;
   }>;
-  recipientFunnel: { total: number; sent: number; opened: number; signed: number; declined: number };
   turnaroundDistribution: Array<{ label: string; count: number }>;
-  slowestEnvelopes: Array<{ title: string; ageInDays: number }>;
   templateEffectiveness: Array<{ name: string; count: number; completionRate: number }>;
 };
 
@@ -60,12 +59,9 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
     report.metrics.averageTurnaroundHours >= 48
       ? `${(report.metrics.averageTurnaroundHours / 24).toFixed(1)} days`
       : `${Math.round(report.metrics.averageTurnaroundHours)} hours`;
-  const recipientFunnelData = [
-    { label: 'Recipients', count: report.recipientFunnel.total },
-    { label: 'Sent', count: report.recipientFunnel.sent },
-    { label: 'Opened', count: report.recipientFunnel.opened },
-    { label: 'Signed', count: report.recipientFunnel.signed },
-  ];
+  const calendarYears = Array.from({ length: new Date().getUTCFullYear() - 2000 + 1 }, (_, index) =>
+    (new Date().getUTCFullYear() - index).toString(),
+  );
 
   return (
     <div className="space-y-6">
@@ -89,6 +85,20 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
             <SelectItem value="month">Monthly</SelectItem>
           </SelectContent>
         </Select>
+        {report.range === 'calendar-year' && (
+          <Select value={report.calendarYear.toString()} onValueChange={(value) => updateFilter('year', value)}>
+            <SelectTrigger className="w-full lg:w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {calendarYears.map((year) => (
+                <SelectItem value={year} key={year}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {report.canViewOrganisation && (
           <Select
             value={report.selectedTeamId?.toString() ?? 'all'}
@@ -151,24 +161,7 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recipient completion funnel</CardTitle>
-            <p className="text-muted-foreground text-sm">How recipients progress from delivery to signing.</p>
-          </CardHeader>
-          <CardContent className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={recipientFunnelData}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                <Tooltip />
-                <Bar dataKey="count" name="Recipients" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      <div className="grid gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Time to complete</CardTitle>
@@ -285,7 +278,7 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Template effectiveness</CardTitle>
@@ -323,31 +316,6 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
                 </BarChart>
               </ResponsiveContainer>
             )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Needs attention</CardTitle>
-            <p className="text-muted-foreground text-sm">Oldest envelopes that are still in progress.</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {report.slowestEnvelopes.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No in-progress envelopes need attention.</p>
-              ) : (
-                report.slowestEnvelopes.map((envelope) => (
-                  <div
-                    className="flex items-center justify-between gap-4"
-                    key={`${envelope.title}-${envelope.ageInDays}`}
-                  >
-                    <span className="min-w-0 truncate text-sm">{envelope.title}</span>
-                    <span className="shrink-0 rounded-full bg-orange-100 px-2 py-1 font-medium text-orange-700 text-xs dark:bg-orange-950 dark:text-orange-300">
-                      {envelope.ageInDays}d open
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
           </CardContent>
         </Card>
       </div>

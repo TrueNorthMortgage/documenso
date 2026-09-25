@@ -30,7 +30,12 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const parsedTeamId = requestedTeamId === null ? undefined : Number(requestedTeamId);
   const teamId =
     parsedTeamId !== undefined && Number.isSafeInteger(parsedTeamId) && parsedTeamId > 0 ? parsedTeamId : undefined;
-  return { report: await getEnvelopeReport({ userId: user.id, teamUrl: params.teamUrl, range, bucket, teamId }) };
+  const requestedCalendarYear = Number(searchParams.get('year'));
+  const calendarYear =
+    Number.isSafeInteger(requestedCalendarYear) && requestedCalendarYear >= 2000 ? requestedCalendarYear : undefined;
+  return {
+    report: await getEnvelopeReport({ userId: user.id, teamUrl: params.teamUrl, range, bucket, teamId, calendarYear }),
+  };
 }
 
 export default function TeamReportsPage({ loaderData }: Route.ComponentProps) {

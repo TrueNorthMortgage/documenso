@@ -1,5 +1,5 @@
 import { prisma } from '@documenso/prisma';
-import { DocumentStatus, EnvelopeType, ReadStatus, SendStatus, SigningStatus } from '@prisma/client';
+import { DocumentStatus, EnvelopeType } from '@prisma/client';
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { canExecuteOrganisationAction } from '../../utils/organisations';
@@ -16,6 +16,7 @@ type GetEnvelopeReportOptions = {
   range: ReportRange;
   bucket: ReportBucket;
   teamId?: number;
+  calendarYear?: number;
 };
 
 const rangeInDays: Record<Exclude<ReportRange, 'calendar-year'>, number> = {
@@ -48,7 +49,14 @@ const getBucketDate = (key: string, bucket: ReportBucket) => {
   return new Date(`${key}T00:00:00.000Z`);
 };
 
-export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId }: GetEnvelopeReportOptions) => {
+export const getEnvelopeReport = async ({
+  userId,
+  teamUrl,
+  range,
+  bucket,
+  teamId,
+  calendarYear,
+}: GetEnvelopeReportOptions) => {
   const currentTeam = await getTeamByUrl({ userId, teamUrl });
 
   const organisationRole = await getMemberOrganisationRole({
@@ -72,10 +80,15 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
   });
   const scopedTeamId = canViewOrganisation ? teamId : currentTeam.id;
   const startDate = new Date();
+  const currentYear = startDate.getUTCFullYear();
+  const selectedCalendarYear =
+    calendarYear && calendarYear >= 2000 && calendarYear <= currentYear ? calendarYear : currentYear;
+  let endDate: Date | undefined;
 
   if (range === 'calendar-year') {
-    startDate.setUTCMonth(0, 1);
+    startDate.setUTCFullYear(selectedCalendarYear, 0, 1);
     startDate.setUTCHours(0, 0, 0, 0);
+    endDate = new Date(Date.UTC(selectedCalendarYear + 1, 0, 1));
   } else {
     startDate.setUTCDate(startDate.getUTCDate() - rangeInDays[range]);
     startDate.setUTCHours(0, 0, 0, 0);
@@ -85,7 +98,7 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
     where: {
       type: EnvelopeType.DOCUMENT,
       deletedAt: null,
-      createdAt: { gte: startDate },
+      createdAt: { gte: startDate, ...(endDate ? { lt: endDate } : {}) },
       team: {
         organisationId: currentTeam.organisationId,
         ...(scopedTeamId ? { id: scopedTeamId } : {}),
@@ -101,7 +114,6 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
       title: true,
       templateId: true,
       user: { select: { id: true, name: true, email: true } },
-      recipients: { select: { sendStatus: true, readStatus: true, signingStatus: true } },
     },
   });
 
@@ -112,7 +124,6 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
   >();
   let completedTurnaroundHours = 0;
   let completedWithTurnaround = 0;
-  const recipientFunnel = { total: 0, sent: 0, opened: 0, signed: 0, declined: 0 };
   const turnaroundDistribution = { sameDay: 0, oneToThreeDays: 0, fourToSevenDays: 0, overSevenDays: 0 };
   const templates = new Map<string, { name: string; count: number; completed: number }>();
   const totals = { DRAFT: 0, PENDING: 0, COMPLETED: 0, REJECTED: 0 };
@@ -157,14 +168,6 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
       templates.set(templateKey, templateStats);
     }
 
-    for (const recipient of envelope.recipients) {
-      recipientFunnel.total += 1;
-      recipientFunnel.sent += recipient.sendStatus === SendStatus.SENT ? 1 : 0;
-      recipientFunnel.opened += recipient.readStatus === ReadStatus.OPENED ? 1 : 0;
-      recipientFunnel.signed += recipient.signingStatus === SigningStatus.SIGNED ? 1 : 0;
-      recipientFunnel.declined += recipient.signingStatus === SigningStatus.REJECTED ? 1 : 0;
-    }
-
     if (envelope.completedAt) {
       const turnaroundHours = (envelope.completedAt.getTime() - envelope.createdAt.getTime()) / 3_600_000;
       completedTurnaroundHours += turnaroundHours;
@@ -201,6 +204,7 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
     selectedTeamId: scopedTeamId ?? null,
     range,
     bucket,
+    calendarYear: selectedCalendarYear,
     metrics: {
       total: envelopes.length,
       completed: totals.COMPLETED,
@@ -211,21 +215,12 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
       averageTurnaroundHours: completedWithTurnaround === 0 ? 0 : completedTurnaroundHours / completedWithTurnaround,
     },
     chartData,
-    recipientFunnel,
     turnaroundDistribution: [
       { label: 'Same day', count: turnaroundDistribution.sameDay },
       { label: '1-3 days', count: turnaroundDistribution.oneToThreeDays },
       { label: '4-7 days', count: turnaroundDistribution.fourToSevenDays },
       { label: '7+ days', count: turnaroundDistribution.overSevenDays },
     ],
-    slowestEnvelopes: envelopes
-      .filter((envelope) => envelope.status === DocumentStatus.PENDING)
-      .sort((first, second) => first.createdAt.getTime() - second.createdAt.getTime())
-      .slice(0, 5)
-      .map((envelope) => ({
-        title: envelope.title,
-        ageInDays: Math.max(1, Math.floor((Date.now() - envelope.createdAt.getTime()) / 86_400_000)),
-      })),
     templateEffectiveness: [...templates.entries()]
       .sort(([, first], [, second]) => second.count - first.count)
       .slice(0, 5)
