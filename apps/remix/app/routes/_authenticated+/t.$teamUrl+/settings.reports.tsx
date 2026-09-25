@@ -7,6 +7,7 @@ import {
 import { msg } from '@lingui/core/macro';
 import { EnvelopeReportsDashboard } from '~/components/general/reports/envelope-reports-dashboard';
 import { SettingsHeader } from '~/components/general/settings-header';
+import { appMetaTags } from '~/utils/meta';
 
 import type { Route } from './+types/settings.reports';
 
@@ -14,7 +15,7 @@ const ranges = ['7d', '30d', '90d', '365d', 'calendar-year'] as const;
 const buckets = ['day', 'week', 'month'] as const;
 
 export function meta() {
-  return [{ title: msg`Reports` }];
+  return appMetaTags(msg`Reports`);
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {

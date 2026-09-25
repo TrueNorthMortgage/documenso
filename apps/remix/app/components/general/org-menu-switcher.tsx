@@ -22,15 +22,7 @@ import {
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import {
-  BarChart3Icon,
-  Building2Icon,
-  ChevronsUpDown,
-  Plus,
-  Settings2Icon,
-  SettingsIcon,
-  UsersIcon,
-} from 'lucide-react';
+import { Building2Icon, ChevronsUpDown, Plus, Settings2Icon, SettingsIcon, UsersIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router';
 
@@ -292,7 +284,6 @@ export const OrgMenuSwitcher = () => {
                     ))) && (
                   <DropdownMenuItem className="px-4 py-2 text-muted-foreground" asChild>
                     <Link to={`/t/${currentTeam.url}/settings/reports`}>
-                      <BarChart3Icon className="mr-2 h-4 w-4" />
                       <Trans>Reports</Trans>
                     </Link>
                   </DropdownMenuItem>
