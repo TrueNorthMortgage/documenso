@@ -169,9 +169,9 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
 
       if (turnaroundHours < 24) {
         turnaroundDistribution.sameDay += 1;
-      } else if (turnaroundHours < 72) {
+      } else if (turnaroundHours <= 72) {
         turnaroundDistribution.oneToThreeDays += 1;
-      } else if (turnaroundHours < 168) {
+      } else if (turnaroundHours <= 168) {
         turnaroundDistribution.fourToSevenDays += 1;
       } else {
         turnaroundDistribution.overSevenDays += 1;
