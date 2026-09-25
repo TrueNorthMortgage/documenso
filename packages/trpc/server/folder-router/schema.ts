@@ -15,6 +15,8 @@ export const ZFolderSchema = FolderSchema.pick({
   updatedAt: true,
   visibility: true,
   type: true,
+}).extend({
+  ownerName: z.string().nullable().optional(),
 });
 
 export type TFolder = z.infer<typeof ZFolderSchema>;
