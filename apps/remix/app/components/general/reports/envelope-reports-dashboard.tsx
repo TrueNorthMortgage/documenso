@@ -245,7 +245,8 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
                     <div className="text-right">
                       <p className="font-semibold text-sm">{sender.count}</p>
                       <p className="text-muted-foreground text-xs">
-                        {sender.count === 0 ? 0 : Math.round((sender.completed / sender.count) * 100)}% completed
+                        {sender.count === 0 ? '0%' : `${Math.round((sender.completed / sender.count) * 100)}%`}{' '}
+                        completed
                       </p>
                     </div>
                   </div>

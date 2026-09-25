@@ -114,13 +114,15 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
   let completedWithTurnaround = 0;
   const recipientFunnel = { total: 0, sent: 0, opened: 0, signed: 0, declined: 0 };
   const turnaroundDistribution = { sameDay: 0, oneToThreeDays: 0, fourToSevenDays: 0, overSevenDays: 0 };
-  const templates = new Map<string, { count: number; completed: number }>();
+  const templates = new Map<string, { name: string; count: number; completed: number }>();
+  const totals = { DRAFT: 0, PENDING: 0, COMPLETED: 0, REJECTED: 0 };
 
   for (const envelope of envelopes) {
     const key = getBucketKey(envelope.createdAt, bucket);
     const counts = buckets.get(key) ?? { DRAFT: 0, PENDING: 0, COMPLETED: 0, REJECTED: 0 };
     counts[envelope.status] += 1;
     buckets.set(key, counts);
+    totals[envelope.status] += 1;
 
     const sender = envelope.user.name || envelope.user.email;
     const senderStats = senders.get(envelope.user.email) ?? {
@@ -148,10 +150,11 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
     senders.set(envelope.user.email, senderStats);
 
     if (envelope.templateId) {
-      const templateStats = templates.get(envelope.title) ?? { count: 0, completed: 0 };
+      const templateKey = envelope.templateId.toString();
+      const templateStats = templates.get(templateKey) ?? { name: envelope.title, count: 0, completed: 0 };
       templateStats.count += 1;
       templateStats.completed += envelope.status === DocumentStatus.COMPLETED ? 1 : 0;
-      templates.set(envelope.title, templateStats);
+      templates.set(templateKey, templateStats);
     }
 
     for (const recipient of envelope.recipients) {
@@ -179,11 +182,6 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
     }
   }
 
-  const totals = { DRAFT: 0, PENDING: 0, COMPLETED: 0, REJECTED: 0 };
-
-  for (const envelope of envelopes) {
-    totals[envelope.status] += 1;
-  }
   const sent = totals.PENDING + totals.COMPLETED + totals.REJECTED;
   const chartData = [...buckets.entries()]
     .sort(([first], [second]) => first.localeCompare(second))
@@ -231,8 +229,8 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
     templateEffectiveness: [...templates.entries()]
       .sort(([, first], [, second]) => second.count - first.count)
       .slice(0, 5)
-      .map(([name, stats]) => ({
-        name,
+      .map(([, stats]) => ({
+        name: stats.name,
         count: stats.count,
         completionRate: stats.count === 0 ? 0 : Math.round((stats.completed / stats.count) * 100),
       })),
