@@ -100,13 +100,16 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
       status: true,
       title: true,
       templateId: true,
-      user: { select: { name: true, email: true } },
+      user: { select: { id: true, name: true, email: true } },
       recipients: { select: { sendStatus: true, readStatus: true, signingStatus: true } },
     },
   });
 
   const buckets = new Map<string, Record<DocumentStatus, number>>();
-  const senders = new Map<string, { count: number; completed: number; inProgress: number; rejected: number }>();
+  const senders = new Map<
+    string,
+    { id: number; name: string; count: number; completed: number; inProgress: number; rejected: number }
+  >();
   let completedTurnaroundHours = 0;
   let completedWithTurnaround = 0;
   const recipientFunnel = { total: 0, sent: 0, opened: 0, signed: 0, declined: 0 };
@@ -120,7 +123,14 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
     buckets.set(key, counts);
 
     const sender = envelope.user.name || envelope.user.email;
-    const senderStats = senders.get(sender) ?? { count: 0, completed: 0, inProgress: 0, rejected: 0 };
+    const senderStats = senders.get(envelope.user.email) ?? {
+      id: envelope.user.id,
+      name: sender,
+      count: 0,
+      completed: 0,
+      inProgress: 0,
+      rejected: 0,
+    };
     senderStats.count += 1;
 
     if (envelope.status === DocumentStatus.COMPLETED) {
@@ -135,7 +145,7 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
       senderStats.rejected += 1;
     }
 
-    senders.set(sender, senderStats);
+    senders.set(envelope.user.email, senderStats);
 
     if (envelope.templateId) {
       const templateStats = templates.get(envelope.title) ?? { count: 0, completed: 0 };
@@ -153,9 +163,9 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
     }
 
     if (envelope.completedAt) {
-      completedTurnaroundHours += (envelope.completedAt.getTime() - envelope.createdAt.getTime()) / 3_600_000;
-      completedWithTurnaround += 1;
       const turnaroundHours = (envelope.completedAt.getTime() - envelope.createdAt.getTime()) / 3_600_000;
+      completedTurnaroundHours += turnaroundHours;
+      completedWithTurnaround += 1;
 
       if (turnaroundHours < 24) {
         turnaroundDistribution.sameDay += 1;
@@ -229,6 +239,6 @@ export const getEnvelopeReport = async ({ userId, teamUrl, range, bucket, teamId
     topSenders: [...senders.entries()]
       .sort(([, first], [, second]) => second.count - first.count)
       .slice(0, 5)
-      .map(([name, stats]) => ({ name, ...stats })),
+      .map(([, stats]) => stats),
   };
 };

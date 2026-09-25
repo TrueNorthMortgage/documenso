@@ -31,7 +31,14 @@ type ReportData = {
     averageTurnaroundHours: number;
   };
   chartData: Array<{ label: string; DRAFT: number; PENDING: number; COMPLETED: number; REJECTED: number }>;
-  topSenders: Array<{ name: string; count: number; completed: number; inProgress: number; rejected: number }>;
+  topSenders: Array<{
+    id: number;
+    name: string;
+    count: number;
+    completed: number;
+    inProgress: number;
+    rejected: number;
+  }>;
   recipientFunnel: { total: number; sent: number; opened: number; signed: number; declined: number };
   turnaroundDistribution: Array<{ label: string; count: number }>;
   slowestEnvelopes: Array<{ title: string; ageInDays: number }>;
@@ -228,7 +235,7 @@ export const EnvelopeReportsDashboard = ({ report }: { report: ReportData }) => 
                 <p className="text-muted-foreground text-sm">No envelopes in this period.</p>
               ) : (
                 report.topSenders.map((sender, index) => (
-                  <div className="flex items-center justify-between" key={sender.name}>
+                  <div className="flex items-center justify-between" key={sender.id}>
                     <div className="flex min-w-0 items-center gap-3">
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted font-medium text-xs">
                         {index + 1}

@@ -26,7 +26,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const bucket = buckets.includes(searchParams.get('bucket') as ReportBucket)
     ? (searchParams.get('bucket') as ReportBucket)
     : 'day';
-  const teamId = Number(searchParams.get('teamId')) || undefined;
+  const requestedTeamId = searchParams.get('teamId');
+  const parsedTeamId = requestedTeamId === null ? undefined : Number(requestedTeamId);
+  const teamId =
+    parsedTeamId !== undefined && Number.isSafeInteger(parsedTeamId) && parsedTeamId > 0 ? parsedTeamId : undefined;
   return { report: await getEnvelopeReport({ userId: user.id, teamUrl: params.teamUrl, range, bucket, teamId }) };
 }
 
