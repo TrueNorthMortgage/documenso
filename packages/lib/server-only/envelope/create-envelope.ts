@@ -32,7 +32,7 @@ import type { TFieldAndMeta } from '../../types/field-meta';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
 import { getFileServerSide } from '../../universal/upload/get-file.server';
 import { putPdfFileServerSide } from '../../universal/upload/put-file.server';
-import { extractDerivedDocumentMeta } from '../../utils/document';
+import { extractDerivedDocumentMeta, stripPdfExtension } from '../../utils/document';
 import { createDocumentAuthOptions, createRecipientAuthOptions } from '../../utils/document-auth';
 import { buildTeamWhereQuery } from '../../utils/teams';
 import { incrementDocumentId, incrementTemplateId } from '../envelope/increment-id';
@@ -131,6 +131,7 @@ export const createEnvelope = async ({
     visibility: visibilityOverride,
     delegatedDocumentOwner,
   } = data;
+  const canonicalTitle = stripPdfExtension(title);
 
   const team = await prisma.team.findFirst({
     where: buildTeamWhereQuery({ teamId, userId }),
@@ -312,14 +313,14 @@ export const createEnvelope = async ({
         secondaryId,
         internalVersion,
         type,
-        title,
+        title: canonicalTitle,
         qrToken: prefixedId('qr'),
         externalId,
         envelopeItems: {
           createMany: {
             data: envelopeItems.map((item, i) => ({
               id: prefixedId('envelope_item'),
-              title: item.title || title,
+              title: stripPdfExtension(item.title || canonicalTitle),
               order: item.order !== undefined ? item.order : i + 1,
               documentDataId: item.documentDataId,
             })),

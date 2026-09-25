@@ -11,6 +11,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE } from '../../types/document-audit-logs';
 import { extractDerivedDocumentEmailSettings } from '../../types/document-email';
 import type { RequestMetadata } from '../../universal/extract-request-metadata';
 import { getFileServerSide } from '../../universal/upload/get-file.server';
+import { stripPdfExtension } from '../../utils/document';
 import { createDocumentAuditLogData } from '../../utils/document-audit-logs';
 import { getPostmarkSafeEmailAttachments } from '../../utils/email-attachments';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
@@ -91,10 +92,10 @@ export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOp
       const file = await getFileServerSide(envelopeItem.documentData);
 
       // Use the envelope title for version 1, and the envelope item title for version 2.
-      const fileNameToUse = envelope.internalVersion === 1 ? envelope.title : envelopeItem.title + '.pdf';
+      const title = envelope.internalVersion === 1 ? envelope.title : envelopeItem.title;
 
       return {
-        filename: fileNameToUse.endsWith('.pdf') ? fileNameToUse : fileNameToUse + '.pdf',
+        filename: `${stripPdfExtension(title)}.pdf`,
         content: Buffer.from(file),
         contentType: 'application/pdf',
       };
