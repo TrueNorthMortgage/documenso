@@ -364,8 +364,8 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="w-full sm:max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] w-full flex-col sm:max-w-3xl">
+        <DialogHeader className="flex-none">
           <DialogTitle>
             {isAddMode ? <Trans>Add document via template</Trans> : <Trans>Apply template</Trans>}
           </DialogTitle>
@@ -378,7 +378,7 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
           <div className="relative">
             <Input
               value={query}
@@ -399,7 +399,7 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
               <Trans>No templates found.</Trans>
             </p>
           ) : (
-            <div className="max-h-64 overflow-y-auto rounded-md border">
+            <div className="max-h-[min(32rem,calc(100dvh-18rem))] overflow-y-auto rounded-md border">
               <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>
@@ -530,7 +530,7 @@ export const ApplyTemplateToEnvelopeItemDialog = ({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-none">
           {!isAddMode && hasTemplateFields && (
             <Button type="button" variant="outline" onClick={() => void onRemove()} disabled={isApplying || isRemoving}>
               <XIcon className="mr-2 h-4 w-4" />
