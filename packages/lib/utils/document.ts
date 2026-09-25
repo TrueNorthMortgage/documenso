@@ -14,6 +14,15 @@ export const isDocumentCompleted = (document: Pick<Envelope, 'status'> | Documen
 };
 
 /**
+ * Produces the canonical display title used for PDF envelopes and their items.
+ *
+ * File extensions are added only when a file is downloaded or attached to an
+ * email, so a title should never retain one. Repeated suffixes are handled to
+ * repair titles created by older upload paths.
+ */
+export const stripPdfExtension = (title: string) => title.replace(/(?:\.pdf)+$/i, '');
+
+/**
  * Extracts the derived document meta which should be used when creating a document
  * from scratch, or from a template.
  *
