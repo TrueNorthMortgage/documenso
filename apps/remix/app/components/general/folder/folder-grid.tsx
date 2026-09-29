@@ -2,6 +2,7 @@ import { useCurrentOrganisation } from '@documenso/lib/client-only/providers/org
 import { formatDocumentsPath, formatTemplatesPath } from '@documenso/lib/utils/teams';
 import { trpc } from '@documenso/trpc/react';
 import type { TFolderWithSubfolders } from '@documenso/trpc/server/folder-router/schema';
+import { Button } from '@documenso/ui/primitives/button';
 import { Skeleton } from '@documenso/ui/primitives/skeleton';
 import { Trans } from '@lingui/react/macro';
 import { FolderType } from '@prisma/client';
@@ -96,6 +97,14 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
 
         <div className="flex gap-4 sm:flex-row sm:justify-end">
           <EnvelopeUploadButton type={type} folderId={parentId || undefined} />
+
+          {type === FolderType.DOCUMENT && (
+            <Button asChild variant="outline">
+              <Link to={formatTemplatesPath(team.url)}>
+                <Trans>Start from Template</Trans>
+              </Link>
+            </Button>
+          )}
 
           {/* If you delete this, delete the component as well. */}
           {organisation.organisationClaim.flags.allowLegacyEnvelopes && <DocumentUploadButtonLegacy type={type} />}

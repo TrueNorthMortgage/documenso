@@ -40,7 +40,7 @@ import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { DocumentStatus, FieldType, RecipientRole } from '@prisma/client';
-import { AlertCircleIcon, EyeOffIcon, FileTextIcon, PencilIcon, SparklesIcon } from 'lucide-react';
+import { AlertCircleIcon, EyeOffIcon, FileTextIcon, PencilIcon, PlusIcon, SparklesIcon } from 'lucide-react';
 import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRevalidator, useSearchParams } from 'react-router';
@@ -68,6 +68,7 @@ import { ConditionalFieldHighlightContext } from './conditional-field-highlight-
 import { type InvalidFieldPlacement, useEnvelopeEditorFieldDrag } from './envelope-editor-field-drag-context';
 import { EnvelopeEditorFieldDragDrop } from './envelope-editor-fields-drag-drop';
 import { EnvelopeEditorFieldsPageRenderer, getPageAtPoint } from './envelope-editor-fields-page-renderer';
+import { EnvelopeEditorRecipientsDialog } from './envelope-editor-recipients-dialog';
 import { EnvelopeRendererFileSelector } from './envelope-file-selector';
 import { EnvelopeRecipientSelector } from './envelope-recipient-selector';
 
@@ -1108,7 +1109,7 @@ export const EnvelopeEditorFieldsPage = () => {
 
   const scrollableContainerRef = useRef<HTMLDivElement>(null);
 
-  const { envelope, editorFields, navigateToStep, editorConfig, syncEnvelope } = useCurrentEnvelopeEditor();
+  const { envelope, editorFields, editorConfig, syncEnvelope } = useCurrentEnvelopeEditor();
 
   const { currentEnvelopeItem } = useCurrentEnvelopeRender();
 
@@ -1384,9 +1385,13 @@ export const EnvelopeEditorFieldsPage = () => {
                   </AlertDescription>
                 </div>
 
-                <Button variant="outline" onClick={() => void navigateToStep('upload')}>
-                  <Trans>Add Recipients</Trans>
-                </Button>
+                <EnvelopeEditorRecipientsDialog
+                  trigger={
+                    <Button variant="outline">
+                      <Trans>Add Recipients</Trans>
+                    </Button>
+                  }
+                />
               </Alert>
             )}
 
@@ -1415,23 +1420,39 @@ export const EnvelopeEditorFieldsPage = () => {
         </div>
 
         {/* Right Section - Form Fields Panel */}
-        {currentEnvelopeItem && envelope.recipients.length > 0 && (
+        {currentEnvelopeItem && (
           <div className="sticky top-0 h-full w-80 flex-shrink-0 overflow-y-auto border-border border-l bg-background py-4">
             {/* Recipient selector section. */}
             <section className="px-4">
-              <h3 className="mb-2 font-semibold text-foreground text-sm">
-                <Trans>Recipient</Trans>
-              </h3>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="font-semibold text-foreground text-sm">
+                  <Trans>Recipient</Trans>
+                </h3>
 
-              <EnvelopeRecipientSelector
-                selectedRecipient={selectedRecipient}
-                onSelectedRecipientChange={handleRecipientChange}
-                recipients={envelope.recipients}
-                fields={envelope.fields}
-                ignoreInsertedFields={Boolean(envelope.correctionStartedAt)}
-                className="w-full"
-                align="end"
-              />
+                <EnvelopeEditorRecipientsDialog
+                  trigger={
+                    <Button type="button" variant="ghost" size="icon" aria-label={_(msg`Manage recipients`)}>
+                      <PlusIcon className="h-4 w-4" />
+                    </Button>
+                  }
+                />
+              </div>
+
+              {envelope.recipients.length > 0 ? (
+                <EnvelopeRecipientSelector
+                  selectedRecipient={selectedRecipient}
+                  onSelectedRecipientChange={handleRecipientChange}
+                  recipients={envelope.recipients}
+                  fields={envelope.fields}
+                  ignoreInsertedFields={Boolean(envelope.correctionStartedAt)}
+                  className="w-full"
+                  align="end"
+                />
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  <Trans>Add a recipient before placing fields.</Trans>
+                </p>
+              )}
 
               {selectedRecipient &&
                 !canRecipientFieldsBeModified(

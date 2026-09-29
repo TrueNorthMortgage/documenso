@@ -22,10 +22,14 @@ export const DocumentsTableSenderFilter = ({ teamId }: DocumentsTableSenderFilte
     teamId,
   });
 
-  const comboBoxOptions = (data ?? []).map((member) => ({
-    label: member.name ?? member.email,
-    value: member.userId.toString(),
-  }));
+  const comboBoxOptions = (data ?? [])
+    .map((member) => ({
+      label: member.name ?? member.email,
+      value: member.userId.toString(),
+    }))
+    .sort((firstOption, secondOption) =>
+      firstOption.label.localeCompare(secondOption.label, undefined, { sensitivity: 'base' }),
+    );
 
   const onChange = (newSenderIds: string[]) => {
     if (!pathname) {

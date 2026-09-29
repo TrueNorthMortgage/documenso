@@ -36,7 +36,7 @@ export const EnvelopeEditorPreviewPage = () => {
 
   const scrollableContainerRef = useRef<HTMLDivElement>(null);
 
-  const [selectedPreviewMode, setSelectedPreviewMode] = useState<'recipient' | 'signed'>('recipient');
+  const [selectedPreviewMode, _setSelectedPreviewMode] = useState<'recipient' | 'signed'>('recipient');
 
   const [fakerInstance, setFakerInstance] = useState<Faker | null>(null);
 
@@ -255,7 +255,11 @@ export const EnvelopeEditorPreviewPage = () => {
           ref={scrollableContainerRef}
         >
           {/* Horizontal envelope item selector */}
-          <EnvelopeRendererFileSelector className="px-0" fields={editorFields.localFields} />
+          <EnvelopeRendererFileSelector
+            className="document-selector-scrollbar px-0"
+            fields={editorFields.localFields}
+            hideScrollbar={false}
+          />
 
           <Alert variant="warning" className="mx-auto max-w-[800px]">
             <AlertTitle>
