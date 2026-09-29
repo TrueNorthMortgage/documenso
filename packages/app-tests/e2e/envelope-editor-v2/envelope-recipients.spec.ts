@@ -77,6 +77,18 @@ const navigateToAddFieldsAndBack = async (root: Page) => {
   await expect(root.getByRole('heading', { name: 'Recipients' })).toBeVisible();
 };
 
+const addMyselfFromFieldsRecipientsDialog = async (surface: TEnvelopeEditorSurface) => {
+  await clickEnvelopeEditorStep(surface.root, 'addFields');
+
+  await surface.root.getByRole('button', { name: 'Manage recipients' }).click();
+
+  const dialog = surface.root.getByRole('dialog');
+
+  await expect(dialog.getByRole('heading', { name: 'Manage recipients' })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Add Myself' }).click();
+  await expect(dialog.getByRole('textbox', { name: 'Email' }).first()).toHaveValue(surface.userEmail);
+};
+
 const runRecipientFlow = async (surface: TEnvelopeEditorSurface): Promise<RecipientFlowResult> => {
   const externalId = `e2e-recipients-${nanoid()}`;
 
@@ -215,6 +227,12 @@ test.describe('document editor', () => {
       ...result,
     });
   });
+
+  test('adds myself from the Add Fields recipients dialog', async ({ page }) => {
+    const surface = await openDocumentEnvelopeEditor(page);
+
+    await addMyselfFromFieldsRecipientsDialog(surface);
+  });
 });
 
 test.describe('template editor', () => {
@@ -226,6 +244,12 @@ test.describe('template editor', () => {
       surface,
       ...result,
     });
+  });
+
+  test('adds myself from the Add Fields recipients dialog', async ({ page }) => {
+    const surface = await openTemplateEnvelopeEditor(page);
+
+    await addMyselfFromFieldsRecipientsDialog(surface);
   });
 });
 
