@@ -1431,7 +1431,13 @@ export const EnvelopeEditorFieldsPage = () => {
 
                 <EnvelopeEditorRecipientsDialog
                   trigger={
-                    <Button type="button" variant="ghost" size="icon" aria-label={_(msg`Manage recipients`)}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      aria-label={_(msg`Manage recipients`)}
+                    >
                       <PlusIcon className="h-4 w-4" />
                     </Button>
                   }
