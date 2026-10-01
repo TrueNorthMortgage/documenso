@@ -61,9 +61,10 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
     { placeholderData: (previousData) => previousData },
   );
   const { mutateAsync: updateFolder } = trpc.folder.updateFolder.useMutation();
+  const utils = trpc.useUtils();
   const canViewOwner = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
   const rootPath = type === FolderType.DOCUMENT ? formatDocumentsPath(team.url) : formatTemplatesPath(team.url);
-  const results = data ?? { folders: [], count: 0, currentPage: 1, perPage: 25, totalPages: 1 };
+  const results = data ?? { folders: [], count: 0, currentPage: 1, perPage: 5, totalPages: 1 };
 
   // Show immediate children beneath their parent while retaining server-side paging of root rows.
   const rows: TFolderRow[] = results.folders.flatMap((folder) => [
@@ -132,7 +133,11 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
                   <Trans>Move</Trans>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => void updateFolder({ folderId: folder.id, data: { pinned: !folder.pinned } })}
+                  onClick={async () => {
+                    await updateFolder({ folderId: folder.id, data: { pinned: !folder.pinned } });
+                    updateSearchParams({ page: 1 });
+                    await utils.folder.getFolders.invalidate();
+                  }}
                 >
                   <PinIcon className="mr-2 h-4 w-4" />
                   {folder.pinned ? <Trans>Unpin</Trans> : <Trans>Pin</Trans>}
@@ -152,7 +157,7 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
         },
       },
     ];
-  }, [_, canViewOwner, rootPath, team.currentTeamRole, type, updateFolder, user.id]);
+  }, [_, canViewOwner, rootPath, team.currentTeamRole, type, updateFolder, updateSearchParams, user.id, utils]);
 
   return (
     <>

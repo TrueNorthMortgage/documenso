@@ -29,7 +29,7 @@ export const findFoldersDashboard = async ({
   type,
   query,
   page = 1,
-  perPage = 25,
+  perPage = 5,
 }: FindFoldersDashboardOptions) => {
   const team = await getTeamById({ userId, teamId });
   const canViewOwner = team.currentTeamRole === TeamMemberRole.ADMIN || team.currentTeamRole === TeamMemberRole.MANAGER;
@@ -76,7 +76,8 @@ export const findFoldersDashboard = async ({
       where,
       skip: (Math.max(page, 1) - 1) * perPage,
       take: perPage,
-      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+      // Pins are a global priority, then folders remain alphabetically ordered.
+      orderBy: [{ pinned: 'desc' }, { name: 'asc' }, { id: 'asc' }],
       include: {
         user: { select: { name: true, email: true } },
         _count: { select: countSelect },
@@ -87,7 +88,7 @@ export const findFoldersDashboard = async ({
             OR: [{ visibility }, { userId }],
             ...(normalizedQuery ? { id: { in: [] } } : {}),
           },
-          orderBy: [{ name: 'asc' }, { id: 'asc' }],
+          orderBy: [{ pinned: 'desc' }, { name: 'asc' }, { id: 'asc' }],
           include: {
             user: { select: { name: true, email: true } },
             _count: { select: countSelect },
