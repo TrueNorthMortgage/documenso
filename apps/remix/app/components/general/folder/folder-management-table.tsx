@@ -164,7 +164,7 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
       <div className="relative mb-6 w-full max-w-md">
         <SearchIcon className="absolute top-3 left-2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder={_(msg`Search folders or owners...`)}
+          placeholder={canViewOwner ? _(msg`Search folders or owners...`) : _(msg`Search folders...`)}
           value={search}
           className="pl-8"
           onChange={(event) => {
