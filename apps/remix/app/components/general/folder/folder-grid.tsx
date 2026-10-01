@@ -5,7 +5,7 @@ import { Button } from '@documenso/ui/primitives/button';
 import { Skeleton } from '@documenso/ui/primitives/skeleton';
 import { Trans } from '@lingui/react/macro';
 import { FolderType } from '@prisma/client';
-import { FolderIcon, HomeIcon } from 'lucide-react';
+import { ArrowUpIcon, FolderIcon, HomeIcon } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { FolderCreateDialog } from '~/components/dialogs/folder-create-dialog';
@@ -26,6 +26,8 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
   const organisation = useCurrentOrganisation();
   const { data: foldersData, isPending } = trpc.folder.getFolders.useQuery({ type, parentId });
   const rootPath = type === FolderType.DOCUMENT ? formatDocumentsPath(team.url) : formatTemplatesPath(team.url);
+  const parentFolder = foldersData?.breadcrumbs.at(-2);
+  const parentPath = parentFolder ? `${rootPath}/f/${parentFolder.id}` : rootPath;
 
   return (
     <div>
@@ -34,6 +36,14 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
           className="flex flex-1 items-center font-medium text-muted-foreground text-sm"
           data-testid="folder-grid-breadcrumbs"
         >
+          {parentId && (
+            <Link to={parentPath} className="mr-3 flex items-center hover:text-foreground" title="Go to parent folder">
+              <ArrowUpIcon className="h-4 w-4" />
+              <span className="sr-only">
+                <Trans>Go to parent folder</Trans>
+              </span>
+            </Link>
+          )}
           <Link to={rootPath} className="flex items-center hover:text-muted-foreground/80">
             <HomeIcon className="mr-2 h-4 w-4" />
             <Trans>Home</Trans>
