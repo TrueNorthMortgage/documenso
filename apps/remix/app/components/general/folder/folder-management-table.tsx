@@ -1,6 +1,5 @@
 import { useUpdateSearchParams } from '@documenso/lib/client-only/hooks/use-update-search-params';
 import { useSession } from '@documenso/lib/client-only/providers/session';
-import { ZUrlSearchParamsSchema } from '@documenso/lib/types/search-params';
 import {
   canExecuteTeamAction,
   canManageFolder,
@@ -54,7 +53,6 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
   const team = useCurrentTeam();
   const [searchParams] = useSearchParams();
   const updateSearchParams = useUpdateSearchParams();
-  const params = ZUrlSearchParamsSchema.parse(Object.fromEntries(searchParams));
   const folderPage = Math.max(Number(searchParams.get('folderPage')) || 1, 1);
   const [folderPerPage, setFolderPerPage] = useState(5);
   const [folderSort, setFolderSort] = useState<{ by: TFolderSort; direction: 'asc' | 'desc' }>({
@@ -64,7 +62,7 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
   const [folderToMove, setFolderToMove] = useState<TFolderWithSubfolders | null>(null);
   const [folderToDelete, setFolderToDelete] = useState<TFolderWithSubfolders | null>(null);
   const [folderToSettings, setFolderToSettings] = useState<TFolderWithSubfolders | null>(null);
-  const [search, setSearch] = useState(params.query ?? '');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const savedPageSize = Number(window.localStorage.getItem('documenso.folder-page-size'));
@@ -93,7 +91,7 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
     {
       type,
       parentId,
-      query: params.query,
+      query: search.trim() || undefined,
       page: folderPage,
       perPage: folderPerPage,
       sortBy: folderSort.by,
@@ -254,7 +252,7 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
               onChange={(event) => {
                 const query = event.target.value;
                 setSearch(query);
-                updateSearchParams({ query: query || undefined, folderPage: 1 });
+                updateSearchParams({ folderPage: 1 });
               }}
             />
           </div>
