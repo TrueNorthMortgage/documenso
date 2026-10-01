@@ -376,6 +376,8 @@ model Folder {
   @@index([teamId])
   @@index([parentId])
   @@index([type])
+  @@index([teamId, parentId, type, name])
+  @@index([name(ops: raw("gin_trgm_ops"))], map: "Folder_name_trgm_idx", type: Gin)
 }
 
 enum EnvelopeType {

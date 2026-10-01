@@ -2,6 +2,7 @@ import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { createFolder } from '@documenso/lib/server-only/folder/create-folder';
 import { deleteFolder } from '@documenso/lib/server-only/folder/delete-folder';
 import { findFolders } from '@documenso/lib/server-only/folder/find-folders';
+import { findFoldersDashboard } from '@documenso/lib/server-only/folder/find-folders-dashboard';
 import { findFoldersInternal } from '@documenso/lib/server-only/folder/find-folders-internal';
 import { getFolderBreadcrumbs } from '@documenso/lib/server-only/folder/get-folder-breadcrumbs';
 import { getFolderById } from '@documenso/lib/server-only/folder/get-folder-by-id';
@@ -32,20 +33,26 @@ export const folderRouter = router({
     .output(ZGetFoldersResponseSchema)
     .query(async ({ input, ctx }) => {
       const { teamId, user } = ctx;
-      const { parentId, type } = input;
+      const { parentId, type, query, page, perPage } = input;
 
       ctx.logger.info({
         input: {
           parentId,
           type,
+          query,
+          page,
+          perPage,
         },
       });
 
-      const folders = await findFoldersInternal({
+      const folders = await findFoldersDashboard({
         userId: user.id,
         teamId,
         parentId,
         type,
+        query,
+        page,
+        perPage,
       });
 
       const breadcrumbs = parentId
@@ -58,7 +65,7 @@ export const folderRouter = router({
         : [];
 
       return {
-        folders,
+        ...folders,
         breadcrumbs,
         type,
       };
@@ -174,7 +181,7 @@ export const folderRouter = router({
             folderId: parentId,
             type,
           });
-        } catch (error) {
+        } catch (_error) {
           throw new AppError(AppErrorCode.NOT_FOUND, {
             message: 'Parent folder not found',
           });

@@ -69,7 +69,7 @@ export const ZDeleteFolderRequestSchema = z.object({
   folderId: z.string(),
 });
 
-export const ZGetFoldersSchema = z.object({
+export const ZGetFoldersSchema = ZFindSearchParamsSchema.extend({
   parentId: z.string().nullable().optional(),
   type: ZFolderTypeSchema.optional(),
 });
@@ -78,6 +78,10 @@ export const ZGetFoldersResponseSchema = z.object({
   folders: z.array(ZFolderWithSubfoldersSchema),
   breadcrumbs: z.array(ZFolderSchema),
   type: ZFolderTypeSchema.optional(),
+  count: z.number(),
+  currentPage: z.number(),
+  perPage: z.number(),
+  totalPages: z.number(),
 });
 
 export type TGetFoldersResponse = z.infer<typeof ZGetFoldersResponseSchema>;
