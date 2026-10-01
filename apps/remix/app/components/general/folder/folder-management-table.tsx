@@ -34,7 +34,7 @@ import {
   SettingsIcon,
   TrashIcon,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
 import { FolderDeleteDialog } from '~/components/dialogs/folder-delete-dialog';
@@ -51,13 +51,23 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
   const [searchParams] = useSearchParams();
   const updateSearchParams = useUpdateSearchParams();
   const params = ZUrlSearchParamsSchema.parse(Object.fromEntries(searchParams));
+  const folderPage = Math.max(Number(searchParams.get('folderPage')) || 1, 1);
+  const [folderPerPage, setFolderPerPage] = useState(5);
   const [folderToMove, setFolderToMove] = useState<TFolderWithSubfolders | null>(null);
   const [folderToDelete, setFolderToDelete] = useState<TFolderWithSubfolders | null>(null);
   const [folderToSettings, setFolderToSettings] = useState<TFolderWithSubfolders | null>(null);
   const [search, setSearch] = useState(params.query ?? '');
 
+  useEffect(() => {
+    const savedPageSize = Number(window.localStorage.getItem('documenso.folder-page-size'));
+
+    if (savedPageSize === 5 || savedPageSize === 10) {
+      setFolderPerPage(savedPageSize);
+    }
+  }, []);
+
   const { data, isLoading, isError } = trpc.folder.getFolders.useQuery(
-    { type, parentId, query: params.query, page: params.page, perPage: params.perPage },
+    { type, parentId, query: params.query, page: folderPage, perPage: folderPerPage },
     { placeholderData: (previousData) => previousData },
   );
   const { mutateAsync: updateFolder } = trpc.folder.updateFolder.useMutation();
@@ -135,7 +145,7 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
                 <DropdownMenuItem
                   onClick={async () => {
                     await updateFolder({ folderId: folder.id, data: { pinned: !folder.pinned } });
-                    updateSearchParams({ page: 1 });
+                    updateSearchParams({ folderPage: 1 });
                     await utils.folder.getFolders.invalidate();
                   }}
                 >
@@ -170,7 +180,7 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
           onChange={(event) => {
             const query = event.target.value;
             setSearch(query);
-            updateSearchParams({ query: query || undefined, page: 1 });
+            updateSearchParams({ query: query || undefined, folderPage: 1 });
           }}
         />
       </div>
@@ -180,7 +190,12 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
         currentPage={results.currentPage}
         perPage={results.perPage}
         totalPages={results.totalPages}
-        onPaginationChange={(page, perPage) => updateSearchParams({ page, perPage })}
+        onPaginationChange={(page, perPage) => {
+          const nextPage = perPage === folderPerPage ? page : 1;
+          setFolderPerPage(perPage);
+          window.localStorage.setItem('documenso.folder-page-size', String(perPage));
+          updateSearchParams({ folderPage: nextPage });
+        }}
         skeleton={{ enable: isLoading, rows: 8 }}
         error={{ enable: isError }}
         emptyState={
@@ -189,9 +204,7 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
           </p>
         }
       >
-        {(table) =>
-          results.totalPages > 1 && <DataTablePagination additionalInformation="VisibleCount" table={table} />
-        }
+        {(table) => <DataTablePagination additionalInformation="VisibleCount" pageSizes={[5, 10]} table={table} />}
       </DataTable>
       <FolderMoveDialog
         folder={folderToMove}

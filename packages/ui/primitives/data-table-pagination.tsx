@@ -15,11 +15,13 @@ interface DataTablePaginationProps<TData> {
    * Defaults to 'VisibleCount'.
    */
   additionalInformation?: 'SelectedCount' | 'VisibleCount' | 'None';
+  pageSizes?: number[];
 }
 
 export function DataTablePagination<TData>({
   table,
   additionalInformation = 'VisibleCount',
+  pageSizes = [10, 20, 30, 40, 50],
 }: DataTablePaginationProps<TData>) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-4 px-2">
@@ -61,7 +63,7 @@ export function DataTablePagination<TData>({
             <SelectValue placeholder={table.getState().pagination.pageSize} />
           </SelectTrigger>
           <SelectContent side="top">
-            {[5, 10, 20, 30, 40, 50].map((pageSize) => (
+            {pageSizes.map((pageSize) => (
               <SelectItem key={pageSize} value={`${pageSize}`}>
                 {pageSize}
               </SelectItem>
