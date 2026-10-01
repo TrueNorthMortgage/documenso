@@ -26,7 +26,10 @@ import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { FolderType } from '@prisma/client';
 import {
+  ArrowDownIcon,
+  ArrowDownUpIcon,
   ArrowRightIcon,
+  ArrowUpIcon,
   FolderIcon,
   MoreVerticalIcon,
   PinIcon,
@@ -43,6 +46,7 @@ import { FolderUpdateDialog } from '~/components/dialogs/folder-update-dialog';
 import { useCurrentTeam } from '~/providers/team';
 
 type TFolderRow = TFolderWithSubfolders & { depth?: number };
+type TFolderSort = 'name' | 'owner' | 'items' | 'subfolders';
 
 export const FolderManagementTable = ({ type, parentId }: { type: FolderType; parentId: string | null }) => {
   const { _ } = useLingui();
@@ -53,6 +57,10 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
   const params = ZUrlSearchParamsSchema.parse(Object.fromEntries(searchParams));
   const folderPage = Math.max(Number(searchParams.get('folderPage')) || 1, 1);
   const [folderPerPage, setFolderPerPage] = useState(5);
+  const [folderSort, setFolderSort] = useState<{ by: TFolderSort; direction: 'asc' | 'desc' }>({
+    by: 'name',
+    direction: 'asc',
+  });
   const [folderToMove, setFolderToMove] = useState<TFolderWithSubfolders | null>(null);
   const [folderToDelete, setFolderToDelete] = useState<TFolderWithSubfolders | null>(null);
   const [folderToSettings, setFolderToSettings] = useState<TFolderWithSubfolders | null>(null);
@@ -66,8 +74,31 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
     }
   }, []);
 
+  useEffect(() => {
+    const savedSort = window.localStorage.getItem('documenso.folder-sort');
+
+    if (savedSort) {
+      try {
+        const parsedSort = JSON.parse(savedSort) as { by?: TFolderSort; direction?: 'asc' | 'desc' };
+        if (['name', 'owner', 'items', 'subfolders'].includes(parsedSort.by ?? '') && parsedSort.direction) {
+          setFolderSort({ by: parsedSort.by as TFolderSort, direction: parsedSort.direction });
+        }
+      } catch {
+        window.localStorage.removeItem('documenso.folder-sort');
+      }
+    }
+  }, []);
+
   const { data, isLoading, isError } = trpc.folder.getFolders.useQuery(
-    { type, parentId, query: params.query, page: folderPage, perPage: folderPerPage },
+    {
+      type,
+      parentId,
+      query: params.query,
+      page: folderPage,
+      perPage: folderPerPage,
+      sortBy: folderSort.by,
+      sortDirection: folderSort.direction,
+    },
     { placeholderData: (previousData) => previousData },
   );
   const { mutateAsync: updateFolder } = trpc.folder.updateFolder.useMutation();
@@ -84,10 +115,33 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
 
   const columns = useMemo<DataTableColumnDef<TFolderRow>[]>(() => {
     const itemLabel = type === FolderType.DOCUMENT ? _(msg`Documents`) : _(msg`Templates`);
+    const sortHeader = (label: string, sortBy: TFolderSort) => {
+      const isActive = folderSort.by === sortBy;
+      const SortIcon = isActive ? (folderSort.direction === 'asc' ? ArrowUpIcon : ArrowDownIcon) : ArrowDownUpIcon;
+
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-3 h-8"
+          onClick={() => {
+            const direction: 'asc' | 'desc' = isActive && folderSort.direction === 'asc' ? 'desc' : 'asc';
+            const nextSort = { by: sortBy, direction };
+            setFolderSort(nextSort);
+            window.localStorage.setItem('documenso.folder-sort', JSON.stringify(nextSort));
+            updateSearchParams({ folderPage: 1 });
+          }}
+        >
+          {label}
+          <SortIcon className="ml-1 h-3 w-3" />
+        </Button>
+      );
+    };
 
     return [
       {
-        header: _(msg`Folder`),
+        id: 'name',
+        header: sortHeader(_(msg`Folder`), 'name'),
         cell: ({ row }) => {
           const depth = row.original.depth ?? 0;
           return (
@@ -106,19 +160,25 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
       ...(canViewOwner
         ? [
             {
-              header: _(msg`Owner`),
+              header: sortHeader(_(msg`Owner`), 'owner'),
               accessorKey: 'ownerName',
               cell: ({ row }: { row: { original: TFolderRow } }) => row.original.ownerName ?? '—',
             },
           ]
         : []),
       {
-        header: itemLabel,
+        id: 'items',
+        header: sortHeader(itemLabel, 'items'),
         cell: ({ row }) =>
           type === FolderType.DOCUMENT ? row.original._count.documents : row.original._count.templates,
       },
-      { header: _(msg`Subfolders`), cell: ({ row }) => row.original._count.subfolders },
       {
+        id: 'subfolders',
+        header: sortHeader(_(msg`Subfolders`), 'subfolders'),
+        cell: ({ row }) => row.original._count.subfolders,
+      },
+      {
+        id: 'actions',
         header: _(msg`Actions`),
         cell: ({ row }) => {
           const folder = row.original;
@@ -166,26 +226,39 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
           );
         },
       },
-    ];
-  }, [_, canViewOwner, rootPath, team.currentTeamRole, type, updateFolder, updateSearchParams, user.id, utils]);
+    ] as DataTableColumnDef<TFolderRow>[];
+  }, [
+    _,
+    canViewOwner,
+    folderSort,
+    rootPath,
+    team.currentTeamRole,
+    type,
+    updateFolder,
+    updateSearchParams,
+    user.id,
+    utils,
+  ]);
 
   return (
     <>
-      <div className="relative mb-6 w-full max-w-md">
-        <SearchIcon className="absolute top-3 left-2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={canViewOwner ? _(msg`Search folders or owners...`) : _(msg`Search folders...`)}
-          value={search}
-          className="pl-8"
-          onChange={(event) => {
-            const query = event.target.value;
-            setSearch(query);
-            updateSearchParams({ query: query || undefined, folderPage: 1 });
-          }}
-        />
-      </div>
       <DataTable
         columns={columns}
+        toolbar={
+          <div className="relative w-full max-w-md">
+            <SearchIcon className="absolute top-3 left-2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={canViewOwner ? _(msg`Search folders or owners...`) : _(msg`Search folders...`)}
+              value={search}
+              className="pl-8"
+              onChange={(event) => {
+                const query = event.target.value;
+                setSearch(query);
+                updateSearchParams({ query: query || undefined, folderPage: 1 });
+              }}
+            />
+          </div>
+        }
         data={rows}
         currentPage={results.currentPage}
         perPage={results.perPage}

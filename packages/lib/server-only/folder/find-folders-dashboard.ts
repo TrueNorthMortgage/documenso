@@ -15,6 +15,8 @@ export interface FindFoldersDashboardOptions {
   query?: string;
   page?: number;
   perPage?: number;
+  sortBy?: 'name' | 'owner' | 'items' | 'subfolders';
+  sortDirection?: 'asc' | 'desc';
 }
 
 /**
@@ -30,6 +32,8 @@ export const findFoldersDashboard = async ({
   query,
   page = 1,
   perPage = 5,
+  sortBy = 'name',
+  sortDirection = 'asc',
 }: FindFoldersDashboardOptions) => {
   const team = await getTeamById({ userId, teamId });
   const canViewOwner = team.currentTeamRole === TeamMemberRole.ADMIN || team.currentTeamRole === TeamMemberRole.MANAGER;
@@ -61,6 +65,19 @@ export const findFoldersDashboard = async ({
       : {}),
   };
 
+  const orderBy: Prisma.FolderOrderByWithRelationInput[] = [
+    { pinned: 'desc' },
+    ...(sortBy === 'owner' && canViewOwner
+      ? [{ user: { name: sortDirection } }]
+      : sortBy === 'items'
+        ? [{ envelopes: { _count: sortDirection } }]
+        : sortBy === 'subfolders'
+          ? [{ subfolders: { _count: sortDirection } }]
+          : [{ name: sortDirection }]),
+    { name: 'asc' },
+    { id: 'asc' },
+  ];
+
   const countSelect = {
     envelopes: { where: { type: itemType, deletedAt: null } },
     subfolders: {
@@ -76,8 +93,7 @@ export const findFoldersDashboard = async ({
       where,
       skip: (Math.max(page, 1) - 1) * perPage,
       take: perPage,
-      // Pins are a global priority, then folders remain alphabetically ordered.
-      orderBy: [{ pinned: 'desc' }, { name: 'asc' }, { id: 'asc' }],
+      orderBy,
       include: {
         user: { select: { name: true, email: true } },
         _count: { select: countSelect },
@@ -88,7 +104,7 @@ export const findFoldersDashboard = async ({
             OR: [{ visibility }, { userId }],
             ...(normalizedQuery ? { id: { in: [] } } : {}),
           },
-          orderBy: [{ pinned: 'desc' }, { name: 'asc' }, { id: 'asc' }],
+          orderBy,
           include: {
             user: { select: { name: true, email: true } },
             _count: { select: countSelect },
