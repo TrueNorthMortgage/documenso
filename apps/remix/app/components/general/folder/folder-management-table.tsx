@@ -35,6 +35,7 @@ import {
   SearchIcon,
   SettingsIcon,
   TrashIcon,
+  XIcon,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -248,13 +249,30 @@ export const FolderManagementTable = ({ type, parentId }: { type: FolderType; pa
             <Input
               placeholder={canViewOwner ? _(msg`Search folders or owners...`) : _(msg`Search folders...`)}
               value={search}
-              className="pl-8"
+              className="pr-8 pl-8"
               onChange={(event) => {
                 const query = event.target.value;
                 setSearch(query);
                 updateSearchParams({ folderPage: 1 });
               }}
             />
+            {search && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute top-1 right-1 h-8 w-8 p-0"
+                onClick={() => {
+                  setSearch('');
+                  updateSearchParams({ folderPage: 1 });
+                }}
+              >
+                <XIcon className="h-4 w-4" />
+                <span className="sr-only">
+                  <Trans>Clear search</Trans>
+                </span>
+              </Button>
+            )}
           </div>
         }
         data={rows}
