@@ -21,7 +21,7 @@ import { DocumentStatus } from '@prisma/client';
 import { ChevronLeft, Users2 } from 'lucide-react';
 import { Link } from 'react-router';
 import { match } from 'ts-pattern';
-
+import { EnvelopeFieldReviewDialog } from '~/components/dialogs/envelope-field-review-dialog';
 import { DocumentPageViewButton } from '~/components/general/document/document-page-view-button';
 import { DocumentPageViewDropdown } from '~/components/general/document/document-page-view-dropdown';
 import { DocumentPageViewInformation } from '~/components/general/document/document-page-view-information';
@@ -52,6 +52,7 @@ export default function DocumentPage({ params }: Route.ComponentProps) {
     data: envelope,
     isLoading: isLoadingEnvelope,
     isError: isErrorEnvelope,
+    refetch: refetchEnvelope,
   } = trpc.envelope.get.useQuery(
     {
       envelopeId: params.id,
@@ -156,22 +157,22 @@ export default function DocumentPage({ params }: Route.ComponentProps) {
         </div>
       </div>
 
-      <div className="mt-6 grid w-full grid-cols-12 gap-8">
-        {envelope.internalVersion === 2 ? (
-          <div className="relative col-span-12 lg:col-span-6 xl:col-span-7">
-            <EnvelopeRenderProvider
-              version="current"
-              envelope={envelope}
-              envelopeItems={envelope.envelopeItems}
-              token={undefined}
-              fields={envelope.fields}
-              signatures={fieldSignatures}
-              recipients={envelope.recipients}
-              overrideSettings={{
-                showRecipientSigningStatus: true,
-                showRecipientTooltip: true,
-              }}
-            >
+      <EnvelopeRenderProvider
+        version="current"
+        envelope={envelope}
+        envelopeItems={envelope.envelopeItems}
+        token={undefined}
+        fields={envelope.fields}
+        signatures={fieldSignatures}
+        recipients={envelope.recipients}
+        overrideSettings={{
+          showRecipientSigningStatus: true,
+          showRecipientTooltip: true,
+        }}
+      >
+        <div className="mt-6 grid w-full grid-cols-12 gap-8">
+          {envelope.internalVersion === 2 ? (
+            <div className="relative col-span-12 lg:col-span-6 xl:col-span-7">
               {isMultiEnvelopeItem && (
                 <EnvelopeRendererFileSelector
                   fields={envelope.fields}
@@ -189,96 +190,111 @@ export default function DocumentPage({ params }: Route.ComponentProps) {
                   />
                 </CardContent>
               </Card>
-            </EnvelopeRenderProvider>
-          </div>
-        ) : (
-          <Card className="relative col-span-12 rounded-xl before:rounded-xl lg:col-span-6 xl:col-span-7" gradient>
-            <CardContent className="p-2">
-              {envelope.status !== DocumentStatus.COMPLETED && (
-                <DocumentReadOnlyFields
-                  fields={mapFieldsWithRecipients(envelope.fields, envelope.recipients)}
-                  documentMeta={envelope.documentMeta || undefined}
-                  showRecipientTooltip={true}
-                  showRecipientColors={true}
-                  recipientIds={envelope.recipients.map((recipient) => recipient.id)}
+            </div>
+          ) : (
+            <Card className="relative col-span-12 rounded-xl before:rounded-xl lg:col-span-6 xl:col-span-7" gradient>
+              <CardContent className="p-2">
+                {envelope.status !== DocumentStatus.COMPLETED && (
+                  <DocumentReadOnlyFields
+                    fields={mapFieldsWithRecipients(envelope.fields, envelope.recipients)}
+                    documentMeta={envelope.documentMeta || undefined}
+                    showRecipientTooltip={true}
+                    showRecipientColors={true}
+                    recipientIds={envelope.recipients.map((recipient) => recipient.id)}
+                  />
+                )}
+
+                <PDFViewerLazy
+                  data={getDocumentDataUrlForPdfViewer({
+                    envelopeId: envelope.id,
+                    envelopeItemId: envelope.envelopeItems[0]?.id,
+                    documentDataId: envelope.envelopeItems[0]?.documentDataId,
+                    version: 'current',
+                    token: undefined,
+                    presignToken: undefined,
+                  })}
+                  key={envelope.envelopeItems[0]?.id}
+                  scrollParentRef="window"
                 />
-              )}
+              </CardContent>
+            </Card>
+          )}
 
-              <PDFViewerLazy
-                data={getDocumentDataUrlForPdfViewer({
-                  envelopeId: envelope.id,
-                  envelopeItemId: envelope.envelopeItems[0]?.id,
-                  documentDataId: envelope.envelopeItems[0]?.documentDataId,
-                  version: 'current',
-                  token: undefined,
-                  presignToken: undefined,
-                })}
-                key={envelope.envelopeItems[0]?.id}
-                scrollParentRef="window"
-              />
-            </CardContent>
-          </Card>
-        )}
+          <div className={cn('col-span-12 lg:col-span-6 xl:col-span-5', isMultiEnvelopeItem && 'mt-20')}>
+            <div className="space-y-6">
+              <section className="flex flex-col rounded-xl border border-border bg-widget pt-6 pb-4">
+                <div className="flex flex-row items-center justify-between px-4">
+                  <h3 className="font-semibold text-2xl text-foreground">
+                    {envelope.correctionStartedAt
+                      ? t(msg`Document being corrected`)
+                      : t(FRIENDLY_STATUS_MAP[envelope.status].labelExtended)}
+                  </h3>
 
-        <div className={cn('col-span-12 lg:col-span-6 xl:col-span-5', isMultiEnvelopeItem && 'mt-20')}>
-          <div className="space-y-6">
-            <section className="flex flex-col rounded-xl border border-border bg-widget pt-6 pb-4">
-              <div className="flex flex-row items-center justify-between px-4">
-                <h3 className="font-semibold text-2xl text-foreground">
-                  {envelope.correctionStartedAt
-                    ? t(msg`Document being corrected`)
-                    : t(FRIENDLY_STATUS_MAP[envelope.status].labelExtended)}
-                </h3>
+                  <DocumentPageViewDropdown envelope={envelope} />
+                </div>
 
-                <DocumentPageViewDropdown envelope={envelope} />
-              </div>
+                <p className="mt-2 px-4 text-muted-foreground text-sm">
+                  {match(envelope.status)
+                    .with(DocumentStatus.COMPLETED, () => (
+                      <Trans>This document has been signed by all recipients</Trans>
+                    ))
+                    .with(DocumentStatus.REJECTED, () => <Trans>This document has been rejected by a recipient</Trans>)
+                    .with(DocumentStatus.DRAFT, () => (
+                      <Trans>This document is currently a draft and has not been sent</Trans>
+                    ))
+                    .with(DocumentStatus.PENDING, () => {
+                      if (envelope.correctionStartedAt) {
+                        return <Trans>The document owner is making corrections</Trans>;
+                      }
 
-              <p className="mt-2 px-4 text-muted-foreground text-sm">
-                {match(envelope.status)
-                  .with(DocumentStatus.COMPLETED, () => <Trans>This document has been signed by all recipients</Trans>)
-                  .with(DocumentStatus.REJECTED, () => <Trans>This document has been rejected by a recipient</Trans>)
-                  .with(DocumentStatus.DRAFT, () => (
-                    <Trans>This document is currently a draft and has not been sent</Trans>
-                  ))
-                  .with(DocumentStatus.PENDING, () => {
-                    if (envelope.correctionStartedAt) {
-                      return <Trans>The document owner is making corrections</Trans>;
-                    }
+                      const pendingRecipients = envelope.recipients.filter(
+                        (recipient) => recipient.signingStatus === 'NOT_SIGNED',
+                      );
 
-                    const pendingRecipients = envelope.recipients.filter(
-                      (recipient) => recipient.signingStatus === 'NOT_SIGNED',
-                    );
+                      return (
+                        <Plural
+                          value={pendingRecipients.length}
+                          one="Waiting on 1 recipient"
+                          other="Waiting on # recipients"
+                        />
+                      );
+                    })
+                    .exhaustive()}
+                </p>
 
-                    return (
-                      <Plural
-                        value={pendingRecipients.length}
-                        one="Waiting on 1 recipient"
-                        other="Waiting on # recipients"
+                <div className="mt-4 border-t px-4 pt-4">
+                  <DocumentPageViewButton envelope={envelope} />
+                  {envelope.internalVersion === 2 && (
+                    <div className="mt-2">
+                      <EnvelopeFieldReviewDialog
+                        fields={envelope.fields}
+                        recipients={envelope.recipients}
+                        isSender
+                        buttonClassName="h-10 w-full"
+                        onOpen={() => {
+                          void refetchEnvelope();
+                        }}
                       />
-                    );
-                  })
-                  .exhaustive()}
-              </p>
+                    </div>
+                  )}
+                </div>
+              </section>
 
-              <div className="mt-4 border-t px-4 pt-4">
-                <DocumentPageViewButton envelope={envelope} />
-              </div>
-            </section>
+              {/* Document information section. */}
+              <DocumentPageViewInformation envelope={envelope} userId={user.id} />
 
-            {/* Document information section. */}
-            <DocumentPageViewInformation envelope={envelope} userId={user.id} />
+              {/* Recipients section. */}
+              <DocumentPageViewRecipients envelope={envelope} documentRootPath={documentRootPath} />
 
-            {/* Recipients section. */}
-            <DocumentPageViewRecipients envelope={envelope} documentRootPath={documentRootPath} />
-
-            {/* Recent activity section. */}
-            <DocumentPageViewRecentActivity
-              documentId={mapSecondaryIdToDocumentId(envelope.secondaryId)}
-              userId={user.id}
-            />
+              {/* Recent activity section. */}
+              <DocumentPageViewRecentActivity
+                documentId={mapSecondaryIdToDocumentId(envelope.secondaryId)}
+                userId={user.id}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </EnvelopeRenderProvider>
     </div>
   );
 }
