@@ -56,10 +56,12 @@ export default defineConfig({
         return getLoadContext();
       },
       exclude: [
-        // Spread the defaults but replace the /.css$/ rule so that Bull
-        // Board's static CSS at /api/jobs/board/static/** passes through to Hono.
+        // Let Vite serve CSS, including ?direct and hot-reload query parameters.
+        // Bull Board's static CSS at /api/jobs/board/static/** still belongs to Hono.
         ...devServerDefaults.exclude.map((pattern) =>
-          pattern instanceof RegExp && pattern.source === '.*\\.css$' ? /^(?!\/api\/jobs\/board\/).*\.css$/ : pattern,
+          pattern instanceof RegExp && pattern.source === '.*\\.css$'
+            ? /^(?!\/api\/jobs\/board\/).*\.css(?:\?.*)?$/
+            : pattern,
         ),
         '/assets/**',
         '/src/app/**',
