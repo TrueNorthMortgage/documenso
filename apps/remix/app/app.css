@@ -1,5 +1,21 @@
 @import "@documenso/ui/styles/theme.css";
 
+@keyframes field-review-pulse {
+  0%,
+  100% {
+    background-color: rgb(251 191 36 / 70%);
+  }
+  50% {
+    background-color: rgb(251 191 36 / 15%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .field-review-highlight {
+    animation: field-review-pulse 2s ease-in-out infinite;
+  }
+}
+
 /* Inter Variable Fonts */
 @font-face {
   font-family: "Inter";

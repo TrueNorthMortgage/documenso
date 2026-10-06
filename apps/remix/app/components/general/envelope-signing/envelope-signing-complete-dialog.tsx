@@ -32,6 +32,7 @@ export const EnvelopeSignerCompleteDialog = () => {
     envelope,
     setShowPendingFieldTooltip,
     recipientFieldsRemaining,
+    recipientFields,
     recipient,
     nextRecipient,
     email,
@@ -241,7 +242,7 @@ export const EnvelopeSignerCompleteDialog = () => {
       recipientPayload={recipientPayload}
       onSignatureComplete={isDirectTemplate ? handleDirectTemplateCompleteClick : handleOnCompleteClick}
       documentTitle={envelope.title}
-      fields={recipientFieldsRemaining}
+      fields={recipientFields}
       fieldsValidated={handleOnNextFieldClick}
       recipient={recipient}
       allowDictateNextSigner={Boolean(nextRecipient && envelope.documentMeta.allowDictateNextSigner)}
