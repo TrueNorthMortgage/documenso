@@ -1,4 +1,4 @@
-import { mailer } from '@documenso/email/mailer';
+import { randomUUID } from 'node:crypto';
 import DocumentInviteEmailTemplate from '@documenso/email/templates/document-invite';
 import { isRecipientEmailValidForSending } from '@documenso/lib/utils/recipients';
 import { prisma } from '@documenso/prisma';
@@ -6,17 +6,18 @@ import { msg } from '@lingui/core/macro';
 import {
   DocumentSource,
   DocumentStatus,
+  EmailDeliveryPurpose,
   EnvelopeType,
   OrganisationType,
   RecipientRole,
   SendStatus,
 } from '@prisma/client';
 import { createElement } from 'react';
-
 import { getI18nInstance } from '../../../client-only/providers/i18n-server';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../../constants/app';
 import { RECIPIENT_ROLE_TO_EMAIL_TYPE, RECIPIENT_ROLES_DESCRIPTION } from '../../../constants/recipient-roles';
 import { getEmailContext } from '../../../server-only/email/get-email-context';
+import { sendTrackedSigningEmail } from '../../../server-only/email/send-tracked-signing-email';
 import { updateRecipientNextReminder } from '../../../server-only/recipient/update-recipient-next-reminder';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '../../../types/document-audit-logs';
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
@@ -174,6 +175,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
   });
 
   if (isRecipientEmailValidForSending(recipient)) {
+    const operationKey = await io.runTask('signing-email-operation-key', async () => randomUUID());
     await io.runTask('send-signing-email', async () => {
       const [html, text] = await Promise.all([
         renderEmailWithI18N(template, { lang: emailLanguage, branding }),
@@ -184,16 +186,27 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
         }),
       ]);
 
-      await mailer.sendMail({
-        to: {
-          name: recipient.name,
-          address: recipient.email,
+      await sendTrackedSigningEmail({
+        envelopeId: envelope.id,
+        recipientId: recipient.id,
+        recipientEmail: recipient.email,
+        purpose: isCorrection
+          ? EmailDeliveryPurpose.CORRECTION
+          : isResending
+            ? EmailDeliveryPurpose.RESEND
+            : EmailDeliveryPurpose.INVITATION,
+        operationKey,
+        mail: {
+          to: {
+            name: recipient.name,
+            address: recipient.email,
+          },
+          from: senderEmail,
+          replyTo: replyToEmail,
+          subject: renderCustomEmailTemplate(documentMeta?.subject || emailSubject, customEmailTemplate),
+          html,
+          text,
         },
-        from: senderEmail,
-        replyTo: replyToEmail,
-        subject: renderCustomEmailTemplate(documentMeta?.subject || emailSubject, customEmailTemplate),
-        html,
-        text,
       });
     });
   }

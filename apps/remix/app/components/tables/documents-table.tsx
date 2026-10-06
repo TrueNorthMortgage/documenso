@@ -1,5 +1,6 @@
 import { useUpdateSearchParams } from '@documenso/lib/client-only/hooks/use-update-search-params';
 import { useSession } from '@documenso/lib/client-only/providers/session';
+import { hasEmailDeliveryWarning } from '@documenso/lib/universal/email-delivery';
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
 import { findRecipientByEmail } from '@documenso/lib/utils/recipients';
 import { formatDocumentsPath } from '@documenso/lib/utils/teams';
@@ -10,15 +11,19 @@ import { DataTable } from '@documenso/ui/primitives/data-table';
 import { DataTablePagination } from '@documenso/ui/primitives/data-table-pagination';
 import { Skeleton } from '@documenso/ui/primitives/skeleton';
 import { TableCell } from '@documenso/ui/primitives/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@documenso/ui/primitives/tooltip';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Loader } from 'lucide-react';
+import { Trans } from '@lingui/react/macro';
+import { DocumentStatus as DocumentStatusEnum } from '@prisma/client';
+import { AlertTriangleIcon, Loader } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useMemo, useTransition } from 'react';
 import { Link } from 'react-router';
 import { match } from 'ts-pattern';
 
 import { DocumentStatus } from '~/components/general/document/document-status';
+import { RecipientEmailDeliveryStatus } from '~/components/general/document/recipient-email-delivery-status';
 import { useCurrentTeam } from '~/providers/team';
 
 import { StackAvatarsWithTooltip } from '../general/stack-avatars-with-tooltip';
@@ -107,12 +112,15 @@ export const DocumentsTable = ({
         header: _(msg`Status`),
         accessorKey: 'status',
         cell: ({ row }) => (
-          <DocumentStatus
-            status={row.original.status}
-            isCorrecting={Boolean(row.original.correctionStartedAt)}
-            isScheduled={Boolean(row.original.scheduledSendAt && row.original.scheduledSendAt > new Date())}
-            scheduledSendAt={row.original.scheduledSendAt}
-          />
+          <div className="flex items-start gap-2">
+            <DocumentStatus
+              status={row.original.status}
+              isCorrecting={Boolean(row.original.correctionStartedAt)}
+              isScheduled={Boolean(row.original.scheduledSendAt && row.original.scheduledSendAt > new Date())}
+              scheduledSendAt={row.original.scheduledSendAt}
+            />
+            <DocumentsTableEmailDeliveryWarning row={row.original} teamUrl={team?.url} />
+          </div>
         ),
         size: 140,
       },
@@ -209,6 +217,43 @@ export const DocumentsTable = ({
         </div>
       )}
     </div>
+  );
+};
+
+const DocumentsTableEmailDeliveryWarning = ({ row, teamUrl }: { row: DocumentsTableRow; teamUrl: string }) => {
+  const { user } = useSession();
+  const canViewRecipients = row.user.id === user.id || Boolean(teamUrl && row.team?.url === teamUrl);
+  const recipients = row.recipients.filter(hasEmailDeliveryWarning);
+
+  if (row.status !== DocumentStatusEnum.PENDING || row.deletedAt || !canViewRecipients || recipients.length === 0) {
+    return null;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Link
+          to={`${formatDocumentsPath(teamUrl)}/${row.envelopeId}`}
+          className="mt-0.5 shrink-0 rounded-sm text-amber-700 focus-visible:outline-2 focus-visible:outline-ring dark:text-amber-400"
+        >
+          <AlertTriangleIcon className="h-4 w-4" aria-hidden="true" />
+          <span className="sr-only">
+            <Trans>View email delivery issues</Trans>
+          </span>
+        </Link>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-sm space-y-3 break-words py-3">
+        <p className="font-medium">
+          <Trans>Email delivery issues</Trans>
+        </p>
+        {recipients.map((recipient) => (
+          <div key={recipient.id}>
+            <p className="font-medium">{recipient.email}</p>
+            <RecipientEmailDeliveryStatus recipient={recipient} />
+          </div>
+        ))}
+      </TooltipContent>
+    </Tooltip>
   );
 };
 

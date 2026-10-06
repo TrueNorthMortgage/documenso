@@ -4,7 +4,7 @@
 // data in Prisma.
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
-import { DocumentSource, FieldType } from '@prisma/client';
+import { DocumentSource, EmailDeliveryStatus, FieldType } from '@prisma/client';
 import { z } from 'zod';
 
 import { zEmail } from '../utils/zod';
@@ -13,6 +13,7 @@ import { ZRecipientAccessAuthTypesSchema, ZRecipientActionAuthTypesSchema } from
 export const ZDocumentAuditLogTypeSchema = z.enum([
   // Document actions.
   'EMAIL_SENT',
+  'EMAIL_DELIVERY_UPDATED',
 
   // Document modification events.
   'FIELD_CREATED',
@@ -231,6 +232,19 @@ export const ZDocumentAuditLogEventEnvelopeItemPdfReplacedSchema = z.object({
   data: z.object({
     envelopeItemId: z.string(),
     envelopeItemTitle: z.string(),
+  }),
+});
+
+/**
+ * Event: Email delivery updated.
+ */
+export const ZDocumentAuditLogEventEmailDeliveryUpdatedSchema = z.object({
+  type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.EMAIL_DELIVERY_UPDATED),
+  data: ZBaseRecipientDataSchema.extend({
+    attemptId: z.string(),
+    status: z.nativeEnum(EmailDeliveryStatus),
+    occurredAt: z.string().datetime(),
+    failureCode: z.string().nullable(),
   }),
 });
 
@@ -758,6 +772,7 @@ export const ZDocumentAuditLogSchema = ZDocumentAuditLogBaseSchema.and(
     ZDocumentAuditLogEventEnvelopeItemUpdatedSchema,
     ZDocumentAuditLogEventEnvelopeItemPdfReplacedSchema,
     ZDocumentAuditLogEventEmailSentSchema,
+    ZDocumentAuditLogEventEmailDeliveryUpdatedSchema,
     ZDocumentAuditLogEventDocumentCompletedSchema,
     ZDocumentAuditLogEventDocumentCorrectionCompletedSchema,
     ZDocumentAuditLogEventDocumentCorrectionStartedSchema,
