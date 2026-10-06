@@ -26,6 +26,7 @@ import type { Logger } from 'pino';
 import { aiRoute } from './api/ai/route';
 import { downloadRoute } from './api/download/download';
 import { filesRoute } from './api/files/files';
+import { postmarkWebhookRoute } from './api/webhooks/postmark';
 import { type AppContext, appContext } from './context';
 import { appMiddleware } from './middleware';
 import { securityHeadersMiddleware } from './security-headers';
@@ -98,6 +99,8 @@ app.use(`/api/v2/*`, cors());
 app.use('/api/v2/*', apiV2RateLimitMiddleware);
 app.use(`/api/v2-beta/*`, cors());
 app.use('/api/v2-beta/*', apiV2RateLimitMiddleware);
+
+app.route('/api/webhooks/postmark', postmarkWebhookRoute);
 
 // Auth server.
 app.route('/api/auth', auth);

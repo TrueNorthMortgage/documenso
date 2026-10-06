@@ -412,6 +412,7 @@ model Envelope {
   fieldGroups   FieldGroup[]
   shareLinks    DocumentShareLink[]
   auditLogs     DocumentAuditLog[]
+  emailDeliveryAttempts EmailDeliveryAttempt[]
 
   // Envelope settings
   authOptions Json? /// [DocumentAuthOptions] @zod.custom.use(ZDocumentAuthOptionsSchema)
@@ -648,6 +649,11 @@ model Recipient {
   readStatus           ReadStatus    @default(NOT_OPENED)
   signingStatus        SigningStatus @default(NOT_SIGNED)
   sendStatus           SendStatus    @default(NOT_SENT)
+  emailDeliveryStatus  EmailDeliveryStatus?
+  emailDeliveryEmail   String? @db.VarChar(255)
+  latestEmailDeliveryAttemptId String? @unique
+  latestEmailDeliveryAttempt EmailDeliveryAttempt? @relation("LatestEmailDeliveryAttempt", fields: [latestEmailDeliveryAttemptId], references: [id], onDelete: SetNull)
+  emailDeliveryAttempts EmailDeliveryAttempt[] @relation("RecipientEmailDeliveryAttempts")
   envelope             Envelope      @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
   fields               Field[]
   fieldGroups          FieldGroup[]
@@ -664,6 +670,71 @@ model Recipient {
   @@index([nextReminderAt])
   @@index([email(ops: raw("gin_trgm_ops"))], map: "Recipient_email_trgm_idx", type: Gin)
   @@index([name(ops: raw("gin_trgm_ops"))], map: "Recipient_name_trgm_idx", type: Gin)
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  ACCEPTED
+  DELIVERED
+  DELAYED
+  BOUNCED
+  BLOCKED
+  SPAM_COMPLAINT
+  SEND_FAILED
+}
+
+enum EmailDeliveryPurpose {
+  INVITATION
+  CORRECTION
+  RESEND
+  REMINDER
+}
+
+model EmailDeliveryAttempt {
+  id String @id @default(cuid())
+  operationKey String @unique
+  envelopeId String
+  recipientId Int
+  recipientEmail String @db.VarChar(255)
+  purpose EmailDeliveryPurpose
+  provider String
+  providerScope String
+  messageStream String
+  providerServerId Int?
+  providerMessageId String?
+  status EmailDeliveryStatus @default(PENDING)
+  requestedAt DateTime @default(now())
+  sentAt DateTime?
+  statusAt DateTime @default(now())
+  failureCode String?
+  envelope Envelope @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  recipient Recipient @relation("RecipientEmailDeliveryAttempts", fields: [recipientId], references: [id], onDelete: Cascade)
+  latestForRecipient Recipient? @relation("LatestEmailDeliveryAttempt")
+  events EmailDeliveryEvent[]
+
+  @@index([envelopeId])
+  @@index([recipientId, requestedAt])
+  @@index([provider, providerScope, providerMessageId])
+}
+
+model EmailDeliveryEvent {
+  id String @id @default(cuid())
+  eventKey String @unique
+  attemptId String?
+  provider String
+  providerScope String
+  providerMessageId String
+  eventType String
+  status EmailDeliveryStatus
+  occurredAt DateTime
+  receivedAt DateTime @default(now())
+  failureCode String?
+  outcome String
+  attempt EmailDeliveryAttempt? @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([provider, providerScope, providerMessageId])
+  @@index([receivedAt])
 }
 
 enum FieldType {
