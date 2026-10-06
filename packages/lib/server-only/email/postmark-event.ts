@@ -52,6 +52,7 @@ export const ZPostmarkEventSchema = z.discriminatedUnion('RecordType', [
       .transform((value) => new Date(value)),
   }),
   baseSchema.extend({ RecordType: z.literal('Bounce'), ...bounceFields }),
+  baseSchema.extend({ RecordType: z.literal('SMTPAPIError'), ...bounceFields, Type: z.literal('SMTPApiError') }),
   baseSchema.extend({ RecordType: z.literal('SpamComplaint'), ...bounceFields }),
 ]);
 
@@ -64,7 +65,7 @@ export const normalizePostmarkEvent = (payload: z.infer<typeof ZPostmarkEventSch
   if (payload.RecordType === 'SpamComplaint' || (payload.RecordType === 'Bounce' && payload.Type === 'SpamComplaint')) {
     status = EmailDeliveryStatus.SPAM_COMPLAINT;
     failureCode = 'SpamComplaint';
-  } else if (payload.RecordType === 'Bounce') {
+  } else if (payload.RecordType === 'Bounce' || payload.RecordType === 'SMTPAPIError') {
     failureCode = payload.Type;
 
     if (['Transient', 'SoftBounce', 'DnsError'].includes(payload.Type) && !payload.Inactive) {

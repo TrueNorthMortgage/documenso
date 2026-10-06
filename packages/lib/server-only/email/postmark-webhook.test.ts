@@ -86,6 +86,42 @@ describe('Postmark webhook endpoint', () => {
     expect(response.status).toBe(503);
   });
 
+  it('accepts SMTP API errors for suppressed recipients with SMTP-normalized tracking metadata', async () => {
+    const response = await app.request('/', {
+      method: 'POST',
+      headers: { authorization, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        RecordType: 'SMTPAPIError',
+        Type: 'SMTPApiError',
+        ID: 42,
+        ServerID: 23,
+        MessageStream: 'outbound',
+        MessageID: 'message-1',
+        Email: 'signer@example.com',
+        BouncedAt: '2026-10-06T15:50:29Z',
+        Inactive: false,
+        Metadata: { Deliveryattemptid: 'attempt-1', Deliveryscope: 'scope-1' },
+        Content: 'private',
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: 'MATCHED' });
+    expect(mocks.process).toHaveBeenCalledExactlyOnceWith({
+      eventKey: expect.stringMatching(/^[a-f0-9]{64}$/),
+      providerMessageId: 'message-1',
+      serverId: 23,
+      messageStream: 'outbound',
+      recipientEmail: 'signer@example.com',
+      attemptId: 'attempt-1',
+      providerScope: 'scope-1',
+      eventType: 'SMTPAPIError',
+      status: 'BLOCKED',
+      occurredAt: new Date('2026-10-06T15:50:29Z'),
+      failureCode: 'SMTPApiError',
+    });
+  });
+
   it('accepts the Postmark verification sample without tracked signing metadata', async () => {
     mocks.process.mockResolvedValueOnce('UNMATCHED');
     const response = await app.request('/', {

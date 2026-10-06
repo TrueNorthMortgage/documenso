@@ -17,6 +17,15 @@ const bounce = {
 };
 
 describe('Postmark event normalization', () => {
+  it('classifies the SMTP API error record as blocked even when Inactive is false', () => {
+    const event = normalizePostmarkEvent(
+      ZPostmarkEventSchema.parse({ ...bounce, RecordType: 'SMTPAPIError', Type: 'SMTPApiError', Inactive: false }),
+    );
+    expect(event.status).toBe(EmailDeliveryStatus.BLOCKED);
+    expect(event.failureCode).toBe('SMTPApiError');
+    expect(event.attemptId).toBe('attempt-1');
+  });
+
   it('matches metadata after Nodemailer changes SMTP header casing', () => {
     const event = normalizePostmarkEvent(
       ZPostmarkEventSchema.parse({
