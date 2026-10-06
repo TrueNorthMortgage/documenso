@@ -139,6 +139,13 @@ export const updateEnvelopeRecipients = async ({
             envelopeId: envelope.id,
           },
           data: {
+            ...(originalRecipient.email !== mergedRecipient.email
+              ? {
+                  latestEmailDeliveryAttemptId: null,
+                  emailDeliveryStatus: null,
+                  emailDeliveryEmail: null,
+                }
+              : {}),
             name: mergedRecipient.name,
             email: mergedRecipient.email,
             role: mergedRecipient.role,

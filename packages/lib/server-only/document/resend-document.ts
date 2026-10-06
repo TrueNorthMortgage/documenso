@@ -1,4 +1,3 @@
-import { mailer } from '@documenso/email/mailer';
 import { DocumentInviteEmailTemplate } from '@documenso/email/templates/document-invite';
 import { resolveExpiresAt } from '@documenso/lib/constants/envelope-expiration';
 import { RECIPIENT_ROLE_TO_EMAIL_TYPE, RECIPIENT_ROLES_DESCRIPTION } from '@documenso/lib/constants/recipient-roles';
@@ -13,6 +12,7 @@ import { prisma } from '@documenso/prisma';
 import { msg } from '@lingui/core/macro';
 import {
   DocumentStatus,
+  EmailDeliveryPurpose,
   EnvelopeType,
   OrganisationType,
   RecipientRole,
@@ -20,7 +20,6 @@ import {
   WebhookTriggerEvents,
 } from '@prisma/client';
 import { createElement } from 'react';
-
 import { getI18nInstance } from '../../client-only/providers/i18n-server';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../constants/app';
 import { extractDerivedDocumentEmailSettings } from '../../types/document-email';
@@ -32,6 +31,7 @@ import { getRecipientsWithMissingFields, isRecipientEmailValidForSending } from 
 import { renderEmailWithI18N } from '../../utils/render-email-with-i18n';
 import { getTeamDisplayName } from '../../utils/teams';
 import { getEmailContext } from '../email/get-email-context';
+import { sendTrackedSigningEmail } from '../email/send-tracked-signing-email';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
 import { autoInsertConditionalFieldDefaults } from '../field/auto-insert-conditional-field-defaults';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
@@ -298,18 +298,24 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
 
       // Send email outside any transaction to avoid holding a connection
       // open during network I/O.
-      await mailer.sendMail({
-        to: {
-          address: email,
-          name,
+      await sendTrackedSigningEmail({
+        envelopeId: envelope.id,
+        recipientId: recipient.id,
+        recipientEmail: recipient.email,
+        purpose: EmailDeliveryPurpose.RESEND,
+        mail: {
+          to: {
+            address: email,
+            name,
+          },
+          from: senderEmail,
+          replyTo: replyToEmail,
+          subject: envelope.documentMeta.subject
+            ? renderCustomEmailTemplate(i18n._(msg`Reminder: ${envelope.documentMeta.subject}`), customEmailTemplate)
+            : emailSubject,
+          html,
+          text,
         },
-        from: senderEmail,
-        replyTo: replyToEmail,
-        subject: envelope.documentMeta.subject
-          ? renderCustomEmailTemplate(i18n._(msg`Reminder: ${envelope.documentMeta.subject}`), customEmailTemplate)
-          : emailSubject,
-        html,
-        text,
       });
 
       await prisma.documentAuditLog.create({

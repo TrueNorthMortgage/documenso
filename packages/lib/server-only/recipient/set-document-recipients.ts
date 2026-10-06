@@ -175,6 +175,13 @@ export const setDocumentRecipients = async ({
             envelopeId: envelope.id,
           },
           update: {
+            ...(recipient._persisted?.email !== recipient.email
+              ? {
+                  latestEmailDeliveryAttemptId: null,
+                  emailDeliveryStatus: null,
+                  emailDeliveryEmail: null,
+                }
+              : {}),
             name: recipient.name,
             email: recipient.email,
             role: recipient.role,

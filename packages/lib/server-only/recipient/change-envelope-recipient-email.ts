@@ -105,6 +105,9 @@ export const changeEnvelopeRecipientEmail = async ({
         },
         data: {
           email: updatedEmail,
+          latestEmailDeliveryAttemptId: null,
+          emailDeliveryStatus: null,
+          emailDeliveryEmail: null,
           token: nanoid(),
           sendStatus: SendStatus.NOT_SENT,
           sentAt: null,
