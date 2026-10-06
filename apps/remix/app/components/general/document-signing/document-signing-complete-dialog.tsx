@@ -18,7 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
 import type { Field, Recipient } from '@prisma/client';
 import { RecipientRole } from '@prisma/client';
-import { useMemo, useState } from 'react';
+import { type ReactElement, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -30,6 +30,9 @@ import { DocumentSigningDisclosure } from '~/components/general/document-signing
 import { useRequiredDocumentSigningAuthContext } from './document-signing-auth-provider';
 
 export type DocumentSigningCompleteDialogProps = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: ReactElement | null;
   isSubmitting: boolean;
   documentTitle: string;
   fields: Field[];
@@ -71,6 +74,9 @@ const ZDirectRecipientFormSchema = z.object({
 type TDirectRecipientFormSchema = z.infer<typeof ZDirectRecipientFormSchema>;
 
 export const DocumentSigningCompleteDialog = ({
+  open,
+  onOpenChange,
+  trigger,
   isSubmitting,
   documentTitle,
   fields,
@@ -119,19 +125,24 @@ export const DocumentSigningCompleteDialog = ({
     [derivedRecipientAccessAuth],
   );
 
-  const handleOpenChange = (open: boolean) => {
-    if (form.formState.isSubmitting || !isComplete) {
-      return;
-    }
+  const isDialogOpen = open ?? showDialog;
 
-    if (open) {
+  useEffect(() => {
+    if (isDialogOpen) {
       form.reset({
         name: defaultNextSigner?.name ?? '',
         email: defaultNextSigner?.email ?? '',
       });
     }
+  }, [isDialogOpen, form, defaultNextSigner?.name, defaultNextSigner?.email]);
+
+  const handleOpenChange = (open: boolean) => {
+    if (form.formState.isSubmitting || !isComplete) {
+      return;
+    }
 
     setShowDialog(open);
+    onOpenChange?.(open);
   };
 
   const onFormSubmit = async (data: TNextSignerFormSchema) => {
@@ -188,24 +199,28 @@ export const DocumentSigningCompleteDialog = ({
   };
 
   return (
-    <Dialog open={showDialog} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          className="w-full"
-          type="button"
-          size={buttonSize}
-          onClick={fieldsValidated}
-          loading={isSubmitting}
-          disabled={disabled}
-        >
-          {match({ isComplete, role: recipient.role })
-            .with({ isComplete: false }, () => <Trans>Next Field</Trans>)
-            .with({ isComplete: true, role: RecipientRole.APPROVER }, () => <Trans>Approve</Trans>)
-            .with({ isComplete: true, role: RecipientRole.VIEWER }, () => <Trans>Mark as viewed</Trans>)
-            .with({ isComplete: true }, () => <Trans>Complete</Trans>)
-            .exhaustive()}
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
+      {trigger !== null && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button
+              className="w-full"
+              type="button"
+              size={buttonSize}
+              onClick={fieldsValidated}
+              loading={isSubmitting}
+              disabled={disabled}
+            >
+              {match({ isComplete, role: recipient.role })
+                .with({ isComplete: false }, () => <Trans>Next Field</Trans>)
+                .with({ isComplete: true, role: RecipientRole.APPROVER }, () => <Trans>Approve</Trans>)
+                .with({ isComplete: true, role: RecipientRole.VIEWER }, () => <Trans>Mark as viewed</Trans>)
+                .with({ isComplete: true }, () => <Trans>Complete</Trans>)
+                .exhaustive()}
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
 
       <DialogContent position={position}>
         <DialogHeader>
@@ -351,7 +366,7 @@ export const DocumentSigningCompleteDialog = ({
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => setShowDialog(false)}
+                    onClick={() => handleOpenChange(false)}
                     disabled={form.formState.isSubmitting}
                   >
                     <Trans>Cancel</Trans>
