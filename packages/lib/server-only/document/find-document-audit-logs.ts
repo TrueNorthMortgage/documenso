@@ -62,6 +62,7 @@ export const findDocumentAuditLogs = async ({
       {
         type: {
           in: [
+            DOCUMENT_AUDIT_LOG_TYPE.EMAIL_DELIVERY_UPDATED,
             DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_COMPLETED,
             DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_COMPLETED,
             DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_STARTED,

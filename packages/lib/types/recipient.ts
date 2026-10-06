@@ -1,6 +1,7 @@
 import { RecipientSchema } from '@documenso/prisma/generated/zod/modelSchema/RecipientSchema';
 import { TeamSchema } from '@documenso/prisma/generated/zod/modelSchema/TeamSchema';
 import { UserSchema } from '@documenso/prisma/generated/zod/modelSchema/UserSchema';
+import { EmailDeliveryStatus } from '@prisma/client';
 import { z } from 'zod';
 
 import { zEmail } from '../utils/zod';
@@ -30,6 +31,8 @@ export const ZRecipientSchema = RecipientSchema.pick({
   signingOrder: true,
   rejectionReason: true,
 }).extend({
+  emailDeliveryStatus: z.nativeEnum(EmailDeliveryStatus).nullish(),
+  emailDeliveryEmail: z.string().nullish(),
   fields: ZFieldSchema.array(),
 
   // Backwards compatibility.
@@ -59,6 +62,8 @@ export const ZRecipientLiteSchema = RecipientSchema.pick({
   signingOrder: true,
   rejectionReason: true,
 }).extend({
+  emailDeliveryStatus: z.nativeEnum(EmailDeliveryStatus).nullish(),
+  emailDeliveryEmail: z.string().nullish(),
   // Backwards compatibility.
   documentId: z.number().nullish(),
   templateId: z.number().nullish(),
@@ -86,6 +91,8 @@ export const ZRecipientManySchema = RecipientSchema.pick({
   signingOrder: true,
   rejectionReason: true,
 }).extend({
+  emailDeliveryStatus: z.nativeEnum(EmailDeliveryStatus).nullish(),
+  emailDeliveryEmail: z.string().nullish(),
   user: UserSchema.pick({
     id: true,
     name: true,
