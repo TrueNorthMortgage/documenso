@@ -264,7 +264,7 @@ export default function DocumentPage({ params }: Route.ComponentProps) {
 
                 <div className="mt-4 border-t px-4 pt-4">
                   <DocumentPageViewButton envelope={envelope} />
-                  {envelope.internalVersion === 2 && (
+                  {envelope.internalVersion === 2 && envelope.status !== DocumentStatus.COMPLETED && (
                     <div className="mt-2">
                       <EnvelopeFieldReviewDialog
                         fields={envelope.fields}

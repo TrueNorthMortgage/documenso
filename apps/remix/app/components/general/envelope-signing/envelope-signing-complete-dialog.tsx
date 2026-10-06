@@ -14,10 +14,15 @@ import { useNavigate, useRevalidator, useSearchParams } from 'react-router';
 
 import { useEmbedSigningContext } from '~/components/embed/embed-signing-context';
 
-import { DocumentSigningCompleteDialog } from '../document-signing/document-signing-complete-dialog';
+import {
+  DocumentSigningCompleteDialog,
+  type DocumentSigningCompleteDialogProps,
+} from '../document-signing/document-signing-complete-dialog';
 import { useRequiredEnvelopeSigningContext } from '../document-signing/envelope-signing-provider';
 
-export const EnvelopeSignerCompleteDialog = () => {
+export const EnvelopeSignerCompleteDialog = (
+  props: Pick<DocumentSigningCompleteDialogProps, 'open' | 'onOpenChange' | 'trigger'>,
+) => {
   const navigate = useNavigate();
   const analytics = useAnalytics();
 
@@ -238,6 +243,7 @@ export const EnvelopeSignerCompleteDialog = () => {
 
   return (
     <DocumentSigningCompleteDialog
+      {...props}
       isSubmitting={isPending}
       recipientPayload={recipientPayload}
       onSignatureComplete={isDirectTemplate ? handleDirectTemplateCompleteClick : handleOnCompleteClick}

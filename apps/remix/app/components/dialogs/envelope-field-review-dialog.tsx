@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -19,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plural, Trans, useLingui } from '@lingui/react/macro';
 import type { Recipient } from '@prisma/client';
 import { ArrowRightIcon, ListChecksIcon } from 'lucide-react';
-import { type ReactElement, useEffect, useMemo, useState } from 'react';
+import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 export const EnvelopeFieldReviewDialog = ({
@@ -27,6 +28,7 @@ export const EnvelopeFieldReviewDialog = ({
   recipients = [],
   isSender = false,
   onOpen,
+  onComplete,
   buttonClassName,
   trigger,
 }: {
@@ -34,12 +36,14 @@ export const EnvelopeFieldReviewDialog = ({
   recipients?: Pick<Recipient, 'id' | 'name' | 'email'>[];
   isSender?: boolean;
   onOpen?: () => void;
+  onComplete?: () => void;
   buttonClassName?: string;
   trigger?: ReactElement;
 }) => {
   const { t, i18n } = useLingui();
   const { envelopeItems, currentEnvelopeItem, setCurrentEnvelopeItem } = useCurrentEnvelopeRender();
   const [isOpen, setIsOpen] = useState(false);
+  const isFinalizing = useRef(false);
   const [showIncompleteOnly, setShowIncompleteOnly] = useState(false);
   const [recipientId, setRecipientId] = useState(String(recipients[0]?.id ?? ''));
   const [selectedField, setSelectedField] = useState<ReviewField | null>(null);
@@ -116,6 +120,7 @@ export const EnvelopeFieldReviewDialog = ({
         onOpenChange={(open) => {
           setIsOpen(open);
           if (open) {
+            isFinalizing.current = false;
             onOpen?.();
           }
         }}
@@ -137,7 +142,7 @@ export const EnvelopeFieldReviewDialog = ({
           position="center"
           className="flex max-h-[85dvh] flex-col sm:max-w-xl"
           onCloseAutoFocus={(event) => {
-            if (selectedField) {
+            if (selectedField || isFinalizing.current) {
               event.preventDefault();
             }
           }}
@@ -234,6 +239,20 @@ export const EnvelopeFieldReviewDialog = ({
               );
             })}
           </div>
+          {!isSender && remainingCount === 0 && onComplete && (
+            <DialogFooter>
+              <Button
+                type="button"
+                onClick={() => {
+                  isFinalizing.current = true;
+                  setIsOpen(false);
+                  onComplete();
+                }}
+              >
+                <Trans>Finalize signing</Trans>
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
       {selectedField && highlightPage && createPortal(<FieldHighlight field={selectedField} />, highlightPage)}
