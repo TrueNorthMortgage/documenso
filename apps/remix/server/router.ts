@@ -10,6 +10,7 @@ import {
   apiV2RateLimit,
   fileUploadRateLimit,
 } from '@documenso/lib/server-only/rate-limit/rate-limits';
+import { reportServerError } from '@documenso/lib/server-only/rollbar';
 import { TelemetryClient } from '@documenso/lib/server-only/telemetry/telemetry-client';
 import { migrateDeletedAccountServiceAccount } from '@documenso/lib/server-only/user/service-accounts/deleted-account';
 import { migrateLegacyServiceAccount } from '@documenso/lib/server-only/user/service-accounts/legacy-service-account';
@@ -19,6 +20,7 @@ import { openApiDocument } from '@documenso/trpc/server/open-api';
 import { Hono } from 'hono';
 import { contextStorage } from 'hono/context-storage';
 import { cors } from 'hono/cors';
+import { HTTPException } from 'hono/http-exception';
 import type { RequestIdVariables } from 'hono/request-id';
 import { requestId } from 'hono/request-id';
 import type { Logger } from 'pino';
@@ -47,6 +49,21 @@ export interface HonoEnv {
 }
 
 const app = new Hono<HonoEnv>();
+
+app.onError((error, c) => {
+  if (error instanceof HTTPException) {
+    if (error.status >= 500) {
+      reportServerError(error);
+    }
+
+    const response = error.getResponse();
+    return c.newResponse(response.body, response);
+  }
+
+  reportServerError(error);
+  console.error(error);
+  return c.text('Internal Server Error', 500);
+});
 
 /**
  * Database-backed rate limiting for API routes.

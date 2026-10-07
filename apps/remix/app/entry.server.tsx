@@ -1,5 +1,6 @@
 import { PassThrough } from 'node:stream';
 import { APP_I18N_OPTIONS } from '@documenso/lib/constants/i18n';
+import { reportServerError } from '@documenso/lib/server-only/rollbar';
 import { dynamicActivate, extractLocaleData } from '@documenso/lib/utils/i18n';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -7,12 +8,19 @@ import { createReadableStreamFromReadable } from '@react-router/node';
 import { isbot } from 'isbot';
 import type { RenderToPipeableStreamOptions } from 'react-dom/server';
 import { renderToPipeableStream } from 'react-dom/server';
-import type { AppLoadContext, EntryContext } from 'react-router';
+import type { AppLoadContext, EntryContext, HandleErrorFunction } from 'react-router';
 import { ServerRouter } from 'react-router';
 
 import { langCookie } from './storage/lang-cookie.server';
 
 export const streamTimeout = 5_000;
+
+export const handleError: HandleErrorFunction = (error, { request }) => {
+  if (!request.signal.aborted) {
+    reportServerError(error);
+    console.error(error);
+  }
+};
 
 export default async function handleRequest(
   request: Request,
@@ -75,6 +83,9 @@ export default async function handleRequest(
           // errors encountered during initial shell rendering since they'll
           // reject and get logged in handleDocumentRequest.
           if (shellRendered) {
+            if (!request.signal.aborted) {
+              reportServerError(error);
+            }
             console.error(error);
           }
         },

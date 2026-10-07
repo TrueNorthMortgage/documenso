@@ -5,8 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { handleTrpcRouterError } from './trpc-error-handler';
 
 const log = vi.hoisted(() => ({ child: vi.fn(), error: vi.fn(), info: vi.fn() }));
+const reportServerError = vi.hoisted(() => vi.fn());
 
 vi.mock('@documenso/lib/utils/logger', () => ({ logger: log }));
+vi.mock('@documenso/lib/server-only/rollbar', () => ({ reportServerError }));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -30,6 +32,7 @@ describe('validation error logging', () => {
     expect(log.child).toHaveBeenCalledWith(expect.objectContaining({ appError: { code: 'INVALID_REQUEST', message } }));
     expect(log.info).toHaveBeenCalledWith('TRPC_ERROR_HANDLER');
     expect(log.error).not.toHaveBeenCalled();
+    expect(reportServerError).not.toHaveBeenCalled();
   });
 
   it('still reports unexpected failures as server errors', () => {
@@ -38,6 +41,7 @@ describe('validation error logging', () => {
     handleTrpcRouterError({ error, path: 'envelope.field.set', ctx: undefined }, 'trpc');
 
     expect(log.error).toHaveBeenCalledWith(error);
+    expect(reportServerError).toHaveBeenCalledWith(error.cause);
     expect(log.info).not.toHaveBeenCalled();
   });
 });

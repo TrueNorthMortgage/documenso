@@ -1,0 +1,22 @@
+import Rollbar from 'rollbar';
+
+import { getRollbarConfiguration } from '../universal/rollbar';
+import { env } from '../utils/env';
+
+let browserRollbar: Rollbar | undefined;
+
+export const initializeBrowserRollbar = () => {
+  const accessToken = env('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN');
+
+  if (typeof window === 'undefined' || !accessToken || browserRollbar) {
+    return;
+  }
+
+  browserRollbar = new Rollbar({ ...getRollbarConfiguration(), accessToken });
+};
+
+export const reportBrowserError = (error: unknown) => {
+  if (error instanceof Error) {
+    browserRollbar?.error(error);
+  }
+};
