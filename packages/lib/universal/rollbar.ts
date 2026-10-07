@@ -19,10 +19,13 @@ export const sanitizeRollbarPayload = (payload: Rollbar.Dictionary) => {
 
   // The SDK also adds raw errors, source context, and configured options.
   // Those can carry sensitive data even when request capture is disabled.
+  const visited = new WeakSet<object>();
   const removeAdditionalData = (value: unknown) => {
-    if (!value || typeof value !== 'object') {
+    if (!value || typeof value !== 'object' || visited.has(value)) {
       return;
     }
+
+    visited.add(value);
 
     for (const [key, child] of Object.entries(value)) {
       if (['extra', 'code', 'context', 'args', 'locals', 'diagnostic', 'configured_options', 'argv'].includes(key)) {

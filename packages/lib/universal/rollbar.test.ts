@@ -59,6 +59,23 @@ describe('Rollbar configuration', () => {
     expect(payload.body.trace.frames).toEqual([{ filename: 'app.js', lineno: 42 }]);
   });
 
+  it('sanitizes circular and shared objects without revisiting them', () => {
+    const shared: Rollbar.Dictionary = { code: 'sensitive source context', filename: 'app.js' };
+    const payload: Rollbar.Dictionary = {
+      body: { first: shared, second: shared },
+    };
+    payload.self = payload;
+    shared.parent = payload;
+
+    expect(() => sanitizeRollbarPayload(payload)).not.toThrow();
+    expect(shared).not.toHaveProperty('code');
+    expect(shared.filename).toBe('app.js');
+
+    shared.code = 'new sensitive source context';
+    sanitizeRollbarPayload(payload);
+    expect(shared).not.toHaveProperty('code');
+  });
+
   it('produces a sanitized error report using the official Node SDK without transmitting it', async () => {
     let report: Rollbar.Dictionary | undefined;
     const configuration = getRollbarConfiguration();
