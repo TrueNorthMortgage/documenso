@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { getOidcTeamUrlForEmail } from '../auth/oidc-domain-map';
 import { sendForgotPassword } from '../auth/send-forgot-password';
 import { forgotPassword } from './forgot-password';
 
@@ -64,6 +64,30 @@ describe('forgotPassword', () => {
 
   it('does not send email or expose account existence for an unknown non-SSO address', async () => {
     expect(await forgotPassword({ email: 'unknown@external.example' })).toEqual({ usesSso: false });
+    expect(createToken).not.toHaveBeenCalled();
+    expect(sendForgotPassword).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, '', '   '])('preserves password reset when the domain map is %s', async (domainMap) => {
+    vi.stubEnv('SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP', domainMap);
+    findUser.mockResolvedValue({ id: 42 });
+
+    expect(await forgotPassword({ email: 'user@alpha.example' })).toEqual({ usesSso: false });
+    expect(createToken).toHaveBeenCalledWith({
+      data: { userId: 42, token: expect.any(String), expiry: expect.any(Date) },
+    });
+    expect(sendForgotPassword).toHaveBeenCalledWith({ userId: 42 });
+    expect(() => getOidcTeamUrlForEmail('user@alpha.example')).toThrow('SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP is required');
+  });
+
+  it.each([
+    'alpha.example',
+    'alpha.example:alpha,alpha.example:other',
+  ])('rejects an invalid populated domain map: %s', async (domainMap) => {
+    vi.stubEnv('SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP', domainMap);
+
+    await expect(forgotPassword({ email: 'user@alpha.example' })).rejects.toThrow();
+    expect(findUser).not.toHaveBeenCalled();
     expect(createToken).not.toHaveBeenCalled();
     expect(sendForgotPassword).not.toHaveBeenCalled();
   });

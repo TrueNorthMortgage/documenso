@@ -61,6 +61,9 @@ export const isEmailDomainConfiguredForSso = (email: string) => {
   );
 
   return (
-    isOidcEnabled && env('SELF_HOSTED_OIDC_AUTO_PROVISION_ENABLED') === 'true' && getOidcTeamUrlForEmail(email) !== null
+    isOidcEnabled &&
+    env('SELF_HOSTED_OIDC_AUTO_PROVISION_ENABLED') === 'true' &&
+    Boolean(env('SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP')?.trim()) &&
+    getOidcTeamUrlForEmail(email) !== null
   );
 };
