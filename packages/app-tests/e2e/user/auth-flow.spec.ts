@@ -56,7 +56,7 @@ test('[USER] can sign up with email and password', async ({ page }: { page: Page
 test('[USER] can sign in using email and password', async ({ page }: { page: Page }) => {
   const { user, team } = await seedUser();
 
-  await page.goto('/signin');
+  await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
   await page.getByLabel('Password', { exact: true }).fill('password');
   await page.getByRole('button', { name: 'Sign In' }).click();

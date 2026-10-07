@@ -143,7 +143,7 @@ export default function AcceptInvitationPage({ loaderData }: Route.ComponentProp
         </Button>
       ) : (
         <Button asChild>
-          <Link to={`/signin#email=${encodeURIComponent(data.email)}`}>
+          <Link to={`/login#email=${encodeURIComponent(data.email)}`}>
             <Trans>Continue to login</Trans>
           </Link>
         </Button>

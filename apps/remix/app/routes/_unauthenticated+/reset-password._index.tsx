@@ -25,7 +25,7 @@ export default function ResetPasswordPage() {
         </p>
 
         <Button className="mt-4" asChild>
-          <Link to="/signin">
+          <Link to="/login">
             <Trans>Return to sign in</Trans>
           </Link>
         </Button>

@@ -14,7 +14,7 @@ test('[USER] can reset password via forgot password', async ({ page }: { page: P
     password: oldPassword,
   });
 
-  await page.goto('http://localhost:3000/signin');
+  await page.goto('http://localhost:3000/login');
   await page.getByRole('link', { name: 'Forgot your password?' }).click();
   await expect(page).toHaveURL('http://localhost:3000/forgot-password');
 
@@ -131,7 +131,7 @@ test('[USER] password reset invalidates all sessions', async ({ page }: { page: 
 
   await page.context().clearCookies();
 
-  await page.goto('http://localhost:3000/signin');
+  await page.goto('http://localhost:3000/login');
   await page.getByRole('link', { name: 'Forgot your password?' }).click();
   await expect(page).toHaveURL('http://localhost:3000/forgot-password');
   await page.getByRole('textbox', { name: 'Email' }).fill(user.email);

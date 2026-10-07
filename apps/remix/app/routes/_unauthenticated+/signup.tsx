@@ -5,8 +5,10 @@ import {
   isSignupEnabledForProvider,
 } from '@documenso/lib/constants/auth';
 import { isValidReturnTo, normalizeReturnTo } from '@documenso/lib/utils/is-valid-return-to';
+import { Button } from '@documenso/ui/primitives/button';
 import { msg } from '@lingui/core/macro';
-import { redirect } from 'react-router';
+import { Trans } from '@lingui/react/macro';
+import { Link } from 'react-router';
 
 import { SignUpForm } from '~/components/forms/signup';
 import { appMetaTags } from '~/utils/meta';
@@ -22,13 +24,6 @@ export function loader({ request }: Route.LoaderArgs) {
   const isGoogleSignupEnabled = IS_GOOGLE_SSO_ENABLED && isSignupEnabledForProvider('google');
   const isMicrosoftSignupEnabled = IS_MICROSOFT_SSO_ENABLED && isSignupEnabledForProvider('microsoft');
   const isOidcSignupEnabled = IS_OIDC_SSO_ENABLED && isSignupEnabledForProvider('oidc');
-
-  const isAnySignupEnabled =
-    isEmailPasswordSignupEnabled || isGoogleSignupEnabled || isMicrosoftSignupEnabled || isOidcSignupEnabled;
-
-  if (!isAnySignupEnabled) {
-    throw redirect('/signin');
-  }
 
   let returnTo = new URL(request.url).searchParams.get('returnTo') ?? undefined;
 
@@ -51,6 +46,28 @@ export default function SignUp({ loaderData }: Route.ComponentProps) {
     isOidcSignupEnabled,
     returnTo,
   } = loaderData;
+
+  if (!isEmailPasswordSignupEnabled) {
+    return (
+      <div className="w-screen max-w-lg px-4 text-center">
+        <h1 className="font-semibold text-2xl">
+          <Trans>Email sign-up is disabled</Trans>
+        </h1>
+
+        <p className="mt-2 text-muted-foreground text-sm">
+          <Trans>Creating an account with email and password is not available. Please use Login to continue.</Trans>
+        </p>
+
+        <Button size="lg" className="mt-6 w-full max-w-64" asChild>
+          <Link
+            to={returnTo ? `/signin?auto_oidc=true&returnTo=${encodeURIComponent(returnTo)}` : '/signin?auto_oidc=true'}
+          >
+            <Trans>Login</Trans>
+          </Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <SignUpForm
