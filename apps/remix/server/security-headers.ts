@@ -28,10 +28,10 @@ const EMBED_PATH_REGEX = /^\/embed(\/|\.data|$)/;
  * through `EmbedSignDocument`). Without `frame-ancestors *` here, those
  * integrations break with a "refused to connect" iframe error.
  *
- * Auth routes (`/signin`, `/forgot-password`, `/check-email`,
+ * Auth routes (`/signin`, `/login`, `/forgot-password`, `/check-email`,
  * `/unverified-account`):
  * `apps/remix/app/components/general/document-signing/document-signing-auth-account.tsx`
- * does `window.location.href = '/signin?...'` inside the iframe when the
+ * does `window.location.href = '/login?...'` inside the iframe when the
  * user needs to sign out and sign back in as a different account, and
  * `<SignInForm>` links/navigates to `/forgot-password`, `/check-email`, and
  * `/unverified-account` from there. Without `frame-ancestors *` on these
@@ -43,7 +43,7 @@ const EMBED_PATH_REGEX = /^\/embed(\/|\.data|$)/;
  * keeps `/sign` from matching `/signin`/`/signup` and `/d` from matching
  * `/dashboard`.
  */
-const FRAMEABLE_PATH_REGEX = /^\/(signin|forgot-password|check-email|unverified-account|sign|d)(\/|\.data|$)/;
+const FRAMEABLE_PATH_REGEX = /^\/(signin|login|forgot-password|check-email|unverified-account|sign|d)(\/|\.data|$)/;
 
 /**
  * Hono context variable name where the per-request CSP nonce is stashed.

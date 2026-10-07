@@ -169,6 +169,8 @@ export class AuthClient {
 
         throw AppError.parseError(error);
       }
+
+      return response.json();
     },
 
     resetPassword: async (data: TResetPasswordSchema) => {

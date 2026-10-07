@@ -2,9 +2,14 @@ import { prisma } from '@documenso/prisma';
 import crypto from 'crypto';
 
 import { ONE_HOUR } from '../../constants/time';
+import { isEmailDomainConfiguredForSso } from '../auth/oidc-domain-map';
 import { sendForgotPassword } from '../auth/send-forgot-password';
 
 export const forgotPassword = async ({ email }: { email: string }) => {
+  if (isEmailDomainConfiguredForSso(email)) {
+    return { usesSso: true };
+  }
+
   const user = await prisma.user.findFirst({
     where: {
       email: {
@@ -15,7 +20,7 @@ export const forgotPassword = async ({ email }: { email: string }) => {
   });
 
   if (!user) {
-    return;
+    return { usesSso: false };
   }
 
   // Find a token that was created in the last hour and hasn't expired
@@ -48,4 +53,6 @@ export const forgotPassword = async ({ email }: { email: string }) => {
   await sendForgotPassword({
     userId: user.id,
   }).catch((err) => console.error(err));
+
+  return { usesSso: false };
 };

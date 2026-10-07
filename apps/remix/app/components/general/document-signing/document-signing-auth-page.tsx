@@ -21,10 +21,10 @@ export const DocumentSigningAuthPageView = ({ email, emailHasAccount }: Document
     try {
       setIsSigningOut(true);
 
-      let redirectPath = '/signin';
+      let redirectPath = '/login';
 
       if (email) {
-        redirectPath = emailHasAccount ? `/signin#email=${email}` : `/signup#email=${email}`;
+        redirectPath = emailHasAccount ? `/login#email=${email}` : `/signup#email=${email}`;
       }
 
       await authClient.signOut({
