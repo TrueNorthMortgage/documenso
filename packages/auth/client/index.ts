@@ -5,7 +5,6 @@ import { hc } from 'hono/client';
 import superjson from 'superjson';
 
 import type { AuthAppType } from '../server';
-import type { SessionValidationResult } from '../server/lib/session/session';
 import type { PartialAccount } from '../server/lib/utils/get-accounts';
 import type { ActiveSession } from '../server/lib/utils/get-session';
 import { handleSignInRedirect } from '../server/lib/utils/redirect';
@@ -22,6 +21,7 @@ import type {
   TUpdatePasswordSchema,
   TVerifyEmailSchema,
 } from '../server/types/email-password';
+import { parseSessionResponse } from './parse-session-response';
 
 type AuthClientType = ReturnType<typeof hc<AuthAppType>>;
 
@@ -65,15 +65,7 @@ export class AuthClient {
   public async getSession() {
     const response = await this.client['session-json'].$get();
 
-    if (!response.ok) {
-      const error = await response.json();
-
-      throw AppError.parseError(error);
-    }
-
-    const result = await response.json();
-
-    return superjson.deserialize<SessionValidationResult>(result);
+    return parseSessionResponse(response);
   }
 
   public async getSessions() {

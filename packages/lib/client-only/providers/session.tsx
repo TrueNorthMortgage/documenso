@@ -8,6 +8,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { useLocation } from 'react-router';
 
 import { SKIP_QUERY_BATCH_META } from '../../constants/trpc';
+import { refreshSessionInBackground } from './refresh-session-in-background';
 
 export type AppSession = {
   session: Session;
@@ -99,7 +100,7 @@ export const SessionProvider = ({ children, initialSession }: SessionProviderPro
 
   useEffect(() => {
     const onFocus = () => {
-      void refreshSession();
+      void refreshSessionInBackground(refreshSession);
     };
 
     window.addEventListener('focus', onFocus);
@@ -113,7 +114,7 @@ export const SessionProvider = ({ children, initialSession }: SessionProviderPro
    * Refresh session in background on navigation.
    */
   useEffect(() => {
-    void refreshSession();
+    void refreshSessionInBackground(refreshSession);
   }, [location.pathname]);
 
   return (

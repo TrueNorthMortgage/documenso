@@ -1,4 +1,8 @@
-import { initializeBrowserRollbar, reportBrowserError } from '@documenso/lib/client-only/rollbar';
+import {
+  initializeBrowserRollbar,
+  reportBrowserError,
+  reportBrowserHydrationError,
+} from '@documenso/lib/client-only/rollbar';
 import { extractPostHogConfig } from '@documenso/lib/constants/feature-flags';
 import { env } from '@documenso/lib/utils/env';
 import { dynamicActivate } from '@documenso/lib/utils/i18n';
@@ -45,6 +49,7 @@ async function main() {
 
         <PosthogInit />
       </StrictMode>,
+      { onRecoverableError: reportBrowserHydrationError },
     );
   });
 }
