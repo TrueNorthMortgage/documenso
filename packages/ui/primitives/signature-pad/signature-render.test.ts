@@ -40,7 +40,8 @@ beforeEach(() => {
 
   vi.stubGlobal(
     'Image',
-    vi.fn(() => {
+    // biome-ignore lint/complexity/useArrowFunction: Vitest constructor mocks must be constructible.
+    vi.fn(function () {
       const image: TestImage = { width: 80, height: 40, src: '', onload: null };
       images.push(image);
       return image;
@@ -48,7 +49,8 @@ beforeEach(() => {
   );
   vi.stubGlobal(
     'ResizeObserver',
-    vi.fn((callback: () => void) => {
+    // biome-ignore lint/complexity/useArrowFunction: Vitest constructor mocks must be constructible.
+    vi.fn(function (callback: () => void) {
       onResize = callback;
       return { observe: vi.fn(), disconnect };
     }),
