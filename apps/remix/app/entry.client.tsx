@@ -1,4 +1,6 @@
+import { initializeBrowserRollbar, reportBrowserError } from '@documenso/lib/client-only/rollbar';
 import { extractPostHogConfig } from '@documenso/lib/constants/feature-flags';
+import { env } from '@documenso/lib/utils/env';
 import { dynamicActivate } from '@documenso/lib/utils/i18n';
 import { i18n } from '@lingui/core';
 import { detect, fromHtmlTag } from '@lingui/detect-locale';
@@ -17,7 +19,7 @@ function PosthogInit() {
       void import('posthog-js').then(({ default: posthog }) => {
         posthog.init(postHogConfig.key, {
           api_host: postHogConfig.host,
-          capture_exceptions: true,
+          capture_exceptions: !env('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN'),
         });
       });
     }
@@ -27,6 +29,8 @@ function PosthogInit() {
 }
 
 async function main() {
+  initializeBrowserRollbar();
+
   const locale = detect(fromHtmlTag('lang')) || 'en';
 
   await dynamicActivate(locale);
@@ -36,7 +40,7 @@ async function main() {
       document,
       <StrictMode>
         <I18nProvider i18n={i18n}>
-          <HydratedRouter />
+          <HydratedRouter onError={reportBrowserError} />
         </I18nProvider>
 
         <PosthogInit />

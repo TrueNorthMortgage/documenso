@@ -22,6 +22,8 @@ export const env = <K extends EnvKey>(variable: K): EnvValue<K> => {
 
 export const createPublicEnv = () => ({
   ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key.startsWith('NEXT_PUBLIC_'))),
+  // Keep the browser and server Rollbar environment labels consistent at runtime.
+  NEXT_PUBLIC_ROLLBAR_ENVIRONMENT: process.env.NEXT_PUBLIC_ROLLBAR_ENVIRONMENT || process.env.NODE_ENV || 'development',
   // Expose only the derived availability flag, not the private Vertex credentials.
   NEXT_PUBLIC_AI_FEATURES_CONFIGURED:
     process.env.GOOGLE_VERTEX_PROJECT_ID && process.env.GOOGLE_VERTEX_API_KEY ? 'true' : 'false',

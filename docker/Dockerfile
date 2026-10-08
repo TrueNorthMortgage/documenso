@@ -98,6 +98,11 @@ FROM base AS runner
 ENV HUSKY 0
 ENV DOCKER_OUTPUT 1
 
+# Pin error reports to the source revision used to build this image.
+ARG DOCUMENSO_CODE_VERSION=""
+ENV NEXT_PUBLIC_ROLLBAR_CODE_VERSION="$DOCUMENSO_CODE_VERSION"
+LABEL org.opencontainers.image.revision="$DOCUMENSO_CODE_VERSION"
+
 # Telemetry credentials (baked into image at build time, can be disabled at runtime)
 ARG NEXT_PRIVATE_TELEMETRY_KEY=""
 ENV NEXT_PRIVATE_TELEMETRY_KEY="$NEXT_PRIVATE_TELEMETRY_KEY"
