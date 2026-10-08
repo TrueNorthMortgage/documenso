@@ -24,7 +24,6 @@ export const SignatureRender = ({
   signatureFont = DEFAULT_SIGNATURE_FONT_FAMILY,
 }: SignatureRenderProps) => {
   const $el = useRef<HTMLCanvasElement>(null);
-  const $imageData = useRef<ImageData | null>(null);
 
   const renderTypedSignature = () => {
     if (!$el.current) {
@@ -94,6 +93,10 @@ export const SignatureRender = ({
     const img = new Image();
 
     img.onload = () => {
+      if (!img.width || !img.height) {
+        return;
+      }
+
       // Calculate the scaled dimensions while maintaining aspect ratio
       const scale = Math.min(width / img.width, height / img.height);
       const scaledWidth = img.width * scale;
@@ -104,28 +107,54 @@ export const SignatureRender = ({
       const y = (height - scaledHeight) / 2;
 
       ctx?.drawImage(img, x, y, scaledWidth, scaledHeight);
-
-      const defaultImageData = ctx?.getImageData(0, 0, width, height) || null;
-
-      $imageData.current = defaultImageData;
     };
 
     img.src = value;
+
+    return () => {
+      img.onload = null;
+    };
   };
 
   useEffect(() => {
-    if ($el.current) {
-      $el.current.width = $el.current.clientWidth * SIGNATURE_CANVAS_DPI;
-      $el.current.height = $el.current.clientHeight * SIGNATURE_CANVAS_DPI;
-    }
-  }, []);
+    const canvas = $el.current;
 
-  useEffect(() => {
-    if (isBase64Image(value)) {
-      renderImageSignature();
-    } else {
-      renderTypedSignature();
+    if (!canvas) {
+      return;
     }
+
+    let cancelImageLoad: (() => void) | undefined;
+
+    const renderSignature = () => {
+      cancelImageLoad?.();
+
+      const width = canvas.clientWidth * SIGNATURE_CANVAS_DPI;
+      const height = canvas.clientHeight * SIGNATURE_CANVAS_DPI;
+
+      // Hidden previews have no drawable area. Render when layout becomes visible.
+      if (!width || !height) {
+        return;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      if (isBase64Image(value)) {
+        cancelImageLoad = renderImageSignature();
+      } else {
+        renderTypedSignature();
+      }
+    };
+
+    renderSignature();
+
+    const observer = new ResizeObserver(renderSignature);
+    observer.observe(canvas);
+
+    return () => {
+      observer.disconnect();
+      cancelImageLoad?.();
+    };
   }, [signatureFont, value]);
 
   return (

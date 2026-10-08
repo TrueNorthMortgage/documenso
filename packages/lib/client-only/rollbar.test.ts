@@ -19,6 +19,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
@@ -47,5 +48,31 @@ describe('browser Rollbar', () => {
 
     expect(sdk.create).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ accessToken: 'public-test-token' }));
     expect(sdk.error).toHaveBeenCalledExactlyOnceWith(error);
+  });
+
+  it('includes React component frames in recoverable hydration reports', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { initializeBrowserRollbar, reportBrowserHydrationError } = await import('./rollbar');
+    initializeBrowserRollbar();
+    const error = new Error('Hydration failed');
+    const componentStack = '\n    at SigningPage (https://app.example/assets/signing.js:1:20)';
+
+    reportBrowserHydrationError(error, { componentStack });
+
+    expect(error.stack).toContain(componentStack);
+    expect(sdk.error).toHaveBeenCalledExactlyOnceWith(error);
+    expect(consoleError).toHaveBeenCalledExactlyOnceWith(error);
+  });
+
+  it('keeps hydration errors visible when Rollbar is disabled', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', '');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { reportBrowserHydrationError } = await import('./rollbar');
+    const error = new Error('Hydration failed');
+    reportBrowserHydrationError(error, {});
+
+    expect(sdk.error).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledExactlyOnceWith(error);
   });
 });
