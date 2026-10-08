@@ -15,10 +15,10 @@ import { langCookie } from './storage/lang-cookie.server';
 
 export const streamTimeout = 5_000;
 
-export const handleError: HandleErrorFunction = (error, { request }) => {
+export const handleError: HandleErrorFunction = (error, { request, context }) => {
   if (!request.signal.aborted) {
     reportServerError(error);
-    console.error(error);
+    console.error('SSR request failed', { requestId: context.requestId }, error);
   }
 };
 
@@ -86,7 +86,7 @@ export default async function handleRequest(
             if (!request.signal.aborted) {
               reportServerError(error);
             }
-            console.error(error);
+            console.error('SSR stream failed', { requestId: loadContext.requestId }, error);
           }
         },
       },

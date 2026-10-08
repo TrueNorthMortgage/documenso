@@ -102,4 +102,42 @@ describe('Rollbar configuration', () => {
     expect(JSON.stringify(report)).toContain('SDK verification');
     expect(JSON.stringify(report)).not.toMatch(/secret-token|document contents|authorization/);
   });
+
+  it('retains only approved hydration fields through the official SDK without transmitting', async () => {
+    let report: Rollbar.Dictionary | undefined;
+    const configuration = getRollbarConfiguration();
+    const rollbar = new Rollbar({
+      ...configuration,
+      accessToken: 'test-token',
+      captureUncaught: false,
+      captureUnhandledRejections: false,
+      transmit: false,
+      onSendCallback: (_isUncaught, _args, payload) => {
+        configuration.onSendCallback?.(_isUncaught, _args, payload);
+        report = payload;
+      },
+    });
+    const hydration = {
+      routeId: 'routes/_recipient+/sign.$token+/_index',
+      requestId: '7549bab8-df86-4543-963c-6c5619435366',
+      serverLanguage: 'en',
+      clientLanguage: 'fr',
+      serverTheme: 'system',
+      documentTheme: 'dark',
+      preferredColorScheme: 'dark',
+      documentNodes: 'html',
+      headNodes: 'meta,script',
+      bodyNodes: 'div',
+      responseBody: 'private document contents',
+    };
+    rollbar.error(new Error('Hydration SDK verification'), { hydration, token: 'secret-token' });
+    await new Promise<void>((resolve) => rollbar.wait(resolve));
+
+    expect(report).toMatchObject({
+      custom: { hydration: { routeId: hydration.routeId, clientLanguage: 'fr' } },
+      client: { javascript: { source_map_enabled: true } },
+    });
+    expect(report).not.toHaveProperty('hydration');
+    expect(JSON.stringify(report)).not.toMatch(/secret-token|private document contents/);
+  });
 });

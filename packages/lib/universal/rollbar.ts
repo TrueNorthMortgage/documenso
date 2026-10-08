@@ -2,12 +2,23 @@ import type Rollbar from 'rollbar';
 
 import { version } from '../../../package.json';
 import { env } from '../utils/env';
+import { sanitizeHydrationDiagnostics } from './hydration-diagnostics';
 
 /** Keep reports limited to diagnostic data, without request or interaction contents. */
 export const sanitizeRollbarPayload = (payload: Rollbar.Dictionary) => {
   delete payload.request;
   delete payload.person;
-  delete payload.custom;
+  // The Node SDK also copies custom fields to the top level.
+  const custom = payload.custom;
+  const hydration = sanitizeHydrationDiagnostics(
+    custom && typeof custom === 'object' && 'hydration' in custom ? custom.hydration : undefined,
+  );
+  delete payload.hydration;
+  if (hydration) {
+    payload.custom = { hydration };
+  } else {
+    delete payload.custom;
+  }
   delete payload.context;
 
   const body = payload.body;
@@ -45,6 +56,7 @@ export const getRollbarConfiguration = (): Rollbar.Configuration => ({
   payload: {
     client: {
       javascript: {
+        source_map_enabled: true,
         code_version: env('NEXT_PUBLIC_ROLLBAR_CODE_VERSION') || version,
       },
     },

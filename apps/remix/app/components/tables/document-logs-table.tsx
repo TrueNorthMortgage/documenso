@@ -19,6 +19,7 @@ import { UAParser } from 'ua-parser-js';
 export type DocumentLogsTableProps = {
   documentId: number;
   userId?: number;
+  timeZone: string;
 };
 
 const dateFormat: DateTimeFormatOptions = {
@@ -26,7 +27,7 @@ const dateFormat: DateTimeFormatOptions = {
   hourCycle: 'h12',
 };
 
-export const DocumentLogsTable = ({ documentId, userId }: DocumentLogsTableProps) => {
+export const DocumentLogsTable = ({ documentId, userId, timeZone }: DocumentLogsTableProps) => {
   const { _, i18n } = useLingui();
 
   const [searchParams] = useSearchParams();
@@ -66,7 +67,7 @@ export const DocumentLogsTable = ({ documentId, userId }: DocumentLogsTableProps
       {
         header: _(msg`Time`),
         accessorKey: 'createdAt',
-        cell: ({ row }) => i18n.date(row.original.createdAt, dateFormat),
+        cell: ({ row }) => i18n.date(row.original.createdAt, { ...dateFormat, timeZone }),
       },
       {
         header: _(msg`User`),
@@ -116,7 +117,7 @@ export const DocumentLogsTable = ({ documentId, userId }: DocumentLogsTableProps
         },
       },
     ] satisfies DataTableColumnDef<(typeof results)['data'][number]>[];
-  }, []);
+  }, [_, i18n, userId, timeZone]);
 
   return (
     <DataTable

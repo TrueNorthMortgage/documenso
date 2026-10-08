@@ -1,6 +1,7 @@
 import { getSession } from '@documenso/auth/server/lib/utils/get-session';
 import { getEnvelopeById } from '@documenso/lib/server-only/envelope/get-envelope-by-id';
 import { getTeamByUrl } from '@documenso/lib/server-only/team/get-team';
+import { formatDocumentLogDate, getDocumentLogTimeZone } from '@documenso/lib/utils/document-log-date';
 import { mapSecondaryIdToDocumentId } from '@documenso/lib/utils/envelope';
 import { logDocumentAccess } from '@documenso/lib/utils/logger';
 import { formatDocumentsPath } from '@documenso/lib/utils/teams';
@@ -11,7 +12,6 @@ import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { EnvelopeType, type Recipient } from '@prisma/client';
 import { ChevronLeft } from 'lucide-react';
-import { DateTime } from 'luxon';
 import { Link } from 'react-router';
 
 import { DocumentAuditLogDownloadButton } from '~/components/general/document/document-audit-log-download-button';
@@ -82,8 +82,15 @@ export default function DocumentsLogsPage({ loaderData }: Route.ComponentProps) 
   const { document, recipients, documentRootPath, userId } = loaderData;
 
   const { _, i18n } = useLingui();
+  const locale = i18n.locales?.[0] || i18n.locale;
+  const timeZone = getDocumentLogTimeZone(document.documentMeta?.timezone);
 
-  const documentInformation: { description: MessageDescriptor; value: string }[] = [
+  const documentInformation: {
+    description: MessageDescriptor;
+    value: string;
+    dateField?: 'createdAt' | 'updatedAt';
+    date?: Date;
+  }[] = [
     {
       description: msg`Document title`,
       value: document.title,
@@ -102,19 +109,19 @@ export default function DocumentsLogsPage({ loaderData }: Route.ComponentProps) 
     },
     {
       description: msg`Date created`,
-      value: DateTime.fromJSDate(document.createdAt)
-        .setLocale(i18n.locales?.[0] || i18n.locale)
-        .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS),
+      value: formatDocumentLogDate(document.createdAt, locale, timeZone),
+      dateField: 'createdAt',
+      date: document.createdAt,
     },
     {
       description: msg`Last updated`,
-      value: DateTime.fromJSDate(document.updatedAt)
-        .setLocale(i18n.locales?.[0] || i18n.locale)
-        .toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS),
+      value: formatDocumentLogDate(document.updatedAt, locale, timeZone),
+      dateField: 'updatedAt',
+      date: document.updatedAt,
     },
     {
       description: msg`Time zone`,
-      value: document.documentMeta?.timezone ?? 'N/A',
+      value: timeZone,
     },
   ];
 
@@ -167,7 +174,20 @@ export default function DocumentsLogsPage({ loaderData }: Route.ComponentProps) 
           {documentInformation.map((info, i) => (
             <div className="text-foreground text-sm" key={i}>
               <h3 className="font-semibold">{_(info.description)}</h3>
-              <p className="truncate text-muted-foreground">{info.value}</p>
+              <p className="truncate text-muted-foreground">
+                {info.date ? (
+                  <time
+                    dateTime={info.date.toISOString()}
+                    data-hydration-date-field={info.dateField}
+                    data-hydration-locale={locale}
+                    data-hydration-time-zone={timeZone}
+                  >
+                    {info.value}
+                  </time>
+                ) : (
+                  info.value
+                )}
+              </p>
             </div>
           ))}
 
@@ -187,7 +207,7 @@ export default function DocumentsLogsPage({ loaderData }: Route.ComponentProps) 
       </section>
 
       <section className="mt-6">
-        <DocumentLogsTable documentId={document.id} userId={userId} />
+        <DocumentLogsTable documentId={document.id} userId={userId} timeZone={timeZone} />
       </section>
     </div>
   );
