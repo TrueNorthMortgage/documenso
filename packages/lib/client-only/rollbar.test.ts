@@ -75,4 +75,68 @@ describe('browser Rollbar', () => {
     expect(sdk.error).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalledExactlyOnceWith(error);
   });
+
+  it('passes only approved hydration context alongside component frames', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { initializeBrowserRollbar, reportBrowserHydrationError } = await import('./rollbar');
+    initializeBrowserRollbar();
+    const error = new Error('Hydration failed');
+    const hydration = {
+      routeId: 'routes/_authenticated+/documents._index',
+      requestId: '7549bab8-df86-4543-963c-6c5619435366',
+      serverLanguage: 'en',
+      clientLanguage: 'en',
+      serverTheme: 'system',
+      documentTheme: 'dark',
+      preferredColorScheme: 'dark',
+      documentNodes: 'doctype,html',
+      headNodes: 'meta',
+      bodyNodes: 'div',
+    };
+
+    reportBrowserHydrationError(
+      error,
+      { componentStack: '\n    at DocumentsPage (app.js:1:20)\n    at https://app.example/assets.js:1:20' },
+      {
+        ...hydration,
+        document: 'private document',
+      },
+    );
+
+    expect(error.stack).toContain('DocumentsPage');
+    expect(sdk.error).toHaveBeenCalledExactlyOnceWith(error, {
+      hydration: { ...hydration, componentNames: 'DocumentsPage', mismatchKind: 'structure' },
+    });
+  });
+
+  it('reports the detected field mismatch as the cause without sending private values', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { initializeBrowserRollbar, reportBrowserHydrationError } = await import('./rollbar');
+    const { captureHydrationDiagnostics } = await import('./hydration-diagnostics');
+    initializeBrowserRollbar();
+    const html = {
+      lang: 'en',
+      getAttribute: () => null,
+    };
+    const document = {
+      documentElement: html,
+      childNodes: [],
+      head: null,
+      body: null,
+      querySelector: () => null,
+    } as unknown as Document;
+    const diagnostics = {
+      ...captureHydrationDiagnostics(document, false),
+      clientLanguage: 'en',
+      mismatchedDateFields: 'updatedAt',
+      document: 'private content',
+    };
+    reportBrowserHydrationError(new Error('Text content does not match server-rendered HTML.'), {}, diagnostics);
+    expect(sdk.error).toHaveBeenCalledWith(expect.any(Error), {
+      hydration: expect.objectContaining({ mismatchKind: 'formatted-date', mismatchedDateFields: 'updatedAt' }),
+    });
+    expect(JSON.stringify(sdk.error.mock.calls)).not.toContain('private content');
+  });
 });

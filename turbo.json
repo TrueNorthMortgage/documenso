@@ -3,6 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["prebuild", "^build"],
+      "env": ["DOCUMENSO_BUILD_SOURCEMAPS"],
       "outputs": [".next/**", "!.next/cache/**", "build/**", ".react-router/**"]
     },
     "prebuild": {

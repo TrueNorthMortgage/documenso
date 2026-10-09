@@ -113,6 +113,8 @@ export default defineConfig({
    * See rollup.config.mjs which is used for that.
    */
   build: {
+    // Opt in locally until private source-map upload/removal is wired into deployment.
+    sourcemap: process.env.DOCUMENSO_BUILD_SOURCEMAPS === 'true' ? 'hidden' : false,
     rollupOptions: {
       external: [
         '@napi-rs/canvas',
