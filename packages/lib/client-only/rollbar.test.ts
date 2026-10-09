@@ -12,10 +12,18 @@ const sdk = vi.hoisted(() => {
 
 vi.mock('rollbar', () => ({ default: sdk.create }));
 
+let sessionValues: Map<string, string>;
+
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
-  vi.stubGlobal('window', {});
+  sessionValues = new Map();
+  vi.stubGlobal('window', {
+    sessionStorage: {
+      getItem: vi.fn((key: string) => sessionValues.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => sessionValues.set(key, value)),
+    },
+  });
 });
 
 afterEach(() => {
@@ -25,6 +33,112 @@ afterEach(() => {
 });
 
 describe('browser Rollbar', () => {
+  it('reports an identical hydration failure once while keeping every console error visible', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { initializeBrowserRollbar, reportBrowserHydrationError } = await import('./rollbar');
+    initializeBrowserRollbar();
+    const componentStack = '\n    at SigningPage (app.js:1:20)';
+    const firstError = new Error('Hydration failed');
+
+    for (let i = 0; i < 80; i++) {
+      reportBrowserHydrationError(i === 0 ? firstError : new Error('Hydration failed'), { componentStack });
+    }
+    reportBrowserHydrationError(firstError, { componentStack });
+
+    expect(sdk.error).toHaveBeenCalledExactlyOnceWith(firstError);
+    expect(consoleError).toHaveBeenCalledTimes(81);
+    expect(firstError.stack?.split(componentStack)).toHaveLength(2);
+  });
+
+  it('keeps distinct component failures and ordinary router errors reportable', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { initializeBrowserRollbar, reportBrowserHydrationError, reportBrowserError } = await import('./rollbar');
+    initializeBrowserRollbar();
+    reportBrowserHydrationError(new Error('Hydration failed'), { componentStack: '\n    at SigningPage' });
+    reportBrowserHydrationError(new Error('Hydration failed'), { componentStack: '\n    at SigningDialog' });
+    reportBrowserHydrationError(new Error('Text content does not match'), { componentStack: '\n    at SigningPage' });
+    reportBrowserError(new Error('Hydration failed'));
+    reportBrowserError(new Error('Hydration failed'));
+
+    expect(sdk.error).toHaveBeenCalledTimes(5);
+  });
+
+  it('bounds the cache while continuing to report new distinct failures', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { initializeBrowserRollbar, reportBrowserHydrationError } = await import('./rollbar');
+    initializeBrowserRollbar();
+    for (let i = 0; i <= 100; i++) {
+      reportBrowserHydrationError(new Error(`Hydration failed ${i}`), {});
+    }
+    reportBrowserHydrationError(new Error('Hydration failed 100'), {});
+    reportBrowserHydrationError(new Error('Hydration failed 0'), {});
+
+    expect(sdk.error).toHaveBeenCalledTimes(102);
+  });
+
+  it('suppresses repeats after a refresh and reports again for a new tab session', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const firstPage = await import('./rollbar');
+    firstPage.initializeBrowserRollbar();
+    firstPage.reportBrowserHydrationError(new Error('Hydration failed'), {});
+    vi.resetModules();
+    const nextPage = await import('./rollbar');
+    nextPage.initializeBrowserRollbar();
+    nextPage.reportBrowserHydrationError(new Error('Hydration failed'), {});
+
+    expect(sdk.error).toHaveBeenCalledTimes(1);
+
+    sessionValues.clear();
+    vi.resetModules();
+    const newSession = await import('./rollbar');
+    newSession.initializeBrowserRollbar();
+    newSession.reportBrowserHydrationError(new Error('Hydration failed'), {});
+
+    expect(sdk.error).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports the same failure again after the deployed code version changes', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_CODE_VERSION', 'release-one');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const firstRelease = await import('./rollbar');
+    firstRelease.initializeBrowserRollbar();
+    firstRelease.reportBrowserHydrationError(new Error('Hydration failed'), {});
+
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_CODE_VERSION', 'release-two');
+    vi.resetModules();
+    const nextRelease = await import('./rollbar');
+    nextRelease.initializeBrowserRollbar();
+    nextRelease.reportBrowserHydrationError(new Error('Hydration failed'), {});
+
+    expect(sdk.error).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['blocked', 'invalid'])('keeps reporting and page deduplication with %s storage', async (mode) => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    if (mode === 'blocked') {
+      vi.spyOn(window.sessionStorage, 'getItem').mockImplementation(() => {
+        throw new Error('Storage blocked');
+      });
+      vi.spyOn(window.sessionStorage, 'setItem').mockImplementation(() => {
+        throw new Error('Storage blocked');
+      });
+    } else {
+      sessionValues.set('documenso:reported-hydration-errors', '{invalid json');
+    }
+    const { initializeBrowserRollbar, reportBrowserHydrationError } = await import('./rollbar');
+    initializeBrowserRollbar();
+    reportBrowserHydrationError(new Error('Hydration failed'), {});
+    reportBrowserHydrationError(new Error('Hydration failed'), {});
+
+    expect(sdk.error).toHaveBeenCalledTimes(1);
+  });
+
   it('does not initialize or report without a public token', async () => {
     vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', '');
     const { initializeBrowserRollbar, reportBrowserError } = await import('./rollbar');
@@ -108,6 +222,29 @@ describe('browser Rollbar', () => {
     expect(sdk.error).toHaveBeenCalledExactlyOnceWith(error, {
       hydration: { ...hydration, componentNames: 'DocumentsPage', mismatchKind: 'structure' },
     });
+
+    reportBrowserHydrationError(
+      new Error('Hydration failed'),
+      { componentStack: '\n    at DocumentsPage (app.js:1:20)\n    at https://app.example/assets.js:1:20' },
+      { ...hydration, document: 'different private contents' },
+    );
+    expect(sdk.error).toHaveBeenCalledTimes(1);
+
+    reportBrowserHydrationError(
+      new Error('Hydration failed'),
+      { componentStack: '\n    at DocumentsPage (app.js:1:20)\n    at https://app.example/assets.js:1:20' },
+      { ...hydration, requestId: 'a858b508-05d0-481a-b0ca-239dcf7d292b' },
+    );
+    expect(sdk.error).toHaveBeenCalledTimes(1);
+
+    reportBrowserHydrationError(
+      new Error('Hydration failed'),
+      { componentStack: '\n    at DocumentsPage (app.js:1:20)' },
+      { ...hydration, routeId: 'routes/_recipient+/sign.$token+/_index' },
+    );
+    expect(sdk.error).toHaveBeenCalledTimes(2);
+    expect([...sessionValues.values()].join()).not.toContain(hydration.requestId);
+    expect([...sessionValues.values()].join()).not.toContain('https://app.example');
   });
 
   it('reports the detected field mismatch as the cause without sending private values', async () => {
