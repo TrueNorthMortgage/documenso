@@ -113,7 +113,12 @@ export const EnvelopeUploadButton = ({ className, type, folderId }: EnvelopeUplo
       console.error(err);
 
       const errorMessage = match(error.code)
-        .with('INVALID_DOCUMENT_FILE', () => t`You cannot upload encrypted PDFs.`)
+        .with('INVALID_DOCUMENT_FILE', () => t`This file could not be read as a valid PDF. Please upload another copy.`)
+        .with(
+          AppErrorCode.ENCRYPTED_PDF,
+          () =>
+            t`This PDF is protected and cannot be uploaded. If printing is allowed, print it to a new PDF and upload that copy. Otherwise, request an unprotected copy. Printing may remove interactive form fields.`,
+        )
         .with(
           AppErrorCode.UNSUPPORTED_XFA_PDF,
           () =>

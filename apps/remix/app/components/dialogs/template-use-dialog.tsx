@@ -202,6 +202,11 @@ export function TemplateUseDialog({
       const errorMessage = match(error.code)
         .with('DOCUMENT_SEND_FAILED', () => msg`The document was created but could not be sent to recipients.`)
         .with(
+          AppErrorCode.ENCRYPTED_PDF,
+          () =>
+            msg`This PDF is protected and cannot be uploaded. If printing is allowed, print it to a new PDF and upload that copy. Otherwise, request an unprotected copy. Printing may remove interactive form fields.`,
+        )
+        .with(
           AppErrorCode.UNSUPPORTED_XFA_PDF,
           () =>
             msg`This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.`,

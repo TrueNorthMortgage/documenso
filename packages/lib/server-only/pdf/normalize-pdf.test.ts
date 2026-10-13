@@ -8,6 +8,23 @@ import { normalizePdf } from './normalize-pdf';
 const readFixture = (name: string) => fs.readFileSync(new URL(`../../../../assets/${name}`, import.meta.url));
 
 describe('normalizePdf', () => {
+  it('explains how to upload a permissions-protected PDF', async () => {
+    const pdf = PDF.create();
+    pdf.addPage({ width: 612, height: 792 });
+    pdf.setProtection({
+      userPassword: '',
+      ownerPassword: 'test-only-owner-password',
+      permissions: { copy: false, print: true },
+    });
+
+    await expect(normalizePdf(Buffer.from(await pdf.save()))).rejects.toMatchObject({
+      code: AppErrorCode.ENCRYPTED_PDF,
+      statusCode: 400,
+      userMessage:
+        'This PDF is protected and cannot be uploaded. If printing is allowed, print it to a new PDF and upload that copy. Otherwise, request an unprotected copy. Printing may remove interactive form fields.',
+    });
+  });
+
   it('preserves regular documents without rasterizing or rewriting them', async () => {
     const source = readFixture('example.pdf');
     const normalized = await normalizePdf(source);

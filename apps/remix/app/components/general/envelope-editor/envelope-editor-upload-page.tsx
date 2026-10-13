@@ -267,7 +267,14 @@ export const EnvelopeEditorUploadPage = () => {
 
       const appError = AppError.parseError(error);
 
-      if (appError.code === AppErrorCode.UNSUPPORTED_XFA_PDF) {
+      if (appError.code === AppErrorCode.ENCRYPTED_PDF) {
+        toast({
+          title: t`Protected PDF`,
+          description: t`This PDF is protected and cannot be uploaded. If printing is allowed, print it to a new PDF and upload that copy. Otherwise, request an unprotected copy. Printing may remove interactive form fields.`,
+          variant: 'destructive',
+          duration: 15000,
+        });
+      } else if (appError.code === AppErrorCode.UNSUPPORTED_XFA_PDF) {
         toast({
           title: t`Upload failed`,
           description:
