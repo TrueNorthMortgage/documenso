@@ -4,10 +4,11 @@ import { useSession } from '@documenso/lib/client-only/providers/session';
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import { AppError } from '@documenso/lib/errors/app-error';
 import { getInvalidFieldGroupConfigurations, type TFieldWithGroup } from '@documenso/lib/utils/field-groups';
-import { getFieldsOutsideDocument } from '@documenso/lib/utils/field-placements';
+import { getEnvelopeItemsWithoutFields, getFieldsOutsideDocument } from '@documenso/lib/utils/field-placements';
 import { getRecipientsWithInvalidEmails, getRecipientsWithMissingFields } from '@documenso/lib/utils/recipients';
 import { zEmail } from '@documenso/lib/utils/zod';
 import { trpc, trpc as trpcReact } from '@documenso/trpc/react';
+import { DocumentNoFieldsWarning } from '@documenso/ui/components/document/document-no-fields-warning';
 import { DocumentSendEmailMessageHelper } from '@documenso/ui/components/document/document-send-email-message-helper';
 import { cn } from '@documenso/ui/lib/utils';
 import { Alert, AlertDescription } from '@documenso/ui/primitives/alert';
@@ -133,6 +134,11 @@ export const EnvelopeDistributeDialog = ({
   const recipientsMissingSignatureFields = useMemo(
     () => getRecipientsWithMissingFields(recipientsWithIndex, envelope.fields),
     [recipientsWithIndex, envelope.fields],
+  );
+
+  const documentsWithoutFields = useMemo(
+    () => getEnvelopeItemsWithoutFields(envelope.envelopeItems, editorFields.localFields),
+    [envelope.envelopeItems, editorFields.localFields],
   );
 
   const fieldsOutsideDocument = useMemo(
@@ -519,6 +525,8 @@ export const EnvelopeDistributeDialog = ({
                     )}
                   </div>
                 )}
+
+                {!isSyncing && <DocumentNoFieldsWarning documents={documentsWithoutFields} />}
 
                 <DialogFooter>
                   <DialogClose asChild>
