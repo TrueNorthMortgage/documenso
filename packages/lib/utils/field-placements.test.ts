@@ -1,6 +1,43 @@
 import { describe, expect, it } from 'vitest';
 
-import { getFieldsOutsideDocument, removeFieldPlacement, upsertFieldPlacement } from './field-placements';
+import {
+  getEnvelopeItemsWithoutFields,
+  getFieldsOutsideDocument,
+  removeFieldPlacement,
+  upsertFieldPlacement,
+} from './field-placements';
+
+describe('documents without fields', () => {
+  const documents = [
+    { id: 'item-1', title: 'First PDF' },
+    { id: 'item-2', title: 'Second PDF' },
+  ];
+
+  it('finds the empty document in an envelope with fields on another document', () => {
+    expect(getEnvelopeItemsWithoutFields(documents, [{ envelopeItemId: 'item-1' }])).toEqual([documents[1]]);
+  });
+
+  it('lists every document when there are no fields', () => {
+    expect(getEnvelopeItemsWithoutFields(documents, [])).toEqual(documents);
+  });
+
+  it('does not warn when all documents have fields', () => {
+    expect(
+      getEnvelopeItemsWithoutFields(documents, [{ envelopeItemId: 'item-1' }, { envelopeItemId: 'item-2' }]),
+    ).toEqual([]);
+  });
+
+  it('updates the warning when a field is added or removed', () => {
+    const fields = [{ envelopeItemId: 'item-1' }, { envelopeItemId: 'item-2' }];
+    expect(getEnvelopeItemsWithoutFields(documents, fields)).toEqual([]);
+    expect(getEnvelopeItemsWithoutFields(documents, fields.slice(0, 1))).toEqual([documents[1]]);
+  });
+
+  it('does not count fields referencing another document', () => {
+    expect(getEnvelopeItemsWithoutFields(documents, [{ envelopeItemId: 'removed-item' }])).toEqual(documents);
+    expect(getEnvelopeItemsWithoutFields([], [])).toEqual([]);
+  });
+});
 
 describe('field placements', () => {
   it('keeps invalid placements for multiple fields and replaces only the matching field', () => {

@@ -11,6 +11,15 @@ export type TFieldFormReference = {
   fieldFormId: string;
 };
 
+/** Find documents that have no fields, independently of fields on other documents. */
+export const getEnvelopeItemsWithoutFields = <T extends { id: string }>(
+  envelopeItems: T[],
+  fields: Pick<Field, 'envelopeItemId'>[],
+): T[] => {
+  const itemIdsWithFields = new Set(fields.map((field) => field.envelopeItemId));
+  return envelopeItems.filter((item) => !itemIdsWithFields.has(item.id));
+};
+
 export const upsertFieldPlacement = <T extends TFieldFormReference>(placements: T[], placement: T): T[] => {
   const existingPlacementIndex = placements.findIndex(
     (currentPlacement) => currentPlacement.fieldFormId === placement.fieldFormId,
