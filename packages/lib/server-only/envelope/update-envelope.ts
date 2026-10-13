@@ -24,6 +24,7 @@ import { recomputeNextReminderForEnvelope } from '../recipient/update-recipient-
 import { assertCanManageTemplate } from '../template/validate-template-access';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
 import { getEnvelopeWhereInput } from './get-envelope-by-id';
+import { assertCanUpdateDocumentVisibility } from './validate-document-visibility';
 
 export type UpdateEnvelopeOptions = {
   userId: number;
@@ -103,8 +104,14 @@ export const updateEnvelope = async ({
 
   const isEnvelopeOwner = envelope.userId === userId;
 
-  // Validate whether the new visibility setting is allowed for the current user.
-  if (!isEnvelopeOwner && data?.visibility && !canAccessTeamDocument(team.currentTeamRole, data.visibility)) {
+  if (envelope.type === EnvelopeType.DOCUMENT) {
+    assertCanUpdateDocumentVisibility({
+      role: team.currentTeamRole,
+      currentVisibility: envelope.visibility,
+      newVisibility: data.visibility,
+      isOwner: isEnvelopeOwner,
+    });
+  } else if (!isEnvelopeOwner && data.visibility && !canAccessTeamDocument(team.currentTeamRole, data.visibility)) {
     throw new AppError(AppErrorCode.UNAUTHORIZED, {
       message: 'You do not have permission to update the envelope visibility',
     });

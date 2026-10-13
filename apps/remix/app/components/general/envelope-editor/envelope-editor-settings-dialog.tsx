@@ -19,6 +19,7 @@ import {
 import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
 import { isValidRedirectUrl } from '@documenso/lib/utils/is-valid-redirect-url';
 import {
+  canUpdateDocumentVisibility,
   canUpdateTeamDocumentVisibility,
   DocumentSignatureType,
   extractTeamSignatureSettings,
@@ -226,7 +227,10 @@ export const EnvelopeEditorSettingsDialog = ({ trigger, ...props }: EnvelopeEdit
   const emails = emailData?.data || organisationEmails || [];
 
   const isOwner = sessionData?.user.id === envelope.userId;
-  const canUpdateVisibility = canUpdateTeamDocumentVisibility(team.currentTeamRole, envelope.visibility, isOwner);
+  const canUpdateVisibility =
+    envelope.type === EnvelopeType.DOCUMENT
+      ? canUpdateDocumentVisibility(team.currentTeamRole, envelope.visibility, isOwner)
+      : canUpdateTeamDocumentVisibility(team.currentTeamRole, envelope.visibility, isOwner);
 
   const onFormSubmit = async (data: TAddSettingsFormSchema) => {
     const {
@@ -890,7 +894,7 @@ export const EnvelopeEditorSettingsDialog = ({ trigger, ...props }: EnvelopeEdit
                         )}
                       />
 
-                      {!isEmbedded && (
+                      {!isEmbedded && canUpdateVisibility && (
                         <FormField
                           control={form.control}
                           name="visibility"

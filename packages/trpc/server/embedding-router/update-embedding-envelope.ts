@@ -2,6 +2,7 @@ import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { verifyEmbeddingPresignToken } from '@documenso/lib/server-only/embedding-presign/verify-embedding-presign-token';
 import { getEnvelopeWhereInput } from '@documenso/lib/server-only/envelope/get-envelope-by-id';
 import { updateEnvelope } from '@documenso/lib/server-only/envelope/update-envelope';
+import { assertCanUpdateDocumentVisibility } from '@documenso/lib/server-only/envelope/validate-document-visibility';
 import { UNSAFE_createEnvelopeItems } from '@documenso/lib/server-only/envelope-item/create-envelope-items';
 import { UNSAFE_deleteEnvelopeItem } from '@documenso/lib/server-only/envelope-item/delete-envelope-item';
 import { UNSAFE_replaceEnvelopeItemPdf } from '@documenso/lib/server-only/envelope-item/replace-envelope-item-pdf';
@@ -93,6 +94,16 @@ export const updateEmbeddingEnvelopeRoute = procedure
       currentTeamRole: team.currentTeamRole,
       userId: apiToken.userId,
     });
+
+    // Reject visibility changes before updating files or other envelope data.
+    if (envelope.type === EnvelopeType.DOCUMENT) {
+      assertCanUpdateDocumentVisibility({
+        role: team.currentTeamRole,
+        currentVisibility: envelope.visibility,
+        newVisibility: data.visibility,
+        isOwner: envelope.userId === apiToken.userId,
+      });
+    }
 
     if (envelope.status === DocumentStatus.COMPLETED) {
       throw new AppError(AppErrorCode.INVALID_REQUEST, {
