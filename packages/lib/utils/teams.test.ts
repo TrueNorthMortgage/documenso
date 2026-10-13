@@ -1,7 +1,13 @@
 import { DocumentVisibility, TeamMemberRole } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
-import { canManageFolder, canManageTemplate, canUpdateTeamDocumentVisibility, getTeamDisplayName } from './teams';
+import {
+  canManageFolder,
+  canManageTemplate,
+  canUpdateDocumentVisibility,
+  canUpdateTeamDocumentVisibility,
+  getTeamDisplayName,
+} from './teams';
 
 describe('getTeamDisplayName', () => {
   it('uses the configured display name when present', () => {
@@ -31,6 +37,28 @@ describe('canUpdateTeamDocumentVisibility', () => {
     expect(canUpdateTeamDocumentVisibility(TeamMemberRole.MEMBER, DocumentVisibility.ADMIN)).toBe(false);
     expect(canUpdateTeamDocumentVisibility(TeamMemberRole.MANAGER, DocumentVisibility.ADMIN)).toBe(false);
     expect(canUpdateTeamDocumentVisibility(TeamMemberRole.ADMIN, DocumentVisibility.ADMIN)).toBe(true);
+  });
+});
+
+describe('canUpdateDocumentVisibility', () => {
+  it.each(
+    Object.values(DocumentVisibility),
+  )('prevents members changing %s visibility even when they own the document', (visibility) => {
+    expect(canUpdateDocumentVisibility(TeamMemberRole.MEMBER, visibility, true)).toBe(false);
+    expect(canUpdateDocumentVisibility(TeamMemberRole.MEMBER, visibility, false)).toBe(false);
+  });
+
+  it.each(
+    Object.values(DocumentVisibility),
+  )('allows administrators and manager owners to change %s visibility', (visibility) => {
+    expect(canUpdateDocumentVisibility(TeamMemberRole.ADMIN, visibility)).toBe(true);
+    expect(canUpdateDocumentVisibility(TeamMemberRole.MANAGER, visibility, true)).toBe(true);
+  });
+
+  it("preserves the restriction on managers editing someone else's admin-only document", () => {
+    expect(canUpdateDocumentVisibility(TeamMemberRole.MANAGER, DocumentVisibility.ADMIN)).toBe(false);
+    expect(canUpdateDocumentVisibility(TeamMemberRole.MANAGER, DocumentVisibility.MANAGER_AND_ABOVE)).toBe(true);
+    expect(canUpdateDocumentVisibility(TeamMemberRole.MANAGER, DocumentVisibility.EVERYONE)).toBe(true);
   });
 });
 
