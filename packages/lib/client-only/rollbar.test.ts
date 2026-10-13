@@ -1,10 +1,11 @@
+import type Rollbar from 'rollbar';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sdk = vi.hoisted(() => {
   const error = vi.fn();
   return {
     error,
-    create: vi.fn(function (this: { error: typeof error }) {
+    create: vi.fn(function (this: { error: typeof error }, _configuration: Rollbar.Configuration) {
       this.error = error;
     }),
   };
@@ -33,6 +34,75 @@ afterEach(() => {
 });
 
 describe('browser Rollbar', () => {
+  it.each([
+    418, 423, 425,
+  ])('suppresses minified React #%s through explicit reporting and keeps console output', async (code) => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { initializeBrowserRollbar, reportBrowserHydrationError, reportBrowserError } = await import('./rollbar');
+    initializeBrowserRollbar();
+    const messages = [
+      `Minified React error #${code}; visit https://reactjs.org/docs/error-decoder.html?invariant=${code}`,
+      `Uncaught Error: Minified React error #${code}: different details`,
+      `react ERROR  # ${code} additional context`,
+      `Minified React error #${code}`,
+    ];
+    for (const message of messages) {
+      const error = new Error(message);
+      reportBrowserError(error);
+      reportBrowserHydrationError(error, { componentStack: '\n    at SigningPage' });
+      expect(consoleError).toHaveBeenLastCalledWith(error);
+    }
+
+    expect(sdk.error).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledTimes(messages.length);
+    expect(sessionValues.size).toBe(0);
+  });
+
+  it('keeps other React codes and application errors reportable', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { initializeBrowserRollbar, reportBrowserHydrationError, reportBrowserError } = await import('./rollbar');
+    initializeBrowserRollbar();
+    for (const message of [
+      'Minified React error #419;',
+      'Minified React error #4180;',
+      'Session not found',
+      'HTTP 504',
+    ]) {
+      reportBrowserError(new Error(message));
+      reportBrowserHydrationError(new Error(message), {});
+    }
+
+    expect(sdk.error).toHaveBeenCalledTimes(8);
+  });
+
+  it('filters SDK-captured messages using the official SDK without transmitting', async () => {
+    vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
+    const { initializeBrowserRollbar } = await import('./rollbar');
+    initializeBrowserRollbar();
+    const { default: RollbarSdk } = await vi.importActual<typeof import('rollbar')>('rollbar');
+    const rollbar = new RollbarSdk({
+      ...sdk.create.mock.calls[0][0],
+      captureUncaught: false,
+      captureUnhandledRejections: false,
+      transmit: false,
+    });
+    const result = (message: string) =>
+      new Promise<string | null>((resolve) => {
+        rollbar.error(new Error(message), (error) => resolve(error?.message ?? null));
+      });
+
+    for (const code of [418, 423, 425]) {
+      expect(
+        await result(`Minified React error #${code}; visit https://reactjs.org/docs/error-decoder.html`),
+      ).toBeNull();
+      expect(await result(`Uncaught Error: react ERROR # ${code}: different details`)).toBeNull();
+    }
+    expect(await result('Minified React error #419;')).toBe('Transmit disabled');
+    expect(await result('Session not found')).toBe('Transmit disabled');
+  });
+
   it('reports an identical hydration failure once while keeping every console error visible', async () => {
     vi.stubEnv('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN', 'public-test-token');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
