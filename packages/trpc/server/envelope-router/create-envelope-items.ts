@@ -102,9 +102,11 @@ export const createEnvelopeItemsRoute = authenticatedProcedure
       },
       apiRequestMetadata: metadata,
       logger: ctx.logger,
+      createMissingRecipients: true,
     });
 
     return {
-      data: result,
+      data: result.items,
+      addedRecipients: result.addedRecipients.map(({ id, name }) => ({ id, name })),
     };
   });
