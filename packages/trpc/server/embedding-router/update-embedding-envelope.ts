@@ -280,7 +280,7 @@ export const updateEmbeddingEnvelopeRoute = procedure
       });
 
       // Build the map from the envelope item order.
-      createdEnvelopeItems.forEach((item) => {
+      createdEnvelopeItems.items.forEach((item) => {
         if (!item.clientId) {
           throw new AppError(AppErrorCode.NOT_FOUND, {
             message: 'Client ID not found',

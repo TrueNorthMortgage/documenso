@@ -253,7 +253,7 @@ export const EnvelopeEditorUploadPage = () => {
 
     registerPendingMutation(createPromise);
 
-    const { data } = await createPromise.catch((error) => {
+    const { data, addedRecipients } = await createPromise.catch((error) => {
       console.error(error);
 
       // Set error state on files in batch upload.
@@ -296,6 +296,16 @@ export const EnvelopeEditorUploadPage = () => {
         })),
       );
     });
+
+    if (addedRecipients && addedRecipients.length > 0) {
+      const names = addedRecipients.map((recipient) => recipient.name).join(', ');
+      toast({
+        title: t`Recipients added from document placeholders`,
+        description: t`${names}. Review their names, email addresses, and roles before sending.`,
+        duration: 10000,
+      });
+    }
+    await syncEnvelope();
   };
 
   const onReplacePdf = async (envelopeItemId: string, file: File) => {

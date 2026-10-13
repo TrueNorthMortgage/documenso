@@ -27,6 +27,7 @@ export const ZCreateEnvelopeItemsRequestSchema = zodFormData({
 });
 
 export const ZCreateEnvelopeItemsResponseSchema = z.object({
+  addedRecipients: z.array(z.object({ id: z.number(), name: z.string() })).optional(),
   data: EnvelopeItemSchema.pick({
     id: true,
     title: true,
