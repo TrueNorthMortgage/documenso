@@ -10,6 +10,8 @@ const MAX_HYDRATION_ERROR_SIGNATURES = 100;
 const HYDRATION_ERROR_STORAGE_KEY = 'documenso:reported-hydration-errors';
 let hasLoadedHydrationErrors = false;
 let hydrationReleaseKey = '';
+// Match the React code independently of the decoder URL, wording, and prefixes.
+const IGNORED_REACT_HYDRATION_ERROR = /\b(?:Minified\s+)?React\s+error\s*#\s*(418|423|425)\b/i;
 
 export const initializeBrowserRollbar = () => {
   const accessToken = env('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN');
@@ -20,11 +22,16 @@ export const initializeBrowserRollbar = () => {
 
   const configuration = getRollbarConfiguration();
   hydrationReleaseKey = JSON.stringify([configuration.environment, configuration.codeVersion]);
-  browserRollbar = new Rollbar({ ...configuration, accessToken });
+  browserRollbar = new Rollbar({
+    ...configuration,
+    accessToken,
+    // Include automatic uncaught/rejection capture as well as explicit reporting.
+    ignoredMessages: [IGNORED_REACT_HYDRATION_ERROR.source],
+  });
 };
 
 export const reportBrowserError = (error: unknown) => {
-  if (error instanceof Error) {
+  if (error instanceof Error && !IGNORED_REACT_HYDRATION_ERROR.test(error.message)) {
     browserRollbar?.error(error);
   }
 };
@@ -34,6 +41,11 @@ export const reportBrowserHydrationError = (
   info: { componentStack?: string },
   diagnostics?: unknown,
 ) => {
+  if (error instanceof Error && IGNORED_REACT_HYDRATION_ERROR.test(error.message)) {
+    console.error(error);
+    return;
+  }
+
   if (error instanceof Error && info.componentStack && !error.stack?.endsWith(info.componentStack)) {
     // Component frames identify the failing UI without collecting route URLs or props.
     error.stack = `${error.stack ?? `${error.name}: ${error.message}`}\n${info.componentStack}`;
