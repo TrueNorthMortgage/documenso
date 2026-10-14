@@ -7,6 +7,7 @@ import { findAttachmentsRoute } from './attachment/find-attachments';
 import { updateAttachmentRoute } from './attachment/update-attachment';
 import { bulkDeleteEnvelopesRoute } from './bulk-delete-envelopes';
 import { bulkMoveEnvelopesRoute } from './bulk-move-envelopes';
+import { bulkReassignEnvelopeSenderRoute } from './bulk-reassign-envelope-sender';
 import { cancelScheduledSendRoute } from './cancel-scheduled-send';
 import { createEnvelopeRoute } from './create-envelope';
 import { createEnvelopeCorrectionRoute } from './create-envelope-correction';
@@ -28,12 +29,14 @@ import { getEnvelopeRecipientRoute } from './envelope-recipients/get-envelope-re
 import { updateEnvelopeRecipientsRoute } from './envelope-recipients/update-envelope-recipients';
 import { findEnvelopeAuditLogsRoute } from './find-envelope-audit-logs';
 import { findEnvelopesRoute } from './find-envelopes';
+import { findReassignmentCandidatesRoute } from './find-reassignment-candidates';
 import { getEditorEnvelopeRoute } from './get-editor-envelope';
 import { getEnvelopeRoute } from './get-envelope';
 import { getEnvelopeItemsRoute } from './get-envelope-items';
 import { getEnvelopeItemsByTokenRoute } from './get-envelope-items-by-token';
 import { getEnvelopesByIdsRoute } from './get-envelopes-by-ids';
 import { pendingPreparationRoute } from './pending-preparation';
+import { reassignEnvelopeSenderRoute } from './reassign-envelope-sender';
 import { redistributeEnvelopeRoute } from './redistribute-envelope';
 import { removeTemplateFromEnvelopeItemRoute } from './remove-template-from-envelope-item';
 import { replaceEnvelopeItemPdfRoute } from './replace-envelope-item-pdf';
@@ -53,6 +56,9 @@ import { useEnvelopeRoute } from './use-envelope';
  * Example: GET /envelope/attachment must appear before GET /envelope/:id
  */
 export const envelopeRouter = router({
+  reassignSender: reassignEnvelopeSenderRoute,
+  bulkReassignSender: bulkReassignEnvelopeSenderRoute,
+  reassignmentCandidates: findReassignmentCandidatesRoute,
   attachment: {
     find: findAttachmentsRoute,
     create: createAttachmentRoute,
