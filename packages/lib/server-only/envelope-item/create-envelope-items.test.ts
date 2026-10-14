@@ -50,7 +50,7 @@ const envelope = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.lock.mockResolvedValue([]);
+  mocks.lock.mockResolvedValue([{ type: 'DOCUMENT', correctionStartedAt: null }]);
   mocks.findRecipients.mockResolvedValue([recipient]);
   mocks.createRecipients.mockImplementation(async ({ data }) =>
     data.map((value: Prisma.RecipientCreateManyInput) => ({ ...value, id: 42 })),
@@ -81,6 +81,31 @@ const upload = (options: { createMissingRecipients?: boolean; recipients?: Recip
   });
 
 describe('uploading PDF placeholder fields', () => {
+  it('rejects a new placeholder recipient in correction before persisting items or fields', async () => {
+    mocks.lock.mockResolvedValue([{ type: 'DOCUMENT', correctionStartedAt: new Date() }]);
+    await expect(upload({ createMissingRecipients: true })).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+    });
+    expect(mocks.createRecipients).not.toHaveBeenCalled();
+    expect(mocks.createItems).not.toHaveBeenCalled();
+    expect(mocks.createFields).not.toHaveBeenCalled();
+  });
+
+  it('imports fields for an existing recipient while correcting', async () => {
+    mocks.lock.mockResolvedValue([{ type: 'DOCUMENT', correctionStartedAt: new Date() }]);
+    mocks.extractPlaceholders.mockResolvedValue({
+      cleanedPdf: Buffer.from('PDF'),
+      placeholders: [{ recipient: 'r1', placeholder: '{{r1;signature}}', fieldAndMeta: { type: FieldType.SIGNATURE } }],
+    });
+    const result = await upload({ createMissingRecipients: true });
+    expect(result.items).toHaveLength(1);
+    expect(result.addedRecipients).toEqual([]);
+    expect(mocks.createRecipients).not.toHaveBeenCalled();
+    expect(mocks.createFields).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ recipientId: 41 })],
+    });
+  });
+
   it('imports r2 with one existing recipient and assigns the field to the newly created recipient', async () => {
     const result = await upload({ createMissingRecipients: true });
     expect(result.items).toHaveLength(1);

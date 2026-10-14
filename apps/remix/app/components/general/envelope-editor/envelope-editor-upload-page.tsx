@@ -282,6 +282,13 @@ export const EnvelopeEditorUploadPage = () => {
             t`This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.`,
           variant: 'destructive',
         });
+      } else if (appError.userMessage) {
+        toast({
+          title: t`Upload failed`,
+          description: appError.userMessage,
+          variant: 'destructive',
+          duration: 15000,
+        });
       }
 
       throw error;

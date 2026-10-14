@@ -1,5 +1,5 @@
-import type { Prisma } from '@prisma/client';
-import { RecipientRole, SendStatus, SigningStatus } from '@prisma/client';
+import type { Envelope, Prisma } from '@prisma/client';
+import { EnvelopeType, RecipientRole, SendStatus, SigningStatus } from '@prisma/client';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import { nanoid } from '../../universal/id';
@@ -29,7 +29,13 @@ export const createMissingPlaceholderRecipients = async ({
   }
 
   // Serialize placeholder imports for the same envelope to avoid duplicate slots.
-  await tx.$queryRaw`SELECT id FROM "Envelope" WHERE id = ${envelopeId} FOR UPDATE`;
+  const [envelope] = await tx.$queryRaw<Pick<Envelope, 'type' | 'correctionStartedAt'>[]>`
+    SELECT "type", "correctionStartedAt" FROM "Envelope" WHERE id = ${envelopeId} FOR UPDATE
+  `;
+
+  if (!envelope) {
+    throw new AppError(AppErrorCode.NOT_FOUND, { message: 'Envelope not found' });
+  }
   const recipients = await tx.recipient.findMany({
     where: { envelopeId },
     orderBy: [{ signingOrder: 'asc' }, { id: 'asc' }],
@@ -37,6 +43,15 @@ export const createMissingPlaceholderRecipients = async ({
 
   if (highestRecipientIndex <= recipients.length) {
     return { recipients, addedRecipients: [] };
+  }
+
+  if (envelope.type === EnvelopeType.DOCUMENT && envelope.correctionStartedAt) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'Placeholder recipients cannot be created while correcting a document',
+      userMessage:
+        'This PDF contains placeholders for new recipients. Recipients cannot be added in Correct mode. Update the placeholders to use existing recipients, then upload the PDF again.',
+      statusCode: 400,
+    });
   }
 
   const addedRecipients = await tx.recipient.createManyAndReturn({
