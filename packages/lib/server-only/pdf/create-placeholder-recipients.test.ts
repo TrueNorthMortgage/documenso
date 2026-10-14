@@ -20,7 +20,7 @@ const importPlaceholders = (refs: string[]) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  lock.mockResolvedValue([]);
+  lock.mockResolvedValue([{ type: 'DOCUMENT', correctionStartedAt: null }]);
   findMany.mockResolvedValue([existingRecipient]);
   createManyAndReturn.mockImplementation(async ({ data }) =>
     data.map((recipient: Prisma.RecipientCreateManyInput, index: number) => ({ ...recipient, id: 20 + index })),
@@ -28,6 +28,30 @@ beforeEach(() => {
 });
 
 describe('placeholder recipient creation', () => {
+  it('rejects missing recipient slots during correction without creating recipients', async () => {
+    lock.mockResolvedValue([{ type: 'DOCUMENT', correctionStartedAt: new Date() }]);
+    await expect(importPlaceholders(['r2'])).rejects.toMatchObject({
+      code: 'INVALID_REQUEST',
+      statusCode: 400,
+      userMessage: expect.stringContaining('Recipients cannot be added in Correct mode.'),
+    });
+    expect(createManyAndReturn).not.toHaveBeenCalled();
+  });
+
+  it('allows placeholders for existing recipients during correction', async () => {
+    lock.mockResolvedValue([{ type: 'DOCUMENT', correctionStartedAt: new Date() }]);
+    const result = await importPlaceholders(['r1']);
+    expect(result.recipients).toEqual([existingRecipient]);
+    expect(result.addedRecipients).toEqual([]);
+    expect(createManyAndReturn).not.toHaveBeenCalled();
+  });
+
+  it('rejects a missing envelope without creating recipients', async () => {
+    lock.mockResolvedValue([]);
+    await expect(importPlaceholders(['r2'])).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(createManyAndReturn).not.toHaveBeenCalled();
+  });
+
   it('preserves r1 and adds a draft r2 with an email that must be filled before sending', async () => {
     const result = await importPlaceholders(['r1', 'r2']);
     expect(result.recipients[0]).toEqual(existingRecipient);

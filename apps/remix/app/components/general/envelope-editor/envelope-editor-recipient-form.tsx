@@ -45,6 +45,8 @@ export const EnvelopeEditorRecipientForm = () => {
   const { envelope, setRecipientsDebounced, updateEnvelope, editorRecipients, isEmbedded, editorConfig } =
     useCurrentEnvelopeEditor();
 
+  const isCorrectingDocument = envelope.type === EnvelopeType.DOCUMENT && Boolean(envelope.correctionStartedAt);
+
   const organisation = useCurrentOrganisation();
   const team = useCurrentTeam();
 
@@ -64,6 +66,10 @@ export const EnvelopeEditorRecipientForm = () => {
   const { revalidate } = useRevalidator();
 
   const onAiDialogOpenChange = (open: boolean) => {
+    if (open && isCorrectingDocument) {
+      return;
+    }
+
     if (open && !team.preferences.aiFeaturesEnabled) {
       setIsAiEnableDialogOpen(true);
       setIsAiDialogOpen(false);
@@ -87,6 +93,10 @@ export const EnvelopeEditorRecipientForm = () => {
   };
 
   const onDetectRecipientsClick = () => {
+    if (isCorrectingDocument) {
+      return;
+    }
+
     if (!team.preferences.aiFeaturesEnabled) {
       setIsAiEnableDialogOpen(true);
       return;
@@ -209,6 +219,10 @@ export const EnvelopeEditorRecipientForm = () => {
   };
 
   const onAddSigner = () => {
+    if (isCorrectingDocument) {
+      return;
+    }
+
     appendSigner({
       formId: nanoid(12),
       name: '',
@@ -220,6 +234,10 @@ export const EnvelopeEditorRecipientForm = () => {
   };
 
   const onAiDetectionComplete = (detectedRecipients: TDetectedRecipientSchema[]) => {
+    if (isCorrectingDocument) {
+      return;
+    }
+
     const currentSigners = form.getValues('signers');
 
     let nextSigningOrder =
@@ -311,6 +329,10 @@ export const EnvelopeEditorRecipientForm = () => {
   };
 
   const onAddSelfSigner = () => {
+    if (isCorrectingDocument) {
+      return;
+    }
+
     if (emptySignerIndex !== -1) {
       setValue(`signers.${emptySignerIndex}.name`, currentEditorName ?? '', {
         shouldValidate: true,
@@ -572,7 +594,11 @@ export const EnvelopeEditorRecipientForm = () => {
             <Trans>Recipients</Trans>
           </CardTitle>
           <CardDescription className="mt-1.5">
-            <Trans>Add recipients to your document</Trans>
+            {isCorrectingDocument ? (
+              <Trans>You cannot add recipients while correcting this document.</Trans>
+            ) : (
+              <Trans>Add recipients to your document</Trans>
+            )}
           </CardDescription>
         </div>
 
@@ -584,7 +610,7 @@ export const EnvelopeEditorRecipientForm = () => {
                   variant="outline"
                   type="button"
                   size="sm"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isCorrectingDocument}
                   onClick={onDetectRecipientsClick}
                 >
                   <SparklesIcon className="h-4 w-4" />
@@ -606,7 +632,7 @@ export const EnvelopeEditorRecipientForm = () => {
               variant="outline"
               className="flex flex-row items-center"
               size="sm"
-              disabled={isSubmitting || isUserAlreadyARecipient}
+              disabled={isSubmitting || isCorrectingDocument || isUserAlreadyARecipient}
               onClick={() => onAddSelfSigner()}
             >
               <Trans>Add Myself</Trans>
@@ -618,7 +644,7 @@ export const EnvelopeEditorRecipientForm = () => {
             type="button"
             className="flex-1"
             size="sm"
-            disabled={isSubmitting || signers.length >= remaining.recipients}
+            disabled={isSubmitting || isCorrectingDocument || signers.length >= remaining.recipients}
             onClick={() => onAddSigner()}
           >
             <PlusIcon className="mr-1 -ml-1 h-5 w-5" />
@@ -1050,7 +1076,7 @@ export const EnvelopeEditorRecipientForm = () => {
 
         {editorConfig.recipients?.allowAIDetection && IS_AI_FEATURES_CONFIGURED() && (
           <AiRecipientDetectionDialog
-            open={isAiDialogOpen}
+            open={isAiDialogOpen && !isCorrectingDocument}
             onOpenChange={onAiDialogOpenChange}
             onComplete={onAiDetectionComplete}
             envelopeId={envelope.id}
@@ -1059,7 +1085,7 @@ export const EnvelopeEditorRecipientForm = () => {
         )}
 
         <AiFeaturesEnableDialog
-          open={isAiEnableDialogOpen}
+          open={isAiEnableDialogOpen && !isCorrectingDocument}
           onOpenChange={setIsAiEnableDialogOpen}
           onEnabled={onAiFeaturesEnabled}
         />
