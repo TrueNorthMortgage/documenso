@@ -152,6 +152,18 @@ describe('reassignEnvelopeSender', () => {
     });
   });
 
+  it('pins the update to the envelope read even if the shared predicate is broadened', async () => {
+    mocks.getWhere.mockResolvedValue({
+      envelopeWhereInput: { OR: [{ userId: 1 }, { visibility: 'EVERYONE', teamId: 1 }] },
+      team: {
+        currentTeamRole: TeamMemberRole.MANAGER,
+        derivedSettings: { documentVisibility: DocumentVisibility.MANAGER_AND_ABOVE },
+      },
+    });
+    await reassignEnvelopeSender(options);
+    expect(mocks.tx.envelope.updateMany.mock.calls[0][0].where.id).toBe(envelope.id);
+  });
+
   it('rejects inaccessible envelopes', async () => {
     mocks.tx.envelope.findFirst.mockResolvedValue(null);
     await expect(reassignEnvelopeSender(options)).rejects.toMatchObject({ code: 'NOT_FOUND' });

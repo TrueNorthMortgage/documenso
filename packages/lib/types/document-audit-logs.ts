@@ -761,6 +761,7 @@ export const ZDocumentAuditLogEventSenderReassignedSchema = z.object({
     from: z.object({ id: z.number(), name: z.string().nullable(), email: z.string() }),
     to: z.object({ id: z.number(), name: z.string().nullable(), email: z.string() }),
     previousFolderId: z.string().nullable(),
+    // Earlier reassignment events predate automatic destination-folder creation.
     destinationFolderId: z.string().optional(),
   }),
 });

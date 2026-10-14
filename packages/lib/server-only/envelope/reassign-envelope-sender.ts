@@ -83,6 +83,7 @@ export const reassignEnvelopeSender = async ({
     const updated = await tx.envelope.updateMany({
       where: {
         ...envelopeWhereInput,
+        id: envelope.id,
         teamId,
         type: EnvelopeType.DOCUMENT,
         userId: envelope.userId,
