@@ -2,6 +2,7 @@ import { useSession } from '@documenso/lib/client-only/providers/session';
 import type { TDocumentMany as TDocumentRow } from '@documenso/lib/types/document';
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
+import { isEnvelopeReassignable } from '@documenso/lib/utils/envelope-reassignment';
 import { findRecipientByEmail } from '@documenso/lib/utils/recipients';
 import { canExecuteTeamAction, formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { trpc as trpcReact } from '@documenso/trpc/react';
@@ -28,6 +29,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  UserRoundPenIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -36,6 +38,7 @@ import { DocumentResendDialog } from '~/components/dialogs/document-resend-dialo
 import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dialog';
 import { EnvelopeDeleteDialog } from '~/components/dialogs/envelope-delete-dialog';
 import { EnvelopeDuplicateDialog } from '~/components/dialogs/envelope-duplicate-dialog';
+import { EnvelopeReassignSenderDialog } from '~/components/dialogs/envelope-reassign-sender-dialog';
 import { EnvelopeSaveAsTemplateDialog } from '~/components/dialogs/envelope-save-as-template-dialog';
 import { DocumentRecipientLinkCopyDialog } from '~/components/general/document/document-recipient-link-copy-dialog';
 import { useCurrentTeam } from '~/providers/team';
@@ -196,6 +199,24 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
                   <div>
                     <Pencil className="mr-2 h-4 w-4" />
                     <Trans>Change recipients</Trans>
+                  </div>
+                </DropdownMenuItem>
+              }
+            />
+          )}
+
+        {isEnvelopeReassignable({ ...row, type: EnvelopeType.DOCUMENT }) &&
+          isCurrentTeamDocument &&
+          canManageSigningLinks && (
+            <EnvelopeReassignSenderDialog
+              envelopeId={row.envelopeId}
+              currentOwner={row.user}
+              hasFolder={Boolean(row.folderId)}
+              trigger={
+                <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
+                  <div>
+                    <UserRoundPenIcon className="mr-2 h-4 w-4" />
+                    <Trans>Reassign sender</Trans>
                   </div>
                 </DropdownMenuItem>
               }

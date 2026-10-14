@@ -47,6 +47,7 @@ export const ZDocumentAuditLogTypeSchema = z.enum([
   'DOCUMENT_RECIPIENT_REJECTED', // When a recipient rejects the document.
   'DOCUMENT_RECIPIENT_COMPLETED', // When a recipient completes all their required tasks for the document.
   'DOCUMENT_RECIPIENT_EXPIRED', // When a recipient's signing window expires.
+  'DOCUMENT_SENDER_REASSIGNED',
   'DOCUMENT_SENT', // When the document transitions from DRAFT to PENDING.
   'DOCUMENT_TITLE_UPDATED', // When the document title is updated.
   'DOCUMENT_EXTERNAL_ID_UPDATED', // When the document external ID is updated.
@@ -754,6 +755,16 @@ export const ZDocumentAuditLogEventRecipientExpiredSchema = z.object({
   }),
 });
 
+export const ZDocumentAuditLogEventSenderReassignedSchema = z.object({
+  type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_SENDER_REASSIGNED),
+  data: z.object({
+    from: z.object({ id: z.number(), name: z.string().nullable(), email: z.string() }),
+    to: z.object({ id: z.number(), name: z.string().nullable(), email: z.string() }),
+    previousFolderId: z.string().nullable(),
+    destinationFolderId: z.string().optional(),
+  }),
+});
+
 export const ZDocumentAuditLogBaseSchema = z.object({
   id: z.string(),
   createdAt: z.date(),
@@ -796,6 +807,7 @@ export const ZDocumentAuditLogSchema = ZDocumentAuditLogBaseSchema.and(
     ZDocumentAuditLogEventDocumentRecipientValidated2FAEmailSchema,
     ZDocumentAuditLogEventDocumentRecipientFailed2FAEmailSchema,
     ZDocumentAuditLogEventDocumentSentSchema,
+    ZDocumentAuditLogEventSenderReassignedSchema,
     ZDocumentAuditLogEventDocumentTitleUpdatedSchema,
     ZDocumentAuditLogEventDocumentExternalIdUpdatedSchema,
     ZDocumentAuditLogEventFieldCreatedSchema,

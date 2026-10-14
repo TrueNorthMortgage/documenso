@@ -457,6 +457,16 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
       you: msg`You updated the document external ID`,
       user: msg`${user} updated the document external ID`,
     }))
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_SENDER_REASSIGNED }, ({ data }) => {
+      const from = data.from.name?.trim() ? `${data.from.name} (${data.from.email})` : data.from.email;
+      const to = data.to.name?.trim() ? `${data.to.name} (${data.to.email})` : data.to.email;
+
+      return {
+        anonymous: msg`Sender reassigned from ${from} to ${to}`,
+        you: msg`You reassigned the sender from ${from} to ${to}`,
+        user: msg`${user} reassigned the sender from ${from} to ${to}`,
+      };
+    })
     .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_SENT }, () => ({
       anonymous: msg({
         message: `Document sent`,
