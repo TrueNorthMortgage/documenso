@@ -528,7 +528,7 @@ export const EnvelopeDistributeDialog = ({
 
                 {!isSyncing && <DocumentNoFieldsWarning documents={documentsWithoutFields} />}
 
-                <DialogFooter>
+                <DialogFooter className="mt-4">
                   <DialogClose asChild>
                     <Button type="button" variant="secondary" disabled={isSubmitting}>
                       <Trans>Cancel</Trans>
