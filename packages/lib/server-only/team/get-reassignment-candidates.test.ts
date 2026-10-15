@@ -24,6 +24,7 @@ it('only queries enabled members of the selected team for managers', async () =>
         },
       },
       select: { id: true, name: true, email: true },
+      take: 15,
     }),
   );
 });
@@ -32,4 +33,24 @@ it('does not expose reassignment candidates to ordinary members', async () => {
   mocks.getTeam.mockResolvedValue({ currentTeamRole: TeamMemberRole.MEMBER });
   await expect(getReassignmentCandidates({ userId: 1, teamId: 2 })).rejects.toMatchObject({ code: 'FORBIDDEN' });
   expect(mocks.findMany).not.toHaveBeenCalled();
+});
+
+it('searches all enabled team members by name or email before limiting results', async () => {
+  mocks.getTeam.mockResolvedValue({ currentTeamRole: TeamMemberRole.ADMIN });
+  mocks.findMany.mockResolvedValue([]);
+  await getReassignmentCandidates({ userId: 1, teamId: 2, search: '  member@example.com  ', excludeUserId: 1 });
+  expect(mocks.findMany).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: expect.objectContaining({
+        disabled: false,
+        id: { not: 1 },
+        OR: [
+          { name: { contains: 'member@example.com', mode: 'insensitive' } },
+          { email: { contains: 'member@example.com', mode: 'insensitive' } },
+        ],
+      }),
+      take: 15,
+      orderBy: [{ name: 'asc' }, { email: 'asc' }, { id: 'asc' }],
+    }),
+  );
 });

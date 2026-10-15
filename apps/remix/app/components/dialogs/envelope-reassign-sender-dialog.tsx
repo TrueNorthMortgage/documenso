@@ -13,8 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@documenso/ui/primitives/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
+import { Form, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Trans, useLingui } from '@lingui/react/macro';
@@ -24,6 +23,8 @@ import { useNavigate } from 'react-router';
 import type { z } from 'zod';
 
 import { useCurrentTeam } from '~/providers/team';
+
+import { ReassignmentMemberCombobox } from '../general/reassignment-member-combobox';
 
 type EnvelopeReassignSenderDialogProps = {
   envelopeId: string;
@@ -50,12 +51,6 @@ export const EnvelopeReassignSenderDialog = ({
     resolver: zodResolver(ZReassignEnvelopeSenderRequestSchema),
     defaultValues: { envelopeId, expectedOwnerId: currentOwner.id, newOwnerId: 0 },
   });
-  const {
-    data: members,
-    isLoading,
-    isError,
-  } = trpc.envelope.reassignmentCandidates.useQuery({ teamId: team.id }, { enabled: open });
-  const candidates = members?.filter((member) => member.id !== currentOwner.id) ?? [];
   const { mutateAsync, isPending } = trpc.envelope.reassignSender.useMutation();
   const isBusy = isPending || form.formState.isSubmitting;
 
@@ -115,38 +110,17 @@ export const EnvelopeReassignSenderDialog = ({
                     <FormLabel>
                       <Trans>New sender</Trans>
                     </FormLabel>
-                    <Select
-                      value={field.value ? String(field.value) : undefined}
-                      onValueChange={(value) => field.onChange(Number(value))}
-                      disabled={isLoading || isError || isBusy}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t`Select a team member`} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {candidates.map((member) => (
-                          <SelectItem key={member.id} value={String(member.id)}>
-                            {member.name ? `${member.name} (${member.email})` : member.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ReassignmentMemberCombobox
+                      teamId={team.id}
+                      excludeUserId={currentOwner.id}
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isBusy}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              {isError && (
-                <p role="alert" className="text-destructive text-sm">
-                  <Trans>Unable to load team members. Close this dialog and try again.</Trans>
-                </p>
-              )}
-              {!isLoading && !isError && candidates.length === 0 && (
-                <p className="text-sm">
-                  <Trans>No other active team members are available.</Trans>
-                </p>
-              )}
               <p className="text-sm">
                 <Trans>
                   This envelope will move to the new sender's Home / Assigned to you folder. The folder will be created
@@ -167,7 +141,7 @@ export const EnvelopeReassignSenderDialog = ({
                     <Trans>Cancel</Trans>
                   </Button>
                 </DialogClose>
-                <Button type="submit" loading={isBusy} disabled={isLoading || isError || !form.watch('newOwnerId')}>
+                <Button type="submit" loading={isBusy} disabled={!form.watch('newOwnerId')}>
                   <Trans>Reassign sender</Trans>
                 </Button>
               </DialogFooter>

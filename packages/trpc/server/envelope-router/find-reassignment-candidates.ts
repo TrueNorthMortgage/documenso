@@ -10,6 +10,6 @@ export const findReassignmentCandidatesRoute = authenticatedProcedure
   .input(ZFindReassignmentCandidatesRequestSchema)
   .output(ZFindReassignmentCandidatesResponseSchema)
   .query(async ({ input, ctx }) => {
-    const { teamId } = input;
-    return await getReassignmentCandidates({ userId: ctx.user.id, teamId });
+    const { teamId, search, excludeUserId } = input;
+    return await getReassignmentCandidates({ userId: ctx.user.id, teamId, search, excludeUserId });
   });
