@@ -362,7 +362,7 @@ export const FolderManagementTable = ({
                 </Button>
               )}
             </div>
-            {toolbarActions}
+            <div className="ml-auto">{toolbarActions}</div>
           </div>
         }
         data={rows}
