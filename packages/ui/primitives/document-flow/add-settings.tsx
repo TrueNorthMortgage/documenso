@@ -7,7 +7,7 @@ import { DEFAULT_DOCUMENT_TIME_ZONE, TIME_ZONES } from '@documenso/lib/constants
 import type { TDocument } from '@documenso/lib/types/document';
 import type { TRecipientLite } from '@documenso/lib/types/recipient';
 import { extractDocumentAuthMethods } from '@documenso/lib/utils/document-auth';
-import { canUpdateTeamDocumentVisibility, extractTeamSignatureSettings } from '@documenso/lib/utils/teams';
+import { canUpdateDocumentVisibility, extractTeamSignatureSettings } from '@documenso/lib/utils/teams';
 import {
   DocumentGlobalAuthAccessSelect,
   DocumentGlobalAuthAccessTooltip,
@@ -110,7 +110,7 @@ export const AddSettingsFormPartial = ({
 
   const canUpdateVisibility =
     currentTeamMemberRole !== undefined &&
-    canUpdateTeamDocumentVisibility(currentTeamMemberRole, document.visibility, isOwner);
+    canUpdateDocumentVisibility(currentTeamMemberRole, document.visibility, isOwner);
 
   const onFormSubmit = form.handleSubmit(onSubmit);
 
@@ -266,7 +266,7 @@ export const AddSettingsFormPartial = ({
               )}
             />
 
-            {currentTeamMemberRole && (
+            {canUpdateVisibility && (
               <FormField
                 control={form.control}
                 name="visibility"

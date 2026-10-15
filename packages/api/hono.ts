@@ -2,6 +2,7 @@ import { ApiContractV1 } from '@documenso/api/v1/contract';
 import { ApiContractV1Implementation } from '@documenso/api/v1/implementation';
 import { OpenAPIV1 } from '@documenso/api/v1/openapi';
 import { testCredentialsHandler } from '@documenso/lib/server-only/public-api/test-credentials';
+import { reportServerError } from '@documenso/lib/server-only/rollbar';
 import { listDocumentsHandler } from '@documenso/lib/server-only/webhooks/zapier/list-documents';
 import { subscribeHandler } from '@documenso/lib/server-only/webhooks/zapier/subscribe';
 import { unsubscribeHandler } from '@documenso/lib/server-only/webhooks/zapier/unsubscribe';
@@ -32,6 +33,10 @@ tsRestHonoApp.mount('/', async (request) => {
     router: ApiContractV1Implementation,
     options: {
       errorHandler: (err) => {
+        if (!(err instanceof TsRestHttpError) || err.statusCode >= 500) {
+          reportServerError(err);
+        }
+
         if (err instanceof TsRestHttpError && err.statusCode === 500) {
           console.error(err);
         }

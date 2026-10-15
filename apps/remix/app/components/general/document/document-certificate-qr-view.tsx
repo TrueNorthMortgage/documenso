@@ -2,6 +2,7 @@ import {
   EnvelopeRenderProvider,
   useCurrentEnvelopeRender,
 } from '@documenso/lib/client-only/providers/envelope-render-provider';
+import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
 import { PDF_VIEWER_ERROR_MESSAGES } from '@documenso/lib/constants/pdf-viewer-i18n';
 import { getDocumentDataUrlForPdfViewer } from '@documenso/lib/utils/envelope-download';
 import { formatDocumentsPath } from '@documenso/lib/utils/teams';
@@ -49,9 +50,11 @@ export const DocumentCertificateQRView = ({
   completedDate,
   token,
 }: DocumentCertificateQRViewProps) => {
-  const { data: documentViaUser } = trpc.document.get.useQuery({
-    documentId,
-  });
+  const { sessionData } = useOptionalSession();
+  const { data: documentViaUser } = trpc.document.get.useQuery(
+    { documentId },
+    { enabled: !!sessionData, retry: false },
+  );
 
   const [isDialogOpen, setIsDialogOpen] = useState(() => !!documentViaUser);
 
@@ -66,7 +69,7 @@ export const DocumentCertificateQRView = ({
   return (
     <div className="mx-auto w-full max-w-screen-md">
       {/* Dialog for internal document link */}
-      {documentViaUser && (
+      {sessionData && documentViaUser && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent>
             <DialogHeader>

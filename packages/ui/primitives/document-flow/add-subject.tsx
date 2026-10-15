@@ -4,6 +4,7 @@ import type { TDocument } from '@documenso/lib/types/document';
 import { ZDocumentEmailSettingsSchema } from '@documenso/lib/types/document-email';
 import type { TRecipientLite } from '@documenso/lib/types/recipient';
 import { trpc } from '@documenso/trpc/react';
+import { DocumentNoFieldsWarning } from '@documenso/ui/components/document/document-no-fields-warning';
 import { DocumentSendEmailMessageHelper } from '@documenso/ui/components/document/document-send-email-message-helper';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
@@ -309,6 +310,11 @@ export const AddSubjectFormPartial = ({
             )}
           </AnimatePresence>
         </div>
+        {fields.length === 0 &&
+          document.status !== DocumentStatus.COMPLETED &&
+          document.status !== DocumentStatus.REJECTED && (
+            <DocumentNoFieldsWarning documents={[{ id: String(document.id), title: document.title }]} />
+          )}
       </DocumentFlowFormContainerContent>
 
       <DocumentFlowFormContainerFooter>

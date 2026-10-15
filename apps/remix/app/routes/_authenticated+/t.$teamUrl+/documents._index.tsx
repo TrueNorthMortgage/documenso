@@ -4,7 +4,7 @@ import { STATS_COUNT_CAP } from '@documenso/lib/constants/document';
 import { SKIP_QUERY_BATCH_META } from '@documenso/lib/constants/trpc';
 import { formatAvatarUrl } from '@documenso/lib/utils/avatars';
 import { parseToIntegerArray } from '@documenso/lib/utils/params';
-import { formatDocumentsPath } from '@documenso/lib/utils/teams';
+import { canExecuteTeamAction, formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { ExtendedDocumentStatus } from '@documenso/prisma/types/extended-document-status';
 import { trpc } from '@documenso/trpc/react';
 import type { TFindDocumentsInternalResponse } from '@documenso/trpc/server/document-router/find-documents-internal.types';
@@ -18,10 +18,10 @@ import { EnvelopeType, FolderType, OrganisationType } from '@prisma/client';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { z } from 'zod';
-
 import { DocumentMoveToFolderDialog } from '~/components/dialogs/document-move-to-folder-dialog';
 import { EnvelopesBulkDeleteDialog } from '~/components/dialogs/envelopes-bulk-delete-dialog';
 import { EnvelopesBulkMoveDialog } from '~/components/dialogs/envelopes-bulk-move-dialog';
+import { EnvelopesBulkReassignSenderDialog } from '~/components/dialogs/envelopes-bulk-reassign-sender-dialog';
 import { DocumentSearch } from '~/components/general/document/document-search';
 import { DocumentStatus } from '~/components/general/document/document-status';
 import { EnvelopeDropZoneWrapper } from '~/components/general/envelope/envelope-drop-zone-wrapper';
@@ -61,6 +61,7 @@ export default function DocumentsPage() {
   const [rowSelection, setRowSelection] = useSessionStorage<RowSelectionState>('documents-bulk-selection', {});
   const [isBulkMoveDialogOpen, setIsBulkMoveDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [isBulkReassignDialogOpen, setIsBulkReassignDialogOpen] = useState(false);
 
   const selectedEnvelopeIds = useMemo(() => {
     return Object.keys(rowSelection).filter((id) => rowSelection[id]);
@@ -233,7 +234,21 @@ export default function DocumentsPage() {
           onMoveClick={() => setIsBulkMoveDialogOpen(true)}
           onDeleteClick={() => setIsBulkDeleteDialogOpen(true)}
           onClearSelection={() => setRowSelection({})}
+          onReassignClick={
+            canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole)
+              ? () => setIsBulkReassignDialogOpen(true)
+              : undefined
+          }
         />
+
+        {canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole) && (
+          <EnvelopesBulkReassignSenderDialog
+            envelopeIds={selectedEnvelopeIds}
+            open={isBulkReassignDialogOpen}
+            onOpenChange={setIsBulkReassignDialogOpen}
+            onSuccess={() => setRowSelection({})}
+          />
+        )}
 
         <EnvelopesBulkMoveDialog
           envelopeIds={selectedEnvelopeIds}

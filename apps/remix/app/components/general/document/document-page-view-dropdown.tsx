@@ -2,6 +2,7 @@ import { useSession } from '@documenso/lib/client-only/providers/session';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
 import { isSameEmail } from '@documenso/lib/utils/email';
 import { getEnvelopeItemPermissions, mapSecondaryIdToDocumentId } from '@documenso/lib/utils/envelope';
+import { isEnvelopeReassignable } from '@documenso/lib/utils/envelope-reassignment';
 import { canExecuteTeamAction, formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { trpc as trpcReact } from '@documenso/trpc/react';
 import {
@@ -23,6 +24,7 @@ import {
   Pencil,
   ScrollTextIcon,
   Trash2,
+  UserRoundPenIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -32,6 +34,7 @@ import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dia
 import { EnvelopeDeleteDialog } from '~/components/dialogs/envelope-delete-dialog';
 import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-dialog';
 import { EnvelopeDuplicateDialog } from '~/components/dialogs/envelope-duplicate-dialog';
+import { EnvelopeReassignSenderDialog } from '~/components/dialogs/envelope-reassign-sender-dialog';
 import { EnvelopeRenameDialog } from '~/components/dialogs/envelope-rename-dialog';
 import { EnvelopeSaveAsTemplateDialog } from '~/components/dialogs/envelope-save-as-template-dialog';
 import { DocumentRecipientLinkCopyDialog } from '~/components/general/document/document-recipient-link-copy-dialog';
@@ -149,6 +152,22 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
               }
             />
           )}
+
+        {isEnvelopeReassignable(envelope) && isCurrentTeamDocument && canManageSigningLinks && (
+          <EnvelopeReassignSenderDialog
+            envelopeId={envelope.id}
+            currentOwner={envelope.user}
+            hasFolder={Boolean(envelope.folderId)}
+            trigger={
+              <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
+                <div>
+                  <UserRoundPenIcon className="mr-2 h-4 w-4" />
+                  <Trans>Reassign sender</Trans>
+                </div>
+              </DropdownMenuItem>
+            }
+          />
+        )}
 
         {canManageDocument && canTitleBeChanged && (
           <DropdownMenuItem onClick={() => setRenameDialogOpen(true)}>

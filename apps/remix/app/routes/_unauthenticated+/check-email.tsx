@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
         </p>
 
         <Button asChild>
-          <Link to="/signin">
+          <Link to="/login">
             <Trans>Return to sign in</Trans>
           </Link>
         </Button>

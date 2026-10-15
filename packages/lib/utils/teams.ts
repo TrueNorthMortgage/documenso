@@ -81,6 +81,14 @@ export const canUpdateTeamDocumentVisibility = (
   );
 };
 
+/** Document visibility changes require a manager/admin role, including for owners. */
+export const canUpdateDocumentVisibility = (role: TeamMemberRole, visibility: DocumentVisibility, isOwner = false) => {
+  return (
+    (role === TeamMemberRole.ADMIN || role === TeamMemberRole.MANAGER) &&
+    canUpdateTeamDocumentVisibility(role, visibility, isOwner)
+  );
+};
+
 /**
  * Determines whether a team member can modify a template.
  *

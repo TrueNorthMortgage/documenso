@@ -3,6 +3,7 @@ import {
   convertPlaceholdersToFieldInputs,
   extractPdfPlaceholders,
 } from '@documenso/lib/server-only/pdf/auto-place-fields';
+import { createMissingPlaceholderRecipients } from '@documenso/lib/server-only/pdf/create-placeholder-recipients';
 import { findRecipientByPlaceholder } from '@documenso/lib/server-only/pdf/helpers';
 import { insertFormValuesInPdf } from '@documenso/lib/server-only/pdf/insert-form-values-in-pdf';
 import { normalizePdf } from '@documenso/lib/server-only/pdf/normalize-pdf';
@@ -32,6 +33,7 @@ type UnsafeCreateEnvelopeItemsOptions = {
   };
   apiRequestMetadata: ApiRequestMetadata;
   logger?: Logger;
+  createMissingRecipients?: boolean;
 };
 
 /**
@@ -45,6 +47,7 @@ export const UNSAFE_createEnvelopeItems = async ({
   user,
   apiRequestMetadata,
   logger,
+  createMissingRecipients = false,
 }: UnsafeCreateEnvelopeItemsOptions) => {
   const currentHighestOrderValue = envelope.envelopeItems[envelope.envelopeItems.length - 1]?.order ?? 1;
 
@@ -81,6 +84,19 @@ export const UNSAFE_createEnvelopeItems = async ({
   );
 
   return await prisma.$transaction(async (tx) => {
+    let orderedRecipients = [...envelope.recipients].sort((a, b) => {
+      const aOrder = a.signingOrder ?? Number.MAX_SAFE_INTEGER;
+      const bOrder = b.signingOrder ?? Number.MAX_SAFE_INTEGER;
+      return aOrder !== bOrder ? aOrder - bOrder : a.id - b.id;
+    });
+    let addedRecipients: Recipient[] = [];
+    const placeholders = envelopeItemsToCreate.flatMap((item) => item.placeholders ?? []);
+    if (createMissingRecipients && placeholders.length > 0) {
+      const result = await createMissingPlaceholderRecipients({ tx, envelopeId: envelope.id, placeholders });
+      orderedRecipients = result.recipients;
+      addedRecipients = result.addedRecipients;
+    }
+
     const createdItems = await tx.envelopeItem.createManyAndReturn({
       data: envelopeItemsToCreate.map((item) => ({
         id: item.id,
@@ -112,19 +128,7 @@ export const UNSAFE_createEnvelopeItems = async ({
       ),
     });
 
-    // Create fields from placeholders if the envelope already has recipients.
-    if (envelope.recipients.length > 0) {
-      const orderedRecipients = [...envelope.recipients].sort((a, b) => {
-        const aOrder = a.signingOrder ?? Number.MAX_SAFE_INTEGER;
-        const bOrder = b.signingOrder ?? Number.MAX_SAFE_INTEGER;
-
-        if (aOrder !== bOrder) {
-          return aOrder - bOrder;
-        }
-
-        return a.id - b.id;
-      });
-
+    if (orderedRecipients.length > 0) {
       for (const uploadedItem of envelopeItemsToCreate) {
         if (!uploadedItem.placeholders || uploadedItem.placeholders.length === 0) {
           continue;
@@ -164,7 +168,7 @@ export const UNSAFE_createEnvelopeItems = async ({
       }
     }
 
-    return createdItems.map((item) => {
+    const items = createdItems.map((item) => {
       const clientId = envelopeItemsToCreate.find((file) => file.id === item.id)?.clientId;
 
       return {
@@ -172,5 +176,6 @@ export const UNSAFE_createEnvelopeItems = async ({
         clientId,
       };
     });
+    return { items, addedRecipients };
   });
 };

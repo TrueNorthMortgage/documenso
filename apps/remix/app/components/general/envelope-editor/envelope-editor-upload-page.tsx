@@ -253,7 +253,7 @@ export const EnvelopeEditorUploadPage = () => {
 
     registerPendingMutation(createPromise);
 
-    const { data } = await createPromise.catch((error) => {
+    const { data, addedRecipients } = await createPromise.catch((error) => {
       console.error(error);
 
       // Set error state on files in batch upload.
@@ -267,13 +267,27 @@ export const EnvelopeEditorUploadPage = () => {
 
       const appError = AppError.parseError(error);
 
-      if (appError.code === AppErrorCode.UNSUPPORTED_XFA_PDF) {
+      if (appError.code === AppErrorCode.ENCRYPTED_PDF) {
+        toast({
+          title: t`Protected PDF`,
+          description: t`This PDF is protected and cannot be uploaded. If printing is allowed, print it to a new PDF and upload that copy. Otherwise, request an unprotected copy. Printing may remove interactive form fields.`,
+          variant: 'destructive',
+          duration: 15000,
+        });
+      } else if (appError.code === AppErrorCode.UNSUPPORTED_XFA_PDF) {
         toast({
           title: t`Upload failed`,
           description:
             appError.userMessage ||
             t`This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy.`,
           variant: 'destructive',
+        });
+      } else if (appError.userMessage) {
+        toast({
+          title: t`Upload failed`,
+          description: appError.userMessage,
+          variant: 'destructive',
+          duration: 15000,
         });
       }
 
@@ -296,6 +310,16 @@ export const EnvelopeEditorUploadPage = () => {
         })),
       );
     });
+
+    if (addedRecipients && addedRecipients.length > 0) {
+      const names = addedRecipients.map((recipient) => recipient.name).join(', ');
+      toast({
+        title: t`Recipients added from document placeholders`,
+        description: t`${names}. Review their names, email addresses, and roles before sending.`,
+        duration: 10000,
+      });
+    }
+    await syncEnvelope();
   };
 
   const onReplacePdf = async (envelopeItemId: string, file: File) => {

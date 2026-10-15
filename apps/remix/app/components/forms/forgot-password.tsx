@@ -1,6 +1,8 @@
 import { authClient } from '@documenso/auth/client';
+import { AppError } from '@documenso/lib/errors/app-error';
 import { zEmail } from '@documenso/lib/utils/zod';
 import { cn } from '@documenso/ui/lib/utils';
+import { Alert, AlertDescription } from '@documenso/ui/primitives/alert';
 import { Button } from '@documenso/ui/primitives/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
 import { Input } from '@documenso/ui/primitives/input';
@@ -9,8 +11,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { z } from 'zod';
 
 export const ZForgotPasswordFormSchema = z.object({
@@ -28,6 +31,7 @@ export const ForgotPasswordForm = ({ className }: ForgotPasswordFormProps) => {
   const { toast } = useToast();
 
   const navigate = useNavigate();
+  const [hasSsoGuidance, setHasSsoGuidance] = useState(false);
 
   const form = useForm<TForgotPasswordFormSchema>({
     values: {
@@ -39,7 +43,28 @@ export const ForgotPasswordForm = ({ className }: ForgotPasswordFormProps) => {
   const isSubmitting = form.formState.isSubmitting;
 
   const onFormSubmit = async ({ email }: TForgotPasswordFormSchema) => {
-    await authClient.emailPassword.forgotPassword({ email }).catch(() => null);
+    setHasSsoGuidance(false);
+
+    try {
+      const result = await authClient.emailPassword.forgotPassword({ email });
+
+      if (result.usesSso) {
+        setHasSsoGuidance(true);
+        return;
+      }
+    } catch (err) {
+      const error = AppError.parseError(err);
+
+      toast({
+        title: _(msg`Unable to reset password`),
+        description:
+          error.code === 'TOO_MANY_REQUESTS'
+            ? _(msg`Too many requests. Please try again later.`)
+            : _(msg`An error occurred. Please try again later.`),
+        variant: 'destructive',
+      });
+      return;
+    }
 
     await navigate('/check-email');
 
@@ -75,8 +100,19 @@ export const ForgotPasswordForm = ({ className }: ForgotPasswordFormProps) => {
           />
         </fieldset>
 
+        {hasSsoGuidance && (
+          <Alert>
+            <AlertDescription>
+              <Trans>Your email domain uses Microsoft SSO. Please use the Login button on the main sign-in page.</Trans>{' '}
+              <Link to="/signin" className="underline">
+                <Trans>Go to sign-in</Trans>
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Button size="lg" loading={isSubmitting}>
-          {isSubmitting ? <Trans>Sending Reset Email...</Trans> : <Trans>Reset Password</Trans>}
+          {isSubmitting ? <Trans>Checking...</Trans> : <Trans>Reset Password</Trans>}
         </Button>
       </form>
     </Form>

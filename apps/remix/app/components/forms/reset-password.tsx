@@ -55,7 +55,7 @@ export const ResetPasswordForm = ({ className, token }: ResetPasswordFormProps) 
         token,
       });
 
-      await navigate('/signin');
+      await navigate('/login');
 
       form.reset();
 

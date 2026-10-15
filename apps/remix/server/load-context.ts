@@ -16,6 +16,7 @@ declare module 'react-router' {
      * data, which then feeds `<Scripts>`, `<Links>`, etc.
      */
     nonce: string;
+    requestId: string;
   }
 }
 
@@ -29,5 +30,5 @@ declare module 'react-router' {
 export const getLoadContext = (): AppLoadContext => {
   const nonce = getContext<HonoEnv>().var[CSP_NONCE_KEY] ?? '';
 
-  return { nonce };
+  return { nonce, requestId: getContext<HonoEnv>().var.requestId };
 };

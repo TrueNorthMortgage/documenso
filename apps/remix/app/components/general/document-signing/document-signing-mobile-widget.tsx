@@ -35,8 +35,8 @@ export const DocumentSigningMobileWidget = () => {
       <div className="pointer-events-auto w-full max-w-[760px]">
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
           {/* Main Header Bar */}
-          <div className="flex items-center justify-between gap-4 p-4">
-            <div className="flex-1">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-3">
                 {recipient.role !== RecipientRole.VIEWER && (
                   <Button
@@ -83,7 +83,7 @@ export const DocumentSigningMobileWidget = () => {
               </div>
             </div>
 
-            <div>
+            <div className="shrink-0">
               <EnvelopeSignerCompleteDialog />
             </div>
           </div>

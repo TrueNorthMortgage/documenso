@@ -33,6 +33,8 @@ import { ChangeEnvelopeRecipientEmailDialog } from '~/components/dialogs/change-
 import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dialog';
 import { useCurrentTeam } from '~/providers/team';
 
+import { RecipientEmailDeliveryStatus } from './recipient-email-delivery-status';
+
 export type DocumentPageViewRecipientsProps = {
   envelope: TEnvelope;
   documentRootPath: string;
@@ -130,9 +132,10 @@ export const DocumentPageViewRecipients = ({ envelope, documentRootPath }: Docum
               avatarFallback={recipient.email.slice(0, 1).toUpperCase()}
               primaryText={<p className="text-muted-foreground text-sm">{recipient.email}</p>}
               secondaryText={
-                <p className="text-muted-foreground/70 text-xs">
-                  {_(RECIPIENT_ROLES_DESCRIPTION[recipient.role].roleName)}
-                </p>
+                <span className="block text-muted-foreground/70 text-xs">
+                  <span className="block">{_(RECIPIENT_ROLES_DESCRIPTION[recipient.role].roleName)}</span>
+                  {envelope.status !== DocumentStatus.DRAFT && <RecipientEmailDeliveryStatus recipient={recipient} />}
+                </span>
               }
             />
 

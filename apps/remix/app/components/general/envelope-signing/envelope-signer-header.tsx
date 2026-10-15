@@ -10,7 +10,7 @@ import {
 import { Separator } from '@documenso/ui/primitives/separator';
 import { Plural, Trans } from '@lingui/react/macro';
 import { EnvelopeType, RecipientRole } from '@prisma/client';
-import { BanIcon, DownloadCloudIcon } from 'lucide-react';
+import { BanIcon, DownloadCloudIcon, ListChecksIcon } from 'lucide-react';
 import { Link } from 'react-router';
 import { match } from 'ts-pattern';
 
@@ -21,6 +21,7 @@ import { AppLogo } from '~/components/general/app-logo';
 import { DocumentSigningRejectDialog } from '../document-signing/document-signing-reject-dialog';
 import { useRequiredEnvelopeSigningContext } from '../document-signing/envelope-signing-provider';
 import { EnvelopeSignerCompleteDialog } from './envelope-signing-complete-dialog';
+import { EnvelopeSigningFieldReview } from './envelope-signing-field-review';
 
 export const EnvelopeSignerHeader = () => {
   const { envelopeData, envelope, recipientFieldsRemaining, recipient } = useRequiredEnvelopeSigningContext();
@@ -110,6 +111,17 @@ const MobileDropdownMenu = () => {
               <div>
                 <DownloadCloudIcon className="mr-2 h-4 w-4" />
                 <Trans>Download PDF</Trans>
+              </div>
+            </DropdownMenuItem>
+          }
+        />
+
+        <EnvelopeSigningFieldReview
+          trigger={
+            <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
+              <div>
+                <ListChecksIcon className="mr-2 h-4 w-4" />
+                <Trans>Review</Trans>
               </div>
             </DropdownMenuItem>
           }

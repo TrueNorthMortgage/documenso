@@ -121,6 +121,7 @@ const BulkFieldSettings = ({ fieldFormIds }: { fieldFormIds: string[] }) => {
 
   const requiredFields = fields.filter((field) => canApplyBulkSetting(field, 'required'));
   const readOnlyFields = fields.filter((field) => canApplyBulkSetting(field, 'readOnly'));
+  const hasEmptyTextFields = readOnlyFields.some((field) => field.fieldMeta?.type === 'text' && !field.fieldMeta.text);
 
   const requiredState = getBulkSettingState(
     requiredFields.map((field) => {
@@ -152,13 +153,21 @@ const BulkFieldSettings = ({ fieldFormIds }: { fieldFormIds: string[] }) => {
     }
 
     if (setting === 'required') {
-      return { ...field.fieldMeta, required: checked };
+      return {
+        ...field.fieldMeta,
+        required: checked,
+        ...(checked && 'readOnly' in field.fieldMeta ? { readOnly: false } : {}),
+      };
     }
 
-    return { ...field.fieldMeta, readOnly: checked };
+    return { ...field.fieldMeta, readOnly: checked, ...(checked ? { required: false } : {}) };
   };
 
   const updateSelectedSetting = (setting: BulkFieldSetting, checked: boolean) => {
+    if (setting === 'readOnly' && checked && hasEmptyTextFields) {
+      return;
+    }
+
     const processedGroupIds = new Set<string>();
 
     for (const field of fields) {
@@ -231,7 +240,7 @@ const BulkFieldSettings = ({ fieldFormIds }: { fieldFormIds: string[] }) => {
         <label className="flex items-center gap-2 text-foreground text-sm">
           <Checkbox
             checked={readOnlyState}
-            disabled={readOnlyFields.length === 0}
+            disabled={readOnlyFields.length === 0 || (readOnlyState !== true && hasEmptyTextFields)}
             onCheckedChange={(checked) => updateSelectedSetting('readOnly', checked === true)}
           />
           <span>
@@ -239,6 +248,12 @@ const BulkFieldSettings = ({ fieldFormIds }: { fieldFormIds: string[] }) => {
           </span>
         </label>
       </div>
+
+      {hasEmptyTextFields && readOnlyState !== true && (
+        <p className="mt-2 text-muted-foreground text-xs">
+          <Trans>Add text to every selected text field before making the fields read-only.</Trans>
+        </p>
+      )}
     </section>
   );
 };

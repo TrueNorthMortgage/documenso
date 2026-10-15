@@ -1,7 +1,7 @@
 import type { I18n } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import type { DocumentAuditLog, DocumentMeta, Field, Recipient } from '@prisma/client';
-import { RecipientRole } from '@prisma/client';
+import { EmailDeliveryStatus, RecipientRole } from '@prisma/client';
 import { isDeepEqual } from 'remeda';
 import { match } from 'ts-pattern';
 
@@ -457,6 +457,16 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
       you: msg`You updated the document external ID`,
       user: msg`${user} updated the document external ID`,
     }))
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_SENDER_REASSIGNED }, ({ data }) => {
+      const from = data.from.name?.trim() ? `${data.from.name} (${data.from.email})` : data.from.email;
+      const to = data.to.name?.trim() ? `${data.to.name} (${data.to.email})` : data.to.email;
+
+      return {
+        anonymous: msg`Sender reassigned from ${from} to ${to}`,
+        you: msg`You reassigned the sender from ${from} to ${to}`,
+        user: msg`${user} reassigned the sender from ${from} to ${to}`,
+      };
+    })
     .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_SENT }, () => ({
       anonymous: msg({
         message: `Document sent`,
@@ -531,6 +541,18 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
       you: msg`You failed to validate a 2FA token for the document`,
       user: msg`${user} failed to validate a 2FA token for the document`,
     }))
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.EMAIL_DELIVERY_UPDATED }, ({ data }) => {
+      const description = match(data.status)
+        .with(EmailDeliveryStatus.DELIVERED, () => msg`Email delivered to ${data.recipientEmail}`)
+        .with(EmailDeliveryStatus.DELAYED, () => msg`Email delivery delayed for ${data.recipientEmail}`)
+        .with(EmailDeliveryStatus.BOUNCED, () => msg`Email bounced for ${data.recipientEmail}`)
+        .with(EmailDeliveryStatus.BLOCKED, () => msg`Email delivery blocked for ${data.recipientEmail}`)
+        .with(EmailDeliveryStatus.SPAM_COMPLAINT, () => msg`Email reported as spam by ${data.recipientEmail}`)
+        .with(EmailDeliveryStatus.SEND_FAILED, () => msg`Email could not be sent to ${data.recipientEmail}`)
+        .otherwise(() => msg`Email delivery updated for ${data.recipientEmail}`);
+
+      return { anonymous: description, you: description, user: description };
+    })
     .with({ type: DOCUMENT_AUDIT_LOG_TYPE.EMAIL_SENT }, ({ data }) => {
       if (data.isResending) {
         return {

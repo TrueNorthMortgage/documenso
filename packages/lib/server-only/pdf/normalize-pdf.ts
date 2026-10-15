@@ -39,8 +39,11 @@ export const normalizePdf = async (pdf: Buffer, options: { flattenForm?: boolean
   });
 
   if (pdfDoc.isEncrypted) {
-    throw new AppError('INVALID_DOCUMENT_FILE', {
+    throw new AppError(AppErrorCode.ENCRYPTED_PDF, {
       message: 'The document is encrypted',
+      userMessage:
+        'This PDF is protected and cannot be uploaded. If printing is allowed, print it to a new PDF and upload that copy. Otherwise, request an unprotected copy. Printing may remove interactive form fields.',
+      statusCode: 400,
     });
   }
 

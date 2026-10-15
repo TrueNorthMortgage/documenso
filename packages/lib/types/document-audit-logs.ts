@@ -4,7 +4,7 @@
 // data in Prisma.
 //
 /////////////////////////////////////////////////////////////////////////////////////////////
-import { DocumentSource, FieldType } from '@prisma/client';
+import { DocumentSource, EmailDeliveryStatus, FieldType } from '@prisma/client';
 import { z } from 'zod';
 
 import { zEmail } from '../utils/zod';
@@ -13,6 +13,7 @@ import { ZRecipientAccessAuthTypesSchema, ZRecipientActionAuthTypesSchema } from
 export const ZDocumentAuditLogTypeSchema = z.enum([
   // Document actions.
   'EMAIL_SENT',
+  'EMAIL_DELIVERY_UPDATED',
 
   // Document modification events.
   'FIELD_CREATED',
@@ -46,6 +47,7 @@ export const ZDocumentAuditLogTypeSchema = z.enum([
   'DOCUMENT_RECIPIENT_REJECTED', // When a recipient rejects the document.
   'DOCUMENT_RECIPIENT_COMPLETED', // When a recipient completes all their required tasks for the document.
   'DOCUMENT_RECIPIENT_EXPIRED', // When a recipient's signing window expires.
+  'DOCUMENT_SENDER_REASSIGNED',
   'DOCUMENT_SENT', // When the document transitions from DRAFT to PENDING.
   'DOCUMENT_TITLE_UPDATED', // When the document title is updated.
   'DOCUMENT_EXTERNAL_ID_UPDATED', // When the document external ID is updated.
@@ -231,6 +233,19 @@ export const ZDocumentAuditLogEventEnvelopeItemPdfReplacedSchema = z.object({
   data: z.object({
     envelopeItemId: z.string(),
     envelopeItemTitle: z.string(),
+  }),
+});
+
+/**
+ * Event: Email delivery updated.
+ */
+export const ZDocumentAuditLogEventEmailDeliveryUpdatedSchema = z.object({
+  type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.EMAIL_DELIVERY_UPDATED),
+  data: ZBaseRecipientDataSchema.extend({
+    attemptId: z.string(),
+    status: z.nativeEnum(EmailDeliveryStatus),
+    occurredAt: z.string().datetime(),
+    failureCode: z.string().nullable(),
   }),
 });
 
@@ -740,6 +755,17 @@ export const ZDocumentAuditLogEventRecipientExpiredSchema = z.object({
   }),
 });
 
+export const ZDocumentAuditLogEventSenderReassignedSchema = z.object({
+  type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_SENDER_REASSIGNED),
+  data: z.object({
+    from: z.object({ id: z.number(), name: z.string().nullable(), email: z.string() }),
+    to: z.object({ id: z.number(), name: z.string().nullable(), email: z.string() }),
+    previousFolderId: z.string().nullable(),
+    // Earlier reassignment events predate automatic destination-folder creation.
+    destinationFolderId: z.string().optional(),
+  }),
+});
+
 export const ZDocumentAuditLogBaseSchema = z.object({
   id: z.string(),
   createdAt: z.date(),
@@ -758,6 +784,7 @@ export const ZDocumentAuditLogSchema = ZDocumentAuditLogBaseSchema.and(
     ZDocumentAuditLogEventEnvelopeItemUpdatedSchema,
     ZDocumentAuditLogEventEnvelopeItemPdfReplacedSchema,
     ZDocumentAuditLogEventEmailSentSchema,
+    ZDocumentAuditLogEventEmailDeliveryUpdatedSchema,
     ZDocumentAuditLogEventDocumentCompletedSchema,
     ZDocumentAuditLogEventDocumentCorrectionCompletedSchema,
     ZDocumentAuditLogEventDocumentCorrectionStartedSchema,
@@ -781,6 +808,7 @@ export const ZDocumentAuditLogSchema = ZDocumentAuditLogBaseSchema.and(
     ZDocumentAuditLogEventDocumentRecipientValidated2FAEmailSchema,
     ZDocumentAuditLogEventDocumentRecipientFailed2FAEmailSchema,
     ZDocumentAuditLogEventDocumentSentSchema,
+    ZDocumentAuditLogEventSenderReassignedSchema,
     ZDocumentAuditLogEventDocumentTitleUpdatedSchema,
     ZDocumentAuditLogEventDocumentExternalIdUpdatedSchema,
     ZDocumentAuditLogEventFieldCreatedSchema,

@@ -292,7 +292,10 @@ export const completeDocumentWithToken = async ({
   }
 
   if (fieldsContainUnsignedRequiredField(visibleFields())) {
-    throw new Error(`Recipient ${recipient.id} has unsigned fields`);
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: `Recipient ${recipient.id} has unsigned fields`,
+      userMessage: 'Please complete all required fields before finishing signing.',
+    });
   }
 
   await prisma.$transaction(async (tx) => {

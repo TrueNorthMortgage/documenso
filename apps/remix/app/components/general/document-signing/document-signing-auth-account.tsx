@@ -34,7 +34,7 @@ export const DocumentSigningAuthAccount = ({
       const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
       await authClient.signOut({
-        redirectPath: `/signin?returnTo=${encodeURIComponent(currentPath)}#embedded=true&email=${isDirectTemplate ? '' : email}`,
+        redirectPath: `/login?returnTo=${encodeURIComponent(currentPath)}#embedded=true&email=${isDirectTemplate ? '' : email}`,
       });
     } catch {
       setIsSigningOut(false);

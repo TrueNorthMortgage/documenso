@@ -1,10 +1,12 @@
-import { mailer } from '@documenso/email/mailer';
+import { randomUUID } from 'node:crypto';
 import DocumentReminderEmailTemplate from '@documenso/email/templates/document-reminder';
 import { prisma } from '@documenso/prisma';
 import { msg } from '@lingui/core/macro';
 import {
   DocumentDistributionMethod,
   DocumentStatus,
+  EmailDeliveryPurpose,
+  EmailDeliveryStatus,
   OrganisationType,
   RecipientRole,
   SendStatus,
@@ -12,17 +14,18 @@ import {
   WebhookTriggerEvents,
 } from '@prisma/client';
 import { createElement } from 'react';
-
 import { getI18nInstance } from '../../../client-only/providers/i18n-server';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../../constants/app';
 import { RECIPIENT_ROLES_DESCRIPTION } from '../../../constants/recipient-roles';
 import { getEmailContext } from '../../../server-only/email/get-email-context';
+import { sendTrackedSigningEmail } from '../../../server-only/email/send-tracked-signing-email';
 import { updateRecipientNextReminder } from '../../../server-only/recipient/update-recipient-next-reminder';
 import { triggerWebhook } from '../../../server-only/webhooks/trigger/trigger-webhook';
 import { DOCUMENT_AUDIT_LOG_TYPE, DOCUMENT_EMAIL_TYPE } from '../../../types/document-audit-logs';
 import { extractDerivedDocumentEmailSettings } from '../../../types/document-email';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../../types/webhook-payload';
 import { createDocumentAuditLogData } from '../../../utils/document-audit-logs';
+import { isRecipientEmailValidForSending } from '../../../utils/recipients';
 import { renderCustomEmailTemplate } from '../../../utils/render-custom-email-template';
 import { renderEmailWithI18N } from '../../../utils/render-email-with-i18n';
 import { getTeamDisplayName } from '../../../utils/teams';
@@ -37,23 +40,25 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
   // nextReminderAt so no other sweep picks it up. The expiration filter
   // guards against races where the expiration sweep hasn't yet flagged
   // a recipient whose deadline has already passed.
-  const updatedCount = await prisma.recipient.updateMany({
-    where: {
-      id: recipientId,
-      signingStatus: SigningStatus.NOT_SIGNED,
-      sendStatus: SendStatus.SENT,
-      role: { not: RecipientRole.CC },
-      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-      envelope: {
-        status: DocumentStatus.PENDING,
-        deletedAt: null,
+  const updatedCount = await io.runTask('claim-signing-reminder', async () =>
+    prisma.recipient.updateMany({
+      where: {
+        id: recipientId,
+        signingStatus: SigningStatus.NOT_SIGNED,
+        sendStatus: SendStatus.SENT,
+        role: { not: RecipientRole.CC },
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        envelope: {
+          status: DocumentStatus.PENDING,
+          deletedAt: null,
+        },
       },
-    },
-    data: {
-      lastReminderSentAt: now,
-      nextReminderAt: null,
-    },
-  });
+      data: {
+        lastReminderSentAt: now,
+        nextReminderAt: null,
+      },
+    }),
+  );
 
   if (updatedCount.count === 0) {
     io.logger.info(`Recipient ${recipientId} no longer eligible for reminder, skipping`);
@@ -85,6 +90,28 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
   }
 
   const { envelope } = recipient;
+
+  // A resumed job must recheck eligibility after its claim task was cached.
+  if (
+    recipient.signingStatus !== SigningStatus.NOT_SIGNED ||
+    recipient.role === RecipientRole.CC ||
+    !isRecipientEmailValidForSending(recipient) ||
+    (recipient.expiresAt && recipient.expiresAt <= now) ||
+    envelope.status !== DocumentStatus.PENDING ||
+    envelope.deletedAt
+  ) {
+    return;
+  }
+
+  // Do not automatically retry addresses with a confirmed permanent failure or spam complaint.
+  if (
+    recipient.email.toLowerCase() === recipient.emailDeliveryEmail?.toLowerCase() &&
+    [EmailDeliveryStatus.BOUNCED, EmailDeliveryStatus.BLOCKED, EmailDeliveryStatus.SPAM_COMPLAINT].some(
+      (status) => status === recipient.emailDeliveryStatus,
+    )
+  ) {
+    return;
+  }
 
   if (!envelope.documentMeta) {
     io.logger.warn(`Envelope ${envelope.id} missing documentMeta`);
@@ -165,16 +192,26 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
     }),
   ]);
 
-  await mailer.sendMail({
-    to: {
-      name: recipient.name,
-      address: recipient.email,
-    },
-    from: senderEmail,
-    replyTo: replyToEmail,
-    subject: emailSubject,
-    html,
-    text,
+  const operationKey = await io.runTask('reminder-email-operation-key', async () => randomUUID());
+  await io.runTask('send-signing-reminder', async () => {
+    await sendTrackedSigningEmail({
+      envelopeId: envelope.id,
+      recipientId: recipient.id,
+      recipientEmail: recipient.email,
+      purpose: EmailDeliveryPurpose.REMINDER,
+      operationKey,
+      mail: {
+        to: {
+          name: recipient.name,
+          address: recipient.email,
+        },
+        from: senderEmail,
+        replyTo: replyToEmail,
+        subject: emailSubject,
+        html,
+        text,
+      },
+    });
   });
 
   await prisma.documentAuditLog.create({

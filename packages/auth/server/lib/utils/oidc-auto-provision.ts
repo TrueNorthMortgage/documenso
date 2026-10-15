@@ -1,7 +1,10 @@
+import { getEmailDomain, getOidcTeamUrlForEmail } from '@documenso/lib/server-only/auth/oidc-domain-map';
 import { generateDatabaseId } from '@documenso/lib/universal/id';
 import { env } from '@documenso/lib/utils/env';
 import { prisma } from '@documenso/prisma';
 import { OrganisationGroupType, OrganisationMemberRole, TeamMemberRole } from '@prisma/client';
+
+export { getOidcTeamUrlForEmail } from '@documenso/lib/server-only/auth/oidc-domain-map';
 
 const VALID_ORGANISATION_ROLES = new Set(Object.values(OrganisationMemberRole));
 const VALID_TEAM_ROLES = new Set(Object.values(TeamMemberRole));
@@ -26,18 +29,6 @@ const getRequiredEnv = (name: string) => {
   return value;
 };
 
-const stringList = (value: string | undefined) =>
-  String(value || '')
-    .split(',')
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-
-const getEmailDomain = (email: string) => {
-  const parts = email.trim().toLowerCase().split('@');
-
-  return parts.length === 2 ? parts[1] : '';
-};
-
 const getOrganisationRole = (name: string) => {
   const role = getRequiredEnv(name).toUpperCase();
 
@@ -59,36 +50,6 @@ const getTeamRole = (name: string) => {
 };
 
 const isEnabled = () => env('SELF_HOSTED_OIDC_AUTO_PROVISION_ENABLED') === 'true';
-
-const getTeamDomainMap = () => {
-  const entries = stringList(getRequiredEnv('SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP'));
-  const team_by_domain = new Map<string, string>();
-
-  for (const entry of entries) {
-    const separator_index = entry.indexOf(':');
-
-    if (separator_index <= 0 || separator_index === entry.length - 1) {
-      throw new Error('SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP must contain comma-separated <domain>:<team-url> entries');
-    }
-
-    const domain = entry.slice(0, separator_index).trim();
-    const team_url = entry.slice(separator_index + 1).trim();
-
-    if (!domain || !team_url || team_by_domain.has(domain)) {
-      throw new Error(`SELF_HOSTED_OIDC_TEAM_DOMAIN_MAP contains an invalid or duplicate domain: ${domain}`);
-    }
-
-    team_by_domain.set(domain, team_url);
-  }
-
-  return team_by_domain;
-};
-
-export const getOidcTeamUrlForEmail = (email: string) => {
-  const domain = getEmailDomain(email);
-
-  return getTeamDomainMap().get(domain) ?? null;
-};
 
 export const isOidcAutoProvisioningEnabled = () => isEnabled();
 

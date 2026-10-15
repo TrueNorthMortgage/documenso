@@ -203,7 +203,7 @@ export default function OrganisationSignIn({ loaderData }: Route.ComponentProps)
         </div>
 
         <div className="mt-1 flex items-center justify-center text-muted-foreground text-xs">
-          <Link to="/signin">
+          <Link to="/login">
             <Trans>Return to Documenso sign in page here</Trans>
           </Link>
         </div>

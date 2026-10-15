@@ -1,12 +1,13 @@
 import { Button } from '@documenso/ui/primitives/button';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { FolderInputIcon, Trash2Icon, XIcon } from 'lucide-react';
+import { FolderInputIcon, Trash2Icon, UserRoundPenIcon, XIcon } from 'lucide-react';
 
 export type EnvelopesTableBulkActionBarProps = {
   selectedCount: number;
   onMoveClick: () => void;
   onDeleteClick: () => void;
   onClearSelection: () => void;
+  onReassignClick?: () => void;
 };
 
 export const EnvelopesTableBulkActionBar = ({
@@ -14,6 +15,7 @@ export const EnvelopesTableBulkActionBar = ({
   onMoveClick,
   onDeleteClick,
   onClearSelection,
+  onReassignClick,
 }: EnvelopesTableBulkActionBarProps) => {
   const { t } = useLingui();
 
@@ -22,7 +24,7 @@ export const EnvelopesTableBulkActionBar = ({
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-x-4 rounded-lg border border-border bg-background px-4 py-3 shadow-lg">
+    <div className="fixed bottom-4 left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap justify-center gap-2 rounded-lg border border-border bg-background px-4 py-3 shadow-lg">
       <span className="font-medium text-sm">
         <Trans>{selectedCount} selected</Trans>
       </span>
@@ -33,6 +35,13 @@ export const EnvelopesTableBulkActionBar = ({
         <FolderInputIcon className="mr-2 h-4 w-4" />
         <Trans>Move to Folder</Trans>
       </Button>
+
+      {onReassignClick && (
+        <Button type="button" variant="outline" size="sm" onClick={onReassignClick}>
+          <UserRoundPenIcon className="mr-2 h-4 w-4" />
+          <Trans>Reassign sender</Trans>
+        </Button>
+      )}
 
       <Button type="button" variant="destructive" size="sm" onClick={onDeleteClick}>
         <Trash2Icon className="mr-2 h-4 w-4" />

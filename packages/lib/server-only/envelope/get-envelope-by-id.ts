@@ -63,6 +63,7 @@ export const getEnvelopeById = async ({ id, userId, teamId, type }: GetEnvelopeB
       },
       fields: {
         include: {
+          fieldGroup: true,
           conditionalChildRule: true,
           conditionalParentRules: true,
         },

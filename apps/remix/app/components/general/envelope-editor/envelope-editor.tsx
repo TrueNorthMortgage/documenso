@@ -1,7 +1,9 @@
 import type { EnvelopeEditorStep } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { mapSecondaryIdToTemplateId } from '@documenso/lib/utils/envelope';
+import { isEnvelopeReassignable } from '@documenso/lib/utils/envelope-reassignment';
 import { hasCompletedRecipient } from '@documenso/lib/utils/recipients';
+import { canExecuteTeamAction } from '@documenso/lib/utils/teams';
 import { cn } from '@documenso/ui/lib/utils';
 import { Button } from '@documenso/ui/primitives/button';
 import { Separator } from '@documenso/ui/primitives/separator';
@@ -24,20 +26,22 @@ import {
   SettingsIcon,
   Trash2Icon,
   UploadIcon,
+  UserRoundPenIcon,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { match } from 'ts-pattern';
-
 import { EnvelopeDeleteDialog } from '~/components/dialogs/envelope-delete-dialog';
 import { EnvelopeDistributeDialog } from '~/components/dialogs/envelope-distribute-dialog';
 import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-dialog';
 import { EnvelopeDuplicateDialog } from '~/components/dialogs/envelope-duplicate-dialog';
+import { EnvelopeReassignSenderDialog } from '~/components/dialogs/envelope-reassign-sender-dialog';
 import { EnvelopeRedistributeDialog } from '~/components/dialogs/envelope-redistribute-dialog';
 import { EnvelopeSaveAsTemplateDialog } from '~/components/dialogs/envelope-save-as-template-dialog';
 import { TemplateDirectLinkDialog } from '~/components/dialogs/template-direct-link-dialog';
 import { EnvelopeEditorSettingsDialog } from '~/components/general/envelope-editor/envelope-editor-settings-dialog';
 import { SourceAttributionFooter } from '~/components/general/source-attribution-footer';
+import { useCurrentTeam } from '~/providers/team';
 import { EnvelopeEditorFieldDragProvider } from './envelope-editor-field-drag-context';
 import { EnvelopeEditorFieldsPage } from './envelope-editor-fields-page';
 import EnvelopeEditorHeader from './envelope-editor-header';
@@ -79,6 +83,7 @@ export const EnvelopeEditor = () => {
 
   const {
     envelope,
+    isEmbedded,
     editorConfig,
     isDocument,
     isTemplate,
@@ -88,6 +93,8 @@ export const EnvelopeEditor = () => {
     flushAutosave,
     resetForms,
   } = useCurrentEnvelopeEditor();
+
+  const team = useCurrentTeam();
 
   const [searchParams] = useSearchParams();
 
@@ -412,6 +419,34 @@ export const EnvelopeEditor = () => {
                 }
               />
             )}
+
+            {!isEmbedded &&
+              isDocument &&
+              isEnvelopeReassignable(envelope) &&
+              canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole) && (
+                <EnvelopeReassignSenderDialog
+                  envelopeId={envelope.id}
+                  currentOwner={envelope.user}
+                  hasFolder={Boolean(envelope.folderId)}
+                  onBeforeReassign={flushAutosave}
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start"
+                      title={t`Reassign sender`}
+                    >
+                      <UserRoundPenIcon className="h-4 w-4" />
+                      {!minimizeLeftSidebar && (
+                        <span className="ml-2">
+                          <Trans>Reassign sender</Trans>
+                        </span>
+                      )}
+                    </Button>
+                  }
+                />
+              )}
 
             {allowDuplication && (
               <EnvelopeDuplicateDialog

@@ -10,7 +10,6 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@docum
 import { Input } from '@documenso/ui/primitives/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useEffect } from 'react';
 import { type Control, useFormContext } from 'react-hook-form';
 
 // Can't seem to get the non-any type to work with correct types.
@@ -224,15 +223,7 @@ export const EditorGenericRequiredField = ({
   className?: string;
   disabled?: boolean;
 }) => {
-  const { watch, setValue } = useFormContext();
-
-  const readOnly = watch('readOnly');
-
-  useEffect(() => {
-    if (readOnly) {
-      setValue('required', false);
-    }
-  }, [readOnly]);
+  const { setValue } = useFormContext();
 
   return (
     <FormField
@@ -247,7 +238,13 @@ export const EditorGenericRequiredField = ({
                 id="field-required"
                 checked={field.value}
                 disabled={disabled}
-                onCheckedChange={field.onChange}
+                onCheckedChange={(checked) => {
+                  if (checked === true) {
+                    setValue('readOnly', false, { shouldValidate: true });
+                  }
+
+                  field.onChange(checked);
+                }}
               />
 
               <label className="ml-2 text-muted-foreground text-sm" htmlFor="field-required">
@@ -269,15 +266,7 @@ export const EditorGenericReadOnlyField = ({
   formControl: FormControlType;
   className?: string;
 }) => {
-  const { watch, setValue } = useFormContext();
-
-  const required = watch('required');
-
-  useEffect(() => {
-    if (required) {
-      setValue('readOnly', false);
-    }
-  }, [required]);
+  const { setValue } = useFormContext();
 
   return (
     <FormField
@@ -291,7 +280,13 @@ export const EditorGenericReadOnlyField = ({
                 data-testid="field-form-readOnly"
                 id="field-read-only"
                 checked={field.value}
-                onCheckedChange={field.onChange}
+                onCheckedChange={(checked) => {
+                  if (checked === true) {
+                    setValue('required', false, { shouldValidate: true });
+                  }
+
+                  field.onChange(checked);
+                }}
               />
 
               <label className="ml-2 text-muted-foreground text-sm" htmlFor="field-read-only">

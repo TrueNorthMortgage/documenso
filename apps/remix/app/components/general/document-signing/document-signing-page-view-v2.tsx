@@ -11,6 +11,7 @@ import {
   ArrowLeftIcon,
   BanIcon,
   DownloadCloudIcon,
+  ListChecksIcon,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   PaperclipIcon,
@@ -38,6 +39,7 @@ import { DocumentSigningAttachmentsPopover } from '../document-signing/document-
 import { EnvelopeRendererFileSelector } from '../envelope-editor/envelope-file-selector';
 import EnvelopeSignerForm from '../envelope-signing/envelope-signer-form';
 import { EnvelopeSignerHeader } from '../envelope-signing/envelope-signer-header';
+import { EnvelopeSigningFieldReview } from '../envelope-signing/envelope-signing-field-review';
 import { DocumentSigningMobileWidget } from './document-signing-mobile-widget';
 import { DocumentSigningRejectDialog } from './document-signing-reject-dialog';
 import { useRequiredEnvelopeSigningContext } from './envelope-signing-provider';
@@ -165,62 +167,71 @@ export const DocumentSigningPageViewV2 = () => {
             <Separator className="my-6" />
 
             {/* Quick Actions. */}
-            {!isDirectTemplate && (
-              <div className="embed--Actions space-y-3 px-4">
-                <h4 className="font-semibold text-foreground text-sm">
-                  <Trans>Actions</Trans>
-                </h4>
-
-                <DocumentSigningAttachmentsPopover
-                  envelopeId={envelope.id}
-                  token={recipient.token}
-                  trigger={
-                    <Button variant="ghost" size="sm" className="w-full justify-start">
-                      <PaperclipIcon className="mr-2 h-4 w-4" />
-                      <Trans>Attachments</Trans>
-                    </Button>
-                  }
-                />
-
-                <EnvelopeDownloadDialog
-                  envelopeId={envelope.id}
-                  envelopeTitle={envelope.title}
-                  envelopeStatus={envelope.status}
-                  envelopeItems={envelope.envelopeItems}
-                  token={recipient.token}
-                  trigger={
-                    <Button variant="ghost" size="sm" className="w-full justify-start">
-                      <DownloadCloudIcon className="mr-2 h-4 w-4" />
-                      <Trans>Download PDF</Trans>
-                    </Button>
-                  }
-                />
-
-                {envelope.type === EnvelopeType.DOCUMENT && allowDocumentRejection && (
-                  <DocumentSigningRejectDialog
-                    documentId={mapSecondaryIdToDocumentId(envelope.secondaryId)}
+            <div className="embed--Actions space-y-3 px-4">
+              <h4 className="font-semibold text-foreground text-sm">
+                <Trans>Actions</Trans>
+              </h4>
+              {!isDirectTemplate && (
+                <>
+                  <DocumentSigningAttachmentsPopover
+                    envelopeId={envelope.id}
                     token={recipient.token}
-                    onRejected={
-                      onDocumentRejected &&
-                      ((reason) =>
-                        onDocumentRejected({
-                          token: recipient.token,
-                          documentId: mapSecondaryIdToDocumentId(envelope.secondaryId),
-                          envelopeId: envelope.id,
-                          recipientId: recipient.id,
-                          reason,
-                        }))
-                    }
                     trigger={
-                      <Button variant="ghost" size="sm" className="w-full justify-start hover:text-destructive">
-                        <BanIcon className="mr-2 h-4 w-4" />
-                        <Trans>Reject Document</Trans>
+                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                        <PaperclipIcon className="mr-2 h-4 w-4" />
+                        <Trans>Attachments</Trans>
                       </Button>
                     }
                   />
-                )}
-              </div>
-            )}
+
+                  <EnvelopeDownloadDialog
+                    envelopeId={envelope.id}
+                    envelopeTitle={envelope.title}
+                    envelopeStatus={envelope.status}
+                    envelopeItems={envelope.envelopeItems}
+                    token={recipient.token}
+                    trigger={
+                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                        <DownloadCloudIcon className="mr-2 h-4 w-4" />
+                        <Trans>Download PDF</Trans>
+                      </Button>
+                    }
+                  />
+                </>
+              )}
+              <EnvelopeSigningFieldReview
+                trigger={
+                  <Button variant="ghost" size="sm" className="w-full justify-start">
+                    <ListChecksIcon className="mr-2 h-4 w-4" />
+                    <Trans>Review</Trans>
+                  </Button>
+                }
+              />
+
+              {!isDirectTemplate && envelope.type === EnvelopeType.DOCUMENT && allowDocumentRejection && (
+                <DocumentSigningRejectDialog
+                  documentId={mapSecondaryIdToDocumentId(envelope.secondaryId)}
+                  token={recipient.token}
+                  onRejected={
+                    onDocumentRejected &&
+                    ((reason) =>
+                      onDocumentRejected({
+                        token: recipient.token,
+                        documentId: mapSecondaryIdToDocumentId(envelope.secondaryId),
+                        envelopeId: envelope.id,
+                        recipientId: recipient.id,
+                        reason,
+                      }))
+                  }
+                  trigger={
+                    <Button variant="ghost" size="sm" className="w-full justify-start hover:text-destructive">
+                      <BanIcon className="mr-2 h-4 w-4" />
+                      <Trans>Reject Document</Trans>
+                    </Button>
+                  }
+                />
+              )}
+            </div>
 
             <div className="embed--DocumentWidgetFooter mt-auto">
               {/* Footer of left sidebar. */}

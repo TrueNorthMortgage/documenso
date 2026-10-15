@@ -368,6 +368,14 @@ const runAllFieldTypesFlow = async (surface: TEnvelopeEditorSurface): Promise<TA
   await root.locator('[data-testid="field-form-characterLimit"]').fill('100');
   await root.locator('[data-testid="field-form-required"]').click();
 
+  // Switching settings must never autosave a field that is both required and read-only.
+  await root.locator('[data-testid="field-form-readOnly"]').click();
+  await expect(root.locator('[data-testid="field-form-required"]')).not.toBeChecked();
+  await expect(root.locator('[data-testid="field-form-readOnly"]')).toBeChecked();
+  await root.locator('[data-testid="field-form-required"]').click();
+  await expect(root.locator('[data-testid="field-form-readOnly"]')).not.toBeChecked();
+  await expect(root.locator('[data-testid="field-form-required"]')).toBeChecked();
+
   // 7. Number: place and configure label, placeholder, numberFormat, minValue, maxValue, required.
   await placeFieldOnPdf(root, 'Number', { x: 120, y: 350 });
   await root.locator('[data-testid="field-form-label"]').fill('Amount');
@@ -673,6 +681,33 @@ const runMultiSelectDuplicateAndCopyPasteFlow = async (surface: TEnvelopeEditorS
   await root.mouse.up();
 
   await expect.poll(() => getKonvaTransformerNodeCountForPage(root, 1)).toBe(2);
+  const bulkSettings = root.getByRole('heading', { name: 'Bulk Field Settings' }).locator('..');
+  const bulkReadOnly = bulkSettings.locator('label').filter({ hasText: 'Read only' }).getByRole('checkbox');
+  const bulkRequired = bulkSettings.locator('label').filter({ hasText: 'Required' }).getByRole('checkbox');
+
+  await expect(bulkReadOnly).toBeDisabled();
+  await expect(
+    bulkSettings.getByText('Add text to every selected text field before making the fields read-only.'),
+  ).toBeVisible();
+
+  await selectFieldOnCanvas(root, { x: 260, y: 220 });
+  await root.locator('[data-testid="field-form-text"]').fill('Read-only content');
+  await root.locator('[data-testid="field-form-required"]').click();
+
+  await root.mouse.move(canvasBounds.x + 80, canvasBounds.y + 80);
+  await root.mouse.down();
+  await root.mouse.move(canvasBounds.x + 380, canvasBounds.y + 300, { steps: 8 });
+  await root.mouse.up();
+  await expect.poll(() => getKonvaTransformerNodeCountForPage(root, 1)).toBe(2);
+
+  await expect(bulkReadOnly).toBeEnabled();
+  await bulkReadOnly.click();
+  await expect(bulkReadOnly).toBeChecked();
+  await expect(bulkRequired).not.toBeChecked();
+  await bulkRequired.click();
+  await expect(bulkRequired).toBeChecked();
+  await expect(bulkReadOnly).not.toBeChecked();
+
   await root.locator('button[title="Duplicate"]').click();
   await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(4);
 

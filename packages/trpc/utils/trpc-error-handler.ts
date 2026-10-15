@@ -1,4 +1,5 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
+import { reportServerError } from '@documenso/lib/server-only/rollbar';
 import { logger } from '@documenso/lib/utils/logger';
 import type { ErrorHandlerOptions } from '@trpc/server/unstable-core-do-not-import';
 
@@ -29,6 +30,7 @@ export const handleTrpcRouterError = (
 
   // Only fully log the error on certain conditions since some errors are expected.
   if (isLoggableAppError || isLoggableTrpcError) {
+    reportServerError(error.cause || error);
     errorLogger.error(error);
   } else {
     errorLogger.info('TRPC_ERROR_HANDLER');

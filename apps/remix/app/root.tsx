@@ -72,6 +72,8 @@ export async function loader({ context, request }: Route.LoaderArgs) {
       // SSR-rendered <script>/<style> elements in this layout (and child
       // routes that need it) can carry the matching nonce attribute.
       nonce: context.nonce,
+      requestId: context.requestId,
+      serverTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       session: session.isAuthenticated
         ? {
             user: session.user,
@@ -106,6 +108,8 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
     lang,
     disableAnimations,
     nonce: cspNonce,
+    requestId,
+    serverTimeZone,
     ...data
   } = useLoaderData<typeof loader>() || {};
 
@@ -119,7 +123,17 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
   const isRecipientRoute = matches.some((m) => m.id?.startsWith('routes/_recipient+'));
 
   return (
-    <html translate="no" lang={lang} data-theme={theme} className={theme ?? ''} suppressHydrationWarning>
+    <html
+      translate="no"
+      lang={lang}
+      data-theme={theme}
+      className={theme ?? ''}
+      data-hydration-theme={data.theme ?? 'system'}
+      data-hydration-route={matches.at(-1)?.id}
+      data-hydration-request-id={requestId}
+      data-hydration-time-zone={serverTimeZone}
+      suppressHydrationWarning
+    >
       <head>
         <meta charSet="utf-8" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />

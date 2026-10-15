@@ -356,11 +356,11 @@ export const emailPasswordRoute = new Hono<HonoAuthContext>()
       return c.text('FORBIDDEN', 403);
     }
 
-    await forgotPassword({
+    const result = await forgotPassword({
       email,
     });
 
-    return c.text('OK', 201);
+    return c.json(result, 201);
   })
   /**
    * Reset password endpoint.
