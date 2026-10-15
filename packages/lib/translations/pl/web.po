@@ -6893,6 +6893,7 @@ msgstr "Ładowanie szablonów..."
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
 #: apps/remix/app/components/general/organisation-groups-multiselect-combobox.tsx
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/email-domains.$id.tsx
 msgid "Loading..."
 msgstr "Ładowanie..."
@@ -7513,6 +7514,7 @@ msgid "No License Configured"
 msgstr "Brak skonfigurowanej licencji"
 
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "No members found"
 msgstr "Nie znaleziono użytkowników"
 
@@ -7531,10 +7533,6 @@ msgstr "Żadne szablony organizacyjne nie są udostępniane Twojemu zespołowi."
 #: apps/remix/app/routes/_authenticated+/dashboard.tsx
 msgid "No organisations found"
 msgstr "Nie znaleziono organizacji"
-
-#: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
-msgid "No other active team members are available."
-msgstr "Brak innych dostępnych aktywnych członków zespołu."
 
 #: apps/remix/app/components/tables/settings-public-profile-templates-table.tsx
 msgid "No public profile templates found"
@@ -9617,6 +9615,7 @@ msgid "Search languages..."
 msgstr "Szukaj języków..."
 
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Search members by name or email"
 msgstr "Szukaj nazwy lub adresu e-mail użytkownika"
 
@@ -9677,8 +9676,7 @@ msgstr "Wybierz plan, aby kontynuować"
 msgid "Select a recipient"
 msgstr "Wybierz odbiorcę"
 
-#: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
-#: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Select a team member"
 msgstr "Wybierz członka zespołu"
 
@@ -10078,6 +10076,10 @@ msgstr "Pokaż klucz licencyjny"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 msgid "Show templates in your public profile for your audience to sign and get started quickly"
 msgstr "Pokaż szablony w profilu publicznym, aby szybko podpisać dokument"
+
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
+msgid "Showing up to 15 members. Search to find others."
+msgstr "Wyświetlanych jest maksymalnie 15 członków. Użyj wyszukiwania, aby znaleźć pozostałych."
 
 #: apps/remix/app/components/dialogs/sign-field-signature-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auth-2fa.tsx
@@ -12449,7 +12451,7 @@ msgstr "Nie można załadować historii dokumentu"
 msgid "Unable to load documents"
 msgstr "Nie można załadować dokumentów"
 
-#: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "Nie udało się załadować członków zespołu. Zamknij to okno i spróbuj ponownie."
 

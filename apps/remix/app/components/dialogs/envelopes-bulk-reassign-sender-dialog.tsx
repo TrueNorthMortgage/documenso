@@ -13,8 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@documenso/ui/primitives/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
+import { Form, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plural, Trans, useLingui } from '@lingui/react/macro';
@@ -22,6 +21,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { useCurrentTeam } from '~/providers/team';
+
+import { ReassignmentMemberCombobox } from '../general/reassignment-member-combobox';
 
 const ZBulkSenderFormSchema = ZReassignEnvelopeSenderRequestSchema.pick({ newOwnerId: true });
 
@@ -53,11 +54,6 @@ export const EnvelopesBulkReassignSenderDialog = ({
   });
   const { mutateAsync: getEnvelopes } = trpc.envelope.getMany.useMutation(DO_NOT_INVALIDATE_QUERY_ON_MUTATION);
   const { mutateAsync: reassign } = trpc.envelope.bulkReassignSender.useMutation(DO_NOT_INVALIDATE_QUERY_ON_MUTATION);
-  const {
-    data: members,
-    isLoading: isLoadingMembers,
-    isError: membersFailed,
-  } = trpc.envelope.reassignmentCandidates.useQuery({ teamId: team.id }, { enabled: open });
   const isBusy = form.formState.isSubmitting;
   const newOwnerId = form.watch('newOwnerId');
   const hasTooMany = envelopeIds.length > 100;
@@ -109,10 +105,10 @@ export const EnvelopesBulkReassignSenderDialog = ({
 
   const { eligible, skipped } = getEnvelopeReassignmentSelection(documents, team.id, newOwnerId);
   const skippedCount = envelopeIds.length - reassignedCount - eligible.length;
-  const isLoading = isLoadingDocuments || isLoadingMembers;
+  const isLoading = isLoadingDocuments;
 
   const onSubmit = form.handleSubmit(async ({ newOwnerId: targetOwnerId }) => {
-    if (isLoading || loadFailed || membersFailed || hasTooMany || eligible.length === 0) {
+    if (isLoading || loadFailed || hasTooMany || eligible.length === 0) {
       return;
     }
     let result: Awaited<ReturnType<typeof reassign>>;
@@ -185,7 +181,7 @@ export const EnvelopesBulkReassignSenderDialog = ({
                   <Trans>Loading selected envelopes and team members...</Trans>
                 </p>
               )}
-              {(loadFailed || membersFailed) && (
+              {loadFailed && (
                 <p role="alert" className="text-destructive text-sm">
                   <Trans>Unable to load the selection. Close this dialog and try again.</Trans>
                 </p>
@@ -198,24 +194,12 @@ export const EnvelopesBulkReassignSenderDialog = ({
                     <FormLabel>
                       <Trans>New sender</Trans>
                     </FormLabel>
-                    <Select
-                      value={field.value ? String(field.value) : undefined}
-                      onValueChange={(value) => field.onChange(Number(value))}
-                      disabled={isLoading || loadFailed || membersFailed || isBusy || hasTooMany}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t`Select a team member`} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {members?.map((member) => (
-                          <SelectItem key={member.id} value={String(member.id)}>
-                            {member.name ? `${member.name} (${member.email})` : member.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ReassignmentMemberCombobox
+                      teamId={team.id}
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isLoading || loadFailed || isBusy || hasTooMany}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -305,9 +289,7 @@ export const EnvelopesBulkReassignSenderDialog = ({
                 <Button
                   type="submit"
                   loading={isBusy}
-                  disabled={
-                    isLoading || loadFailed || membersFailed || hasTooMany || eligible.length === 0 || !newOwnerId
-                  }
+                  disabled={isLoading || loadFailed || hasTooMany || eligible.length === 0 || !newOwnerId}
                 >
                   <Trans>Reassign sender</Trans>
                 </Button>

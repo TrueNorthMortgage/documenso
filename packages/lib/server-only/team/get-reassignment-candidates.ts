@@ -19,15 +19,37 @@ export const activeTeamMemberWhere = (teamId: number): Prisma.UserWhereInput => 
   },
 });
 
-export const getReassignmentCandidates = async ({ userId, teamId }: { userId: number; teamId: number }) => {
+export const getReassignmentCandidates = async ({
+  userId,
+  teamId,
+  search = '',
+  excludeUserId,
+}: {
+  userId: number;
+  teamId: number;
+  search?: string;
+  excludeUserId?: number;
+}) => {
   const team = await getTeamById({ userId, teamId });
   if (!canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole)) {
     throw new AppError(AppErrorCode.FORBIDDEN);
   }
 
   return await prisma.user.findMany({
-    where: activeTeamMemberWhere(teamId),
+    where: {
+      ...activeTeamMemberWhere(teamId),
+      ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
+      ...(search.trim()
+        ? {
+            OR: [
+              { name: { contains: search.trim(), mode: 'insensitive' } },
+              { email: { contains: search.trim(), mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    },
     select: { id: true, name: true, email: true },
-    orderBy: [{ name: 'asc' }, { email: 'asc' }],
+    orderBy: [{ name: 'asc' }, { email: 'asc' }, { id: 'asc' }],
+    take: 15,
   });
 };

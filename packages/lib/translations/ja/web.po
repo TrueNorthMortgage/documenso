@@ -6893,6 +6893,7 @@ msgstr "テンプレートを読み込み中..."
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
 #: apps/remix/app/components/general/organisation-groups-multiselect-combobox.tsx
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/email-domains.$id.tsx
 msgid "Loading..."
 msgstr "読み込み中..."
@@ -7513,6 +7514,7 @@ msgid "No License Configured"
 msgstr "ライセンスが設定されていません"
 
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "No members found"
 msgstr "メンバーが見つかりません"
 
@@ -7531,10 +7533,6 @@ msgstr "まだあなたのチームと共有されている組織テンプレー
 #: apps/remix/app/routes/_authenticated+/dashboard.tsx
 msgid "No organisations found"
 msgstr "組織が見つかりません"
-
-#: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
-msgid "No other active team members are available."
-msgstr "他に利用可能な有効なチームメンバーはいません。"
 
 #: apps/remix/app/components/tables/settings-public-profile-templates-table.tsx
 msgid "No public profile templates found"
@@ -9617,6 +9615,7 @@ msgid "Search languages..."
 msgstr "言語を検索…"
 
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Search members by name or email"
 msgstr "名前またはメールアドレスでメンバーを検索"
 
@@ -9677,8 +9676,7 @@ msgstr "続行するプランを選択"
 msgid "Select a recipient"
 msgstr "受信者を選択"
 
-#: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
-#: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Select a team member"
 msgstr "チームメンバーを選択"
 
@@ -10078,6 +10076,10 @@ msgstr "ライセンスキーを表示する"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 msgid "Show templates in your public profile for your audience to sign and get started quickly"
 msgstr "オーディエンスがすぐに署名を開始できるよう、公開プロフィールにテンプレートを表示します"
+
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
+msgid "Showing up to 15 members. Search to find others."
+msgstr "最大 15 人のメンバーを表示します。他のメンバーは検索してください。"
 
 #: apps/remix/app/components/dialogs/sign-field-signature-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auth-2fa.tsx
@@ -12447,7 +12449,7 @@ msgstr "文書履歴を読み込めませんでした"
 msgid "Unable to load documents"
 msgstr "文書を読み込めませんでした"
 
-#: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "チームメンバーを読み込めませんでした。このダイアログを閉じてもう一度お試しください。"
 

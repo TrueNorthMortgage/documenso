@@ -6888,6 +6888,7 @@ msgstr "Loading templates..."
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
 #: apps/remix/app/components/general/organisation-groups-multiselect-combobox.tsx
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/email-domains.$id.tsx
 msgid "Loading..."
 msgstr "Loading..."
@@ -7508,6 +7509,7 @@ msgid "No License Configured"
 msgstr "No License Configured"
 
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "No members found"
 msgstr "No members found"
 
@@ -7526,10 +7528,6 @@ msgstr "No organisation templates are shared with your team yet."
 #: apps/remix/app/routes/_authenticated+/dashboard.tsx
 msgid "No organisations found"
 msgstr "No organisations found"
-
-#: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
-msgid "No other active team members are available."
-msgstr "No other active team members are available."
 
 #: apps/remix/app/components/tables/settings-public-profile-templates-table.tsx
 msgid "No public profile templates found"
@@ -9612,6 +9610,7 @@ msgid "Search languages..."
 msgstr "Search languages..."
 
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Search members by name or email"
 msgstr "Search members by name or email"
 
@@ -9672,8 +9671,7 @@ msgstr "Select a plan to continue"
 msgid "Select a recipient"
 msgstr "Select a recipient"
 
-#: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
-#: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Select a team member"
 msgstr "Select a team member"
 
@@ -10073,6 +10071,10 @@ msgstr "Show license key"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 msgid "Show templates in your public profile for your audience to sign and get started quickly"
 msgstr "Show templates in your public profile for your audience to sign and get started quickly"
+
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
+msgid "Showing up to 15 members. Search to find others."
+msgstr "Showing up to 15 members. Search to find others."
 
 #: apps/remix/app/components/dialogs/sign-field-signature-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auth-2fa.tsx
@@ -12442,7 +12444,7 @@ msgstr "Unable to load document history"
 msgid "Unable to load documents"
 msgstr "Unable to load documents"
 
-#: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
+#: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "Unable to load team members. Close this dialog and try again."
 
