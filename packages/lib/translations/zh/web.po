@@ -1223,6 +1223,7 @@ msgstr "操作"
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-signing/envelope-signer-header.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/components/tables/admin-claims-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
@@ -2828,6 +2829,11 @@ msgstr "声明"
 msgid "Clear filters"
 msgstr "清除筛选条件"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Clear search"
+msgstr "清除搜索"
+
 #: apps/remix/app/components/tables/envelopes-table-bulk-action-bar.tsx
 msgid "Clear selection"
 msgstr "清除选择"
@@ -2909,6 +2915,10 @@ msgstr "客户端密钥为必填项"
 #: packages/ui/primitives/sheet.tsx
 msgid "Close"
 msgstr "关闭"
+
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Collapse folder"
+msgstr "折叠文件夹"
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 msgid "Collapse sidebar"
@@ -3802,6 +3812,7 @@ msgstr "delete"
 #: apps/remix/app/components/general/document/document-page-view-dropdown.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/tables/admin-claims-table.tsx
 #: apps/remix/app/components/tables/documents-table-action-dropdown.tsx
 #: apps/remix/app/components/tables/envelopes-table-bulk-action-bar.tsx
@@ -4573,6 +4584,7 @@ msgstr "文档"
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/skeletons/document-edit-skeleton.tsx
 #: apps/remix/app/components/general/user-profile-skeleton.tsx
 #: apps/remix/app/components/general/user-profile-timur.tsx
@@ -5585,6 +5597,10 @@ msgstr "现有签名、签署链接和电子邮件设置将保留。"
 msgid "Existing signing links will continue to work after you finish. Outstanding recipients will be notified when the corrected document is ready."
 msgstr "在您完成后，现有的签名链接将继续有效。 当更正后的文件准备好时，将通知未完成的收件人。"
 
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Expand folder"
+msgstr "展开文件夹"
+
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 msgid "Expand sidebar"
 msgstr "展开侧边栏"
@@ -5874,6 +5890,7 @@ msgstr "聚焦轮廓颜色。"
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
 #: apps/remix/app/components/dialogs/envelopes-bulk-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Folder"
 msgstr "文件夹"
 
@@ -5884,6 +5901,10 @@ msgstr "文件夹创建成功"
 #: apps/remix/app/components/dialogs/folder-delete-dialog.tsx
 msgid "Folder deleted successfully"
 msgstr "文件夹删除成功"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Folder layout"
+msgstr "文件夹布局"
 
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Folder moved successfully"
@@ -5906,6 +5927,10 @@ msgstr "文件夹设置"
 #: apps/remix/app/components/dialogs/folder-update-dialog.tsx
 msgid "Folder updated successfully"
 msgstr "文件夹更新成功"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Folders"
+msgstr "文件夹"
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/date-field.tsx
@@ -6073,6 +6098,10 @@ msgstr "转到下一页"
 msgid "Go to owner"
 msgstr "前往所有者"
 
+#: apps/remix/app/components/general/folder/folder-grid.tsx
+msgid "Go to parent folder"
+msgstr "转到上级文件夹"
+
 #: packages/ui/primitives/data-table-pagination.tsx
 msgid "Go to previous page"
 msgstr "转到上一页"
@@ -6092,6 +6121,10 @@ msgstr "前往你的<0>公开资料设置</0>添加文档。"
 #: packages/ui/primitives/signature-pad/signature-pad-color-picker.tsx
 msgid "Green"
 msgstr "绿色"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Grid"
+msgstr "网格"
 
 #: apps/remix/app/components/dialogs/team-group-create-dialog.tsx
 #: apps/remix/app/components/tables/organisation-groups-table.tsx
@@ -6843,6 +6876,10 @@ msgstr "关联时间"
 msgid "Listening to"
 msgstr "监听对象"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Load more folders"
+msgstr "加载更多文件夹"
+
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 msgid "Load more templates"
 msgstr "加载更多模板"
@@ -7247,6 +7284,7 @@ msgstr "月活跃用户：至少有一份文档被完成的用户"
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Move"
 msgstr "移动"
 
@@ -7490,15 +7528,10 @@ msgstr "在您的文档中未检测到任何字段。"
 msgid "No folders found"
 msgstr "未找到文件夹"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
-msgid "No folders found matching \"{searchTerm}\""
-msgstr "未找到与“{searchTerm}”匹配的文件夹"
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
-msgid "No folders yet."
-msgstr "还没有文件夹。"
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "No folders found."
+msgstr "未找到文件夹。"
 
 #: apps/remix/app/components/embed/embed-document-rejected.tsx
 #: apps/remix/app/routes/_recipient+/sign.$token+/rejected.tsx
@@ -8010,6 +8043,7 @@ msgstr "覆盖组织设置"
 
 #: apps/remix/app/components/dialogs/admin-organisation-member-update-dialog.tsx
 #: apps/remix/app/components/dialogs/admin-organisation-member-update-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 #: apps/remix/app/components/tables/organisation-members-table.tsx
@@ -8261,6 +8295,7 @@ msgid "Pick any of the following agreements below and start signing to get start
 msgstr "从下面任意一份协议开始签署，即可快速上手"
 
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Pin"
 msgstr "固定"
 
@@ -9597,12 +9632,21 @@ msgstr "按组织名称搜索"
 msgid "Search documents..."
 msgstr "搜索文档..."
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Search folders"
+msgstr "搜索文件夹"
+
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Search folders or owners..."
+msgstr "搜索文件夹或所有者..."
+
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
 #: apps/remix/app/components/dialogs/envelopes-bulk-move-dialog.tsx
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Search folders..."
 msgstr "搜索文件夹…"
 
@@ -10032,6 +10076,7 @@ msgstr "设置模板属性和收件人信息"
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-settings-dialog.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/org-menu-switcher.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl._index.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.general.tsx
@@ -10612,6 +10657,10 @@ msgstr "Stripe 客户 ID"
 msgid "Stuck For"
 msgstr "已卡住时长"
 
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Subfolders"
+msgstr "子文件夹"
+
 #: apps/remix/app/components/forms/support-ticket-form.tsx
 msgid "Subject"
 msgstr "主题"
@@ -10788,6 +10837,10 @@ msgstr "系统自动插入了字段"
 #: apps/remix/app/components/general/app-command-menu.tsx
 msgid "System Theme"
 msgstr "系统主题"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Table"
+msgstr "表格"
 
 #: apps/remix/app/components/dialogs/admin-swap-subscription-dialog.tsx
 msgid "Target Organisation"
@@ -11115,6 +11168,7 @@ msgstr "模板已上传"
 #: apps/remix/app/components/general/app-command-menu.tsx
 #: apps/remix/app/components/general/app-nav-desktop.tsx
 #: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
@@ -12328,6 +12382,7 @@ msgstr "True North Mortgage, Inc.（连同其关联方及相关实体，包括 T
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-cards.tsx
 msgid "Try again"
 msgstr "重试"
 
@@ -12449,6 +12504,10 @@ msgstr "无法加载文档历史"
 msgid "Unable to load documents"
 msgstr "无法加载文档"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Unable to load folders."
+msgstr "无法加载文件夹。"
+
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "无法加载团队成员。请关闭此对话框后重试。"
@@ -12557,6 +12616,7 @@ msgid "Unlink"
 msgstr "取消关联"
 
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Unpin"
 msgstr "取消固定"
 
@@ -13020,7 +13080,7 @@ msgstr "查看使用此邮箱地址发送和接收的所有文档"
 msgid "View all documents sent to your account"
 msgstr "查看发送到你账号的所有文档"
 
-#: apps/remix/app/components/general/folder/folder-grid.tsx
+#: apps/remix/app/components/general/folder/folder-browser.tsx
 msgid "View all folders"
 msgstr "查看所有文件夹"
 

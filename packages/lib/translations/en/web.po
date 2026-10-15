@@ -1218,6 +1218,7 @@ msgstr "Action"
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-signing/envelope-signer-header.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/components/tables/admin-claims-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
@@ -2823,6 +2824,11 @@ msgstr "Claims"
 msgid "Clear filters"
 msgstr "Clear filters"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Clear search"
+msgstr "Clear search"
+
 #: apps/remix/app/components/tables/envelopes-table-bulk-action-bar.tsx
 msgid "Clear selection"
 msgstr "Clear selection"
@@ -2904,6 +2910,10 @@ msgstr "Client secret is required"
 #: packages/ui/primitives/sheet.tsx
 msgid "Close"
 msgstr "Close"
+
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Collapse folder"
+msgstr "Collapse folder"
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 msgid "Collapse sidebar"
@@ -3797,6 +3807,7 @@ msgstr "delete"
 #: apps/remix/app/components/general/document/document-page-view-dropdown.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/tables/admin-claims-table.tsx
 #: apps/remix/app/components/tables/documents-table-action-dropdown.tsx
 #: apps/remix/app/components/tables/envelopes-table-bulk-action-bar.tsx
@@ -4568,6 +4579,7 @@ msgstr "Documentation"
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/skeletons/document-edit-skeleton.tsx
 #: apps/remix/app/components/general/user-profile-skeleton.tsx
 #: apps/remix/app/components/general/user-profile-timur.tsx
@@ -5580,6 +5592,10 @@ msgstr "Existing signatures, signing links, and email settings will be preserved
 msgid "Existing signing links will continue to work after you finish. Outstanding recipients will be notified when the corrected document is ready."
 msgstr "Existing signing links will continue to work after you finish. Outstanding recipients will be notified when the corrected document is ready."
 
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Expand folder"
+msgstr "Expand folder"
+
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 msgid "Expand sidebar"
 msgstr "Expand sidebar"
@@ -5869,6 +5885,7 @@ msgstr "Focus ring colour."
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
 #: apps/remix/app/components/dialogs/envelopes-bulk-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Folder"
 msgstr "Folder"
 
@@ -5879,6 +5896,10 @@ msgstr "Folder created successfully"
 #: apps/remix/app/components/dialogs/folder-delete-dialog.tsx
 msgid "Folder deleted successfully"
 msgstr "Folder deleted successfully"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Folder layout"
+msgstr "Folder layout"
 
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Folder moved successfully"
@@ -5901,6 +5922,10 @@ msgstr "Folder Settings"
 #: apps/remix/app/components/dialogs/folder-update-dialog.tsx
 msgid "Folder updated successfully"
 msgstr "Folder updated successfully"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Folders"
+msgstr "Folders"
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/date-field.tsx
@@ -6068,6 +6093,10 @@ msgstr "Go to next page"
 msgid "Go to owner"
 msgstr "Go to owner"
 
+#: apps/remix/app/components/general/folder/folder-grid.tsx
+msgid "Go to parent folder"
+msgstr "Go to parent folder"
+
 #: packages/ui/primitives/data-table-pagination.tsx
 msgid "Go to previous page"
 msgstr "Go to previous page"
@@ -6087,6 +6116,10 @@ msgstr "Go to your <0>public profile settings</0> to add documents."
 #: packages/ui/primitives/signature-pad/signature-pad-color-picker.tsx
 msgid "Green"
 msgstr "Green"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Grid"
+msgstr "Grid"
 
 #: apps/remix/app/components/dialogs/team-group-create-dialog.tsx
 #: apps/remix/app/components/tables/organisation-groups-table.tsx
@@ -6838,6 +6871,10 @@ msgstr "Linked At"
 msgid "Listening to"
 msgstr "Listening to"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Load more folders"
+msgstr "Load more folders"
+
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 msgid "Load more templates"
 msgstr "Load more templates"
@@ -7242,6 +7279,7 @@ msgstr "Monthly Active Users: Users that had at least one of their documents com
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Move"
 msgstr "Move"
 
@@ -7485,15 +7523,10 @@ msgstr "No fields were detected in your document."
 msgid "No folders found"
 msgstr "No folders found"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
-msgid "No folders found matching \"{searchTerm}\""
-msgstr "No folders found matching \"{searchTerm}\""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
-msgid "No folders yet."
-msgstr "No folders yet."
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "No folders found."
+msgstr "No folders found."
 
 #: apps/remix/app/components/embed/embed-document-rejected.tsx
 #: apps/remix/app/routes/_recipient+/sign.$token+/rejected.tsx
@@ -8005,6 +8038,7 @@ msgstr "Override organisation settings"
 
 #: apps/remix/app/components/dialogs/admin-organisation-member-update-dialog.tsx
 #: apps/remix/app/components/dialogs/admin-organisation-member-update-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 #: apps/remix/app/components/tables/organisation-members-table.tsx
@@ -8256,6 +8290,7 @@ msgid "Pick any of the following agreements below and start signing to get start
 msgstr "Pick any of the following agreements below and start signing to get started"
 
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Pin"
 msgstr "Pin"
 
@@ -9592,12 +9627,21 @@ msgstr "Search by organisation name"
 msgid "Search documents..."
 msgstr "Search documents..."
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Search folders"
+msgstr "Search folders"
+
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Search folders or owners..."
+msgstr "Search folders or owners..."
+
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
 #: apps/remix/app/components/dialogs/envelopes-bulk-move-dialog.tsx
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Search folders..."
 msgstr "Search folders..."
 
@@ -10027,6 +10071,7 @@ msgstr "Set up your template properties and recipient information"
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-settings-dialog.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/org-menu-switcher.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl._index.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.general.tsx
@@ -10607,6 +10652,10 @@ msgstr "Stripe Customer ID"
 msgid "Stuck For"
 msgstr "Stuck For"
 
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Subfolders"
+msgstr "Subfolders"
+
 #: apps/remix/app/components/forms/support-ticket-form.tsx
 msgid "Subject"
 msgstr "Subject"
@@ -10783,6 +10832,10 @@ msgstr "System auto inserted fields"
 #: apps/remix/app/components/general/app-command-menu.tsx
 msgid "System Theme"
 msgstr "System Theme"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Table"
+msgstr "Table"
 
 #: apps/remix/app/components/dialogs/admin-swap-subscription-dialog.tsx
 msgid "Target Organisation"
@@ -11110,6 +11163,7 @@ msgstr "Template uploaded"
 #: apps/remix/app/components/general/app-command-menu.tsx
 #: apps/remix/app/components/general/app-nav-desktop.tsx
 #: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
@@ -12323,6 +12377,7 @@ msgstr "True North Mortgage, Inc. (along with our affiliates and related entitie
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-cards.tsx
 msgid "Try again"
 msgstr "Try again"
 
@@ -12444,6 +12499,10 @@ msgstr "Unable to load document history"
 msgid "Unable to load documents"
 msgstr "Unable to load documents"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Unable to load folders."
+msgstr "Unable to load folders."
+
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "Unable to load team members. Close this dialog and try again."
@@ -12552,6 +12611,7 @@ msgid "Unlink"
 msgstr "Unlink"
 
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Unpin"
 msgstr "Unpin"
 
@@ -13015,7 +13075,7 @@ msgstr "View all documents sent to and from this email address"
 msgid "View all documents sent to your account"
 msgstr "View all documents sent to your account"
 
-#: apps/remix/app/components/general/folder/folder-grid.tsx
+#: apps/remix/app/components/general/folder/folder-browser.tsx
 msgid "View all folders"
 msgstr "View all folders"
 

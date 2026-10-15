@@ -13,14 +13,14 @@ import { DocumentUploadButtonLegacy } from '~/components/general/document/docume
 import { useCurrentTeam } from '~/providers/team';
 
 import { EnvelopeUploadButton } from '../envelope/envelope-upload-button';
-import { FolderManagementTable } from './folder-management-table';
+import { FolderBrowser } from './folder-browser';
 
 export type FolderGridProps = {
   type: FolderType;
   parentId: string | null;
 };
 
-/** @deprecated Kept as the dashboard integration point; folders now render as a management table. */
+/** Dashboard folder navigation and actions. */
 export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
   const team = useCurrentTeam();
   const organisation = useCurrentOrganisation();
@@ -80,7 +80,7 @@ export const FolderGrid = ({ type, parentId }: FolderGridProps) => {
         </div>
       </div>
 
-      <FolderManagementTable type={type} parentId={parentId} />
+      <FolderBrowser type={type} parentId={parentId} />
     </div>
   );
 };

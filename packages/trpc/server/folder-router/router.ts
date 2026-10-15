@@ -33,7 +33,8 @@ export const folderRouter = router({
     .output(ZGetFoldersResponseSchema)
     .query(async ({ input, ctx }) => {
       const { teamId, user } = ctx;
-      const { parentId, type, query, page, perPage, sortBy, sortDirection } = input;
+      const { parentId, type, query, page, perPage, sortBy, sortDirection, cursor, includeSearchParents, childDepth } =
+        input;
 
       ctx.logger.info({
         input: {
@@ -48,12 +49,14 @@ export const folderRouter = router({
       });
 
       const folders = await findFoldersDashboard({
+        includeSearchParents,
+        childDepth,
         userId: user.id,
         teamId,
         parentId,
         type,
         query,
-        page,
+        page: cursor ?? page,
         perPage,
         sortBy,
         sortDirection,

@@ -6,7 +6,7 @@ import { HomeIcon } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router';
 
 import { FolderCreateDialog } from '~/components/dialogs/folder-create-dialog';
-import { FolderManagementTable } from '~/components/general/folder/folder-management-table';
+import { FolderBrowser } from '~/components/general/folder/folder-browser';
 import { useCurrentTeam } from '~/providers/team';
 import { appMetaTags } from '~/utils/meta';
 
@@ -34,7 +34,7 @@ export default function DocumentsFoldersPage() {
       <h1 className="my-6 truncate font-semibold text-2xl md:text-3xl">
         <Trans>All Folders</Trans>
       </h1>
-      <FolderManagementTable type={FolderType.DOCUMENT} parentId={parentId} />
+      <FolderBrowser isFolderPage type={FolderType.DOCUMENT} parentId={parentId} />
     </div>
   );
 }

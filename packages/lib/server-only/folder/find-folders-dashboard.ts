@@ -7,20 +7,22 @@ import { getTeamById } from '../team/get-team';
 
 const getOwnerName = (user: { name: string | null; email: string }) => user.name || user.email;
 
-export interface FindFoldersDashboardOptions {
+export type FindFoldersDashboardOptions = {
   userId: number;
   teamId: number;
   parentId?: string | null;
   type?: TFolderType;
   query?: string;
+  includeSearchParents?: boolean;
+  childDepth?: number;
   page?: number;
   perPage?: number;
   sortBy?: 'name' | 'owner' | 'items' | 'subfolders';
   sortDirection?: 'asc' | 'desc';
-}
+};
 
 /**
- * Fetch a single folder-management page with all display data in two queries.
+ * Fetch a folder-management page, batching additional hierarchy context per level.
  * This intentionally avoids the per-folder count and child-folder queries used by
  * the legacy folder picker.
  */
@@ -30,6 +32,8 @@ export const findFoldersDashboard = async ({
   parentId,
   type,
   query,
+  includeSearchParents = false,
+  childDepth = 1,
   page = 1,
   perPage = 5,
   sortBy = 'name',
@@ -88,32 +92,82 @@ export const findFoldersDashboard = async ({
     },
   } satisfies Prisma.FolderCountOutputTypeSelect;
 
+  const include = {
+    user: { select: { name: true, email: true } },
+    _count: { select: countSelect },
+    subfolders: {
+      where: {
+        teamId,
+        type,
+        OR: [{ visibility }, { userId }],
+        ...(normalizedQuery ? { id: { in: [] } } : {}),
+      },
+      orderBy,
+      include: {
+        user: { select: { name: true, email: true } },
+        _count: { select: countSelect },
+      },
+    },
+  } satisfies Prisma.FolderInclude;
+
   const [folders, count] = await Promise.all([
     prisma.folder.findMany({
       where,
       skip: (Math.max(page, 1) - 1) * perPage,
       take: perPage,
       orderBy,
-      include: {
-        user: { select: { name: true, email: true } },
-        _count: { select: countSelect },
-        subfolders: {
-          where: {
-            teamId,
-            type,
-            OR: [{ visibility }, { userId }],
-            ...(normalizedQuery ? { id: { in: [] } } : {}),
-          },
-          orderBy,
-          include: {
-            user: { select: { name: true, email: true } },
-            _count: { select: countSelect },
-          },
-        },
-      },
+      include,
     }),
     prisma.folder.count({ where }),
   ]);
+
+  // Batch each level and enforce access on every ancestor/descendant lookup.
+  const depthLimit = Math.min(Math.max(childDepth, 1), 4);
+  const contextInclude = {
+    ...include,
+    subfolders: { ...include.subfolders, where: { ...include.subfolders.where, id: { in: [] as string[] } } },
+  };
+  const searchParents: typeof folders = [];
+  const descendants: typeof folders = [];
+  const seen = new Set(folders.map(({ id }) => id));
+  if (normalizedQuery && includeSearchParents) {
+    let currentFolders = folders;
+    for (let depth = 0; depth < depthLimit; depth++) {
+      const parentIds = [
+        ...new Set(currentFolders.flatMap(({ parentId }) => (parentId && !seen.has(parentId) ? [parentId] : []))),
+      ];
+      if (parentIds.length === 0) {
+        break;
+      }
+      currentFolders = await prisma.folder.findMany({
+        where: { id: { in: parentIds }, teamId, type, OR: [{ visibility }, { userId }] },
+        orderBy,
+        include: contextInclude,
+      });
+      for (const folder of currentFolders) {
+        seen.add(folder.id);
+        searchParents.push(folder);
+      }
+    }
+  } else if (!normalizedQuery && depthLimit > 1) {
+    let parentIds = folders.flatMap(({ subfolders }) => subfolders.map(({ id }) => id));
+    for (const id of parentIds) {
+      seen.add(id);
+    }
+    for (let depth = 1; depth < depthLimit && parentIds.length > 0; depth++) {
+      const children = await prisma.folder.findMany({
+        where: { parentId: { in: parentIds }, teamId, type, OR: [{ visibility }, { userId }] },
+        orderBy,
+        include: contextInclude,
+      });
+      const unseenChildren = children.filter(({ id }) => !seen.has(id));
+      for (const folder of unseenChildren) {
+        seen.add(folder.id);
+        descendants.push(folder);
+      }
+      parentIds = unseenChildren.map(({ id }) => id);
+    }
+  }
 
   const toFolder = (folder: (typeof folders)[number]) => {
     const { user, _count, subfolders, ...data } = folder;
@@ -142,6 +196,8 @@ export const findFoldersDashboard = async ({
 
   return {
     folders: folders.map(toFolder),
+    searchParents: searchParents.map(toFolder),
+    descendants: descendants.map(toFolder),
     count,
     currentPage: Math.max(page, 1),
     perPage,

@@ -1218,6 +1218,7 @@ msgstr "Ação"
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-signing/envelope-signer-header.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/components/tables/admin-claims-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
@@ -2823,6 +2824,11 @@ msgstr "Reivindicações"
 msgid "Clear filters"
 msgstr "Limpar filtros"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Clear search"
+msgstr "Limpar pesquisa"
+
 #: apps/remix/app/components/tables/envelopes-table-bulk-action-bar.tsx
 msgid "Clear selection"
 msgstr "Limpar seleção"
@@ -2904,6 +2910,10 @@ msgstr "Segredo do Cliente é obrigatório"
 #: packages/ui/primitives/sheet.tsx
 msgid "Close"
 msgstr "Fechar"
+
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Collapse folder"
+msgstr "Recolher pasta"
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 msgid "Collapse sidebar"
@@ -3797,6 +3807,7 @@ msgstr "excluir"
 #: apps/remix/app/components/general/document/document-page-view-dropdown.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/tables/admin-claims-table.tsx
 #: apps/remix/app/components/tables/documents-table-action-dropdown.tsx
 #: apps/remix/app/components/tables/envelopes-table-bulk-action-bar.tsx
@@ -4568,6 +4579,7 @@ msgstr "Documentação"
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/skeletons/document-edit-skeleton.tsx
 #: apps/remix/app/components/general/user-profile-skeleton.tsx
 #: apps/remix/app/components/general/user-profile-timur.tsx
@@ -5580,6 +5592,10 @@ msgstr "As assinaturas, os links de assinatura e as configurações de e-mail ex
 msgid "Existing signing links will continue to work after you finish. Outstanding recipients will be notified when the corrected document is ready."
 msgstr "Os links de assinatura existentes continuarão funcionando depois que você terminar. Os destinatários pendentes serão notificados quando o documento corrigido estiver pronto."
 
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Expand folder"
+msgstr "Expandir pasta"
+
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 msgid "Expand sidebar"
 msgstr "Expandir a barra lateral"
@@ -5869,6 +5885,7 @@ msgstr "Cor do anel de foco."
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
 #: apps/remix/app/components/dialogs/envelopes-bulk-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Folder"
 msgstr "Pasta"
 
@@ -5879,6 +5896,10 @@ msgstr "Pasta criada com sucesso"
 #: apps/remix/app/components/dialogs/folder-delete-dialog.tsx
 msgid "Folder deleted successfully"
 msgstr "Pasta excluída com sucesso"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Folder layout"
+msgstr "Visualização de pastas"
 
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Folder moved successfully"
@@ -5901,6 +5922,10 @@ msgstr "Configurações da pasta"
 #: apps/remix/app/components/dialogs/folder-update-dialog.tsx
 msgid "Folder updated successfully"
 msgstr "Pasta atualizada com sucesso"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Folders"
+msgstr "Pastas"
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/date-field.tsx
@@ -6068,6 +6093,10 @@ msgstr "Vá para a próxima página"
 msgid "Go to owner"
 msgstr "Ir para o proprietário"
 
+#: apps/remix/app/components/general/folder/folder-grid.tsx
+msgid "Go to parent folder"
+msgstr "Ir para a pasta superior"
+
 #: packages/ui/primitives/data-table-pagination.tsx
 msgid "Go to previous page"
 msgstr "Vá para a página anterior"
@@ -6087,6 +6116,10 @@ msgstr "Vá para suas <0>configurações de perfil público</0> para adicionar d
 #: packages/ui/primitives/signature-pad/signature-pad-color-picker.tsx
 msgid "Green"
 msgstr "Verde"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Grid"
+msgstr "Grade"
 
 #: apps/remix/app/components/dialogs/team-group-create-dialog.tsx
 #: apps/remix/app/components/tables/organisation-groups-table.tsx
@@ -6838,6 +6871,10 @@ msgstr "Vinculado em"
 msgid "Listening to"
 msgstr "Ouvindo"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Load more folders"
+msgstr "Carregar mais pastas"
+
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 msgid "Load more templates"
 msgstr "Carregar mais modelos"
@@ -7242,6 +7279,7 @@ msgstr "Usuários Ativos Mensais: Usuários que tiveram pelo menos um de seus do
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Move"
 msgstr "Mover"
 
@@ -7485,15 +7523,10 @@ msgstr "Nenhum campo foi detectado em seu documento."
 msgid "No folders found"
 msgstr "Nenhuma pasta encontrada"
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
-msgid "No folders found matching \"{searchTerm}\""
-msgstr "Nenhuma pasta encontrada correspondente a \"{searchTerm}\""
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
-msgid "No folders yet."
-msgstr "Nenhuma pasta ainda."
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "No folders found."
+msgstr "Nenhuma pasta encontrada."
 
 #: apps/remix/app/components/embed/embed-document-rejected.tsx
 #: apps/remix/app/routes/_recipient+/sign.$token+/rejected.tsx
@@ -8005,6 +8038,7 @@ msgstr "Substituir configurações da organização"
 
 #: apps/remix/app/components/dialogs/admin-organisation-member-update-dialog.tsx
 #: apps/remix/app/components/dialogs/admin-organisation-member-update-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 #: apps/remix/app/components/tables/organisation-members-table.tsx
@@ -8256,6 +8290,7 @@ msgid "Pick any of the following agreements below and start signing to get start
 msgstr "Escolha qualquer um dos acordos abaixo e comece a assinar para iniciar"
 
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Pin"
 msgstr "Fixar"
 
@@ -9592,12 +9627,21 @@ msgstr "Pesquisar por nome da organização"
 msgid "Search documents..."
 msgstr "Pesquisar documentos..."
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Search folders"
+msgstr "Pesquisar pastas"
+
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Search folders or owners..."
+msgstr "Pesquisar pastas ou proprietários..."
+
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
 #: apps/remix/app/components/dialogs/envelopes-bulk-move-dialog.tsx
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Search folders..."
 msgstr "Pesquisar pastas..."
 
@@ -10027,6 +10071,7 @@ msgstr "Configure as propriedades do seu modelo e informações do destinatário
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-settings-dialog.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/org-menu-switcher.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl._index.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.general.tsx
@@ -10607,6 +10652,10 @@ msgstr "ID do Cliente Stripe"
 msgid "Stuck For"
 msgstr "Preso Para"
 
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Subfolders"
+msgstr "Subpastas"
+
 #: apps/remix/app/components/forms/support-ticket-form.tsx
 msgid "Subject"
 msgstr "Assunto"
@@ -10783,6 +10832,10 @@ msgstr "Campos inseridos automaticamente pelo sistema"
 #: apps/remix/app/components/general/app-command-menu.tsx
 msgid "System Theme"
 msgstr "Tema do Sistema"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Table"
+msgstr "Tabela"
 
 #: apps/remix/app/components/dialogs/admin-swap-subscription-dialog.tsx
 msgid "Target Organisation"
@@ -11110,6 +11163,7 @@ msgstr "Modelo enviado"
 #: apps/remix/app/components/general/app-command-menu.tsx
 #: apps/remix/app/components/general/app-nav-desktop.tsx
 #: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
@@ -12323,6 +12377,7 @@ msgstr "A True North Mortgage, Inc. (juntamente com nossas afiliadas e entidades
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-cards.tsx
 msgid "Try again"
 msgstr "Tente novamente"
 
@@ -12444,6 +12499,10 @@ msgstr "Não foi possível carregar o histórico do documento"
 msgid "Unable to load documents"
 msgstr "Não foi possível carregar documentos"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Unable to load folders."
+msgstr "Não foi possível carregar as pastas."
+
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "Não foi possível carregar os membros da equipe. Feche esta janela e tente novamente."
@@ -12552,6 +12611,7 @@ msgid "Unlink"
 msgstr "Desvincular"
 
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Unpin"
 msgstr "Desafixar"
 
@@ -13015,7 +13075,7 @@ msgstr "Visualizar todos os documentos enviados para e a partir deste endereço 
 msgid "View all documents sent to your account"
 msgstr "Visualizar todos os documentos enviados para sua conta"
 
-#: apps/remix/app/components/general/folder/folder-grid.tsx
+#: apps/remix/app/components/general/folder/folder-browser.tsx
 msgid "View all folders"
 msgstr "Ver todas as pastas"
 

@@ -1223,6 +1223,7 @@ msgstr "동작"
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-signing/envelope-signer-header.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/components/tables/admin-claims-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
@@ -2828,6 +2829,11 @@ msgstr "클레임"
 msgid "Clear filters"
 msgstr "필터 지우기"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Clear search"
+msgstr "검색 지우기"
+
 #: apps/remix/app/components/tables/envelopes-table-bulk-action-bar.tsx
 msgid "Clear selection"
 msgstr "선택 해제"
@@ -2909,6 +2915,10 @@ msgstr "클라이언트 시크릿은 필수입니다."
 #: packages/ui/primitives/sheet.tsx
 msgid "Close"
 msgstr "닫기"
+
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Collapse folder"
+msgstr "폴더 접기"
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 msgid "Collapse sidebar"
@@ -3802,6 +3812,7 @@ msgstr "delete"
 #: apps/remix/app/components/general/document/document-page-view-dropdown.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/tables/admin-claims-table.tsx
 #: apps/remix/app/components/tables/documents-table-action-dropdown.tsx
 #: apps/remix/app/components/tables/envelopes-table-bulk-action-bar.tsx
@@ -4573,6 +4584,7 @@ msgstr "문서"
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/skeletons/document-edit-skeleton.tsx
 #: apps/remix/app/components/general/user-profile-skeleton.tsx
 #: apps/remix/app/components/general/user-profile-timur.tsx
@@ -5585,6 +5597,10 @@ msgstr "기존 서명, 서명 링크 및 이메일 설정은 유지됩니다."
 msgid "Existing signing links will continue to work after you finish. Outstanding recipients will be notified when the corrected document is ready."
 msgstr "기존 서명 링크는 완료하신 후에도 계속 작동합니다. 수정된 문서가 준비되면 미수령자에게 통보됩니다."
 
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Expand folder"
+msgstr "폴더 펼치기"
+
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 msgid "Expand sidebar"
 msgstr "사이드바 펼치기"
@@ -5874,6 +5890,7 @@ msgstr "포커스 링 색상입니다."
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
 #: apps/remix/app/components/dialogs/envelopes-bulk-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Folder"
 msgstr "폴더"
 
@@ -5884,6 +5901,10 @@ msgstr "폴더가 성공적으로 생성되었습니다."
 #: apps/remix/app/components/dialogs/folder-delete-dialog.tsx
 msgid "Folder deleted successfully"
 msgstr "폴더가 성공적으로 삭제되었습니다."
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Folder layout"
+msgstr "폴더 보기"
 
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Folder moved successfully"
@@ -5906,6 +5927,10 @@ msgstr "폴더 설정"
 #: apps/remix/app/components/dialogs/folder-update-dialog.tsx
 msgid "Folder updated successfully"
 msgstr "폴더가 성공적으로 업데이트되었습니다."
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Folders"
+msgstr "폴더"
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/date-field.tsx
@@ -6073,6 +6098,10 @@ msgstr "다음 페이지로 이동하기"
 msgid "Go to owner"
 msgstr "소유자로 이동"
 
+#: apps/remix/app/components/general/folder/folder-grid.tsx
+msgid "Go to parent folder"
+msgstr "상위 폴더로 이동"
+
 #: packages/ui/primitives/data-table-pagination.tsx
 msgid "Go to previous page"
 msgstr "이전 페이지로 이동하기"
@@ -6092,6 +6121,10 @@ msgstr "문서를 추가하려면 <0>공개 프로필 설정</0>으로 이동하
 #: packages/ui/primitives/signature-pad/signature-pad-color-picker.tsx
 msgid "Green"
 msgstr "녹색"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Grid"
+msgstr "그리드"
 
 #: apps/remix/app/components/dialogs/team-group-create-dialog.tsx
 #: apps/remix/app/components/tables/organisation-groups-table.tsx
@@ -6843,6 +6876,10 @@ msgstr "연결된 시간"
 msgid "Listening to"
 msgstr "수신 중"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Load more folders"
+msgstr "폴더 더 불러오기"
+
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 msgid "Load more templates"
 msgstr "템플릿을 더 불러오기"
@@ -7247,6 +7284,7 @@ msgstr "월간 활성 사용자: 문서가 하나 이상 완료된 사용자"
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Move"
 msgstr "이동"
 
@@ -7490,15 +7528,10 @@ msgstr "문서에서 감지된 필드가 없습니다."
 msgid "No folders found"
 msgstr "폴더를 찾을 수 없습니다."
 
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
-msgid "No folders found matching \"{searchTerm}\""
-msgstr "\"{searchTerm}\"과(와) 일치하는 폴더가 없습니다."
-
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
-msgid "No folders yet."
-msgstr "아직 폴더가 없습니다."
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "No folders found."
+msgstr "폴더를 찾을 수 없습니다."
 
 #: apps/remix/app/components/embed/embed-document-rejected.tsx
 #: apps/remix/app/routes/_recipient+/sign.$token+/rejected.tsx
@@ -8010,6 +8043,7 @@ msgstr "조직 설정 재정의"
 
 #: apps/remix/app/components/dialogs/admin-organisation-member-update-dialog.tsx
 #: apps/remix/app/components/dialogs/admin-organisation-member-update-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 #: apps/remix/app/components/tables/organisation-members-table.tsx
@@ -8261,6 +8295,7 @@ msgid "Pick any of the following agreements below and start signing to get start
 msgstr "아래 계약 중 하나를 선택하고 서명을 시작해 보세요."
 
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Pin"
 msgstr "고정"
 
@@ -9597,12 +9632,21 @@ msgstr "조직 이름으로 검색"
 msgid "Search documents..."
 msgstr "문서 검색..."
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Search folders"
+msgstr "폴더 검색"
+
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Search folders or owners..."
+msgstr "폴더 또는 소유자 검색..."
+
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
 #: apps/remix/app/components/dialogs/envelopes-bulk-move-dialog.tsx
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.folders._index.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Search folders..."
 msgstr "폴더 검색..."
 
@@ -10032,6 +10076,7 @@ msgstr "템플릿 속성과 수신자 정보를 설정하세요."
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-settings-dialog.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/org-menu-switcher.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl._index.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.general.tsx
@@ -10612,6 +10657,10 @@ msgstr "Stripe 고객 ID"
 msgid "Stuck For"
 msgstr "멈춰 있던 시간"
 
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
+msgid "Subfolders"
+msgstr "하위 폴더"
+
 #: apps/remix/app/components/forms/support-ticket-form.tsx
 msgid "Subject"
 msgstr "제목"
@@ -10788,6 +10837,10 @@ msgstr "시스템이 자동으로 필드를 삽입함"
 #: apps/remix/app/components/general/app-command-menu.tsx
 msgid "System Theme"
 msgstr "시스템 테마"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Table"
+msgstr "표"
 
 #: apps/remix/app/components/dialogs/admin-swap-subscription-dialog.tsx
 msgid "Target Organisation"
@@ -11115,6 +11168,7 @@ msgstr "템플릿이 업로드되었습니다."
 #: apps/remix/app/components/general/app-command-menu.tsx
 #: apps/remix/app/components/general/app-nav-desktop.tsx
 #: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
@@ -12328,6 +12382,7 @@ msgstr "True North Mortgage, Inc. (우리의 계열사 및 관련 기관인 THIN
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
+#: apps/remix/app/components/general/folder/folder-cards.tsx
 msgid "Try again"
 msgstr "다시 시도"
 
@@ -12449,6 +12504,10 @@ msgstr "문서 이력을 불러올 수 없습니다"
 msgid "Unable to load documents"
 msgstr "문서를 불러올 수 없습니다"
 
+#: apps/remix/app/components/general/folder/folder-cards.tsx
+msgid "Unable to load folders."
+msgstr "폴더를 불러올 수 없습니다."
+
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "팀원을 불러올 수 없습니다. 이 대화 상자를 닫고 다시 시도하세요."
@@ -12557,6 +12616,7 @@ msgid "Unlink"
 msgstr "연결 해제"
 
 #: apps/remix/app/components/general/folder/folder-card.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Unpin"
 msgstr "고정 해제"
 
@@ -13020,7 +13080,7 @@ msgstr "이 이메일 주소로 주고받은 모든 문서를 확인합니다."
 msgid "View all documents sent to your account"
 msgstr "계정으로 전송된 모든 문서를 확인합니다"
 
-#: apps/remix/app/components/general/folder/folder-grid.tsx
+#: apps/remix/app/components/general/folder/folder-browser.tsx
 msgid "View all folders"
 msgstr "전체 폴더 보기"
 
