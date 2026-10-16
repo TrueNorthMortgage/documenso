@@ -159,14 +159,19 @@ export const run = async ({ payload, io }: { payload: TSealDocumentJobDefinition
     }
 
     if (!envelope.qrToken) {
-      await prisma.envelope.update({
+      const { qrToken } = await prisma.envelope.update({
         where: {
           id: envelope.id,
         },
         data: {
           qrToken: prefixedId('qr'),
         },
+        select: {
+          qrToken: true,
+        },
       });
+
+      envelope.qrToken = qrToken;
     }
 
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
