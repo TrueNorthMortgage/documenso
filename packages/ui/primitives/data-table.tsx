@@ -30,6 +30,7 @@ export interface DataTableProps<TData, TValue> {
   onPaginationChange?: (_page: number, _perPage: number) => void;
   onClearFilters?: () => void;
   emptyState?: React.ReactNode;
+  toolbar?: React.ReactNode;
   hasFilters?: boolean;
   children?: DataTableChildren<TData>;
   skeleton?: {
@@ -63,6 +64,7 @@ export function DataTable<TData, TValue>({
   rowClassName,
   children,
   emptyState,
+  toolbar,
   enableRowSelection,
   rowSelection,
   onRowSelectionChange,
@@ -121,6 +123,7 @@ export function DataTable<TData, TValue>({
   return (
     <>
       <div className="rounded-md border">
+        {toolbar && <div className="border-b p-3">{toolbar}</div>}
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -178,7 +181,7 @@ export function DataTable<TData, TValue>({
                       </p>
 
                       {hasFilters && onClearFilters !== undefined && (
-                        <button onClick={() => onClearFilters()} className="mt-1 text-foreground text-sm">
+                        <button type="button" onClick={() => onClearFilters()} className="mt-1 text-foreground text-sm">
                           <Trans>Clear filters</Trans>
                         </button>
                       )}

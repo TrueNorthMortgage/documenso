@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ZCreateFolderRequestSchema, ZUpdateFolderRequestSchema } from './schema';
+import { ZCreateFolderRequestSchema, ZGetFoldersSchema, ZUpdateFolderRequestSchema } from './schema';
 
 describe('ZCreateFolderRequestSchema', () => {
   it('accepts an omitted parent for a root folder', () => {
@@ -42,6 +42,33 @@ describe('ZUpdateFolderRequestSchema', () => {
     ).toEqual({
       folderId: 'folder_1',
       data: { name: 'Renamed folder' },
+    });
+  });
+});
+
+describe('folder request limits', () => {
+  it.each([
+    { parentId: 'x'.repeat(129) },
+    { cursor: 1_000_001 },
+    { perPage: 101 },
+    { perPage: 1.5 },
+    { perPage: -1 },
+    { page: 1.5 },
+    { page: Infinity },
+    { page: 0 },
+    { childDepth: 5 },
+    { sortDirection: 'arbitrary' },
+    { sortBy: { name: 'asc' } },
+    { query: 'x'.repeat(201) },
+  ])('rejects malformed or oversized input: %j', (input) => {
+    expect(ZGetFoldersSchema.safeParse(input).success).toBe(false);
+  });
+  it('accepts bounded child pages and normalizes search whitespace', () => {
+    expect(ZGetFoldersSchema.parse({ parentId: 'folder', page: 2, perPage: 50, query: ' nested ' })).toMatchObject({
+      parentId: 'folder',
+      page: 2,
+      perPage: 50,
+      query: 'nested',
     });
   });
 });
