@@ -67,4 +67,29 @@ describe('MailChannels transport with Nodemailer', () => {
       }),
     ).rejects.toThrow('MailChannels error: Provider unavailable');
   });
+
+  it.each([
+    ['null', 'null'],
+    ['missing message', '{"details":"private provider details"}'],
+    ['non-string message', '{"message":{"details":"private provider details"}}'],
+    ['empty message', '{"message":""}'],
+    ['JSON string', '"private provider details"'],
+    ['non-JSON body', '<html>private provider details</html>'],
+  ])('falls back to HTTP status for %s without exposing the response body', async (_description, body) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status: 502 })));
+    const transport = createTransport(MailChannelsTransport.makeTransport({}));
+
+    await expect(
+      transport.sendMail({ from: 'sender@example.invalid', to: 'recipient@example.invalid', text: 'Test' }),
+    ).rejects.toThrow('MailChannels error: HTTP 502');
+  });
+
+  it('propagates network failures through the Nodemailer callback', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network unavailable')));
+    const transport = createTransport(MailChannelsTransport.makeTransport({}));
+
+    await expect(
+      transport.sendMail({ from: 'sender@example.invalid', to: 'recipient@example.invalid', text: 'Test' }),
+    ).rejects.toThrow('Network unavailable');
+  });
 });

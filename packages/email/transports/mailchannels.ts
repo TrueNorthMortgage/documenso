@@ -72,7 +72,7 @@ export class MailChannelsTransport implements Transport<SentMessageInfo> {
       requestHeaders['X-Auth-Token'] = this._options.apiKey;
     }
 
-    fetch(this._options.endpoint, {
+    return fetch(this._options.endpoint, {
       method: 'POST',
       headers: requestHeaders,
       body: JSON.stringify({
@@ -100,7 +100,7 @@ export class MailChannelsTransport implements Transport<SentMessageInfo> {
         ],
       }),
     })
-      .then((res) => {
+      .then(async (res) => {
         if (res.status >= 200 && res.status <= 299) {
           return callback(null, {
             messageId: '',
@@ -111,10 +111,13 @@ export class MailChannelsTransport implements Transport<SentMessageInfo> {
           });
         }
 
-        res
-          .json()
-          .then((data) => callback(new Error(`MailChannels error: ${data.message}`)))
-          .catch((err) => callback(err));
+        const data: unknown = await res.json().catch(() => null);
+        const message =
+          data !== null && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
+            ? data.message
+            : '';
+
+        return callback(new Error(`MailChannels error: ${message || `HTTP ${res.status}`}`));
       })
       .catch((err) => {
         return callback(err);
