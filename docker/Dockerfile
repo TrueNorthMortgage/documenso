@@ -1,14 +1,14 @@
 ###########################
 #     BASE CONTAINER      #
 ###########################
-FROM node:22.23.3-alpine3.23 AS base
+FROM node:26.12.0-alpine3.23 AS base
 
 ENV NPM_CONFIG_AUDIT=false
 ENV NPM_CONFIG_FUND=false
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 ENV NO_UPDATE_NOTIFIER=1
 
-RUN apk add --no-cache openssl
+RUN apk upgrade --no-cache && apk add --no-cache openssl
 RUN apk add --no-cache font-freefont
 RUN npm install -g npm@12.1.0
 
@@ -76,7 +76,8 @@ COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/package-lock.json ./package-lock.json
 
 COPY --from=builder /app/lingui.config.ts ./lingui.config.ts
-COPY --from=builder /app/patches ./patches
+
+COPY scripts/patch-dependencies.cjs ./scripts/patch-dependencies.cjs
 
 RUN npm ci
 
@@ -121,8 +122,8 @@ WORKDIR /app
 COPY --from=builder --chown=nodejs:nodejs /app/out/json/ .
 # Copy the tailwind config files across
 COPY --from=builder --chown=nodejs:nodejs /app/out/full/packages/tailwind-config ./packages/tailwind-config
-# Copy the patches across
-COPY --from=builder --chown=nodejs:nodejs /app/patches ./patches
+
+COPY --chown=nodejs:nodejs scripts/patch-dependencies.cjs ./scripts/patch-dependencies.cjs
 
 RUN npm ci --omit=dev
 
@@ -138,6 +139,12 @@ COPY --from=installer --chown=nodejs:nodejs /app/packages/prisma/migrations ./pa
 
 # Generate the prisma client again
 RUN npx prisma generate --schema ./packages/prisma/schema.prisma
+
+# Package managers are not needed by the running application.
+USER root
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
+USER nodejs
 
 
 # Get the start script from docker/

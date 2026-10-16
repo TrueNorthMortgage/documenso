@@ -37,7 +37,6 @@
     "@oslojs/crypto": "^1.0.1",
     "@oslojs/encoding": "^1.1.0",
     "@react-router/node": "^7.18.2",
-    "@react-router/serve": "^7.18.2",
     "@simplewebauthn/browser": "^13.2.2",
     "@simplewebauthn/server": "^13.2.2",
     "@tanstack/react-query": "5.90.10",
@@ -71,7 +70,6 @@
     "remeda": "^2.32.0",
     "remix-themes": "^2.0.4",
     "satori": "^0.18.3",
-    "tailwindcss": "^3.4.18",
     "ts-pattern": "^5.9.0",
     "ua-parser-js": "^1.0.41",
     "uqr": "^0.1.2"
@@ -105,7 +103,8 @@
     "typescript": "5.6.2",
     "vite": "^7.2.4",
     "vite-plugin-babel-macros": "^1.0.6",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "tailwindcss": "^3.4.18"
   },
   "version": "2.11.0"
 }

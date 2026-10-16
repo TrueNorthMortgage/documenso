@@ -65,7 +65,7 @@
     "react": "^18",
     "remeda": "^2.32.0",
     "rollbar": "^3.1.0",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "skia-canvas": "^3.0.8",
     "stripe": "^12.18.0",
     "ts-pattern": "^5.9.0",
