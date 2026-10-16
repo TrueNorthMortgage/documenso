@@ -198,6 +198,8 @@ If you encounter any issues or have further questions, please refer to the offic
 
 ## Advanced Configuration
 
+Supply encryption keys as container runtime environment variables, not Docker build arguments. Product telemetry, browser analytics, and session recording are removed from this fork; legacy telemetry settings cannot enable them. Grafana and Rollbar remain available for operational monitoring.
+
 The environment variables listed above are a subset of those that are available for configuring Documenso. For a complete list of environment variables and their descriptions, refer to the table below:
 
 Here's a markdown table documenting all the provided environment variables:

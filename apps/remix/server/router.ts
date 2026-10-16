@@ -11,10 +11,8 @@ import {
   fileUploadRateLimit,
 } from '@documenso/lib/server-only/rate-limit/rate-limits';
 import { reportServerError } from '@documenso/lib/server-only/rollbar';
-import { TelemetryClient } from '@documenso/lib/server-only/telemetry/telemetry-client';
 import { migrateDeletedAccountServiceAccount } from '@documenso/lib/server-only/user/service-accounts/deleted-account';
 import { migrateLegacyServiceAccount } from '@documenso/lib/server-only/user/service-accounts/legacy-service-account';
-import { env } from '@documenso/lib/utils/env';
 import { logger } from '@documenso/lib/utils/logger';
 import { openApiDocument } from '@documenso/trpc/server/open-api';
 import { Hono } from 'hono';
@@ -157,12 +155,6 @@ app.use(`/api/v2-beta/*`, async (c) =>
     isBeta: true,
   }),
 );
-
-// Start telemetry client for anonymous usage tracking.
-// Can be disabled by setting DOCUMENSO_DISABLE_TELEMETRY=true
-if (env('NODE_ENV') !== 'development') {
-  void TelemetryClient.start();
-}
 
 // Start license client to verify license on startup.
 void LicenseClient.start();
