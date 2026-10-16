@@ -72,10 +72,13 @@ export const ZDeleteFolderRequestSchema = z.object({
 export const ZFolderSortBySchema = z.enum(['name', 'owner', 'items', 'subfolders']);
 
 export const ZGetFoldersSchema = ZFindSearchParamsSchema.extend({
+  query: z.string().trim().max(200).optional(),
+  page: z.coerce.number().int().min(1).max(1_000_000).optional(),
+  perPage: z.coerce.number().int().min(1).max(100).optional(),
   includeSearchParents: z.boolean().optional(),
   childDepth: z.number().int().min(1).max(4).optional(),
-  cursor: z.number().int().positive().optional(),
-  parentId: z.string().nullable().optional(),
+  cursor: z.number().int().positive().max(1_000_000).optional(),
+  parentId: z.string().min(1).max(128).nullable().optional(),
   type: ZFolderTypeSchema.optional(),
   sortBy: ZFolderSortBySchema.optional(),
   sortDirection: z.enum(['asc', 'desc']).optional(),
@@ -83,7 +86,7 @@ export const ZGetFoldersSchema = ZFindSearchParamsSchema.extend({
 
 export const ZGetFoldersResponseSchema = z.object({
   searchParents: z.array(ZFolderWithSubfoldersSchema),
-  descendants: z.array(ZFolderWithSubfoldersSchema),
+
   folders: z.array(ZFolderWithSubfoldersSchema),
   breadcrumbs: z.array(ZFolderSchema),
   type: ZFolderTypeSchema.optional(),

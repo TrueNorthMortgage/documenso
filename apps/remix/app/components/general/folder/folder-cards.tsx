@@ -59,6 +59,7 @@ export const FolderCards = ({
             aria-label={t`Search folders`}
             placeholder={canViewOwner ? t`Search folders or owners...` : t`Search folders...`}
             value={search}
+            maxLength={200}
             className="pr-8 pl-8"
             onChange={(event) => setSearch(event.target.value)}
           />

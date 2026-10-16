@@ -40,7 +40,7 @@ export const folderRouter = router({
         input: {
           parentId,
           type,
-          query,
+          hasQuery: Boolean(query),
           page,
           perPage,
           sortBy,

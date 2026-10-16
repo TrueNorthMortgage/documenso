@@ -4,6 +4,7 @@ import { EnvelopeType, Prisma, TeamMemberRole } from '@prisma/client';
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import type { TFolderType } from '../../types/folder-type';
 import { getTeamById } from '../team/get-team';
+import { getFolderById } from './get-folder-by-id';
 
 const getOwnerName = (user: { name: string | null; email: string }) => user.name || user.email;
 
@@ -29,7 +30,7 @@ export type FindFoldersDashboardOptions = {
 export const findFoldersDashboard = async ({
   userId,
   teamId,
-  parentId,
+  parentId = null,
   type,
   query,
   includeSearchParents = false,
@@ -40,6 +41,9 @@ export const findFoldersDashboard = async ({
   sortDirection = 'asc',
 }: FindFoldersDashboardOptions) => {
   const team = await getTeamById({ userId, teamId });
+  if (parentId) {
+    await getFolderById({ userId, teamId, folderId: parentId, type });
+  }
   const canViewOwner = team.currentTeamRole === TeamMemberRole.ADMIN || team.currentTeamRole === TeamMemberRole.MANAGER;
   const visibility = { in: TEAM_DOCUMENT_VISIBILITY_MAP[team.currentTeamRole] };
   const normalizedQuery = query?.trim();
@@ -87,6 +91,7 @@ export const findFoldersDashboard = async ({
     subfolders: {
       where: {
         teamId,
+        type,
         OR: [{ visibility }, { userId }],
       },
     },
@@ -95,19 +100,6 @@ export const findFoldersDashboard = async ({
   const include = {
     user: { select: { name: true, email: true } },
     _count: { select: countSelect },
-    subfolders: {
-      where: {
-        teamId,
-        type,
-        OR: [{ visibility }, { userId }],
-        ...(normalizedQuery ? { id: { in: [] } } : {}),
-      },
-      orderBy,
-      include: {
-        user: { select: { name: true, email: true } },
-        _count: { select: countSelect },
-      },
-    },
   } satisfies Prisma.FolderInclude;
 
   const [folders, count] = await Promise.all([
@@ -121,14 +113,9 @@ export const findFoldersDashboard = async ({
     prisma.folder.count({ where }),
   ]);
 
-  // Batch each level and enforce access on every ancestor/descendant lookup.
+  // Search context has at most one accessible ancestor per match at each level.
   const depthLimit = Math.min(Math.max(childDepth, 1), 4);
-  const contextInclude = {
-    ...include,
-    subfolders: { ...include.subfolders, where: { ...include.subfolders.where, id: { in: [] as string[] } } },
-  };
   const searchParents: typeof folders = [];
-  const descendants: typeof folders = [];
   const seen = new Set(folders.map(({ id }) => id));
   if (normalizedQuery && includeSearchParents) {
     let currentFolders = folders;
@@ -141,51 +128,25 @@ export const findFoldersDashboard = async ({
       }
       currentFolders = await prisma.folder.findMany({
         where: { id: { in: parentIds }, teamId, type, OR: [{ visibility }, { userId }] },
+        take: folders.length,
         orderBy,
-        include: contextInclude,
+        include,
       });
       for (const folder of currentFolders) {
         seen.add(folder.id);
         searchParents.push(folder);
       }
     }
-  } else if (!normalizedQuery && depthLimit > 1) {
-    let parentIds = folders.flatMap(({ subfolders }) => subfolders.map(({ id }) => id));
-    for (const id of parentIds) {
-      seen.add(id);
-    }
-    for (let depth = 1; depth < depthLimit && parentIds.length > 0; depth++) {
-      const children = await prisma.folder.findMany({
-        where: { parentId: { in: parentIds }, teamId, type, OR: [{ visibility }, { userId }] },
-        orderBy,
-        include: contextInclude,
-      });
-      const unseenChildren = children.filter(({ id }) => !seen.has(id));
-      for (const folder of unseenChildren) {
-        seen.add(folder.id);
-        descendants.push(folder);
-      }
-      parentIds = unseenChildren.map(({ id }) => id);
-    }
   }
 
   const toFolder = (folder: (typeof folders)[number]) => {
-    const { user, _count, subfolders, ...data } = folder;
+    const { user, _count, ...data } = folder;
     const itemCount = _count.envelopes;
 
     return {
       ...data,
       ...(canViewOwner ? { ownerName: getOwnerName(user) } : {}),
-      subfolders: subfolders.map(({ user: subfolderUser, _count: subfolderCount, ...subfolder }) => ({
-        ...subfolder,
-        ...(canViewOwner ? { ownerName: getOwnerName(subfolderUser) } : {}),
-        subfolders: [],
-        _count: {
-          documents: subfolder.type === 'DOCUMENT' ? subfolderCount.envelopes : 0,
-          templates: subfolder.type === 'TEMPLATE' ? subfolderCount.envelopes : 0,
-          subfolders: subfolderCount.subfolders,
-        },
-      })),
+      subfolders: [],
       _count: {
         documents: data.type === 'DOCUMENT' ? itemCount : 0,
         templates: data.type === 'TEMPLATE' ? itemCount : 0,
@@ -197,7 +158,7 @@ export const findFoldersDashboard = async ({
   return {
     folders: folders.map(toFolder),
     searchParents: searchParents.map(toFolder),
-    descendants: descendants.map(toFolder),
+
     count,
     currentPage: Math.max(page, 1),
     perPage,

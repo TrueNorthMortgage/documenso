@@ -84,6 +84,7 @@ export const FolderBrowser = ({ type, parentId, isFolderPage = false }: FolderBr
       </div>
       {view === 'table' ? (
         <FolderManagementTable
+          key={`${team.id}:${type}:${parentId}`}
           type={type}
           parentId={parentId}
           toolbarActions={toolbarActions}
