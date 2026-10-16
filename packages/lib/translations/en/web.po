@@ -6872,8 +6872,8 @@ msgid "Listening to"
 msgstr "Listening to"
 
 #: apps/remix/app/components/general/folder/folder-cards.tsx
-msgid "Load more folders"
-msgstr "Load more folders"
+msgid "Load more"
+msgstr "Load more"
 
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 msgid "Load more templates"

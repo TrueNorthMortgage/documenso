@@ -6877,8 +6877,8 @@ msgid "Listening to"
 msgstr "수신 중"
 
 #: apps/remix/app/components/general/folder/folder-cards.tsx
-msgid "Load more folders"
-msgstr "폴더 더 불러오기"
+msgid "Load more"
+msgstr "더 불러오기"
 
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 msgid "Load more templates"

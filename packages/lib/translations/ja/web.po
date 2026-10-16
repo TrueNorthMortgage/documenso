@@ -6877,8 +6877,8 @@ msgid "Listening to"
 msgstr "リッスン対象"
 
 #: apps/remix/app/components/general/folder/folder-cards.tsx
-msgid "Load more folders"
-msgstr "フォルダーをさらに読み込む"
+msgid "Load more"
+msgstr "さらに読み込む"
 
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 msgid "Load more templates"

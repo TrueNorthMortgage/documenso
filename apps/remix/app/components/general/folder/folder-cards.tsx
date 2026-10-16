@@ -7,7 +7,7 @@ import { Input } from '@documenso/ui/primitives/input';
 import { Skeleton } from '@documenso/ui/primitives/skeleton';
 import { Trans, useLingui } from '@lingui/react/macro';
 import type { FolderType } from '@prisma/client';
-import { SearchIcon, XIcon } from 'lucide-react';
+import { ChevronDownIcon, SearchIcon, XIcon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 
 import { FolderDeleteDialog } from '~/components/dialogs/folder-delete-dialog';
@@ -116,7 +116,8 @@ export const FolderCards = ({
             disabled={isFetching || isSearching}
             onClick={() => void fetchNextPage()}
           >
-            <Trans>Load more folders</Trans>
+            <Trans>Load more</Trans>
+            <ChevronDownIcon className="ml-2 h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
       )}
