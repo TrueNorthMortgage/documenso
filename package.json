@@ -17,7 +17,7 @@
     "lint:fix": "biome check --write .",
     "lint:staged": "biome check --write --no-errors-on-unmatched",
     "format": "biome format --write .",
-    "prepare": "husky && husky install || true",
+    "prepare": "husky || true",
     "commitlint": "commitlint --edit",
     "clean": "turbo run clean && rimraf node_modules",
     "d": "npm run dx && npm run translate:compile && npm run dev",

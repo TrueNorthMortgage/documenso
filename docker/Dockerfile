@@ -29,7 +29,7 @@ RUN npm install -g "turbo@^2.9.14"
 
 # Outputs to the /out folder
 # source: https://turbo.build/repo/docs/reference/command-line-reference/prune#--docker
-RUN turbo prune --scope=@documenso/remix --docker
+RUN turbo prune @documenso/remix --docker
 
 ###########################
 #   INSTALLER CONTAINER   #
@@ -45,16 +45,9 @@ RUN apk add --no-cache make cmake g++ openssl bash
 WORKDIR /app
 
 # Disable husky from installing hooks
-ENV HUSKY 0
-ENV DOCKER_OUTPUT 1
-ENV NEXT_TELEMETRY_DISABLED 1
-
-# Encryption keys
-ARG NEXT_PRIVATE_ENCRYPTION_KEY="CAFEBABE"
-ENV NEXT_PRIVATE_ENCRYPTION_KEY="$NEXT_PRIVATE_ENCRYPTION_KEY"
-
-ARG NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY="DEADBEEF"
-ENV NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY="$NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY"
+ENV HUSKY=0
+ENV DOCKER_OUTPUT=1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Telemetry credentials (optional, baked into image at build time)
 ARG NEXT_PRIVATE_TELEMETRY_KEY=""
@@ -96,8 +89,8 @@ RUN NODE_OPTIONS=--max-old-space-size=4096 turbo run build --filter=@documenso/r
 ###########################
 FROM base AS runner
 
-ENV HUSKY 0
-ENV DOCKER_OUTPUT 1
+ENV HUSKY=0
+ENV DOCKER_OUTPUT=1
 
 # Pin error reports to the source revision used to build this image.
 ARG DOCUMENSO_CODE_VERSION=""
@@ -138,7 +131,7 @@ COPY --from=installer --chown=nodejs:nodejs /app/packages/prisma/schema.prisma .
 COPY --from=installer --chown=nodejs:nodejs /app/packages/prisma/migrations ./packages/prisma/migrations
 
 # Generate the prisma client again
-RUN npx prisma generate --schema ./packages/prisma/schema.prisma
+RUN npm run prisma:generate --workspace @documenso/prisma
 
 # Package managers are not needed by the running application.
 USER root
