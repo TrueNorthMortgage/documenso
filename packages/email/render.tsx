@@ -1,4 +1,4 @@
-import config from '@documenso/tailwind-config';
+import themeColors from '@documenso/tailwind-config/colors.cjs';
 import type { I18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import * as ReactEmail from '@react-email/render';
@@ -12,7 +12,7 @@ export type RenderOptions = ReactEmail.Options & {
 };
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-const colors = (config.theme?.extend?.colors || {}) as Record<string, string>;
+const colors = themeColors as Record<string, string>;
 
 export const render = async (element: React.ReactNode, options?: RenderOptions) => {
   const { branding, ...otherOptions } = options ?? {};

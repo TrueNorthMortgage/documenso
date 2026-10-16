@@ -4,8 +4,6 @@ import {
   reportBrowserError,
   reportBrowserHydrationError,
 } from '@documenso/lib/client-only/rollbar';
-import { extractPostHogConfig } from '@documenso/lib/constants/feature-flags';
-import { env } from '@documenso/lib/utils/env';
 import { dynamicActivate } from '@documenso/lib/utils/i18n';
 import { i18n } from '@lingui/core';
 import { detect, fromHtmlTag } from '@lingui/detect-locale';
@@ -15,18 +13,6 @@ import { hydrateRoot } from 'react-dom/client';
 import { HydratedRouter } from 'react-router/dom';
 
 import './utils/polyfills/promise-with-resolvers';
-
-const initializePosthog = () => {
-  const postHogConfig = extractPostHogConfig();
-  if (postHogConfig) {
-    void import('posthog-js').then(({ default: posthog }) => {
-      posthog.init(postHogConfig.key, {
-        api_host: postHogConfig.host,
-        capture_exceptions: !env('NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN'),
-      });
-    });
-  }
-};
 
 async function main() {
   const hydrationDiagnostics = captureHydrationDiagnostics(
@@ -55,7 +41,6 @@ async function main() {
           }),
       },
     );
-    initializePosthog();
   });
 }
 

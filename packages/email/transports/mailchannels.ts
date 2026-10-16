@@ -1,11 +1,11 @@
 import { env } from '@documenso/lib/utils/env';
 import type { SentMessageInfo, Transport } from 'nodemailer';
-import type { Address } from 'nodemailer/lib/mailer';
+import addressparser from 'nodemailer/lib/addressparser';
 import type MailMessage from 'nodemailer/lib/mailer/mail-message';
 
 const VERSION = '1.0.0';
 
-type NodeMailerAddress = string | Address | Array<string | Address> | undefined;
+type NodeMailerAddress = MailMessage['data']['to'];
 
 interface MailChannelsAddress {
   email: string;
@@ -44,9 +44,9 @@ export class MailChannelsTransport implements Transport<SentMessageInfo> {
     };
   }
 
-  public send(mail: MailMessage, callback: (_err: Error | null, _info: SentMessageInfo) => void) {
+  public send(mail: MailMessage, callback: Parameters<Transport<SentMessageInfo>['send']>[1]) {
     if (!mail.data.to || !mail.data.from) {
-      return callback(new Error('Missing required fields "to" or "from"'), null);
+      return callback(new Error('Missing required fields "to" or "from"'));
     }
 
     const mailTo = this.toMailChannelsAddresses(mail.data.to);
@@ -56,8 +56,13 @@ export class MailChannelsTransport implements Transport<SentMessageInfo> {
     const [from] = this.toMailChannelsAddresses(mail.data.from);
 
     if (!from) {
-      return callback(new Error('Missing required field "from"'), null);
+      return callback(new Error('Missing required field "from"'));
     }
+
+    const envelope = {
+      from: from.email,
+      to: [...mailTo, ...mailCc, ...mailBcc].map((recipient) => recipient.email),
+    };
 
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -67,7 +72,7 @@ export class MailChannelsTransport implements Transport<SentMessageInfo> {
       requestHeaders['X-Auth-Token'] = this._options.apiKey;
     }
 
-    fetch(this._options.endpoint, {
+    return fetch(this._options.endpoint, {
       method: 'POST',
       headers: requestHeaders,
       body: JSON.stringify({
@@ -95,27 +100,27 @@ export class MailChannelsTransport implements Transport<SentMessageInfo> {
         ],
       }),
     })
-      .then((res) => {
+      .then(async (res) => {
         if (res.status >= 200 && res.status <= 299) {
           return callback(null, {
             messageId: '',
-            envelope: {
-              from: mail.data.from,
-              to: mail.data.to,
-            },
-            accepted: mail.data.to,
+            envelope,
+            accepted: envelope.to,
             rejected: [],
             pending: [],
           });
         }
 
-        res
-          .json()
-          .then((data) => callback(new Error(`MailChannels error: ${data.message}`), null))
-          .catch((err) => callback(err, null));
+        const data: unknown = await res.json().catch(() => null);
+        const message =
+          data !== null && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
+            ? data.message
+            : '';
+
+        return callback(new Error(`MailChannels error: ${message || `HTTP ${res.status}`}`));
       })
       .catch((err) => {
-        return callback(err, null);
+        return callback(err);
       });
   }
 
@@ -128,20 +133,19 @@ export class MailChannelsTransport implements Transport<SentMessageInfo> {
     }
 
     if (typeof address === 'string') {
-      return [{ email: address }];
+      return this.toMailChannelsAddresses(addressparser(address, { flatten: true }));
     }
 
     if (Array.isArray(address)) {
-      return address.map((address) => {
-        if (typeof address === 'string') {
-          return { email: address };
-        }
+      return address.flatMap((entry) => this.toMailChannelsAddresses(entry));
+    }
 
-        return {
-          email: address.address,
-          name: address.name,
-        };
-      });
+    if (address.group) {
+      return this.toMailChannelsAddresses(address.group);
+    }
+
+    if (!address.address) {
+      return [];
     }
 
     return [

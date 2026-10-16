@@ -1,14 +1,14 @@
 ###########################
 #     BASE CONTAINER      #
 ###########################
-FROM node:22.23.3-alpine3.23 AS base
+FROM node:26.12.0-alpine3.23 AS base
 
 ENV NPM_CONFIG_AUDIT=false
 ENV NPM_CONFIG_FUND=false
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 ENV NO_UPDATE_NOTIFIER=1
 
-RUN apk add --no-cache openssl
+RUN apk upgrade --no-cache && apk add --no-cache openssl
 RUN apk add --no-cache font-freefont
 RUN npm install -g npm@12.1.0
 
@@ -29,7 +29,7 @@ RUN npm install -g "turbo@^2.9.14"
 
 # Outputs to the /out folder
 # source: https://turbo.build/repo/docs/reference/command-line-reference/prune#--docker
-RUN turbo prune --scope=@documenso/remix --docker
+RUN turbo prune @documenso/remix --docker
 
 ###########################
 #   INSTALLER CONTAINER   #
@@ -45,24 +45,9 @@ RUN apk add --no-cache make cmake g++ openssl bash
 WORKDIR /app
 
 # Disable husky from installing hooks
-ENV HUSKY 0
-ENV DOCKER_OUTPUT 1
-ENV NEXT_TELEMETRY_DISABLED 1
-
-# Encryption keys
-ARG NEXT_PRIVATE_ENCRYPTION_KEY="CAFEBABE"
-ENV NEXT_PRIVATE_ENCRYPTION_KEY="$NEXT_PRIVATE_ENCRYPTION_KEY"
-
-ARG NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY="DEADBEEF"
-ENV NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY="$NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY"
-
-# Telemetry credentials (optional, baked into image at build time)
-ARG NEXT_PRIVATE_TELEMETRY_KEY=""
-ENV NEXT_PRIVATE_TELEMETRY_KEY="$NEXT_PRIVATE_TELEMETRY_KEY"
-
-ARG NEXT_PRIVATE_TELEMETRY_HOST=""
-ENV NEXT_PRIVATE_TELEMETRY_HOST="$NEXT_PRIVATE_TELEMETRY_HOST"
-
+ENV HUSKY=0
+ENV DOCKER_OUTPUT=1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Uncomment and use build args to enable remote caching
 # ARG TURBO_TEAM
@@ -76,7 +61,8 @@ COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/package-lock.json ./package-lock.json
 
 COPY --from=builder /app/lingui.config.ts ./lingui.config.ts
-COPY --from=builder /app/patches ./patches
+
+COPY scripts/patch-dependencies.cjs ./scripts/patch-dependencies.cjs
 
 RUN npm ci
 
@@ -95,20 +81,13 @@ RUN NODE_OPTIONS=--max-old-space-size=4096 turbo run build --filter=@documenso/r
 ###########################
 FROM base AS runner
 
-ENV HUSKY 0
-ENV DOCKER_OUTPUT 1
+ENV HUSKY=0
+ENV DOCKER_OUTPUT=1
 
 # Pin error reports to the source revision used to build this image.
 ARG DOCUMENSO_CODE_VERSION=""
 ENV NEXT_PUBLIC_ROLLBAR_CODE_VERSION="$DOCUMENSO_CODE_VERSION"
 LABEL org.opencontainers.image.revision="$DOCUMENSO_CODE_VERSION"
-
-# Telemetry credentials (baked into image at build time, can be disabled at runtime)
-ARG NEXT_PRIVATE_TELEMETRY_KEY=""
-ENV NEXT_PRIVATE_TELEMETRY_KEY="$NEXT_PRIVATE_TELEMETRY_KEY"
-
-ARG NEXT_PRIVATE_TELEMETRY_HOST=""
-ENV NEXT_PRIVATE_TELEMETRY_HOST="$NEXT_PRIVATE_TELEMETRY_HOST"
 
 # Don't run production as root
 RUN addgroup --system --gid 1001 nodejs
@@ -121,8 +100,8 @@ WORKDIR /app
 COPY --from=builder --chown=nodejs:nodejs /app/out/json/ .
 # Copy the tailwind config files across
 COPY --from=builder --chown=nodejs:nodejs /app/out/full/packages/tailwind-config ./packages/tailwind-config
-# Copy the patches across
-COPY --from=builder --chown=nodejs:nodejs /app/patches ./patches
+
+COPY --chown=nodejs:nodejs scripts/patch-dependencies.cjs ./scripts/patch-dependencies.cjs
 
 RUN npm ci --omit=dev
 
@@ -137,7 +116,13 @@ COPY --from=installer --chown=nodejs:nodejs /app/packages/prisma/schema.prisma .
 COPY --from=installer --chown=nodejs:nodejs /app/packages/prisma/migrations ./packages/prisma/migrations
 
 # Generate the prisma client again
-RUN npx prisma generate --schema ./packages/prisma/schema.prisma
+RUN npm run prisma:generate --workspace @documenso/prisma
+
+# Package managers are not needed by the running application.
+USER root
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
+USER nodejs
 
 
 # Get the start script from docker/
