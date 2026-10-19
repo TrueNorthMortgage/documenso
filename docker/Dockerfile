@@ -8,7 +8,8 @@ ENV NPM_CONFIG_FUND=false
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 ENV NO_UPDATE_NOTIFIER=1
 
-RUN apk upgrade --no-cache && apk add --no-cache openssl
+# Expat 2.9.0 fixes CVE-2026-102633 and CVE-2026-77214.
+RUN apk upgrade --no-cache && apk add --no-cache openssl 'libexpat>=2.9.0-r0'
 RUN apk add --no-cache font-freefont
 RUN npm install -g npm@12.1.0
 
