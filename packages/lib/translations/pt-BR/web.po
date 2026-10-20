@@ -3465,6 +3465,11 @@ msgstr "Criar organização separada"
 msgid "Create Stripe customer"
 msgstr "Criar cliente Stripe"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Create subfolder"
+msgstr "Criar subpasta"
+
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
 msgid "Create subscription"
 msgstr "Criar assinatura"
@@ -5901,6 +5906,10 @@ msgstr "Pasta excluída com sucesso"
 msgid "Folder layout"
 msgstr "Visualização de pastas"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Folder location"
+msgstr "Localização da pasta"
+
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Folder moved successfully"
 msgstr "Pasta movida com sucesso"
@@ -6259,6 +6268,8 @@ msgstr "Ocultar"
 msgid "Hide license key"
 msgstr "Ocultar chave de licença"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-grid.tsx
 #: apps/remix/app/components/general/generic-error-layout.tsx
@@ -6899,6 +6910,10 @@ msgstr "Carregando documento..."
 msgid "Loading Document..."
 msgstr "Carregando Documento..."
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Loading folder location..."
+msgstr "Carregando a localização da pasta..."
+
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Loading folders..."
 msgstr "Carregando pastas..."
@@ -6934,6 +6949,10 @@ msgstr "Carregando..."
 #: apps/remix/app/components/forms/document-preferences-form.tsx
 msgid "Local timezone"
 msgstr "Fuso horário local"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Location"
+msgstr "Localização"
 
 #: apps/remix/app/components/general/direct-template/direct-template-signing-auth-page.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auth-account.tsx
@@ -7415,6 +7434,10 @@ msgstr "Nunca expirar"
 #: packages/ui/components/document/expiration-period-picker.tsx
 msgid "Never expires"
 msgstr "Nunca expira"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "New folder name"
+msgstr "Nome da nova pasta"
 
 #: apps/remix/app/components/forms/editor/editor-field-dropdown-form.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/dropdown-field.tsx
@@ -12508,6 +12531,10 @@ msgstr "Não foi possível carregar as pastas."
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "Não foi possível carregar os membros da equipe. Feche esta janela e tente novamente."
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Unable to load the folder location. Close this dialog and try again."
+msgstr "Não foi possível carregar a localização da pasta. Feche esta janela e tente novamente."
 
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
 msgid "Unable to load the selection. Close this dialog and try again."

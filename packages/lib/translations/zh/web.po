@@ -3470,6 +3470,11 @@ msgstr "创建单独的组织"
 msgid "Create Stripe customer"
 msgstr "创建 Stripe 客户"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Create subfolder"
+msgstr "创建子文件夹"
+
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
 msgid "Create subscription"
 msgstr "创建订阅"
@@ -5906,6 +5911,10 @@ msgstr "文件夹删除成功"
 msgid "Folder layout"
 msgstr "文件夹布局"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Folder location"
+msgstr "文件夹位置"
+
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Folder moved successfully"
 msgstr "文件夹移动成功"
@@ -6264,6 +6273,8 @@ msgstr "隐藏"
 msgid "Hide license key"
 msgstr "隐藏许可证密钥"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-grid.tsx
 #: apps/remix/app/components/general/generic-error-layout.tsx
@@ -6904,6 +6915,10 @@ msgstr "正在加载文档..."
 msgid "Loading Document..."
 msgstr "正在加载文档..."
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Loading folder location..."
+msgstr "正在加载文件夹位置..."
+
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Loading folders..."
 msgstr "正在加载文件夹..."
@@ -6939,6 +6954,10 @@ msgstr "正在加载..."
 #: apps/remix/app/components/forms/document-preferences-form.tsx
 msgid "Local timezone"
 msgstr "本地时区"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Location"
+msgstr "位置"
 
 #: apps/remix/app/components/general/direct-template/direct-template-signing-auth-page.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auth-account.tsx
@@ -7420,6 +7439,10 @@ msgstr "永不过期"
 #: packages/ui/components/document/expiration-period-picker.tsx
 msgid "Never expires"
 msgstr "永不过期"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "New folder name"
+msgstr "新文件夹名称"
 
 #: apps/remix/app/components/forms/editor/editor-field-dropdown-form.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/dropdown-field.tsx
@@ -12513,6 +12536,10 @@ msgstr "无法加载文件夹。"
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "无法加载团队成员。请关闭此对话框后重试。"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Unable to load the folder location. Close this dialog and try again."
+msgstr "无法加载文件夹位置。请关闭此对话框后重试。"
 
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
 msgid "Unable to load the selection. Close this dialog and try again."

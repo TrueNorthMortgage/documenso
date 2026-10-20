@@ -3470,6 +3470,11 @@ msgstr "Afzonderlijke organisatie aanmaken"
 msgid "Create Stripe customer"
 msgstr "Stripe-klant aanmaken"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Create subfolder"
+msgstr "Submap maken"
+
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
 msgid "Create subscription"
 msgstr "Abonnement aanmaken"
@@ -5906,6 +5911,10 @@ msgstr "Map succesvol verwijderd"
 msgid "Folder layout"
 msgstr "Mapweergave"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Folder location"
+msgstr "Maplocatie"
+
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Folder moved successfully"
 msgstr "Map succesvol verplaatst"
@@ -6264,6 +6273,8 @@ msgstr "Verbergen"
 msgid "Hide license key"
 msgstr "Licentiesleutel verbergen"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-grid.tsx
 #: apps/remix/app/components/general/generic-error-layout.tsx
@@ -6904,6 +6915,10 @@ msgstr "Document wordt geladen..."
 msgid "Loading Document..."
 msgstr "Document wordt geladen..."
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Loading folder location..."
+msgstr "Maplocatie laden..."
+
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Loading folders..."
 msgstr "Mappen laden..."
@@ -6939,6 +6954,10 @@ msgstr "Laden..."
 #: apps/remix/app/components/forms/document-preferences-form.tsx
 msgid "Local timezone"
 msgstr "Lokale tijdzone"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Location"
+msgstr "Locatie"
 
 #: apps/remix/app/components/general/direct-template/direct-template-signing-auth-page.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auth-account.tsx
@@ -7420,6 +7439,10 @@ msgstr "Nooit verlopen"
 #: packages/ui/components/document/expiration-period-picker.tsx
 msgid "Never expires"
 msgstr "Verloopt nooit"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "New folder name"
+msgstr "Naam van de nieuwe map"
 
 #: apps/remix/app/components/forms/editor/editor-field-dropdown-form.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/dropdown-field.tsx
@@ -12513,6 +12536,10 @@ msgstr "Mappen konden niet worden geladen."
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "Teamleden konden niet worden geladen. Sluit dit dialoogvenster en probeer het opnieuw."
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Unable to load the folder location. Close this dialog and try again."
+msgstr "De maplocatie kan niet worden geladen. Sluit dit dialoogvenster en probeer het opnieuw."
 
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
 msgid "Unable to load the selection. Close this dialog and try again."

@@ -3470,6 +3470,11 @@ msgstr "Utwórz osobną organizację"
 msgid "Create Stripe customer"
 msgstr "Utwórz klienta Stripe"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Create subfolder"
+msgstr "Utwórz podfolder"
+
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
 msgid "Create subscription"
 msgstr "Utwórz subskrypcję"
@@ -5906,6 +5911,10 @@ msgstr "Folder został usunięty"
 msgid "Folder layout"
 msgstr "Widok folderów"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Folder location"
+msgstr "Lokalizacja folderu"
+
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Folder moved successfully"
 msgstr "Folder został przeniesiony"
@@ -6264,6 +6273,8 @@ msgstr "Ukryj"
 msgid "Hide license key"
 msgstr "Ukryj klucz licencyjny"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-grid.tsx
 #: apps/remix/app/components/general/generic-error-layout.tsx
@@ -6904,6 +6915,10 @@ msgstr "Ładowanie dokumentu..."
 msgid "Loading Document..."
 msgstr "Ładowanie dokumentu..."
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Loading folder location..."
+msgstr "Ładowanie lokalizacji folderu..."
+
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Loading folders..."
 msgstr "Ładowanie folderów..."
@@ -6939,6 +6954,10 @@ msgstr "Ładowanie..."
 #: apps/remix/app/components/forms/document-preferences-form.tsx
 msgid "Local timezone"
 msgstr "Lokalna strefa czasowa"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Location"
+msgstr "Lokalizacja"
 
 #: apps/remix/app/components/general/direct-template/direct-template-signing-auth-page.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auth-account.tsx
@@ -7420,6 +7439,10 @@ msgstr "Nigdy nie wygasa"
 #: packages/ui/components/document/expiration-period-picker.tsx
 msgid "Never expires"
 msgstr "Nigdy nie wygasa"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "New folder name"
+msgstr "Nazwa nowego folderu"
 
 #: apps/remix/app/components/forms/editor/editor-field-dropdown-form.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/dropdown-field.tsx
@@ -12515,6 +12538,10 @@ msgstr "Nie udało się załadować folderów."
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "Nie udało się załadować członków zespołu. Zamknij to okno i spróbuj ponownie."
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Unable to load the folder location. Close this dialog and try again."
+msgstr "Nie można załadować lokalizacji folderu. Zamknij to okno dialogowe i spróbuj ponownie."
 
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
 msgid "Unable to load the selection. Close this dialog and try again."
