@@ -19,11 +19,13 @@ import { apiSignin } from '../fixtures/authentication';
 import {
   clickAddMyselfButton,
   clickEnvelopeEditorStep,
+  getEnvelopeItemTitleInputs,
   getRecipientEmailInputs,
   openDocumentEnvelopeEditor,
   openTemplateEnvelopeEditor,
 } from '../fixtures/envelope-editor';
 import { expectToastTextToBeVisible } from '../fixtures/generic';
+import { getKonvaElementCountForPage } from '../fixtures/konva';
 
 const WEBAPP_BASE_URL = NEXT_PUBLIC_WEBAPP_URL();
 const V2_API_BASE_URL = `${WEBAPP_BASE_URL}/api/v2-beta`;
@@ -174,11 +176,11 @@ test.describe('document editor', () => {
 
     // Navigate to the add fields step and place a signature field.
     await clickEnvelopeEditorStep(surface.root, 'addFields');
-    await expect(surface.root.getByText('Selected Recipient')).toBeVisible();
+    await expect(surface.root.getByRole('heading', { name: 'Recipient', exact: true })).toBeVisible();
     await expect(surface.root.locator('.konva-container canvas').first()).toBeVisible();
 
     await placeFieldOnPdf(surface.root, 'Signature', { x: 120, y: 140 });
-    await expect(surface.root.getByText('1 Field')).toBeVisible();
+    await expect.poll(() => getKonvaElementCountForPage(surface.root, 1, '.field-group')).toBe(1);
 
     // Navigate back to the recipients step so the sidebar actions are available.
     await clickEnvelopeEditorStep(surface.root, 'upload');
@@ -261,12 +263,15 @@ test.describe('document editor', () => {
 
     await expect(page.getByRole('heading', { name: 'Finish Correction' })).toBeVisible();
 
-    await expect(page.getByText(recipientEmail)).toBeVisible();
-    await expect(page.getByRole('checkbox').first()).toBeChecked();
+    const correctionDialog = page.getByRole('dialog');
+    const notifyRecipient = correctionDialog.getByRole('checkbox', { name: recipientEmail });
+    await expect(notifyRecipient).not.toBeChecked();
+    await notifyRecipient.check();
+    await expect(notifyRecipient).toBeChecked();
 
     await page.getByRole('button', { name: 'Finish correction' }).click();
 
-    await expectToastTextToBeVisible(page, 'Envelope resent');
+    await expectToastTextToBeVisible(page, 'Correction finished');
     await expect(page).toHaveURL(new RegExp(`/documents/${envelopeId}$`));
 
     const correctedEnvelope = await prisma.envelope.findUniqueOrThrow({
@@ -291,12 +296,19 @@ test.describe('document editor', () => {
     await recipientPage.close();
   });
 
-  test('correct document creates a fresh draft after a recipient has completed', async ({ page }) => {
+  test('correct document preserves the envelope and locks documents after a recipient has completed', async ({
+    page,
+  }) => {
     const { user, team, envelopeId } = await createPendingEnvelopeViaApi();
 
     await prisma.recipient.updateMany({
       where: { envelopeId },
       data: { signingStatus: 'SIGNED' },
+    });
+
+    const originalEnvelope = await prisma.envelope.findUniqueOrThrow({
+      where: { id: envelopeId },
+      include: { recipients: true, envelopeItems: true, fields: true },
     });
 
     await apiSignin({
@@ -306,30 +318,27 @@ test.describe('document editor', () => {
     });
 
     await page.getByRole('button', { name: 'Correct', exact: true }).click();
-    await expect(page.getByText('One or more recipients have completed their action.')).toBeVisible();
-    await page.getByRole('button', { name: 'Cancel and create copy' }).click();
+    const correctionDialog = page.getByRole('dialog');
+    await expect(
+      correctionDialog.getByText(
+        'Some recipients have completed their action, so only limited corrections are available.',
+      ),
+    ).toBeVisible();
+    await correctionDialog.getByRole('button', { name: 'Start correction' }).click();
 
-    await expect(page).toHaveURL(/\/documents\/.*\/edit/);
+    await expect(page).toHaveURL(new RegExp(`/documents/${envelopeId}/edit`));
+    await expect(getEnvelopeItemTitleInputs(page).first()).toBeDisabled();
 
-    const correctedEnvelopeId = new URL(page.url()).pathname.split('/').at(-2);
+    const correctedEnvelope = await prisma.envelope.findUniqueOrThrow({
+      where: { id: envelopeId },
+      include: { recipients: true, envelopeItems: true, fields: true },
+    });
 
-    if (!correctedEnvelopeId) {
-      throw new Error('Corrected envelope ID was not found in the editor URL');
-    }
-
-    expect(correctedEnvelopeId).not.toBe(envelopeId);
-
-    const [originalEnvelope, correctedEnvelope] = await Promise.all([
-      prisma.envelope.findUniqueOrThrow({ where: { id: envelopeId } }),
-      prisma.envelope.findUniqueOrThrow({
-        where: { id: correctedEnvelopeId },
-        include: { recipients: true },
-      }),
-    ]);
-
-    expect(originalEnvelope.status).toBe(DocumentStatus.REJECTED);
-    expect(correctedEnvelope.status).toBe(DocumentStatus.DRAFT);
-    expect(correctedEnvelope.recipients.every((recipient) => recipient.signingStatus === 'NOT_SIGNED')).toBe(true);
+    expect(correctedEnvelope.status).toBe(DocumentStatus.PENDING);
+    expect(correctedEnvelope.correctionStartedAt).not.toBeNull();
+    expect(correctedEnvelope.recipients).toEqual(originalEnvelope.recipients);
+    expect(correctedEnvelope.envelopeItems).toEqual(originalEnvelope.envelopeItems);
+    expect(correctedEnvelope.fields).toEqual(originalEnvelope.fields);
   });
 
   test('duplicate document', async ({ page }) => {

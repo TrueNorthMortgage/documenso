@@ -37,6 +37,14 @@
     }
   },
   "globalDependencies": ["**/.env.*local"],
+  "globalPassThroughEnv": [
+    "NODE_OPTIONS",
+    "PLAYWRIGHT_BROWSERS_PATH",
+    "E2E_TEST_PATH",
+    "NEXT_TELEMETRY_DISABLED",
+    "NEXT_PRIVATE_ROLLBAR_ACCESS_TOKEN",
+    "NEXT_PUBLIC_ROLLBAR_ACCESS_TOKEN"
+  ],
   "globalEnv": [
     "APP_VERSION",
     "PORT",

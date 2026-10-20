@@ -405,29 +405,29 @@ test.describe('Find Envelopes API - Token Masking', () => {
     });
   });
 
-  test('non-owner team member should have recipient tokens masked', async ({ request }) => {
+  test('non-owner admin should retain recipient tokens', async ({ request }) => {
     const { team, owner } = await seedTeam();
-    const member = await seedTeamMember({ teamId: team.id, role: TeamMemberRole.ADMIN });
+    const admin = await seedTeamMember({ teamId: team.id, role: TeamMemberRole.ADMIN });
     const { user: recipient } = await seedUser();
 
     await seedPendingDocument(owner, team.id, [recipient], {
       createDocumentOptions: { title: 'Masked Token Test' },
     });
 
-    const { token: memberToken } = await createApiToken({
-      userId: member.id,
+    const { token: adminToken } = await createApiToken({
+      userId: admin.id,
       teamId: team.id,
-      tokenName: 'memberToken',
+      tokenName: 'adminToken',
       expiresIn: null,
     });
 
-    const { json } = await findEnvelopes(request, memberToken);
+    const { json } = await findEnvelopes(request, adminToken);
     const doc = json!.data.find((d) => d.title === 'Masked Token Test');
     expect(doc).toBeDefined();
     expect(doc!.recipients.length).toBeGreaterThan(0);
-    // Non-owner should see masked tokens (empty string)
+    // Admins can access signing links even when another team member owns the envelope.
     doc!.recipients.forEach((r) => {
-      expect(r.token).toBe('');
+      expect(r.token).not.toBe('');
     });
   });
 });

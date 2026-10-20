@@ -135,6 +135,15 @@ const updateEnvelopeItems = async (
   });
 };
 
+const startEnvelopeCorrection = async (request: APIRequestContext, authToken: string, envelopeId: string) => {
+  const res = await request.post(`${baseUrl}/envelope/correction/start`, {
+    headers: { Authorization: `Bearer ${authToken}` },
+    data: { envelopeId },
+  });
+
+  expect(res.status(), await res.text()).toBe(200);
+};
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -198,12 +207,37 @@ test.describe('Update envelope items', () => {
   });
 
   // -----------------------------------------------------------------------
-  // PENDING envelope — title-only edit allowed
+  // PENDING envelope — edits require an active correction
   // -----------------------------------------------------------------------
 
-  test('should allow updating item title on a PENDING envelope', async ({ request }) => {
+  test('should reject item title changes before starting a correction', async ({ request }) => {
     const envelope = await createEnvelope(request, token);
     await distributeEnvelope(request, token, envelope.id);
+
+    const envelopeData = await getEnvelope(request, token, envelope.id);
+    const envelopeItem = envelopeData.envelopeItems[0];
+
+    const res = await updateEnvelopeItems(request, token, {
+      envelopeId: envelope.id,
+      data: [{ envelopeItemId: envelopeItem.id, title: 'Should Not Save' }],
+    });
+
+    expect(res.status()).toBe(400);
+    expect(await res.json()).toMatchObject({
+      data: { appError: { code: 'INVALID_REQUEST' } },
+    });
+
+    const dbItem = await prisma.envelopeItem.findUniqueOrThrow({
+      where: { id: envelopeItem.id },
+    });
+
+    expect(dbItem.title).toBe(envelopeItem.title);
+  });
+
+  test('should allow updating item title during a correction', async ({ request }) => {
+    const envelope = await createEnvelope(request, token);
+    await distributeEnvelope(request, token, envelope.id);
+    await startEnvelopeCorrection(request, token, envelope.id);
 
     const envelopeData = await getEnvelope(request, token, envelope.id);
     const envelopeItem = envelopeData.envelopeItems[0];
@@ -223,9 +257,10 @@ test.describe('Update envelope items', () => {
     expect(dbItem.title).toBe('Updated Pending Title');
   });
 
-  test('should allow title-only update when order matches existing on a PENDING envelope', async ({ request }) => {
+  test('should allow title-only update when order matches existing during a correction', async ({ request }) => {
     const envelope = await createEnvelope(request, token);
     await distributeEnvelope(request, token, envelope.id);
+    await startEnvelopeCorrection(request, token, envelope.id);
 
     const envelopeData = await getEnvelope(request, token, envelope.id);
     const envelopeItem = envelopeData.envelopeItems[0];
@@ -252,11 +287,12 @@ test.describe('Update envelope items', () => {
     expect(dbItem.title).toBe('Title With Same Order');
   });
 
-  test('should create an ENVELOPE_ITEM_UPDATED audit log when updating item title on PENDING envelope', async ({
+  test('should create an ENVELOPE_ITEM_UPDATED audit log when updating item title during a correction', async ({
     request,
   }) => {
     const envelope = await createEnvelope(request, token);
     await distributeEnvelope(request, token, envelope.id);
+    await startEnvelopeCorrection(request, token, envelope.id);
 
     const envelopeData = await getEnvelope(request, token, envelope.id);
     const envelopeItem = envelopeData.envelopeItems[0];
@@ -292,7 +328,7 @@ test.describe('Update envelope items', () => {
   });
 
   // -----------------------------------------------------------------------
-  // PENDING envelope — order change blocked
+  // PENDING envelope — order changes blocked without a correction
   // -----------------------------------------------------------------------
 
   test('should reject order change on a PENDING envelope', async ({ request }) => {

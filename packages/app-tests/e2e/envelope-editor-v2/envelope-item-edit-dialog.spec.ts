@@ -9,6 +9,7 @@ import {
   clickAddMyselfButton,
   clickEnvelopeEditorStep,
   getEnvelopeEditorSettingsTrigger,
+  getEnvelopeItemTitleInputs,
   openDocumentEnvelopeEditor,
   openEmbeddedEnvelopeEditor,
   openTemplateEnvelopeEditor,
@@ -48,7 +49,7 @@ const updateExternalId = async (surface: TEnvelopeEditorSurface, externalId: str
 };
 
 const getEditButton = (root: Page, index: number) =>
-  root.locator('[data-testid^="envelope-item-edit-button-"]').nth(index);
+  root.locator('[data-testid^="envelope-item-edit-button-"]:visible').nth(index);
 
 const getEditDialog = (root: Page) => root.getByRole('dialog');
 
@@ -69,6 +70,10 @@ const assertPdfPageCount = async (root: Page, expectedCount: number) => {
 };
 
 const navigateToFieldsPage = async (surface: TEnvelopeEditorSurface) => {
+  // The desktop fields page shows document controls for multi-document envelopes.
+  await addEnvelopeItemPdf(surface.root, 'edit-dialog-secondary.pdf');
+  await expect(getEnvelopeItemTitleInputs(surface.root)).toHaveCount(2);
+
   // Set up a recipient first so the fields page is functional.
   if (surface.isEmbedded) {
     await setRecipientEmail(surface.root, 0, `test-${nanoid(4)}@example.com`);
@@ -80,13 +85,14 @@ const navigateToFieldsPage = async (surface: TEnvelopeEditorSurface) => {
   await clickEnvelopeEditorStep(surface.root, 'addFields');
 
   // Wait for the file selector to be visible on the fields page.
-  await expect(getEditButton(surface.root, 0)).toBeAttached({ timeout: 10000 });
+  await expect(getEditButton(surface.root, 0)).toBeVisible({ timeout: 10000 });
 };
 
 const openEditDialogOnFieldsPage = async (root: Page, index = 0) => {
   // Hover to reveal the edit button, then click it.
   const editButton = getEditButton(root, index);
-  await editButton.click({ force: true });
+  await editButton.hover();
+  await editButton.click();
   await expect(getEditDialog(root)).toBeVisible();
 };
 
@@ -107,25 +113,15 @@ const runRenameFlow = async (surface: TEnvelopeEditorSurface) => {
 
   const titleInput = getEditDialogTitleInput(surface.root);
   await expect(titleInput).toBeVisible();
+  await expect(getEditDialogUpdateButton(surface.root)).toBeDisabled();
 
   await titleInput.clear();
   await titleInput.fill('Renamed Document');
 
-  // Update button should be disabled without a replacement file.
-  await expect(getEditDialogUpdateButton(surface.root)).toBeDisabled();
-
-  // A replacement file is required for the Update button to be enabled.
-  const dropzone = getEditDialogDropzone(surface.root);
-  await expect(dropzone).toBeVisible();
-
-  const fileInput = dropzone.locator('input[type="file"]');
-  await fileInput.setInputFiles({
-    name: 'example.pdf',
-    mimeType: 'application/pdf',
-    buffer: examplePdfBuffer,
-  });
-
-  await expect(getEditDialogSelectedFile(surface.root)).toBeVisible();
+  // Renaming is independent of PDF replacement.
+  await expect(getEditDialogUpdateButton(surface.root)).toBeEnabled();
+  await expect(getEditDialogDropzone(surface.root)).toBeVisible();
+  await expect(getEditDialogSelectedFile(surface.root)).not.toBeVisible();
 
   await getEditDialogUpdateButton(surface.root).click();
 

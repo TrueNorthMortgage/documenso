@@ -71,7 +71,7 @@ const updateExternalId = async (surface: TEnvelopeEditorSurface, externalId: str
 
 const navigateToAddFieldsAndBack = async (root: Page) => {
   await clickEnvelopeEditorStep(root, 'addFields');
-  await expect(root.getByText('Selected Recipient')).toBeVisible();
+  await expect(root.getByRole('heading', { name: 'Recipient', exact: true })).toBeVisible();
 
   await clickEnvelopeEditorStep(root, 'upload');
   await expect(root.getByRole('heading', { name: 'Recipients' })).toBeVisible();
