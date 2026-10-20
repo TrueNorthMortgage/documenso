@@ -3470,6 +3470,11 @@ msgstr "別の組織を作成"
 msgid "Create Stripe customer"
 msgstr "Stripe 顧客を作成"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Create subfolder"
+msgstr "サブフォルダーを作成"
+
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
 msgid "Create subscription"
 msgstr "サブスクリプションを作成"
@@ -5906,6 +5911,10 @@ msgstr "フォルダは正常に削除されました"
 msgid "Folder layout"
 msgstr "フォルダーの表示形式"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Folder location"
+msgstr "フォルダーの作成先"
+
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Folder moved successfully"
 msgstr "フォルダは正常に移動されました"
@@ -6264,6 +6273,8 @@ msgstr "非表示"
 msgid "Hide license key"
 msgstr "ライセンスキーを非表示にする"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-grid.tsx
 #: apps/remix/app/components/general/generic-error-layout.tsx
@@ -6904,6 +6915,10 @@ msgstr "文書を読み込み中..."
 msgid "Loading Document..."
 msgstr "文書を読み込み中..."
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Loading folder location..."
+msgstr "フォルダーの作成先を読み込み中..."
+
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Loading folders..."
 msgstr "フォルダーを読み込んでいます..."
@@ -6939,6 +6954,10 @@ msgstr "読み込み中..."
 #: apps/remix/app/components/forms/document-preferences-form.tsx
 msgid "Local timezone"
 msgstr "ローカルタイムゾーン"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Location"
+msgstr "作成先"
 
 #: apps/remix/app/components/general/direct-template/direct-template-signing-auth-page.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auth-account.tsx
@@ -7420,6 +7439,10 @@ msgstr "有効期限なし"
 #: packages/ui/components/document/expiration-period-picker.tsx
 msgid "Never expires"
 msgstr "有効期限なし"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "New folder name"
+msgstr "新しいフォルダー名"
 
 #: apps/remix/app/components/forms/editor/editor-field-dropdown-form.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/dropdown-field.tsx
@@ -12513,6 +12536,10 @@ msgstr "フォルダーを読み込めませんでした。"
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
 msgstr "チームメンバーを読み込めませんでした。このダイアログを閉じてもう一度お試しください。"
+
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "Unable to load the folder location. Close this dialog and try again."
+msgstr "フォルダーの作成先を読み込めませんでした。このダイアログを閉じて、もう一度お試しください。"
 
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
 msgid "Unable to load the selection. Close this dialog and try again."
