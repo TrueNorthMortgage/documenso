@@ -6877,6 +6877,7 @@ msgid "Listening to"
 msgstr "监听对象"
 
 #: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Load more"
 msgstr "加载更多"
 
@@ -12383,6 +12384,7 @@ msgstr "True North Mortgage, Inc.（连同其关联方及相关实体，包括 T
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Try again"
 msgstr "重试"
 

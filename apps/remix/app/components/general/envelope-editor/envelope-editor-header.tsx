@@ -1,5 +1,5 @@
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
-import { useSession } from '@documenso/lib/client-only/providers/session';
+import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
 import { getEnvelopeItemPermissions, mapSecondaryIdToTemplateId } from '@documenso/lib/utils/envelope';
 import { trpc } from '@documenso/trpc/react';
 import { Badge } from '@documenso/ui/primitives/badge';
@@ -34,7 +34,8 @@ import { EnvelopeItemTitleInput } from './envelope-editor-title-input';
 
 export default function EnvelopeEditorHeader() {
   const { t } = useLingui();
-  const { user } = useSession();
+  const { sessionData } = useOptionalSession();
+  const userId = sessionData?.user.id;
 
   const {
     envelope,
@@ -218,7 +219,7 @@ export default function EnvelopeEditorHeader() {
                   }
                 />
 
-                {envelope.userId === user.id && envelope.scheduledSendAt && envelope.scheduledSendAt > new Date() && (
+                {envelope.userId === userId && envelope.scheduledSendAt && envelope.scheduledSendAt > new Date() && (
                   <Button
                     size="sm"
                     variant="outline"

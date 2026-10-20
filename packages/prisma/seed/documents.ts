@@ -66,7 +66,8 @@ export const seedDocuments = async (documents: DocumentToSeed[]) => {
             key: i,
             createDocumentOptions: document.documentOptions,
           }),
-        ),
+        )
+        .otherwise(() => undefined),
     ),
   );
 };

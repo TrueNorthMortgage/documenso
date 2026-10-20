@@ -96,8 +96,18 @@ const placeFieldOnPdf = async (root: Page, fieldName: FieldButtonName, position:
 };
 
 const selectRecipientInFieldsStep = async (root: Page, recipientIdentifier: string) => {
-  await root.locator('button[role="combobox"]').click();
-  await root.getByText(recipientIdentifier).click();
+  // Clear the field selection so switching recipients does not reassign existing fields.
+  await root
+    .locator('.konva-container canvas')
+    .first()
+    .click({ position: { x: 450, y: 500 } });
+  await expect.poll(() => getKonvaTransformerNodeCountForPage(root, 1)).toBe(0);
+
+  const recipientSection = root.locator('section').filter({
+    has: root.getByRole('heading', { name: 'Recipient', exact: true }),
+  });
+  await recipientSection.getByRole('combobox').click();
+  await root.getByRole('option').filter({ hasText: recipientIdentifier }).click();
 };
 
 const selectFieldOnCanvas = async (root: Page, position: { x: number; y: number }) => {
@@ -119,7 +129,7 @@ const runAddAndPersistSignatureTextFields = async (surface: TEnvelopeEditorSurfa
   const recipientEmail = await setupRecipientsForFieldPlacement(surface);
 
   await clickEnvelopeEditorStep(surface.root, 'addFields');
-  await expect(surface.root.getByText('Selected Recipient')).toBeVisible();
+  await expect(surface.root.getByRole('heading', { name: 'Recipient', exact: true })).toBeVisible();
   await expect(surface.root.locator('.konva-container canvas').first()).toBeVisible();
 
   await placeFieldOnPdf(surface.root, 'Signature', { x: 120, y: 140 });
@@ -135,7 +145,7 @@ const runAddAndPersistSignatureTextFields = async (surface: TEnvelopeEditorSurfa
 
   await clickEnvelopeEditorStep(surface.root, 'addFields');
   await surface.root.locator('.konva-container canvas').first().waitFor({ state: 'visible' });
-  await expect(surface.root.getByText('Selected Recipient')).toBeVisible();
+  await expect(surface.root.getByRole('heading', { name: 'Recipient', exact: true })).toBeVisible();
   fieldCount = await getKonvaElementCountForPage(surface.root, 1, '.field-group');
   expect(fieldCount).toBe(2);
 
@@ -242,7 +252,7 @@ const runMultiRecipientFieldFlow = async (surface: TEnvelopeEditorSurface): Prom
 
   // Navigate to fields step.
   await clickEnvelopeEditorStep(root, 'addFields');
-  await expect(root.getByText('Selected Recipient')).toBeVisible();
+  await expect(root.getByRole('heading', { name: 'Recipient', exact: true })).toBeVisible();
   await expect(root.locator('.konva-container canvas').first()).toBeVisible();
 
   let fieldCount = await getKonvaElementCountForPage(root, 1, '.field-group');
@@ -660,6 +670,10 @@ const runKeyboardDeleteFieldFlow = async (surface: TEnvelopeEditorSurface) => {
 const runMultiSelectDuplicateAndCopyPasteFlow = async (surface: TEnvelopeEditorSurface) => {
   const root = surface.root;
 
+  if (surface.isEmbedded && !surface.envelopeId) {
+    await addEnvelopeItemPdf(root, 'embedded-copy-paste.pdf');
+  }
+
   await updateExternalId(surface, `e2e-multi-select-${nanoid()}`);
   await setupRecipientsForFieldPlacement(surface);
   await clickEnvelopeEditorStep(root, 'addFields');
@@ -761,6 +775,11 @@ const runCrossPageMultiFieldDragFlow = async (surface: TEnvelopeEditorSurface) =
   await placeFieldOnPdf(root, 'Text', { x: 260, y: 220 });
   await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(2);
 
+  const pageTwo = root.locator('img[data-page-number="2"]');
+  await pageTwo.scrollIntoViewIfNeeded();
+  await expect(pageTwo).toBeVisible();
+
+  // Select after the destination page has mounted so scrolling cannot reset the group.
   await root.evaluate(() => {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const konva = (window as unknown as { Konva: typeof Konva }).Konva;
@@ -771,11 +790,6 @@ const runCrossPageMultiFieldDragFlow = async (surface: TEnvelopeEditorSurface) =
     fields[1]?.fire('click', { evt: new MouseEvent('click', { shiftKey: true }) }, true);
   });
   await expect.poll(() => getKonvaTransformerNodeCountForPage(root, 1)).toBe(2);
-
-  const pageTwo = root.locator('img[data-page-number="2"]');
-  await pageTwo.scrollIntoViewIfNeeded();
-  await expect(pageTwo).toBeVisible();
-  await root.waitForTimeout(500);
 
   const targetBounds = await pageTwo.boundingBox();
 
@@ -804,10 +818,15 @@ const runCrossPageMultiFieldDragFlow = async (surface: TEnvelopeEditorSurface) =
         true,
       );
       anchor.fire('dragmove', { evt: new MouseEvent('mousemove', { buttons: 1, clientX, clientY }) }, true);
-      anchor.fire('dragend', { evt: new MouseEvent('mouseup', { buttons: 0, clientX, clientY }) }, true);
     },
     { clientX: targetBounds.x + 180, clientY: targetBounds.y + 180 },
   );
+
+  // Cross-page group drags hand off from Konva to DOM overlays. Release through
+  // the window mouse handler after both previews mount, rather than a destroyed node.
+  await expect(root.locator('[data-invalid-field-placement]')).toHaveCount(2);
+  await root.mouse.move(targetBounds.x + 180, targetBounds.y + 180);
+  await root.mouse.up();
 
   await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(0);
   await expect.poll(() => getKonvaElementCountForPage(root, 2, '.field-group')).toBe(2);

@@ -53,4 +53,19 @@ describe('duplicateEnvelope', () => {
     });
     expect(mocks.prisma.envelope.findFirst).toHaveBeenCalledTimes(2);
   });
+
+  it('returns not found for an inaccessible legacy document without trying template access', async () => {
+    mocks.prisma.envelope.findFirst.mockResolvedValueOnce(null);
+
+    await expect(
+      duplicateEnvelope({
+        id: { type: 'documentId', id: 123 },
+        userId: 2,
+        teamId: 1,
+      }),
+    ).rejects.toMatchObject({ code: AppErrorCode.NOT_FOUND });
+
+    expect(mocks.getOrganisationTemplateWhereInput).not.toHaveBeenCalled();
+    expect(mocks.prisma.envelope.findFirst).toHaveBeenCalledTimes(1);
+  });
 });

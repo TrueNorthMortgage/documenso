@@ -87,7 +87,7 @@ export const duplicateEnvelope = async ({
     select: envelopeSelect,
   });
 
-  if (!envelope) {
+  if (!envelope && id.type !== 'documentId') {
     envelope = await db.envelope.findFirst({
       where: getOrganisationTemplateWhereInput({
         id,

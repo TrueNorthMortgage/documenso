@@ -6877,6 +6877,7 @@ msgid "Listening to"
 msgstr "リッスン対象"
 
 #: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Load more"
 msgstr "さらに読み込む"
 
@@ -12383,6 +12384,7 @@ msgstr "QUERY LENGTH LIMIT EXCEEDED. MAX ALLOWED QUERY : 500 CHARS"
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
 #: apps/remix/app/components/general/folder/folder-cards.tsx
+#: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Try again"
 msgstr "再試行"
 

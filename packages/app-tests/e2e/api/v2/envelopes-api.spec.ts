@@ -125,7 +125,7 @@ test.describe('API V2 Envelopes', () => {
       expect(envelope?.type).toBe(EnvelopeType.TEMPLATE);
       expect(envelope?.status).toBe(DocumentStatus.DRAFT);
       expect(envelope?.envelopeItems.length).toBe(1);
-      expect(envelope?.envelopeItems[0].title).toBe('field-font-alignment.pdf');
+      expect(envelope?.envelopeItems[0].title).toBe('field-font-alignment');
       expect(envelope?.envelopeItems[0].documentDataId).toBeDefined();
     });
 
@@ -270,8 +270,8 @@ test.describe('API V2 Envelopes', () => {
       });
 
       expect(envelope.envelopeItems.length).toBe(2);
-      expect(envelope.envelopeItems[0].title).toBe('field-meta.pdf');
-      expect(envelope.envelopeItems[1].title).toBe('field-font-alignment.pdf');
+      expect(envelope.envelopeItems[0].title).toBe('field-meta');
+      expect(envelope.envelopeItems[1].title).toBe('field-font-alignment');
 
       expect(envelope.title).toBe(payload.title);
       expect(envelope.type).toBe(payload.type);
@@ -288,7 +288,8 @@ test.describe('API V2 Envelopes', () => {
       expect(envelope.documentMeta.message).toBe(payload.meta.message);
       expect(envelope.documentMeta.timezone).toBe(payload.meta.timezone);
       expect(envelope.documentMeta.dateFormat).toBe(payload.meta.dateFormat);
-      expect(envelope.documentMeta.distributionMethod).toBe(payload.meta.distributionMethod);
+      // Signing links cannot bypass email distribution, even when the caller requests NONE.
+      expect(envelope.documentMeta.distributionMethod).toBe(DocumentDistributionMethod.EMAIL);
       expect(envelope.documentMeta.signingOrder).toBe(payload.meta.signingOrder);
       expect(envelope.documentMeta.allowDictateNextSigner).toBe(payload.meta.allowDictateNextSigner);
       expect(envelope.documentMeta.redirectUrl).toBe(payload.meta.redirectUrl);
@@ -329,12 +330,12 @@ test.describe('API V2 Envelopes', () => {
 
       // Expect string based ID to work.
       expect(field.envelopeItemId).toBe(
-        envelope.envelopeItems.find((item) => item.title === 'field-font-alignment.pdf')?.id,
+        envelope.envelopeItems.find((item) => item.title === 'field-font-alignment')?.id,
       );
 
       // Expect index based ID to work.
       expect(envelope.fields[1].envelopeItemId).toBe(
-        envelope.envelopeItems.find((item) => item.title === 'field-meta.pdf')?.id,
+        envelope.envelopeItems.find((item) => item.title === 'field-meta')?.id,
       );
     });
   });
@@ -1047,7 +1048,7 @@ test.describe('API V2 Envelopes', () => {
       expect(createFieldsRes.ok()).toBeTruthy();
     });
 
-    test('Distribute envelope with empty email recipients', async ({ request }) => {
+    test('Distribute envelope with empty email recipients is rejected without sending', async ({ request }) => {
       const payload = {
         type: EnvelopeType.DOCUMENT,
         title: 'Document for Distribution with Empty Email',
@@ -1143,19 +1144,21 @@ test.describe('API V2 Envelopes', () => {
         } satisfies TDistributeEnvelopeRequest,
       });
 
-      expect(distributeRes.ok()).toBeTruthy();
-      expect(distributeRes.status()).toBe(200);
-
-      const distributeResponse = await distributeRes.json();
-      expect(distributeResponse.success).toBe(true);
-      expect(distributeResponse.id).toBe(createResponse.id);
-      expect(distributeResponse.recipients).toHaveLength(2);
-
-      // Verify recipients have empty emails and signing URLs
-      expect(distributeResponse.recipients[0].email).toBe('');
-      expect(distributeResponse.recipients[0].signingUrl).toBeTruthy();
-      expect(distributeResponse.recipients[1].email).toBe('');
-      expect(distributeResponse.recipients[1].signingUrl).toBeTruthy();
+      expect(distributeRes.status()).toBe(400);
+      const error = await distributeRes.text();
+      expect(error).toContain('missing or invalid email addresses');
+      expect(error).toContain('Recipient One');
+      expect(error).toContain('Recipient Two');
+      const unchangedEnvelope = await prisma.envelope.findUniqueOrThrow({
+        where: { id: createResponse.id },
+        include: { recipients: true },
+      });
+      expect(unchangedEnvelope.status).toBe(DocumentStatus.DRAFT);
+      expect(
+        await prisma.documentAuditLog.count({ where: { envelopeId: createResponse.id, type: 'DOCUMENT_SENT' } }),
+      ).toBe(0);
+      expect(unchangedEnvelope.recipients).toHaveLength(2);
+      expect(unchangedEnvelope.recipients.every((recipient) => recipient.email === '')).toBe(true);
     });
 
     test('Distribute envelope with empty email recipient and auth requirements fails', async ({ request }) => {
@@ -1253,7 +1256,8 @@ test.describe('API V2 Envelopes', () => {
       expect(distributeRes.status()).toBe(400);
 
       const errorResponse = await distributeRes.json();
-      expect(errorResponse.message).toContain('requires an email');
+      expect(errorResponse.message).toContain('missing or invalid email addresses');
+      expect(errorResponse.message).toContain('Recipient With Auth');
     });
   });
 });
