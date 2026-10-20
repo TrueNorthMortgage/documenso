@@ -323,8 +323,12 @@ test.describe('pending envelope title editing', () => {
     await apiSignin({
       page,
       email: user.email,
-      redirectPath: `/t/${team.url}/documents/${pendingDocument.id}/edit`,
+      redirectPath: `/t/${team.url}/documents/${pendingDocument.id}`,
     });
+
+    await page.getByRole('button', { name: 'Correct', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Start correction', exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/documents/${pendingDocument.id}/edit`));
 
     // Verify the envelope editor loaded with the upload step visible.
     await expect(page.getByRole('heading', { name: 'Documents' })).toBeVisible();
@@ -358,6 +362,8 @@ test.describe('pending envelope title editing', () => {
 
     expect(updatedEnvelope.title).toBe('Updated Pending Title');
     expect(updatedEnvelope.envelopeItems[0].title).toBe('Updated Item Title');
+    expect(updatedEnvelope.status).toBe('PENDING');
+    expect(updatedEnvelope.correctionStartedAt).not.toBeNull();
 
     // Verify audit logs were created for both title changes.
     const titleAuditLog = updatedEnvelope.auditLogs.find((log) => log.type === 'DOCUMENT_TITLE_UPDATED');
@@ -366,13 +372,9 @@ test.describe('pending envelope title editing', () => {
     const itemAuditLog = updatedEnvelope.auditLogs.find((log) => log.type === 'ENVELOPE_ITEM_UPDATED');
     expect(itemAuditLog).toBeDefined();
 
-    // Verify the upload dropzone is still disabled for pending envelopes.
-    const dropzoneMessage = page.getByText('Cannot upload items after the document has been sent');
-    await expect(dropzoneMessage).toBeVisible();
-
-    // Drag handles are still rendered but dragging is disabled via isDragDisabled
-    // when canItemsBeModified is false. Verify at least that the handle is present
-    // but we cannot programmatically assert isDragDisabled from the DOM.
+    // File changes are allowed during correction while no recipients have signed.
+    await expect(getEnvelopeItemDropzoneInput(page)).toBeEnabled();
+    await expect(page.getByText('Cannot upload items after the document has been sent')).not.toBeVisible();
     await expect(getEnvelopeItemDragHandles(page)).toHaveCount(1);
   });
 });

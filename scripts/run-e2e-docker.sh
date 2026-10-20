@@ -23,6 +23,7 @@ Default: install dependencies, reset the isolated test database, and build the a
 Examples:
   ./scripts/run-e2e-docker.sh
   ./scripts/run-e2e-docker.sh --reuse --last-failed
+  ./scripts/run-e2e-docker.sh --reuse --grep @smoke
   ./scripts/run-e2e-docker.sh --reuse e2e/envelope-editor-v2/envelope-actions.spec.ts
 
 Services are removed afterward. Test data, dependencies, and build output are
