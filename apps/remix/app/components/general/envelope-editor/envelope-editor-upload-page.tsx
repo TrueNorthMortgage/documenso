@@ -652,7 +652,8 @@ export const EnvelopeEditorUploadPage = () => {
                                 )}
 
                                 <div className="px-1 text-muted-foreground text-xs">
-                                  {localFile.envelopeItemId !== null &&
+                                  {isDocument &&
+                                    localFile.envelopeItemId !== null &&
                                     appliedTemplateSourceItemIdByEnvelopeItemId.has(localFile.envelopeItemId) && (
                                       <>
                                         <Trans>Template Applied:</Trans>{' '}

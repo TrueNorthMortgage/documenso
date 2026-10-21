@@ -1,6 +1,7 @@
-import { prisma } from '@documenso/prisma';
+import { seedUser } from '@documenso/prisma/seed/users';
 import { expect, test } from '@playwright/test';
 
+import { apiSignin } from '../fixtures/authentication';
 import {
   addEnvelopeItemPdf,
   clickAddSignerButton,
@@ -82,9 +83,12 @@ for (const mode of ['create', 'edit'] as const) {
 
 for (const isTemplate of [false, true]) {
   test(`${isTemplate ? 'templates' : 'documents'} list identifies its upload workflow`, async ({ page }) => {
-    const surface = isTemplate ? await openTemplateEnvelopeEditor(page) : await openDocumentEnvelopeEditor(page);
-    const team = await prisma.team.findUniqueOrThrow({ where: { id: surface.teamId }, select: { url: true } });
-    await page.goto(`/t/${team.url}/${isTemplate ? 'templates' : 'documents'}`);
+    const { user, team } = await seedUser();
+    await apiSignin({
+      page,
+      email: user.email,
+      redirectPath: `/t/${team.url}/${isTemplate ? 'templates' : 'documents'}`,
+    });
 
     await expect(
       page.getByRole('heading', { name: isTemplate ? 'Templates' : 'Documents', exact: true }),
