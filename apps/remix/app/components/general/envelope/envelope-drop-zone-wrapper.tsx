@@ -16,7 +16,7 @@ import { useToast } from '@documenso/ui/primitives/use-toast';
 import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { EnvelopeType } from '@prisma/client';
-import { Loader } from 'lucide-react';
+import { FileTextIcon, LayersIcon, Loader } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { ErrorCode as DropzoneErrorCode, type FileRejection, useDropzone } from 'react-dropzone';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -189,19 +189,35 @@ export const EnvelopeDropZoneWrapper = ({ children, type, className }: EnvelopeD
   });
 
   return (
-    <div {...getRootProps()} className={cn('relative min-h-screen', className)}>
+    <div {...getRootProps()} className={cn('relative min-h-screen', className)} data-testid="envelope-upload-area">
       <input {...getInputProps()} />
       {children}
 
       {isDragActive && (
-        <div className="fixed top-0 left-0 z-[9999] h-full w-full bg-muted/60 backdrop-blur-[4px]">
+        <div
+          className={cn(
+            'fixed top-0 left-0 z-[9999] h-full w-full backdrop-blur-[4px]',
+            type === EnvelopeType.TEMPLATE
+              ? 'bg-violet-50/90 text-violet-950 dark:bg-slate-950/95 dark:text-indigo-100'
+              : 'bg-muted/90',
+          )}
+        >
           <div className="pointer-events-none flex h-full w-full flex-col items-center justify-center">
-            <h2 className="font-semibold text-2xl text-foreground">
-              {type === EnvelopeType.DOCUMENT ? <Trans>Upload Document</Trans> : <Trans>Upload Template</Trans>}
+            {type === EnvelopeType.TEMPLATE ? (
+              <LayersIcon aria-hidden="true" className="mb-4 h-10 w-10" />
+            ) : (
+              <FileTextIcon aria-hidden="true" className="mb-4 h-10 w-10" />
+            )}
+            <h2 className="font-semibold text-2xl">
+              {type === EnvelopeType.DOCUMENT ? <Trans>Upload Document</Trans> : <Trans>Create Template</Trans>}
             </h2>
 
-            <p className="mt-4 text-md text-muted-foreground">
-              <Trans>Drag and drop your document here</Trans>
+            <p className="mt-4 px-4 text-center text-md">
+              {type === EnvelopeType.TEMPLATE ? (
+                <Trans>Drop files here to create a reusable template.</Trans>
+              ) : (
+                <Trans>Drop files here to create a document for signing.</Trans>
+              )}
             </p>
 
             {isUploadDisabled && IS_BILLING_ENABLED() && (

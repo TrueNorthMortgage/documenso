@@ -27,6 +27,7 @@ import { useToast } from '@documenso/ui/primitives/use-toast';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
+import { EnvelopeType } from '@prisma/client';
 import { CheckIcon, LayersIcon, LoaderIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -129,7 +130,15 @@ const canMapRecipients = ({
   });
 };
 
-export const ApplyTemplateToEnvelopeItemDialog = ({
+export const ApplyTemplateToEnvelopeItemDialog = (props: ApplyTemplateToEnvelopeItemDialogProps) => {
+  if (props.envelope.type !== EnvelopeType.DOCUMENT) {
+    return null;
+  }
+
+  return <ApplyTemplateToDocumentItemDialog {...props} />;
+};
+
+const ApplyTemplateToDocumentItemDialog = ({
   envelope,
   envelopeItemId,
   onChanged,
