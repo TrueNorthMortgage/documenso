@@ -3457,6 +3457,10 @@ msgstr "Criar organização"
 msgid "Create Organisation"
 msgstr "Criar Organização"
 
+#: apps/remix/app/components/general/envelope/envelope-section-header.tsx
+msgid "Create reusable layouts for future documents."
+msgstr "Crie layouts reutilizáveis para documentos futuros."
+
 #: apps/remix/app/components/general/billing-plans.tsx
 msgid "Create separate organisation"
 msgstr "Criar organização separada"
@@ -3490,6 +3494,8 @@ msgid "Create Team"
 msgstr "Criar Equipe"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-header.tsx
+#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
+#: packages/ui/primitives/document-upload-button.tsx
 msgid "Create Template"
 msgstr "Criar Modelo"
 
@@ -4584,6 +4590,7 @@ msgstr "Documentação"
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
+#: apps/remix/app/components/general/envelope/envelope-section-header.tsx
 #: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/skeletons/document-edit-skeleton.tsx
 #: apps/remix/app/components/general/user-profile-skeleton.tsx
@@ -4744,8 +4751,8 @@ msgid "Drag and drop or click to upload"
 msgstr "Arraste e solte ou clique para carregar"
 
 #: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
-msgid "Drag and drop your document here"
-msgstr "Arraste e solte seu documento aqui"
+#~ msgid "Drag and drop your document here"
+#~ msgstr "Arraste e solte seu documento aqui"
 
 #: packages/lib/constants/document.ts
 #: packages/ui/primitives/signature-pad/signature-pad.tsx
@@ -4756,6 +4763,14 @@ msgstr "Desenhar"
 #: apps/remix/app/components/general/admin-global-settings-section.tsx
 msgid "Draw signature"
 msgstr "Desenhe a assinatura"
+
+#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
+msgid "Drop files here to create a document for signing."
+msgstr "Solte arquivos aqui para criar um documento para assinatura."
+
+#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
+msgid "Drop files here to create a reusable template."
+msgstr "Solte arquivos aqui para criar um modelo reutilizável."
 
 #: apps/remix/app/components/dialogs/envelope-item-edit-dialog.tsx
 msgid "Drop PDF here or click to select"
@@ -4875,6 +4890,14 @@ msgstr "Editar texto"
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
 msgid "Edit webhook"
 msgstr "Editar webhook"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-header.tsx
+msgid "Editing document"
+msgstr "Editando documento"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-header.tsx
+msgid "Editing template"
+msgstr "Editando modelo"
 
 #: apps/remix/app/components/dialogs/team-email-add-dialog.tsx
 #: apps/remix/app/components/dialogs/team-email-update-dialog.tsx
@@ -8604,6 +8627,10 @@ msgstr "Modelo CSV pré-formatado com dados de exemplo."
 msgid "Preferences"
 msgstr "Preferências"
 
+#: apps/remix/app/components/general/envelope/envelope-section-header.tsx
+msgid "Prepare and send documents for signing."
+msgstr "Prepare e envie documentos para assinatura."
+
 #: apps/remix/app/components/forms/document-preferences-form.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 msgid "Preview"
@@ -11187,9 +11214,9 @@ msgstr "Modelo enviado"
 #: apps/remix/app/components/general/app-command-menu.tsx
 #: apps/remix/app/components/general/app-nav-desktop.tsx
 #: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/components/general/envelope/envelope-section-header.tsx
 #: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.$id._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
@@ -12881,8 +12908,8 @@ msgstr "Enviar Assinatura"
 
 #: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
 #: packages/ui/primitives/document-upload-button.tsx
-msgid "Upload Template"
-msgstr "Enviar Modelo"
+#~ msgid "Upload Template"
+#~ msgstr "Enviar Modelo"
 
 #: packages/ui/primitives/document-dropzone.tsx
 msgid "Upload Template Document"

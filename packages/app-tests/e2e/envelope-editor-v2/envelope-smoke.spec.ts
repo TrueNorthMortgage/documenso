@@ -37,7 +37,7 @@ const uploadEnvelope = async (page: Page, type: EnvelopeType) => {
   // File inputs contribute "Choose File" to the parent button's accessible name.
   // Match the visible upload label without depending on that browser-provided prefix.
   const uploadButton = page.getByRole('button', {
-    name: type === EnvelopeType.DOCUMENT ? /Upload Document$/ : /Upload Template$/,
+    name: type === EnvelopeType.DOCUMENT ? /Upload Document$/ : /Create Template$/,
   });
   await expect(uploadButton).toBeVisible();
   await expect(uploadButton).toBeEnabled();

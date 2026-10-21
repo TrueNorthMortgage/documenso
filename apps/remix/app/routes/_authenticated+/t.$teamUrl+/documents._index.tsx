@@ -25,6 +25,7 @@ import { EnvelopesBulkReassignSenderDialog } from '~/components/dialogs/envelope
 import { DocumentSearch } from '~/components/general/document/document-search';
 import { DocumentStatus } from '~/components/general/document/document-status';
 import { EnvelopeDropZoneWrapper } from '~/components/general/envelope/envelope-drop-zone-wrapper';
+import { EnvelopeSectionHeader } from '~/components/general/envelope/envelope-section-header';
 import { FolderGrid } from '~/components/general/folder/folder-grid';
 import { PeriodSelector } from '~/components/general/period-selector';
 import { DocumentsTable } from '~/components/tables/documents-table';
@@ -137,6 +138,7 @@ export default function DocumentsPage() {
   return (
     <EnvelopeDropZoneWrapper type={EnvelopeType.DOCUMENT}>
       <div className="mx-auto w-full max-w-screen-xl px-4 md:px-8">
+        <EnvelopeSectionHeader type={EnvelopeType.DOCUMENT} />
         <FolderGrid type={FolderType.DOCUMENT} parentId={folderId ?? null} />
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-x-4 gap-y-8">

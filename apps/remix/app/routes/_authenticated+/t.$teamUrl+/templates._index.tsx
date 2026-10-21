@@ -18,6 +18,7 @@ import { useParams, useSearchParams } from 'react-router';
 import { EnvelopesBulkDeleteDialog } from '~/components/dialogs/envelopes-bulk-delete-dialog';
 import { EnvelopesBulkMoveDialog } from '~/components/dialogs/envelopes-bulk-move-dialog';
 import { EnvelopeDropZoneWrapper } from '~/components/general/envelope/envelope-drop-zone-wrapper';
+import { EnvelopeSectionHeader } from '~/components/general/envelope/envelope-section-header';
 import { FolderGrid } from '~/components/general/folder/folder-grid';
 import { EnvelopesTableBulkActionBar } from '~/components/tables/envelopes-table-bulk-action-bar';
 import { TemplatesTable } from '~/components/tables/templates-table';
@@ -92,6 +93,7 @@ export default function TemplatesPage() {
   return (
     <EnvelopeDropZoneWrapper type={EnvelopeType.TEMPLATE}>
       <div className="mx-auto max-w-screen-xl px-4 md:px-8">
+        <EnvelopeSectionHeader type={EnvelopeType.TEMPLATE} />
         {!isOrgView && <FolderGrid type={FolderType.TEMPLATE} parentId={folderId ?? null} />}
 
         <div className="mt-8">
@@ -101,9 +103,7 @@ export default function TemplatesPage() {
               <AvatarFallback className="text-muted-foreground text-xs">{team.name.slice(0, 1)}</AvatarFallback>
             </Avatar>
 
-            <h1 className="truncate font-semibold text-2xl md:text-3xl">
-              <Trans>Templates</Trans>
-            </h1>
+            <h2 className="truncate font-semibold text-2xl md:text-3xl">{team.name}</h2>
           </div>
 
           {showOrgTab && (

@@ -3462,6 +3462,10 @@ msgstr "조직 생성"
 msgid "Create Organisation"
 msgstr "조직 생성"
 
+#: apps/remix/app/components/general/envelope/envelope-section-header.tsx
+msgid "Create reusable layouts for future documents."
+msgstr "향후 문서에 사용할 수 있는 레이아웃을 만드세요."
+
 #: apps/remix/app/components/general/billing-plans.tsx
 msgid "Create separate organisation"
 msgstr "별도 조직 생성"
@@ -3495,6 +3499,8 @@ msgid "Create Team"
 msgstr "팀 만들기"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-header.tsx
+#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
+#: packages/ui/primitives/document-upload-button.tsx
 msgid "Create Template"
 msgstr "템플릿 생성"
 
@@ -4589,6 +4595,7 @@ msgstr "문서"
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
+#: apps/remix/app/components/general/envelope/envelope-section-header.tsx
 #: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/general/skeletons/document-edit-skeleton.tsx
 #: apps/remix/app/components/general/user-profile-skeleton.tsx
@@ -4749,8 +4756,8 @@ msgid "Drag and drop or click to upload"
 msgstr "드래그 앤 드롭 또는 클릭하여 업로드"
 
 #: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
-msgid "Drag and drop your document here"
-msgstr "문서를 이곳에 드래그해서 놓아 주세요."
+#~ msgid "Drag and drop your document here"
+#~ msgstr "문서를 이곳에 드래그해서 놓아 주세요."
 
 #: packages/lib/constants/document.ts
 #: packages/ui/primitives/signature-pad/signature-pad.tsx
@@ -4761,6 +4768,14 @@ msgstr "그리기"
 #: apps/remix/app/components/general/admin-global-settings-section.tsx
 msgid "Draw signature"
 msgstr "서명 그리기"
+
+#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
+msgid "Drop files here to create a document for signing."
+msgstr "여기에 파일을 놓아 서명할 문서를 만드세요."
+
+#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
+msgid "Drop files here to create a reusable template."
+msgstr "여기에 파일을 놓아 재사용 가능한 템플릿을 만드세요."
 
 #: apps/remix/app/components/dialogs/envelope-item-edit-dialog.tsx
 msgid "Drop PDF here or click to select"
@@ -4880,6 +4895,14 @@ msgstr "텍스트 편집"
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
 msgid "Edit webhook"
 msgstr "웹훅 편집"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-header.tsx
+msgid "Editing document"
+msgstr "문서 편집 중"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-header.tsx
+msgid "Editing template"
+msgstr "템플릿 편집 중"
 
 #: apps/remix/app/components/dialogs/team-email-add-dialog.tsx
 #: apps/remix/app/components/dialogs/team-email-update-dialog.tsx
@@ -8609,6 +8632,10 @@ msgstr "예시 데이터가 포함된 사전 서식 지정 CSV 템플릿입니�
 msgid "Preferences"
 msgstr "환경설정"
 
+#: apps/remix/app/components/general/envelope/envelope-section-header.tsx
+msgid "Prepare and send documents for signing."
+msgstr "서명할 문서를 준비하고 보내세요."
+
 #: apps/remix/app/components/forms/document-preferences-form.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 msgid "Preview"
@@ -11192,9 +11219,9 @@ msgstr "템플릿이 업로드되었습니다."
 #: apps/remix/app/components/general/app-command-menu.tsx
 #: apps/remix/app/components/general/app-nav-desktop.tsx
 #: apps/remix/app/components/general/app-nav-mobile.tsx
+#: apps/remix/app/components/general/envelope/envelope-section-header.tsx
 #: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
-#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.$id._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.folders._index.tsx
@@ -12886,8 +12913,8 @@ msgstr "서명 업로드"
 
 #: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
 #: packages/ui/primitives/document-upload-button.tsx
-msgid "Upload Template"
-msgstr "템플릿 업로드"
+#~ msgid "Upload Template"
+#~ msgstr "템플릿 업로드"
 
 #: packages/ui/primitives/document-dropzone.tsx
 msgid "Upload Template Document"

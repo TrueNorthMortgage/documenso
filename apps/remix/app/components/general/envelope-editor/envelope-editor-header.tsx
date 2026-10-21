@@ -2,6 +2,7 @@ import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/e
 import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
 import { getEnvelopeItemPermissions, mapSecondaryIdToTemplateId } from '@documenso/lib/utils/envelope';
 import { trpc } from '@documenso/trpc/react';
+import { cn } from '@documenso/ui/lib/utils';
 import { Badge } from '@documenso/ui/primitives/badge';
 import { Button } from '@documenso/ui/primitives/button';
 import { Separator } from '@documenso/ui/primitives/separator';
@@ -10,7 +11,9 @@ import { DocumentStatus, EnvelopeType, TemplateType } from '@prisma/client';
 import {
   AlertTriangleIcon,
   Building2Icon,
+  FileTextIcon,
   Globe2Icon,
+  LayersIcon,
   LockIcon,
   RefreshCwIcon,
   SendIcon,
@@ -76,7 +79,12 @@ export default function EnvelopeEditorHeader() {
     trpc.envelope.cancelScheduledSend.useMutation();
 
   return (
-    <nav className="w-full border-border border-b bg-background px-4 py-3 md:px-6">
+    <nav
+      className={cn(
+        'w-full border-border border-b bg-background px-4 py-3 md:px-6',
+        isTemplate && 'border-violet-200 bg-violet-50 dark:border-indigo-300/20 dark:bg-indigo-400/10',
+      )}
+    >
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 items-center space-x-4">
           {editorConfig.embedded?.customBrandingLogo ? (
@@ -89,19 +97,35 @@ export default function EnvelopeEditorHeader() {
           <Separator orientation="vertical" className="h-6 shrink-0" />
 
           <div className="flex min-w-0 items-center space-x-2">
-            <EnvelopeItemTitleInput
-              dataTestId="envelope-title-input"
-              disabled={!envelopeItemPermissions.canTitleBeChanged || !allowConfigureEnvelopeTitle}
-              value={envelope.title}
-              onChange={(title) => {
-                updateEnvelope({
-                  data: {
-                    title,
-                  },
-                });
-              }}
-              placeholder={t`Envelope Title`}
-            />
+            <div className="min-w-0">
+              <p
+                className={cn(
+                  'mb-1 flex items-center gap-1.5 font-semibold text-xs',
+                  isTemplate ? 'text-violet-800 dark:text-indigo-200' : 'text-muted-foreground',
+                )}
+                data-testid="envelope-editor-mode"
+              >
+                {isTemplate ? (
+                  <LayersIcon aria-hidden="true" className="h-3.5 w-3.5" />
+                ) : (
+                  <FileTextIcon aria-hidden="true" className="h-3.5 w-3.5" />
+                )}
+                {isTemplate ? <Trans>Editing template</Trans> : <Trans>Editing document</Trans>}
+              </p>
+              <EnvelopeItemTitleInput
+                dataTestId="envelope-title-input"
+                disabled={!envelopeItemPermissions.canTitleBeChanged || !allowConfigureEnvelopeTitle}
+                value={envelope.title}
+                onChange={(title) => {
+                  updateEnvelope({
+                    data: {
+                      title,
+                    },
+                  });
+                }}
+                placeholder={t`Envelope Title`}
+              />
+            </div>
 
             {envelope.type === EnvelopeType.TEMPLATE && (
               <>

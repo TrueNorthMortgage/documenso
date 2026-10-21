@@ -64,6 +64,7 @@ export const EnvelopeEditorUploadPage = () => {
     editorFields,
     editorConfig,
     isEmbedded,
+    isDocument,
     navigateToStep,
     syncEnvelope,
     registerExternalFlush,
@@ -556,7 +557,7 @@ export const EnvelopeEditorUploadPage = () => {
             />
           )}
 
-          {uploadConfig?.allowUpload && (
+          {uploadConfig?.allowUpload && isDocument && (
             <div className="flex justify-center pt-2">
               <ApplyTemplateToEnvelopeItemDialog
                 envelope={envelope}
@@ -651,7 +652,8 @@ export const EnvelopeEditorUploadPage = () => {
                                 )}
 
                                 <div className="px-1 text-muted-foreground text-xs">
-                                  {localFile.envelopeItemId !== null &&
+                                  {isDocument &&
+                                    localFile.envelopeItemId !== null &&
                                     appliedTemplateSourceItemIdByEnvelopeItemId.has(localFile.envelopeItemId) && (
                                       <>
                                         <Trans>Template Applied:</Trans>{' '}
@@ -696,7 +698,7 @@ export const EnvelopeEditorUploadPage = () => {
                                 </div>
                               )}
 
-                              {localFile.envelopeItemId && (
+                              {isDocument && localFile.envelopeItemId && (
                                 <ApplyTemplateToEnvelopeItemDialog
                                   envelope={envelope}
                                   envelopeItemId={localFile.envelopeItemId}
