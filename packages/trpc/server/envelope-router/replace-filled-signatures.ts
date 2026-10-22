@@ -13,7 +13,7 @@ export const replaceFilledSignaturesRoute = procedure
     const fields = await replaceFilledSignatures({
       ...input,
       userId: ctx.user?.id,
-      requestMetadata: ctx.metadata,
+      requestMetadata: ctx.metadata.requestMetadata,
     });
 
     return { fields };
