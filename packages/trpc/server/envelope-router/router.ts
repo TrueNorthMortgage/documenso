@@ -40,6 +40,7 @@ import { reassignEnvelopeSenderRoute } from './reassign-envelope-sender';
 import { redistributeEnvelopeRoute } from './redistribute-envelope';
 import { removeTemplateFromEnvelopeItemRoute } from './remove-template-from-envelope-item';
 import { replaceEnvelopeItemPdfRoute } from './replace-envelope-item-pdf';
+import { replaceFilledSignaturesRoute } from './replace-filled-signatures';
 import { saveAsTemplateRoute } from './save-as-template';
 import { setEnvelopeFieldsRoute } from './set-envelope-fields';
 import { setEnvelopeRecipientsRoute } from './set-envelope-recipients';
@@ -90,6 +91,7 @@ export const envelopeRouter = router({
     delete: deleteEnvelopeFieldRoute,
     set: setEnvelopeFieldsRoute,
     sign: signEnvelopeFieldRoute,
+    replaceFilledSignatures: replaceFilledSignaturesRoute,
   },
   template: {
     apply: applyTemplateToEnvelopeItemRoute,

@@ -8,15 +8,30 @@ import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditio
 import { getFieldsRequiringValidation } from '@documenso/lib/utils/advanced-fields-helpers';
 import { isDateFieldAutoFillEnabled } from '@documenso/lib/utils/date-fields';
 import { extractFieldInsertionValues } from '@documenso/lib/utils/envelope-signing';
+import { createInitialsSession } from '@documenso/lib/utils/initials-session';
+import { getFilledIdentityFieldsToUpdate } from '@documenso/lib/utils/signing-identity';
 import { trpc } from '@documenso/trpc/react';
 import type { TSignEnvelopeFieldValue } from '@documenso/trpc/server/envelope-router/sign-envelope-field.types';
 import { EnvelopeType, type Field, FieldType, type Recipient, RecipientRole, SigningStatus } from '@prisma/client';
 import { DateTime } from 'luxon';
 import { createContext, useContext, useMemo, useState } from 'react';
 import { prop, sortBy } from 'remeda';
+import { SignFieldInitialsDialog } from '~/components/dialogs/sign-field-initials-dialog';
 
 export type EnvelopeSigningContextValue = {
   isDirectTemplate: boolean;
+
+  isUpdatingIdentity: boolean;
+  updateSignature: (
+    _value: string,
+    _font: SignatureFontFamily | null,
+    _authOptions?: TRecipientActionAuth,
+  ) => Promise<void>;
+  updateFullName: (_name: string) => Promise<void>;
+  updateInitials: (_recipientId: number, _initials: string) => Promise<void>;
+  initialsByRecipient: Record<number, string>;
+  setInitials: (_recipientId: number, _initials: string) => void;
+  requestInitials: (_recipientId: number, _fullName: string) => Promise<string | null>;
 
   fullName: string;
   setFullName: (_value: string) => void;
@@ -153,6 +168,15 @@ export const EnvelopeSigningProvider = ({
   const [envelopeData, setEnvelopeData] = useState(() => prefillDateFields(initialEnvelopeData));
 
   const { envelope, recipient } = envelopeData;
+
+  const [isUpdatingIdentity, setIsUpdatingIdentity] = useState(false);
+  const [initialsByRecipient, setInitialsByRecipient] = useState<Record<number, string>>({});
+  const [initialsSession] = useState(() =>
+    createInitialsSession(
+      (initials) => SignFieldInitialsDialog.call({ initials }),
+      (recipientId, initials) => setInitialsByRecipient((previous) => ({ ...previous, [recipientId]: initials })),
+    ),
+  );
 
   const [fullName, setFullName] = useState(initialFullName || '');
   const [email, setEmail] = useState(initialEmail || '');
@@ -392,6 +416,104 @@ export const EnvelopeSigningProvider = ({
     return signedField;
   };
 
+  const { mutateAsync: replaceFilledSignatures } = trpc.envelope.field.replaceFilledSignatures.useMutation(
+    DO_NOT_INVALIDATE_QUERY_ON_MUTATION,
+  );
+
+  const updateSignature = async (
+    value: string,
+    font: SignatureFontFamily | null,
+    authOptions?: TRecipientActionAuth,
+  ) => {
+    if (isUpdatingIdentity) {
+      return;
+    }
+
+    const fields = recipientFields.filter(
+      (field) => field.type === FieldType.SIGNATURE && field.inserted && !field.fieldMeta?.readOnly,
+    );
+    setIsUpdatingIdentity(true);
+
+    try {
+      if (fields.length > 0) {
+        if (isDirectTemplate) {
+          for (const field of fields) {
+            handleDirectTemplateFieldInsertion(field.id, {
+              type: FieldType.SIGNATURE,
+              value,
+              signatureFont: font ?? undefined,
+            });
+          }
+        } else {
+          const result = await replaceFilledSignatures({
+            token: recipient.token,
+            value,
+            signatureFont: font,
+            authOptions,
+          });
+          const signatures = new Map(result.fields.map((field) => [field.id, field.signature]));
+          const updateField = <T extends Field>(field: T) => {
+            const signature = signatures.get(field.id);
+            return signature ? { ...field, signature } : field;
+          };
+          setEnvelopeData((previous) => ({
+            ...previous,
+            recipient: { ...previous.recipient, fields: previous.recipient.fields.map(updateField) },
+            envelope: {
+              ...previous.envelope,
+              recipients: previous.envelope.recipients.map((candidate) => ({
+                ...candidate,
+                fields: candidate.fields.map(updateField),
+              })),
+            },
+          }));
+        }
+      }
+
+      setSignature(value);
+      setSignatureFont(font);
+    } finally {
+      setIsUpdatingIdentity(false);
+    }
+  };
+
+  const updateIdentityFields = async (
+    recipientId: number,
+    type: typeof FieldType.NAME | typeof FieldType.INITIALS,
+    value: string,
+  ) => {
+    const activeRecipientId =
+      recipient.role === RecipientRole.ASSISTANT ? selectedAssistantRecipient?.id : recipient.id;
+
+    if (recipientId !== activeRecipientId || !value.trim() || isUpdatingIdentity) {
+      return;
+    }
+
+    const fields = envelope.recipients.find((candidate) => candidate.id === recipientId)?.fields ?? [];
+    const fieldsToUpdate = getFilledIdentityFieldsToUpdate(fields.filter(isFieldVisible), recipientId, type, value);
+
+    setIsUpdatingIdentity(true);
+
+    try {
+      for (const field of fieldsToUpdate) {
+        await signField(field.id, { type, value });
+      }
+
+      if (type === FieldType.INITIALS) {
+        initialsSession.setInitials(recipientId, value);
+      } else {
+        setFullName(value);
+      }
+    } finally {
+      setIsUpdatingIdentity(false);
+    }
+  };
+
+  const updateInitials = (recipientId: number, initials: string) =>
+    updateIdentityFields(recipientId, FieldType.INITIALS, initials);
+
+  const updateFullName = (name: string) => updateIdentityFields(recipient.id, FieldType.NAME, name);
+
   const handleDirectTemplateFieldInsertion = (fieldId: number, fieldValue: TSignEnvelopeFieldValue) => {
     const foundField = recipient.fields.find((field) => field.id === fieldId);
 
@@ -453,6 +575,13 @@ export const EnvelopeSigningProvider = ({
     <EnvelopeSigningContext.Provider
       value={{
         isDirectTemplate,
+        isUpdatingIdentity,
+        updateInitials,
+        updateFullName,
+        updateSignature,
+        initialsByRecipient,
+        requestInitials: initialsSession.requestInitials,
+        setInitials: initialsSession.setInitials,
         fullName,
         setFullName,
         email,

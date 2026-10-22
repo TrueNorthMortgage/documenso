@@ -17,20 +17,22 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 const ZSignFieldInitialsFormSchema = z.object({
-  initials: z.string().min(1, { message: msg`Initials are required`.id }),
+  initials: z.string().trim().min(1, { message: msg`Initials are required`.id }),
 });
 
 type TSignFieldInitialsFormSchema = z.infer<typeof ZSignFieldInitialsFormSchema>;
 
 export type SignFieldInitialsDialogProps = {
-  //
+  initials?: string;
 };
 
-export const SignFieldInitialsDialog = createCallable<SignFieldInitialsDialogProps, string | null>(({ call }) => {
+export const SignFieldInitialsDialog = createCallable<SignFieldInitialsDialogProps, string | null>((props) => {
+  const { call, initials } = props;
+
   const form = useForm<TSignFieldInitialsFormSchema>({
     resolver: zodResolver(ZSignFieldInitialsFormSchema),
     defaultValues: {
-      initials: '',
+      initials: initials ?? '',
     },
   });
 

@@ -2,7 +2,6 @@ import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/tr
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import type { TRecipientActionAuth } from '@documenso/lib/types/document-auth';
 import { ZInitialsFieldMeta } from '@documenso/lib/types/field-meta';
-import { extractInitials } from '@documenso/lib/utils/recipient-formatter';
 import type { FieldWithSignature } from '@documenso/prisma/types/field-with-signature';
 import { trpc } from '@documenso/trpc/react';
 import type {
@@ -39,10 +38,8 @@ export const DocumentSigningInitialsField = ({
   const { _ } = useLingui();
   const { revalidate } = useRevalidator();
 
-  const { fullName } = useRequiredDocumentSigningContext();
-  const { recipient, isAssistantMode } = useDocumentSigningRecipientContext();
-
-  const initials = extractInitials(fullName);
+  const { fullName, requestInitials, isUpdatingIdentity } = useRequiredDocumentSigningContext();
+  const { recipient, targetSigner, isAssistantMode } = useDocumentSigningRecipientContext();
 
   const { mutateAsync: signFieldWithToken, isPending: isSignFieldWithTokenLoading } =
     trpc.field.signFieldWithToken.useMutation(DO_NOT_INVALIDATE_QUERY_ON_MUTATION);
@@ -57,7 +54,11 @@ export const DocumentSigningInitialsField = ({
 
   const onSign = async (authOptions?: TRecipientActionAuth) => {
     try {
-      const value = initials ?? '';
+      const value = await requestInitials(field.recipientId, isAssistantMode ? (targetSigner?.name ?? '') : fullName);
+
+      if (!value) {
+        return;
+      }
 
       const payload: TSignFieldWithTokenMutationSchema = {
         token: recipient.token,
@@ -121,7 +122,13 @@ export const DocumentSigningInitialsField = ({
   };
 
   return (
-    <DocumentSigningFieldContainer field={field} onSign={onSign} onRemove={onRemove} type="Initials">
+    <DocumentSigningFieldContainer
+      field={field}
+      loading={isUpdatingIdentity}
+      onSign={onSign}
+      onRemove={onRemove}
+      type="Initials"
+    >
       {isLoading && <DocumentSigningFieldsLoader />}
 
       {!field.inserted && (

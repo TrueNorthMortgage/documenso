@@ -1,27 +1,30 @@
+import type { SignatureFontFamily } from '@documenso/lib/constants/signatures';
 import type { DocumentAndSender } from '@documenso/lib/server-only/document/get-document-by-token';
-import type { TRecipientAccessAuth } from '@documenso/lib/types/document-auth';
+import type { TRecipientAccessAuth, TRecipientActionAuth } from '@documenso/lib/types/document-auth';
 import { getFieldsRequiringValidation } from '@documenso/lib/utils/advanced-fields-helpers';
 import { sortFieldsByPosition } from '@documenso/lib/utils/fields';
+import { getFilledIdentityFieldsToUpdate } from '@documenso/lib/utils/signing-identity';
 import { isSignatureFieldType } from '@documenso/prisma/guards/is-signature-field';
 import type { RecipientWithFields } from '@documenso/prisma/types/recipient-with-fields';
+import { trpc } from '@documenso/trpc/react';
 import { FieldToolTip } from '@documenso/ui/components/field/field-tooltip';
 import { Button } from '@documenso/ui/primitives/button';
-import { Input } from '@documenso/ui/primitives/input';
 import { Label } from '@documenso/ui/primitives/label';
 import { RadioGroup, RadioGroupItem } from '@documenso/ui/primitives/radio-group';
-import { SignaturePadDialog } from '@documenso/ui/primitives/signature-pad/signature-pad-dialog';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import { type Field, type Recipient, RecipientRole } from '@prisma/client';
+import { type Field, FieldType, type Recipient, RecipientRole } from '@prisma/client';
 import { useId, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router';
-
+import { useNavigate, useRevalidator } from 'react-router';
 import { AssistantConfirmationDialog, type NextSigner } from '../../dialogs/assistant-confirmation-dialog';
 import { DocumentSigningCompleteDialog } from './document-signing-complete-dialog';
+import { DocumentSigningIdentityInput } from './document-signing-identity-input';
 import { useRequiredDocumentSigningContext } from './document-signing-provider';
+import { useDocumentSigningRecipientContext } from './document-signing-recipient-provider';
+import { DocumentSigningSignatureInput } from './document-signing-signature-input';
 
 export type DocumentSigningFormProps = {
   document: DocumentAndSender;
@@ -54,11 +57,25 @@ export const DocumentSigningForm = ({
   const { _ } = useLingui();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { revalidate } = useRevalidator();
+  const { targetSigner } = useDocumentSigningRecipientContext();
+  const { mutateAsync: replaceFilledSignatures } = trpc.envelope.field.replaceFilledSignatures.useMutation();
+  const { mutateAsync: signFieldWithToken } = trpc.field.signFieldWithToken.useMutation();
 
   const assistantSignersId = useId();
 
-  const { fullName, signature, signatureFont, setFullName, setSignature, setSignatureFont } =
-    useRequiredDocumentSigningContext();
+  const {
+    fullName,
+    signature,
+    signatureFont,
+    setFullName,
+    setSignature,
+    setSignatureFont,
+    initialsByRecipient,
+    setInitials,
+    isUpdatingIdentity,
+    setIsUpdatingIdentity,
+  } = useRequiredDocumentSigningContext();
 
   const [validateUninsertedFields, setValidateUninsertedFields] = useState(false);
   const [isConfirmationDialogOpen, setIsConfirmationDialogOpen] = useState(false);
@@ -73,6 +90,74 @@ export const DocumentSigningForm = ({
   const fieldsRequiringValidation = useMemo(() => getFieldsRequiringValidation(fields), [fields]);
 
   const hasSignatureField = fields.some((field) => isSignatureFieldType(field.type));
+
+  const activeRecipient = recipient.role === RecipientRole.ASSISTANT ? targetSigner : recipient;
+  const initialsFields = fields.filter(
+    (field) => field.type === FieldType.INITIALS && field.recipientId === activeRecipient?.id,
+  );
+
+  const updateIdentityFields = async (type: typeof FieldType.NAME | typeof FieldType.INITIALS, value: string) => {
+    if (!activeRecipient || isUpdatingIdentity) {
+      return;
+    }
+
+    setIsUpdatingIdentity(true);
+
+    try {
+      for (const field of getFilledIdentityFieldsToUpdate(fields, activeRecipient.id, type, value)) {
+        await signFieldWithToken({ token: recipient.token, fieldId: field.id, value, isBase64: false });
+      }
+
+      if (type === FieldType.INITIALS) {
+        setInitials(activeRecipient.id, value);
+      } else {
+        setFullName(value);
+      }
+    } finally {
+      await revalidate();
+      setIsUpdatingIdentity(false);
+    }
+  };
+
+  const hasFilledSignatureFields = fields.some(
+    (field) => field.recipientId === recipient.id && isSignatureFieldType(field.type) && field.inserted,
+  );
+  const updateSignature = async (
+    value: string,
+    font: SignatureFontFamily | null,
+    authOptions?: TRecipientActionAuth,
+  ) => {
+    if (isUpdatingIdentity) {
+      return;
+    }
+
+    setIsUpdatingIdentity(true);
+
+    try {
+      if (hasFilledSignatureFields) {
+        await replaceFilledSignatures({ token: recipient.token, value, signatureFont: font, authOptions });
+        await revalidate();
+      }
+
+      setSignature(value);
+      setSignatureFont(font);
+    } finally {
+      setIsUpdatingIdentity(false);
+    }
+  };
+
+  const initialsInput =
+    initialsFields.length > 0 && activeRecipient ? (
+      <DocumentSigningIdentityInput
+        key={activeRecipient.id}
+        label={<Trans>Initials</Trans>}
+        value={
+          initialsByRecipient[activeRecipient.id] ?? initialsFields.find((field) => field.inserted)?.customText ?? ''
+        }
+        disabled={isSubmitting || isUpdatingIdentity}
+        onUpdate={(initials) => updateIdentityFields(FieldType.INITIALS, initials)}
+      />
+    ) : null;
 
   const uninsertedFields = useMemo(() => {
     return sortFieldsByPosition(fieldsRequiringValidation.filter((field) => !field.inserted));
@@ -206,8 +291,15 @@ export const DocumentSigningForm = ({
                 />
               </fieldset>
 
+              <div className="mt-4">{initialsInput}</div>
+
               <div className="mt-6 flex flex-col gap-4 md:flex-row">
-                <Button type="submit" className="w-full" size="lg" loading={isAssistantSubmitting}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  loading={isAssistantSubmitting || isUpdatingIdentity}
+                >
                   <Trans>Continue</Trans>
                 </Button>
               </div>
@@ -226,19 +318,14 @@ export const DocumentSigningForm = ({
             <>
               <fieldset disabled={isSubmitting} className="-mx-2 flex flex-1 flex-col gap-4 overflow-y-auto px-2">
                 <div className="flex flex-1 flex-col gap-y-4">
-                  <div>
-                    <Label htmlFor="full-name">
-                      <Trans>Full Name</Trans>
-                    </Label>
+                  <DocumentSigningIdentityInput
+                    label={<Trans>Full Name</Trans>}
+                    value={fullName}
+                    disabled={isSubmitting || isUpdatingIdentity}
+                    onUpdate={(name) => updateIdentityFields(FieldType.NAME, name)}
+                  />
 
-                    <Input
-                      type="text"
-                      id="full-name"
-                      className="mt-2 bg-background"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value.trimStart())}
-                    />
-                  </div>
+                  {initialsInput}
 
                   {hasSignatureField && (
                     <div>
@@ -246,14 +333,14 @@ export const DocumentSigningForm = ({
                         <Trans>Signature</Trans>
                       </Label>
 
-                      <SignaturePadDialog
+                      <DocumentSigningSignatureInput
                         className="mt-2"
                         disabled={isSubmitting}
                         fullName={fullName}
                         value={signature ?? ''}
-                        onChange={(v) => setSignature(v ?? '')}
+                        hasFilledFields={hasFilledSignatureFields}
+                        onUpdate={updateSignature}
                         signatureFont={signatureFont ?? undefined}
-                        onSignatureFontChange={setSignatureFont}
                         typedSignatureEnabled={document.documentMeta?.typedSignatureEnabled}
                         uploadSignatureEnabled={document.documentMeta?.uploadSignatureEnabled}
                         drawSignatureEnabled={document.documentMeta?.drawSignatureEnabled}
@@ -276,11 +363,11 @@ export const DocumentSigningForm = ({
                 </Button>
 
                 <DocumentSigningCompleteDialog
-                  isSubmitting={isSubmitting || isAssistantSubmitting}
+                  isSubmitting={isSubmitting || isAssistantSubmitting || isUpdatingIdentity}
                   documentTitle={document.title}
                   fields={fields}
                   fieldsValidated={localFieldsValidated}
-                  disabled={!isRecipientsTurn}
+                  disabled={!isRecipientsTurn || isUpdatingIdentity}
                   onSignatureComplete={async (nextSigner, accessAuthOptions) =>
                     completeDocument({
                       accessAuthOptions,

@@ -125,7 +125,13 @@ export const signFieldWithToken = async ({
     throw new Error(`Recipient ${recipient.id} has already signed`);
   }
 
-  if (field.inserted && !field.fieldGroupId) {
+  const isIdentityField = field.type === FieldType.NAME || field.type === FieldType.INITIALS;
+
+  if (
+    field.inserted &&
+    ((!isIdentityField && !field.fieldGroupId) ||
+      (isIdentityField && (field.fieldMeta?.readOnly || field.fieldGroup?.readOnly)))
+  ) {
     throw new Error(`Field ${fieldId} has already been inserted`);
   }
 

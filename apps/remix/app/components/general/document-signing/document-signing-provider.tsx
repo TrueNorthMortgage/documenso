@@ -1,7 +1,15 @@
 import { isBase64Image, type SignatureFontFamily } from '@documenso/lib/constants/signatures';
+import { createInitialsSession } from '@documenso/lib/utils/initials-session';
 import { createContext, useContext, useState } from 'react';
+import { SignFieldInitialsDialog } from '~/components/dialogs/sign-field-initials-dialog';
 
 export type DocumentSigningContextValue = {
+  isUpdatingIdentity: boolean;
+  setIsUpdatingIdentity: (_value: boolean) => void;
+  initialsByRecipient: Record<number, string>;
+  setInitials: (_recipientId: number, _initials: string) => void;
+  requestInitials: (_recipientId: number, _fullName: string) => Promise<string | null>;
+
   fullName: string;
   setFullName: (_value: string) => void;
   email: string;
@@ -49,6 +57,15 @@ export const DocumentSigningProvider = ({
   drawSignatureEnabled = true,
   children,
 }: DocumentSigningProviderProps) => {
+  const [isUpdatingIdentity, setIsUpdatingIdentity] = useState(false);
+  const [initialsByRecipient, setInitialsByRecipient] = useState<Record<number, string>>({});
+  const [initialsSession] = useState(() =>
+    createInitialsSession(
+      (initials) => SignFieldInitialsDialog.call({ initials }),
+      (recipientId, initials) => setInitialsByRecipient((previous) => ({ ...previous, [recipientId]: initials })),
+    ),
+  );
+
   const [fullName, setFullName] = useState(initialFullName || '');
   const [email, setEmail] = useState(initialEmail || '');
   const [signatureFont, setSignatureFont] = useState<SignatureFontFamily | null>(initialSignatureFont);
@@ -74,6 +91,11 @@ export const DocumentSigningProvider = ({
   return (
     <DocumentSigningContext.Provider
       value={{
+        isUpdatingIdentity,
+        setIsUpdatingIdentity,
+        initialsByRecipient,
+        requestInitials: initialsSession.requestInitials,
+        setInitials: initialsSession.setInitials,
         fullName,
         setFullName,
         email,

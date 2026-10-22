@@ -106,7 +106,7 @@ export const DocumentSigningMobileWidget = () => {
 
           {/* Expandable Content */}
           {isExpanded && (
-            <div className="slide-in-from-bottom-2 animate-in border-border border-t p-4 duration-200">
+            <div className="slide-in-from-bottom-2 max-h-[60dvh] animate-in overflow-y-auto overscroll-contain border-border border-t p-4 duration-200">
               <EnvelopeSignerForm />
 
               {!hidePoweredBy && (

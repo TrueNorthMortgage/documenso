@@ -3,17 +3,15 @@ import type { TFieldInitials } from '@documenso/lib/types/field';
 import type { TSignEnvelopeFieldValue } from '@documenso/trpc/server/envelope-router/sign-envelope-field.types';
 import { FieldType } from '@prisma/client';
 
-import { SignFieldInitialsDialog } from '~/components/dialogs/sign-field-initials-dialog';
-
 type HandleInitialsFieldClickOptions = {
   field: TFieldInitials;
-  initials: string | null;
+  requestInitials: () => Promise<string | null>;
 };
 
 export const handleInitialsFieldClick = async (
   options: HandleInitialsFieldClickOptions,
 ): Promise<Extract<TSignEnvelopeFieldValue, { type: typeof FieldType.INITIALS }> | null> => {
-  const { field, initials } = options;
+  const { field, requestInitials } = options;
 
   if (field.type !== FieldType.INITIALS) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
@@ -28,11 +26,7 @@ export const handleInitialsFieldClick = async (
     };
   }
 
-  let initialsToInsert = initials;
-
-  if (!initialsToInsert) {
-    initialsToInsert = await SignFieldInitialsDialog.call({});
-  }
+  const initialsToInsert = await requestInitials();
 
   if (!initialsToInsert) {
     return null;

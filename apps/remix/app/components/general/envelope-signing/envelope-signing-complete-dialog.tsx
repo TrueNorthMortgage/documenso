@@ -33,6 +33,7 @@ export const EnvelopeSignerCompleteDialog = (
   const [searchParams] = useSearchParams();
 
   const {
+    isUpdatingIdentity,
     isDirectTemplate,
     envelope,
     setShowPendingFieldTooltip,
@@ -244,7 +245,8 @@ export const EnvelopeSignerCompleteDialog = (
   return (
     <DocumentSigningCompleteDialog
       {...props}
-      isSubmitting={isPending}
+      isSubmitting={isPending || isUpdatingIdentity}
+      disabled={isUpdatingIdentity}
       recipientPayload={recipientPayload}
       onSignatureComplete={isDirectTemplate ? handleDirectTemplateCompleteClick : handleOnCompleteClick}
       documentTitle={envelope.title}

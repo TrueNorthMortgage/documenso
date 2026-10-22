@@ -2,7 +2,6 @@ import { unsafe_useEffectOnce } from '@documenso/lib/client-only/hooks/use-effec
 import { AUTO_SIGNABLE_FIELD_TYPES } from '@documenso/lib/constants/autosign';
 import { DocumentAuth } from '@documenso/lib/types/document-auth';
 import { isDateFieldAutoFillEnabled } from '@documenso/lib/utils/date-fields';
-import { extractInitials } from '@documenso/lib/utils/recipient-formatter';
 import { trpc } from '@documenso/trpc/react';
 import { Button } from '@documenso/ui/primitives/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@documenso/ui/primitives/dialog';
@@ -51,7 +50,7 @@ export const DocumentSigningAutoSign = ({ recipient, fields }: DocumentSigningAu
   const { toast } = useToast();
   const { revalidate } = useRevalidator();
 
-  const { email, fullName } = useRequiredDocumentSigningContext();
+  const { email, fullName, requestInitials } = useRequiredDocumentSigningContext();
   const { derivedRecipientActionAuth } = useRequiredDocumentSigningAuthContext();
 
   const [open, setOpen] = useState(false);
@@ -73,10 +72,6 @@ export const DocumentSigningAutoSign = ({ recipient, fields }: DocumentSigningAu
       return false;
     }
 
-    if (field.type === FieldType.INITIALS && !fullName) {
-      return false;
-    }
-
     if (field.type === FieldType.EMAIL && !email) {
       return false;
     }
@@ -93,11 +88,18 @@ export const DocumentSigningAutoSign = ({ recipient, fields }: DocumentSigningAu
   );
 
   const onSubmit = async () => {
+    const hasInitialsFields = autoSignableFields.some((field) => field.type === FieldType.INITIALS);
+    const initials = hasInitialsFields ? await requestInitials(recipient.id, fullName) : null;
+
+    if (hasInitialsFields && !initials) {
+      return;
+    }
+
     const results = await Promise.allSettled(
       autoSignableFields.map(async (field) => {
         const value = match(field.type)
           .with(FieldType.NAME, () => fullName)
-          .with(FieldType.INITIALS, () => extractInitials(fullName, Number.POSITIVE_INFINITY))
+          .with(FieldType.INITIALS, () => initials)
           .with(FieldType.EMAIL, () => email)
           .with(FieldType.DATE, () => new Date().toISOString())
           .otherwise(() => '');
