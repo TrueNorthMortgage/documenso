@@ -34,7 +34,7 @@ export const getSelfHostedReturnTargetFromParams = (params: URLSearchParams, ori
   if (directReturnUrl) {
     return {
       url: directReturnUrl,
-      label: params.get(SELF_HOSTED_RETURN_LABEL_PARAM) || 'Close Documenso',
+      label: params.get(SELF_HOSTED_RETURN_LABEL_PARAM) || 'Close TNM Sign',
     };
   }
 
@@ -57,7 +57,7 @@ export const getSelfHostedReturnTargetFromParams = (params: URLSearchParams, ori
 
     return {
       url: nestedReturnUrl,
-      label: returnToUrl.searchParams.get(SELF_HOSTED_RETURN_LABEL_PARAM) || 'Close Documenso',
+      label: returnToUrl.searchParams.get(SELF_HOSTED_RETURN_LABEL_PARAM) || 'Close TNM Sign',
     };
   } catch {
     return null;
@@ -104,6 +104,6 @@ export const getStoredSelfHostedReturnTarget = () => {
 
   return {
     url,
-    label: window.sessionStorage.getItem(SELF_HOSTED_RETURN_LABEL_STORAGE_KEY) || 'Close Documenso',
+    label: window.sessionStorage.getItem(SELF_HOSTED_RETURN_LABEL_STORAGE_KEY) || 'Close TNM Sign',
   };
 };

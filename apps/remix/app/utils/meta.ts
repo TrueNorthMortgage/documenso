@@ -15,7 +15,7 @@ export const appMetaTags = (title?: MessageDescriptor) => {
     {
       name: 'keywords',
       content:
-        'True North Mortgage, Documenso, document signing, secure document signing, online document signing, mortgage documents, e-signature, digital signature, electronic signature, sign documents online, mortgage application, loan documents, mortgage closing, mortgage process, mortgage approval, mortgage paperwork, mortgage forms, mortgage contracts, mortgage agreements',
+        'True North Mortgage, TNM Sign, document signing, secure document signing, online document signing, mortgage documents, e-signature, digital signature, electronic signature, sign documents online, mortgage application, loan documents, mortgage closing, mortgage process, mortgage approval, mortgage paperwork, mortgage forms, mortgage contracts, mortgage agreements',
     },
     {
       name: 'author',

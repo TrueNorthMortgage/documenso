@@ -24,6 +24,7 @@ export type SignaturePadDialogProps = Omit<HTMLAttributes<HTMLCanvasElement>, 'o
   signatureFont?: SignatureFontFamily;
   onSignatureFontChange?: (_value: SignatureFontFamily | null) => void;
   onChange: (_value: string) => void;
+  onConfirm?: (_value: string, _font: SignatureFontFamily | null) => void;
   dialogConfirmText?: MessageDescriptor | string;
   disableAnimation?: boolean;
   typedSignatureEnabled?: boolean;
@@ -38,6 +39,7 @@ export const SignaturePadDialog = ({
   signatureFont = DEFAULT_SIGNATURE_FONT_FAMILY,
   onSignatureFontChange,
   onChange,
+  onConfirm,
   disabled = false,
   disableAnimation = false,
   typedSignatureEnabled,
@@ -151,8 +153,14 @@ export const SignaturePadDialog = ({
               type="button"
               disabled={!signature}
               onClick={() => {
-                onChange(signature);
-                onSignatureFontChange?.(isBase64Image(signature) ? null : selectedSignatureFont);
+                const font = isBase64Image(signature) ? null : selectedSignatureFont;
+
+                if (onConfirm) {
+                  onConfirm(signature, font);
+                } else {
+                  onChange(signature);
+                  onSignatureFontChange?.(font);
+                }
                 setShowSignatureModal(false);
               }}
             >

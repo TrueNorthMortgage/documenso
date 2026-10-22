@@ -19,7 +19,6 @@ import {
 } from '@documenso/lib/utils/advanced-fields-helpers';
 import type { TFieldWithGroup } from '@documenso/lib/utils/field-groups';
 import { getClientSideFieldTranslations } from '@documenso/lib/utils/fields';
-import { extractInitials } from '@documenso/lib/utils/recipient-formatter';
 import type { TSignEnvelopeFieldValue } from '@documenso/trpc/server/envelope-router/sign-envelope-field.types';
 import { EnvelopeRecipientFieldTooltip } from '@documenso/ui/components/document/envelope-recipient-field-tooltip';
 import { EnvelopeFieldToolTip } from '@documenso/ui/components/field/envelope-field-tooltip';
@@ -75,6 +74,8 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     signField: signFieldInternal,
     email,
     setEmail,
+    isUpdatingIdentity,
+    requestInitials,
     fullName,
     setFullName,
     signature,
@@ -243,7 +244,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
       const foundField = localPageFields.find((f) => f.id === unparsedField.id);
       const foundLoadingGroup = currentTarget.findOne('.loading-spinner-group');
 
-      if (!foundField || foundLoadingGroup || foundField.fieldMeta?.readOnly) {
+      if (isUpdatingIdentity || !foundField || foundLoadingGroup || foundField.fieldMeta?.readOnly) {
         return;
       }
 
@@ -419,9 +420,10 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
             return;
           }
 
-          const initials = localFullName ? extractInitials(localFullName, Number.POSITIVE_INFINITY) : null;
-
-          handleInitialsFieldClick({ field, initials })
+          handleInitialsFieldClick({
+            field,
+            requestInitials: () => requestInitials(field.recipientId, localFullName ?? ''),
+          })
             .then(async (payload) => {
               if (payload) {
                 fieldGroup.add(loadingSpinnerGroup);
@@ -708,7 +710,7 @@ export const EnvelopeSignerPageRenderer = ({ pageData }: { pageData: PageRenderD
     renderFields();
 
     pageLayer.current.batchDraw();
-  }, [localPageFields, showPendingFieldTooltip, fullName, signature, email]);
+  }, [localPageFields, showPendingFieldTooltip, fullName, signature, email, isUpdatingIdentity]);
 
   /**
    * Rerender the whole page if the selected assistant recipient changes.

@@ -712,8 +712,8 @@ msgid "<0>{organisationName}</0> has requested to create an account on your beha
 msgstr "<0>{organisationName}</0>에서 귀하를 대신해 계정을 생성하려고 합니다."
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "<0>{organisationName}</0> has requested to link your current Documenso account to their organisation."
-msgstr "<0>{organisationName}</0>에서 귀하의 기존 Documenso 계정을 조직에 연결하려고 합니다."
+msgid "<0>{organisationName}</0> has requested to link your current TNM Sign account to their organisation."
+msgstr "<0>{organisationName}</0>에서 귀하의 기존 TNM Sign 계정을 조직에 연결하려고 합니다."
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v1.tsx
 msgid "<0>{senderName} {senderEmail}</0> has invited you to approve this document"
@@ -752,8 +752,8 @@ msgid "<0>{senderName} {senderEmail}</0> on behalf of \"{0}\" has invited you to
 msgstr "<0>{senderName} {senderEmail}</0> 님이 \"{0}\"을(를) 대신하여 이 문서를 열람해 달라고 초대했습니다."
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "<0>{teamName}</0> has requested to use your email address for their team on Documenso."
-msgstr "<0>{teamName}</0> 팀에서 Documenso에서 사용할 팀용 이메일 주소로 귀하의 이메일 주소를 요청했습니다."
+msgid "<0>{teamName}</0> has requested to use your email address for their team on TNM Sign."
+msgstr "<0>{teamName}</0> 팀에서 TNM Sign에서 사용할 팀용 이메일 주소로 귀하의 이메일 주소를 요청했습니다."
 
 #: apps/remix/app/routes/_unauthenticated+/organisation.sso.confirmation.$token.tsx
 msgid "<0>Account management:</0> Modify your account settings, permissions, and preferences"
@@ -1033,8 +1033,8 @@ msgid "A field was updated"
 msgstr "필드가 업데이트되었습니다."
 
 #: packages/email/templates/organisation-join.tsx
-msgid "A member has joined your organisation on Documenso"
-msgstr "구성원이 Documenso의 조직에 가입했습니다."
+msgid "A member has joined your organisation on TNM Sign"
+msgstr "구성원이 TNM Sign의 조직에 가입했습니다."
 
 #: packages/lib/jobs/definitions/emails/send-organisation-member-left-email.handler.ts
 msgid "A member has left your organisation"
@@ -1045,8 +1045,8 @@ msgid "A member has left your organisation {organisationName}"
 msgstr "구성원이 조직 {organisationName}을 떠났습니다."
 
 #: packages/email/templates/organisation-leave.tsx
-msgid "A member has left your organisation on Documenso"
-msgstr "구성원이 Documenso의 조직을 떠났습니다."
+msgid "A member has left your organisation on TNM Sign"
+msgstr "구성원이 TNM Sign의 조직을 떠났습니다."
 
 #: packages/lib/jobs/definitions/emails/send-organisation-member-joined-email.handler.ts
 msgid "A new member has joined your organisation"
@@ -1089,18 +1089,18 @@ msgid "A request has been made to create an account for you"
 msgstr "귀하를 위한 계정 생성 요청이 있습니다."
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "A request has been made to link your Documenso account"
-msgstr "귀하의 Documenso 계정을 연결해 달라는 요청이 있습니다."
+msgid "A request has been made to link your TNM Sign account"
+msgstr "귀하의 TNM Sign 계정을 연결해 달라는 요청이 있습니다."
 
 #. placeholder {0}: team.name
 #: packages/lib/server-only/team/create-team-email-verification.ts
-msgid "A request to use your email has been initiated by {0} on Documenso"
-msgstr "Documenso에서 {0}이(가) 귀하의 이메일 사용을 요청했습니다."
+msgid "A request to use your email has been initiated by {0} on TNM Sign"
+msgstr "TNM Sign에서 {0}이(가) 귀하의 이메일 사용을 요청했습니다."
 
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
-msgid "A secret that will be sent to your URL so you can verify that the request has been sent by Documenso."
-msgstr "Documenso에서 보낸 요청인지 확인할 수 있도록, 귀하의 URL로 전송되는 비밀 값입니다."
+msgid "A secret that will be sent to your URL so you can verify that the request has been sent by TNM Sign."
+msgstr "TNM Sign에서 보낸 요청인지 확인할 수 있도록, 귀하의 URL로 전송되는 비밀 값입니다."
 
 #: packages/email/templates/team-delete.tsx
 #: packages/email/templates/team-delete.tsx
@@ -1143,12 +1143,12 @@ msgid "Accept & Link Account"
 msgstr "계정 수락 및 연결"
 
 #: packages/email/templates/organisation-invite.tsx
-msgid "Accept invitation to join an organisation on Documenso"
-msgstr "Documenso 조직 초대 수락"
+msgid "Accept invitation to join an organisation on TNM Sign"
+msgstr "TNM Sign 조직 초대 수락"
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "Accept team email request for {teamName} on Documenso"
-msgstr "Documenso에서 {teamName} 팀용 이메일 요청을 승인하세요."
+msgid "Accept team email request for {teamName} on TNM Sign"
+msgstr "TNM Sign에서 {teamName} 팀용 이메일 요청을 승인하세요."
 
 #: apps/remix/app/components/dialogs/team-inherit-member-disable-dialog.tsx
 msgid "Access disabled"
@@ -1902,11 +1902,13 @@ msgstr "보조자로 서명하는 동안 예기치 않은 오류가 발생했습
 #: apps/remix/app/components/general/document-signing/document-signing-date-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-dropdown-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-email-field.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-identity-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-name-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-number-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-radio-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-signature-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 msgid "An error occurred while signing the document."
 msgstr "문서에 서명하는 중 오류가 발생했습니다."
@@ -4184,10 +4186,6 @@ msgstr "DNS 레코드"
 msgid "Documenso License"
 msgstr "Documenso 라이선스"
 
-#: apps/remix/app/components/dialogs/account-delete-dialog.tsx
-msgid "Documenso will delete <0>all of your documents</0>, along with all of your completed documents, signatures, and all other resources belonging to your Account."
-msgstr "Documenso는 <0>모든 문서</0>와 완료된 문서, 서명, 계정에 속한 모든 리소스를 삭제합니다."
-
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings._layout.tsx
@@ -4754,10 +4752,6 @@ msgstr "문서를 이곳에 드래그 앤 드롭해 주세요."
 #: apps/remix/app/components/embed/authoring/configure-document-upload.tsx
 msgid "Drag and drop or click to upload"
 msgstr "드래그 앤 드롭 또는 클릭하여 업로드"
-
-#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
-#~ msgid "Drag and drop your document here"
-#~ msgstr "문서를 이곳에 드래그해서 놓아 주세요."
 
 #: packages/lib/constants/document.ts
 #: packages/ui/primitives/signature-pad/signature-pad.tsx
@@ -5513,6 +5507,7 @@ msgstr "봉투가 업데이트되었습니다"
 #: apps/remix/app/components/general/document-signing/document-signing-email-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-email-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-form.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-identity-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-name-field.tsx
@@ -5525,6 +5520,7 @@ msgstr "봉투가 업데이트되었습니다"
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-signature-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 #: apps/remix/app/components/general/document/document-attachments-popover.tsx
@@ -6510,8 +6506,10 @@ msgstr "상속된 구독 클레임"
 
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/sign-field-initials-dialog.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-form.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-drag-drop.tsx
+#: apps/remix/app/components/general/envelope-signing/envelope-signer-form.tsx
 #: packages/lib/utils/fields.ts
 #: packages/ui/primitives/document-flow/add-fields.tsx
 #: packages/ui/primitives/document-flow/types.ts
@@ -6566,8 +6564,8 @@ msgid "Invalid License Key"
 msgstr "잘못된 라이선스 키"
 
 #: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Invalid License Type - Your Documenso instance is using features that are not part of your license."
-msgstr "잘못된 라이선스 유형 - 현재 Documenso 인스턴스에서 사용 중인 기능은 보유한 라이선스에 포함되지 않습니다."
+msgid "Invalid License Type - Your TNM Sign instance is using features that are not part of your license."
+msgstr "잘못된 라이선스 유형 - 현재 TNM Sign 인스턴스에서 사용 중인 기능은 보유한 라이선스에 포함되지 않습니다."
 
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Invalid link"
@@ -6701,8 +6699,8 @@ msgid "Japanese"
 msgstr "일본어"
 
 #: packages/email/templates/organisation-invite.tsx
-msgid "Join {organisationName} on Documenso"
-msgstr "Documenso에서 {organisationName} 조직에 참여하세요."
+msgid "Join {organisationName} on TNM Sign"
+msgstr "TNM Sign에서 {organisationName} 조직에 참여하세요."
 
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
@@ -6893,8 +6891,8 @@ msgid "Link template"
 msgstr "템플릿 연결"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "Link your Documenso account"
-msgstr "Documenso 계정 연결"
+msgid "Link your TNM Sign account"
+msgstr "TNM Sign 계정 연결"
 
 #: apps/remix/app/routes/_authenticated+/settings+/security._index.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/security.linked-accounts.tsx
@@ -7292,8 +7290,8 @@ msgid "Min"
 msgstr "최소"
 
 #: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Missing License - Your Documenso instance is using features that require a license."
-msgstr "라이선스 누락 - 현재 Documenso 인스턴스에서 사용하는 기능에는 라이선스가 필요합니다."
+msgid "Missing License - Your TNM Sign instance is using features that require a license."
+msgstr "라이선스 누락 - 현재 TNM Sign 인스턴스에서 사용하는 기능에는 라이선스가 필요합니다."
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Missing Recipients"
@@ -9477,10 +9475,6 @@ msgstr "돌아가기"
 msgid "Return Home"
 msgstr "홈으로 돌아가기"
 
-#: apps/remix/app/routes/_unauthenticated+/o.$orgUrl.signin.tsx
-msgid "Return to Documenso sign in page here"
-msgstr "여기를 눌러 Documenso 로그인 페이지로 돌아가기"
-
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 msgid "Return to documents"
 msgstr "문서로 돌아가기"
@@ -9497,6 +9491,10 @@ msgstr "로그인 화면으로 돌아가기"
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 msgid "Return to templates"
 msgstr "템플릿으로 돌아가기"
+
+#: apps/remix/app/routes/_unauthenticated+/o.$orgUrl.signin.tsx
+msgid "Return to TNM Sign sign in page here"
+msgstr "여기를 눌러 TNM Sign 로그인 페이지로 돌아가기"
 
 #: apps/remix/app/components/dialogs/envelope-field-review-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
@@ -10226,8 +10224,8 @@ msgid "Sign Document"
 msgstr "문서 서명"
 
 #: apps/remix/app/routes/_recipient+/_layout.tsx
-msgid "Sign Document - Documenso"
-msgstr "문서 서명 - Documenso"
+msgid "Sign Document - TNM Sign"
+msgstr "문서 서명 - TNM Sign"
 
 #: apps/remix/app/components/embed/multisign/multi-sign-document-list.tsx
 msgid "Sign Documents"
@@ -10908,8 +10906,8 @@ msgstr "팀"
 
 #. placeholder {0}: team.name
 #: packages/lib/server-only/team/delete-team.ts
-msgid "Team \"{0}\" has been deleted on Documenso"
-msgstr "Documenso에서 팀 \"{0}\"이(가) 삭제되었습니다."
+msgid "Team \"{0}\" has been deleted on TNM Sign"
+msgstr "TNM Sign에서 팀 \"{0}\"이(가) 삭제되었습니다."
 
 #: packages/lib/constants/teams-translations.ts
 msgid "Team Admin"
@@ -10964,8 +10962,8 @@ msgid "Team email removed"
 msgstr "팀 이메일 제거됨"
 
 #: packages/email/templates/team-email-removed.tsx
-msgid "Team email removed for {teamName} on Documenso"
-msgstr "Documenso에서 {teamName} 팀의 팀 이메일이 제거되었습니다"
+msgid "Team email removed for {teamName} on TNM Sign"
+msgstr "TNM Sign에서 {teamName} 팀의 팀 이메일이 제거되었습니다"
 
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Team email verification"
@@ -11729,8 +11727,8 @@ msgstr "수신자가 문서에 서명할 때 사용할 수 있는 서명 유형�
 
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
-msgid "The URL for Documenso to send webhook events to."
-msgstr "Documenso가 웹훅 이벤트를 전송할 URL입니다."
+msgid "The URL for TNM Sign to send webhook events to."
+msgstr "TNM Sign가 웹훅 이벤트를 전송할 URL입니다."
 
 #: apps/remix/app/routes/_authenticated+/admin+/users.$id.tsx
 msgid "The user you are looking for may have been removed, renamed or may have never existed."
@@ -11884,8 +11882,8 @@ msgid "This document has been signed by all recipients"
 msgstr "이 문서는 모든 수신자가 서명했습니다"
 
 #: apps/remix/app/components/general/document/document-certificate-qr-view.tsx
-msgid "This document is available in your Documenso account. You can view more details, recipients, and audit logs there."
-msgstr "이 문서는 귀하의 Documenso 계정에서 확인할 수 있습니다. 자세한 정보, 수신자, 감사 로그를 조회할 수 있습니다."
+msgid "This document is available in your TNM Sign account. You can view more details, recipients, and audit logs there."
+msgstr "이 문서는 귀하의 TNM Sign 계정에서 확인할 수 있습니다. 자세한 정보, 수신자, 감사 로그를 조회할 수 있습니다."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.$id._index.tsx
 msgid "This document is currently a draft and has not been sent"
@@ -12182,6 +12180,10 @@ msgstr "제목"
 #: packages/ui/primitives/document-flow/add-settings.types.ts
 msgid "Title cannot be empty"
 msgstr "제목은 비워 둘 수 없습니다."
+
+#: apps/remix/app/components/dialogs/account-delete-dialog.tsx
+msgid "TNM Sign will delete <0>all of your documents</0>, along with all of your completed documents, signatures, and all other resources belonging to your Account."
+msgstr "TNM Sign는 <0>모든 문서</0>와 완료된 문서, 서명, 계정에 속한 모든 리소스를 삭제합니다."
 
 #: apps/remix/app/routes/_unauthenticated+/organisation.invite.$token.tsx
 msgid "To accept this invitation you must create an account."
@@ -12910,11 +12912,6 @@ msgstr "서명 업로드"
 #: packages/ui/primitives/signature-pad/signature-pad-upload.tsx
 msgid "Upload Signature"
 msgstr "서명 업로드"
-
-#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
-#: packages/ui/primitives/document-upload-button.tsx
-#~ msgid "Upload Template"
-#~ msgstr "템플릿 업로드"
 
 #: packages/ui/primitives/document-dropzone.tsx
 msgid "Upload Template Document"
@@ -13747,8 +13744,8 @@ msgid "Welcome to {organisationName}"
 msgstr "{organisationName}에 오신 것을 환영합니다"
 
 #: packages/email/template-components/template-confirmation-email.tsx
-msgid "Welcome to Documenso!"
-msgstr "Documenso에 오신 것을 환영합니다!"
+msgid "Welcome to TNM Sign!"
+msgstr "TNM Sign에 오신 것을 환영합니다!"
 
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "Well-known URL is required"
@@ -13786,8 +13783,8 @@ msgid "Whether to enable the SSO portal for your organisation"
 msgstr "조직에 대해 SSO 포털을 활성화할지 여부"
 
 #: apps/remix/app/routes/_profile+/p.$url.tsx
-msgid "While waiting for them to do so you can create your own Documenso account and get started with document signing right away."
-msgstr "상대방을 기다리는 동안, Documenso 계정을 생성하고 바로 전자 서명을 시작할 수 있습니다."
+msgid "While waiting for them to do so you can create your own TNM Sign account and get started with document signing right away."
+msgstr "상대방을 기다리는 동안, TNM Sign 계정을 생성하고 바로 전자 서명을 시작할 수 있습니다."
 
 #: apps/remix/app/components/dialogs/organisation-create-dialog.tsx
 msgid "Whitelabeling, unlimited members and more"
@@ -14054,8 +14051,8 @@ msgid "You can only detect fields in draft envelopes"
 msgstr "필드는 초안 봉투에서만 감지할 수 있습니다."
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "You can revoke access at any time in your team settings on Documenso <0>here</0>."
-msgstr "언제든지 Documenso의 팀 설정에서 <0>여기</0>에서 액세스를 취소할 수 있습니다."
+msgid "You can revoke access at any time in your team settings on TNM Sign <0>here</0>."
+msgstr "언제든지 TNM Sign의 팀 설정에서 <0>여기</0>에서 액세스를 취소할 수 있습니다."
 
 #: apps/remix/app/components/forms/public-profile-form.tsx
 msgid "You can update the profile URL by updating the team URL in the general settings page."
@@ -14201,8 +14198,8 @@ msgstr "<0>{0}</0> 조직에서 귀하를 초대했습니다."
 
 #. placeholder {0}: organisation.name
 #: packages/lib/server-only/organisation/create-organisation-member-invites.ts
-msgid "You have been invited to join {0} on Documenso"
-msgstr "Documenso에서 {0} 조직에 초대되었습니다."
+msgid "You have been invited to join {0} on TNM Sign"
+msgstr "TNM Sign에서 {0} 조직에 초대되었습니다."
 
 #: packages/email/templates/organisation-invite.tsx
 msgid "You have been invited to join the following organisation"
@@ -14773,12 +14770,12 @@ msgid "Your email domain uses Microsoft SSO. Please use the Login button on the 
 msgstr "이메일 도메인에서 Microsoft SSO를 사용합니다. 기본 로그인 페이지의 로그인 버튼을 사용하세요."
 
 #: apps/remix/app/routes/_unauthenticated+/verify-email.$token.tsx
-msgid "Your email has already been confirmed. You can now use all features of Documenso."
-msgstr "이메일이 이미 확인되었습니다. 이제 Documenso의 모든 기능을 사용할 수 있습니다."
+msgid "Your email has already been confirmed. You can now use all features of TNM Sign."
+msgstr "이메일이 이미 확인되었습니다. 이제 TNM Sign의 모든 기능을 사용할 수 있습니다."
 
 #: apps/remix/app/routes/_unauthenticated+/verify-email.$token.tsx
-msgid "Your email has been successfully confirmed! You can now use all features of Documenso."
-msgstr "이메일이 성공적으로 확인되었습니다! 이제 Documenso의 모든 기능을 사용할 수 있습니다."
+msgid "Your email has been successfully confirmed! You can now use all features of TNM Sign."
+msgstr "이메일이 성공적으로 확인되었습니다! 이제 TNM Sign의 모든 기능을 사용할 수 있습니다."
 
 #. placeholder {0}: teamEmail.team.name
 #. placeholder {1}: teamEmail.team.url
@@ -14859,8 +14856,8 @@ msgid "Your plan does not support inviting members. Please upgrade or your plan 
 msgstr "현재 요금제에서는 구성원 초대를 지원하지 않습니다. 요금제를 업그레이드하시거나, 옵션에 대해 논의하려면 <0>{SUPPORT_EMAIL}</0>로 영업팀에 문의해 주세요."
 
 #: apps/remix/app/components/general/organisations/organisation-billing-banner.tsx
-msgid "Your plan is no longer valid. Please subscribe to a new plan to continue using Documenso."
-msgstr "현재 요금제가 더 이상 유효하지 않습니다. Documenso를 계속 사용하려면 새 요금제를 구독해 주세요."
+msgid "Your plan is no longer valid. Please subscribe to a new plan to continue using TNM Sign."
+msgstr "현재 요금제가 더 이상 유효하지 않습니다. TNM Sign를 계속 사용하려면 새 요금제를 구독해 주세요."
 
 #: apps/remix/app/components/forms/profile.tsx
 msgid "Your profile has been updated successfully."

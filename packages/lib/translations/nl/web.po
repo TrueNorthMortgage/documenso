@@ -712,8 +712,8 @@ msgid "<0>{organisationName}</0> has requested to create an account on your beha
 msgstr "<0>{organisationName}</0> heeft verzocht om een account voor je aan te maken."
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "<0>{organisationName}</0> has requested to link your current Documenso account to their organisation."
-msgstr "<0>{organisationName}</0> heeft verzocht om je huidige Documenso-account aan hun organisatie te koppelen."
+msgid "<0>{organisationName}</0> has requested to link your current TNM Sign account to their organisation."
+msgstr "<0>{organisationName}</0> heeft verzocht om je huidige TNM Sign-account aan hun organisatie te koppelen."
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v1.tsx
 msgid "<0>{senderName} {senderEmail}</0> has invited you to approve this document"
@@ -752,8 +752,8 @@ msgid "<0>{senderName} {senderEmail}</0> on behalf of \"{0}\" has invited you to
 msgstr "<0>{senderName} {senderEmail}</0> namens \"{0}\" heeft je uitgenodigd om dit document te bekijken"
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "<0>{teamName}</0> has requested to use your email address for their team on Documenso."
-msgstr "<0>{teamName}</0> heeft verzocht om je e-mailadres te gebruiken voor hun team op Documenso."
+msgid "<0>{teamName}</0> has requested to use your email address for their team on TNM Sign."
+msgstr "<0>{teamName}</0> heeft verzocht om je e-mailadres te gebruiken voor hun team op TNM Sign."
 
 #: apps/remix/app/routes/_unauthenticated+/organisation.sso.confirmation.$token.tsx
 msgid "<0>Account management:</0> Modify your account settings, permissions, and preferences"
@@ -1033,8 +1033,8 @@ msgid "A field was updated"
 msgstr "Er is een veld bijgewerkt"
 
 #: packages/email/templates/organisation-join.tsx
-msgid "A member has joined your organisation on Documenso"
-msgstr "Een lid is toegetreden tot je organisatie op Documenso"
+msgid "A member has joined your organisation on TNM Sign"
+msgstr "Een lid is toegetreden tot je organisatie op TNM Sign"
 
 #: packages/lib/jobs/definitions/emails/send-organisation-member-left-email.handler.ts
 msgid "A member has left your organisation"
@@ -1045,8 +1045,8 @@ msgid "A member has left your organisation {organisationName}"
 msgstr "Een lid heeft je organisatie {organisationName} verlaten"
 
 #: packages/email/templates/organisation-leave.tsx
-msgid "A member has left your organisation on Documenso"
-msgstr "Een lid heeft je organisatie op Documenso verlaten"
+msgid "A member has left your organisation on TNM Sign"
+msgstr "Een lid heeft je organisatie op TNM Sign verlaten"
 
 #: packages/lib/jobs/definitions/emails/send-organisation-member-joined-email.handler.ts
 msgid "A new member has joined your organisation"
@@ -1089,18 +1089,18 @@ msgid "A request has been made to create an account for you"
 msgstr "Er is een verzoek ingediend om een account voor je aan te maken"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "A request has been made to link your Documenso account"
-msgstr "Er is een verzoek ingediend om je Documenso-account te koppelen"
+msgid "A request has been made to link your TNM Sign account"
+msgstr "Er is een verzoek ingediend om je TNM Sign-account te koppelen"
 
 #. placeholder {0}: team.name
 #: packages/lib/server-only/team/create-team-email-verification.ts
-msgid "A request to use your email has been initiated by {0} on Documenso"
-msgstr "Er is een verzoek ingediend door {0} op Documenso om je e-mailadres te gebruiken."
+msgid "A request to use your email has been initiated by {0} on TNM Sign"
+msgstr "Er is een verzoek ingediend door {0} op TNM Sign om je e-mailadres te gebruiken."
 
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
-msgid "A secret that will be sent to your URL so you can verify that the request has been sent by Documenso."
-msgstr "Een geheim dat naar je URL wordt verzonden, zodat je kunt verifiëren dat het verzoek door Documenso is verzonden."
+msgid "A secret that will be sent to your URL so you can verify that the request has been sent by TNM Sign."
+msgstr "Een geheim dat naar je URL wordt verzonden, zodat je kunt verifiëren dat het verzoek door TNM Sign is verzonden."
 
 #: packages/email/templates/team-delete.tsx
 #: packages/email/templates/team-delete.tsx
@@ -1143,12 +1143,12 @@ msgid "Accept & Link Account"
 msgstr "Accepteren & account koppelen"
 
 #: packages/email/templates/organisation-invite.tsx
-msgid "Accept invitation to join an organisation on Documenso"
-msgstr "Uitnodiging accepteren om toe te treden tot een organisatie op Documenso"
+msgid "Accept invitation to join an organisation on TNM Sign"
+msgstr "Uitnodiging accepteren om toe te treden tot een organisatie op TNM Sign"
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "Accept team email request for {teamName} on Documenso"
-msgstr "Team-e-mailverzoek voor {teamName} op Documenso accepteren"
+msgid "Accept team email request for {teamName} on TNM Sign"
+msgstr "Team-e-mailverzoek voor {teamName} op TNM Sign accepteren"
 
 #: apps/remix/app/components/dialogs/team-inherit-member-disable-dialog.tsx
 msgid "Access disabled"
@@ -1902,11 +1902,13 @@ msgstr "Er is een fout opgetreden tijdens het ondertekenen als assistent."
 #: apps/remix/app/components/general/document-signing/document-signing-date-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-dropdown-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-email-field.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-identity-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-name-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-number-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-radio-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-signature-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 msgid "An error occurred while signing the document."
 msgstr "Er is een fout opgetreden bij het ondertekenen van het document."
@@ -4184,10 +4186,6 @@ msgstr "DNS-records"
 msgid "Documenso License"
 msgstr "Documenso-licentie"
 
-#: apps/remix/app/components/dialogs/account-delete-dialog.tsx
-msgid "Documenso will delete <0>all of your documents</0>, along with all of your completed documents, signatures, and all other resources belonging to your Account."
-msgstr "Documenso verwijdert <0>al je documenten</0>, samen met al je voltooide documenten, handtekeningen en alle andere bronnen die bij je account horen."
-
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings._layout.tsx
@@ -4754,10 +4752,6 @@ msgstr "Sleep je document hierheen."
 #: apps/remix/app/components/embed/authoring/configure-document-upload.tsx
 msgid "Drag and drop or click to upload"
 msgstr "Slepen en neerzetten of klik om te uploaden"
-
-#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
-#~ msgid "Drag and drop your document here"
-#~ msgstr "Sleep je document hierheen"
 
 #: packages/lib/constants/document.ts
 #: packages/ui/primitives/signature-pad/signature-pad.tsx
@@ -5513,6 +5507,7 @@ msgstr "Envelope bijgewerkt"
 #: apps/remix/app/components/general/document-signing/document-signing-email-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-email-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-form.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-identity-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-name-field.tsx
@@ -5525,6 +5520,7 @@ msgstr "Envelope bijgewerkt"
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-signature-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 #: apps/remix/app/components/general/document/document-attachments-popover.tsx
@@ -6510,8 +6506,10 @@ msgstr "Geërfde abonnementsclaim"
 
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/sign-field-initials-dialog.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-form.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-drag-drop.tsx
+#: apps/remix/app/components/general/envelope-signing/envelope-signer-form.tsx
 #: packages/lib/utils/fields.ts
 #: packages/ui/primitives/document-flow/add-fields.tsx
 #: packages/ui/primitives/document-flow/types.ts
@@ -6566,8 +6564,8 @@ msgid "Invalid License Key"
 msgstr "Ongeldige licentiesleutel"
 
 #: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Invalid License Type - Your Documenso instance is using features that are not part of your license."
-msgstr "Ongeldig licentietype - Je Documenso-instantie gebruikt functies die niet onder je licentie vallen."
+msgid "Invalid License Type - Your TNM Sign instance is using features that are not part of your license."
+msgstr "Ongeldig licentietype - Je TNM Sign-instantie gebruikt functies die niet onder je licentie vallen."
 
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Invalid link"
@@ -6701,8 +6699,8 @@ msgid "Japanese"
 msgstr "Japans"
 
 #: packages/email/templates/organisation-invite.tsx
-msgid "Join {organisationName} on Documenso"
-msgstr "Word lid van {organisationName} op Documenso"
+msgid "Join {organisationName} on TNM Sign"
+msgstr "Word lid van {organisationName} op TNM Sign"
 
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
@@ -6893,8 +6891,8 @@ msgid "Link template"
 msgstr "Sjabloon koppelen"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "Link your Documenso account"
-msgstr "Koppel uw Documenso-account"
+msgid "Link your TNM Sign account"
+msgstr "Koppel uw TNM Sign-account"
 
 #: apps/remix/app/routes/_authenticated+/settings+/security._index.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/security.linked-accounts.tsx
@@ -7292,8 +7290,8 @@ msgid "Min"
 msgstr "Min"
 
 #: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Missing License - Your Documenso instance is using features that require a license."
-msgstr "Licentie ontbreekt - Je Documenso-instantie gebruikt functies waarvoor een licentie vereist is."
+msgid "Missing License - Your TNM Sign instance is using features that require a license."
+msgstr "Licentie ontbreekt - Je TNM Sign-instantie gebruikt functies waarvoor een licentie vereist is."
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Missing Recipients"
@@ -9477,10 +9475,6 @@ msgstr "Terugkeren"
 msgid "Return Home"
 msgstr "Terug naar startpagina"
 
-#: apps/remix/app/routes/_unauthenticated+/o.$orgUrl.signin.tsx
-msgid "Return to Documenso sign in page here"
-msgstr "Ga hier terug naar de Documenso-aanmeldpagina"
-
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 msgid "Return to documents"
 msgstr "Terug naar documenten"
@@ -9497,6 +9491,10 @@ msgstr "Terug naar inloggen"
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 msgid "Return to templates"
 msgstr "Terug naar sjablonen"
+
+#: apps/remix/app/routes/_unauthenticated+/o.$orgUrl.signin.tsx
+msgid "Return to TNM Sign sign in page here"
+msgstr "Ga hier terug naar de TNM Sign-aanmeldpagina"
 
 #: apps/remix/app/components/dialogs/envelope-field-review-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
@@ -10226,8 +10224,8 @@ msgid "Sign Document"
 msgstr "Document ondertekenen"
 
 #: apps/remix/app/routes/_recipient+/_layout.tsx
-msgid "Sign Document - Documenso"
-msgstr "Document ondertekenen - Documenso"
+msgid "Sign Document - TNM Sign"
+msgstr "Document ondertekenen - TNM Sign"
 
 #: apps/remix/app/components/embed/multisign/multi-sign-document-list.tsx
 msgid "Sign Documents"
@@ -10908,8 +10906,8 @@ msgstr "Team"
 
 #. placeholder {0}: team.name
 #: packages/lib/server-only/team/delete-team.ts
-msgid "Team \"{0}\" has been deleted on Documenso"
-msgstr "Team \"{0}\" is verwijderd op Documenso"
+msgid "Team \"{0}\" has been deleted on TNM Sign"
+msgstr "Team \"{0}\" is verwijderd op TNM Sign"
 
 #: packages/lib/constants/teams-translations.ts
 msgid "Team Admin"
@@ -10964,8 +10962,8 @@ msgid "Team email removed"
 msgstr "Teame-mailadres verwijderd"
 
 #: packages/email/templates/team-email-removed.tsx
-msgid "Team email removed for {teamName} on Documenso"
-msgstr "Teame-mailadres verwijderd voor {teamName} op Documenso"
+msgid "Team email removed for {teamName} on TNM Sign"
+msgstr "Teame-mailadres verwijderd voor {teamName} op TNM Sign"
 
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Team email verification"
@@ -11729,8 +11727,8 @@ msgstr "De typen handtekeningen die ontvangers mogen gebruiken bij het onderteke
 
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
-msgid "The URL for Documenso to send webhook events to."
-msgstr "De URL waarnaar Documenso webhook‑gebeurtenissen stuurt."
+msgid "The URL for TNM Sign to send webhook events to."
+msgstr "De URL waarnaar TNM Sign webhook‑gebeurtenissen stuurt."
 
 #: apps/remix/app/routes/_authenticated+/admin+/users.$id.tsx
 msgid "The user you are looking for may have been removed, renamed or may have never existed."
@@ -11884,8 +11882,8 @@ msgid "This document has been signed by all recipients"
 msgstr "Dit document is door alle ontvangers ondertekend"
 
 #: apps/remix/app/components/general/document/document-certificate-qr-view.tsx
-msgid "This document is available in your Documenso account. You can view more details, recipients, and audit logs there."
-msgstr "Dit document is beschikbaar in je Documenso-account. Je kunt daar meer details, ontvangers en auditlogs bekijken."
+msgid "This document is available in your TNM Sign account. You can view more details, recipients, and audit logs there."
+msgstr "Dit document is beschikbaar in je TNM Sign-account. Je kunt daar meer details, ontvangers en auditlogs bekijken."
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.$id._index.tsx
 msgid "This document is currently a draft and has not been sent"
@@ -12182,6 +12180,10 @@ msgstr "Titel"
 #: packages/ui/primitives/document-flow/add-settings.types.ts
 msgid "Title cannot be empty"
 msgstr "Titel mag niet leeg zijn"
+
+#: apps/remix/app/components/dialogs/account-delete-dialog.tsx
+msgid "TNM Sign will delete <0>all of your documents</0>, along with all of your completed documents, signatures, and all other resources belonging to your Account."
+msgstr "TNM Sign verwijdert <0>al je documenten</0>, samen met al je voltooide documenten, handtekeningen en alle andere bronnen die bij je account horen."
 
 #: apps/remix/app/routes/_unauthenticated+/organisation.invite.$token.tsx
 msgid "To accept this invitation you must create an account."
@@ -12910,11 +12912,6 @@ msgstr "Handtekening uploaden"
 #: packages/ui/primitives/signature-pad/signature-pad-upload.tsx
 msgid "Upload Signature"
 msgstr "Handtekening uploaden"
-
-#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
-#: packages/ui/primitives/document-upload-button.tsx
-#~ msgid "Upload Template"
-#~ msgstr "Sjabloon uploaden"
 
 #: packages/ui/primitives/document-dropzone.tsx
 msgid "Upload Template Document"
@@ -13747,8 +13744,8 @@ msgid "Welcome to {organisationName}"
 msgstr "Welkom bij {organisationName}"
 
 #: packages/email/template-components/template-confirmation-email.tsx
-msgid "Welcome to Documenso!"
-msgstr "Welkom bij Documenso!"
+msgid "Welcome to TNM Sign!"
+msgstr "Welkom bij TNM Sign!"
 
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "Well-known URL is required"
@@ -13786,8 +13783,8 @@ msgid "Whether to enable the SSO portal for your organisation"
 msgstr "Of het SSO-portaal voor uw organisatie moet worden ingeschakeld"
 
 #: apps/remix/app/routes/_profile+/p.$url.tsx
-msgid "While waiting for them to do so you can create your own Documenso account and get started with document signing right away."
-msgstr "Terwijl je daarop wacht, kun je je eigen Documenso‑account aanmaken en direct beginnen met documenten ondertekenen."
+msgid "While waiting for them to do so you can create your own TNM Sign account and get started with document signing right away."
+msgstr "Terwijl je daarop wacht, kun je je eigen TNM Sign‑account aanmaken en direct beginnen met documenten ondertekenen."
 
 #: apps/remix/app/components/dialogs/organisation-create-dialog.tsx
 msgid "Whitelabeling, unlimited members and more"
@@ -14054,8 +14051,8 @@ msgid "You can only detect fields in draft envelopes"
 msgstr "U kunt alleen velden detecteren in concept-enveloppen"
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "You can revoke access at any time in your team settings on Documenso <0>here</0>."
-msgstr "Je kunt de toegang op elk moment intrekken in je teaminstellingen op Documenso, <0>hier</0>."
+msgid "You can revoke access at any time in your team settings on TNM Sign <0>here</0>."
+msgstr "Je kunt de toegang op elk moment intrekken in je teaminstellingen op TNM Sign, <0>hier</0>."
 
 #: apps/remix/app/components/forms/public-profile-form.tsx
 msgid "You can update the profile URL by updating the team URL in the general settings page."
@@ -14201,8 +14198,8 @@ msgstr "Je bent door <0>{0}</0> uitgenodigd om lid te worden van hun organisatie
 
 #. placeholder {0}: organisation.name
 #: packages/lib/server-only/organisation/create-organisation-member-invites.ts
-msgid "You have been invited to join {0} on Documenso"
-msgstr "Je bent uitgenodigd om {0} op Documenso te joinen"
+msgid "You have been invited to join {0} on TNM Sign"
+msgstr "Je bent uitgenodigd om {0} op TNM Sign te joinen"
 
 #: packages/email/templates/organisation-invite.tsx
 msgid "You have been invited to join the following organisation"
@@ -14773,12 +14770,12 @@ msgid "Your email domain uses Microsoft SSO. Please use the Login button on the 
 msgstr "Je e-maildomein gebruikt Microsoft SSO. Gebruik de inlogknop op de hoofdaanmeldpagina."
 
 #: apps/remix/app/routes/_unauthenticated+/verify-email.$token.tsx
-msgid "Your email has already been confirmed. You can now use all features of Documenso."
-msgstr "Je e-mailadres is al bevestigd. Je kunt nu alle functies van Documenso gebruiken."
+msgid "Your email has already been confirmed. You can now use all features of TNM Sign."
+msgstr "Je e-mailadres is al bevestigd. Je kunt nu alle functies van TNM Sign gebruiken."
 
 #: apps/remix/app/routes/_unauthenticated+/verify-email.$token.tsx
-msgid "Your email has been successfully confirmed! You can now use all features of Documenso."
-msgstr "Je e‑mail is succesvol bevestigd! Je kunt nu alle functies van Documenso gebruiken."
+msgid "Your email has been successfully confirmed! You can now use all features of TNM Sign."
+msgstr "Je e‑mail is succesvol bevestigd! Je kunt nu alle functies van TNM Sign gebruiken."
 
 #. placeholder {0}: teamEmail.team.name
 #. placeholder {1}: teamEmail.team.url
@@ -14859,8 +14856,8 @@ msgid "Your plan does not support inviting members. Please upgrade or your plan 
 msgstr "Je abonnement ondersteunt geen uitnodigingen van leden. Upgrade je abonnement of neem contact op met sales via <0>{SUPPORT_EMAIL}</0> om je opties te bespreken."
 
 #: apps/remix/app/components/general/organisations/organisation-billing-banner.tsx
-msgid "Your plan is no longer valid. Please subscribe to a new plan to continue using Documenso."
-msgstr "Je abonnement is niet langer geldig. Neem een nieuw abonnement om Documenso te blijven gebruiken."
+msgid "Your plan is no longer valid. Please subscribe to a new plan to continue using TNM Sign."
+msgstr "Je abonnement is niet langer geldig. Neem een nieuw abonnement om TNM Sign te blijven gebruiken."
 
 #: apps/remix/app/components/forms/profile.tsx
 msgid "Your profile has been updated successfully."

@@ -712,8 +712,8 @@ msgid "<0>{organisationName}</0> has requested to create an account on your beha
 msgstr "<0>{organisationName}</0> 请求代表您创建一个账户。"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "<0>{organisationName}</0> has requested to link your current Documenso account to their organisation."
-msgstr "<0>{organisationName}</0> 请求将您当前的 Documenso 账户关联到其组织。"
+msgid "<0>{organisationName}</0> has requested to link your current TNM Sign account to their organisation."
+msgstr "<0>{organisationName}</0> 请求将您当前的 TNM Sign 账户关联到其组织。"
 
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v1.tsx
 msgid "<0>{senderName} {senderEmail}</0> has invited you to approve this document"
@@ -752,8 +752,8 @@ msgid "<0>{senderName} {senderEmail}</0> on behalf of \"{0}\" has invited you to
 msgstr "<0>{senderName} {senderEmail}</0> 代表 \"{0}\" 邀请你查看此文档"
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "<0>{teamName}</0> has requested to use your email address for their team on Documenso."
-msgstr "<0>{teamName}</0> 请求将您的邮箱地址用于其在 Documenso 上的团队。"
+msgid "<0>{teamName}</0> has requested to use your email address for their team on TNM Sign."
+msgstr "<0>{teamName}</0> 请求将您的邮箱地址用于其在 TNM Sign 上的团队。"
 
 #: apps/remix/app/routes/_unauthenticated+/organisation.sso.confirmation.$token.tsx
 msgid "<0>Account management:</0> Modify your account settings, permissions, and preferences"
@@ -1033,8 +1033,8 @@ msgid "A field was updated"
 msgstr "已更新字段"
 
 #: packages/email/templates/organisation-join.tsx
-msgid "A member has joined your organisation on Documenso"
-msgstr "有成员已在 Documenso 上加入您的组织"
+msgid "A member has joined your organisation on TNM Sign"
+msgstr "有成员已在 TNM Sign 上加入您的组织"
 
 #: packages/lib/jobs/definitions/emails/send-organisation-member-left-email.handler.ts
 msgid "A member has left your organisation"
@@ -1045,8 +1045,8 @@ msgid "A member has left your organisation {organisationName}"
 msgstr "有成员已离开您的组织 {organisationName}"
 
 #: packages/email/templates/organisation-leave.tsx
-msgid "A member has left your organisation on Documenso"
-msgstr "有成员已在 Documenso 上离开您的组织"
+msgid "A member has left your organisation on TNM Sign"
+msgstr "有成员已在 TNM Sign 上离开您的组织"
 
 #: packages/lib/jobs/definitions/emails/send-organisation-member-joined-email.handler.ts
 msgid "A new member has joined your organisation"
@@ -1089,18 +1089,18 @@ msgid "A request has been made to create an account for you"
 msgstr "已收到为您创建账户的请求"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "A request has been made to link your Documenso account"
-msgstr "已收到关联您的 Documenso 账户的请求"
+msgid "A request has been made to link your TNM Sign account"
+msgstr "已收到关联您的 TNM Sign 账户的请求"
 
 #. placeholder {0}: team.name
 #: packages/lib/server-only/team/create-team-email-verification.ts
-msgid "A request to use your email has been initiated by {0} on Documenso"
-msgstr "{0} 在 Documenso 上发起了一个使用您邮箱的请求"
+msgid "A request to use your email has been initiated by {0} on TNM Sign"
+msgstr "{0} 在 TNM Sign 上发起了一个使用您邮箱的请求"
 
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
-msgid "A secret that will be sent to your URL so you can verify that the request has been sent by Documenso."
-msgstr "一个密钥将被发送到你的 URL，以便你验证该请求确实由 Documenso 发出。"
+msgid "A secret that will be sent to your URL so you can verify that the request has been sent by TNM Sign."
+msgstr "一个密钥将被发送到你的 URL，以便你验证该请求确实由 TNM Sign 发出。"
 
 #: packages/email/templates/team-delete.tsx
 #: packages/email/templates/team-delete.tsx
@@ -1143,12 +1143,12 @@ msgid "Accept & Link Account"
 msgstr "接受并关联账户"
 
 #: packages/email/templates/organisation-invite.tsx
-msgid "Accept invitation to join an organisation on Documenso"
-msgstr "接受加入 Documenso 组织的邀请"
+msgid "Accept invitation to join an organisation on TNM Sign"
+msgstr "接受加入 TNM Sign 组织的邀请"
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "Accept team email request for {teamName} on Documenso"
-msgstr "在 Documenso 上接受 {teamName} 的团队邮箱请求"
+msgid "Accept team email request for {teamName} on TNM Sign"
+msgstr "在 TNM Sign 上接受 {teamName} 的团队邮箱请求"
 
 #: apps/remix/app/components/dialogs/team-inherit-member-disable-dialog.tsx
 msgid "Access disabled"
@@ -1902,11 +1902,13 @@ msgstr "以助理身份签署时发生意外错误。"
 #: apps/remix/app/components/general/document-signing/document-signing-date-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-dropdown-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-email-field.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-identity-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-name-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-number-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-radio-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-signature-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 msgid "An error occurred while signing the document."
 msgstr "签署文档时发生错误。"
@@ -4184,10 +4186,6 @@ msgstr "DNS 记录"
 msgid "Documenso License"
 msgstr "Documenso 许可证"
 
-#: apps/remix/app/components/dialogs/account-delete-dialog.tsx
-msgid "Documenso will delete <0>all of your documents</0>, along with all of your completed documents, signatures, and all other resources belonging to your Account."
-msgstr "Documenso 将删除<0>你所有的文档</0>，包括所有已完成的文档、签名以及属于你账号的其他所有资源。"
-
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings._layout.tsx
@@ -4754,10 +4752,6 @@ msgstr "将您的文档拖放到此处。"
 #: apps/remix/app/components/embed/authoring/configure-document-upload.tsx
 msgid "Drag and drop or click to upload"
 msgstr "拖放或点击以上传"
-
-#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
-#~ msgid "Drag and drop your document here"
-#~ msgstr "将您的文档拖放到此处"
 
 #: packages/lib/constants/document.ts
 #: packages/ui/primitives/signature-pad/signature-pad.tsx
@@ -5513,6 +5507,7 @@ msgstr "信封已更新"
 #: apps/remix/app/components/general/document-signing/document-signing-email-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-email-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-form.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-identity-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-name-field.tsx
@@ -5525,6 +5520,7 @@ msgstr "信封已更新"
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-signature-field.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-signature-input.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 #: apps/remix/app/components/general/document/document-attachments-popover.tsx
@@ -6510,8 +6506,10 @@ msgstr "继承的订阅声明"
 
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/sign-field-initials-dialog.tsx
+#: apps/remix/app/components/general/document-signing/document-signing-form.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-initials-field.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-drag-drop.tsx
+#: apps/remix/app/components/general/envelope-signing/envelope-signer-form.tsx
 #: packages/lib/utils/fields.ts
 #: packages/ui/primitives/document-flow/add-fields.tsx
 #: packages/ui/primitives/document-flow/types.ts
@@ -6566,8 +6564,8 @@ msgid "Invalid License Key"
 msgstr "许可证密钥无效"
 
 #: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Invalid License Type - Your Documenso instance is using features that are not part of your license."
-msgstr "许可证类型无效 - 您的 Documenso 实例正在使用不在当前许可证范围内的功能。"
+msgid "Invalid License Type - Your TNM Sign instance is using features that are not part of your license."
+msgstr "许可证类型无效 - 您的 TNM Sign 实例正在使用不在当前许可证范围内的功能。"
 
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Invalid link"
@@ -6701,8 +6699,8 @@ msgid "Japanese"
 msgstr "日语"
 
 #: packages/email/templates/organisation-invite.tsx
-msgid "Join {organisationName} on Documenso"
-msgstr "加入 {organisationName}，使用 Documenso"
+msgid "Join {organisationName} on TNM Sign"
+msgstr "加入 {organisationName}，使用 TNM Sign"
 
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
@@ -6893,8 +6891,8 @@ msgid "Link template"
 msgstr "链接模板"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
-msgid "Link your Documenso account"
-msgstr "关联您的 Documenso 账户"
+msgid "Link your TNM Sign account"
+msgstr "关联您的 TNM Sign 账户"
 
 #: apps/remix/app/routes/_authenticated+/settings+/security._index.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/security.linked-accounts.tsx
@@ -7292,8 +7290,8 @@ msgid "Min"
 msgstr "最小值"
 
 #: apps/remix/app/components/general/admin-license-status-banner.tsx
-msgid "Missing License - Your Documenso instance is using features that require a license."
-msgstr "缺少许可证 - 您的 Documenso 实例正在使用需要许可证的功能。"
+msgid "Missing License - Your TNM Sign instance is using features that require a license."
+msgstr "缺少许可证 - 您的 TNM Sign 实例正在使用需要许可证的功能。"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Missing Recipients"
@@ -9477,10 +9475,6 @@ msgstr "返回"
 msgid "Return Home"
 msgstr "返回主页"
 
-#: apps/remix/app/routes/_unauthenticated+/o.$orgUrl.signin.tsx
-msgid "Return to Documenso sign in page here"
-msgstr "在此返回 Documenso 登录页面"
-
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 msgid "Return to documents"
 msgstr "返回文档列表"
@@ -9497,6 +9491,10 @@ msgstr "返回登录"
 #: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
 msgid "Return to templates"
 msgstr "返回模板列表"
+
+#: apps/remix/app/routes/_unauthenticated+/o.$orgUrl.signin.tsx
+msgid "Return to TNM Sign sign in page here"
+msgstr "在此返回 TNM Sign 登录页面"
 
 #: apps/remix/app/components/dialogs/envelope-field-review-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
@@ -10226,8 +10224,8 @@ msgid "Sign Document"
 msgstr "签署文档"
 
 #: apps/remix/app/routes/_recipient+/_layout.tsx
-msgid "Sign Document - Documenso"
-msgstr "签署文档 - Documenso"
+msgid "Sign Document - TNM Sign"
+msgstr "签署文档 - TNM Sign"
 
 #: apps/remix/app/components/embed/multisign/multi-sign-document-list.tsx
 msgid "Sign Documents"
@@ -10908,8 +10906,8 @@ msgstr "团队"
 
 #. placeholder {0}: team.name
 #: packages/lib/server-only/team/delete-team.ts
-msgid "Team \"{0}\" has been deleted on Documenso"
-msgstr "团队“{0}”已在 Documenso 上被删除"
+msgid "Team \"{0}\" has been deleted on TNM Sign"
+msgstr "团队“{0}”已在 TNM Sign 上被删除"
 
 #: packages/lib/constants/teams-translations.ts
 msgid "Team Admin"
@@ -10964,8 +10962,8 @@ msgid "Team email removed"
 msgstr "团队邮箱已被移除"
 
 #: packages/email/templates/team-email-removed.tsx
-msgid "Team email removed for {teamName} on Documenso"
-msgstr "Documenso 上团队 {teamName} 的团队邮箱已被移除"
+msgid "Team email removed for {teamName} on TNM Sign"
+msgstr "TNM Sign 上团队 {teamName} 的团队邮箱已被移除"
 
 #: apps/remix/app/routes/_unauthenticated+/team.verify.email.$token.tsx
 msgid "Team email verification"
@@ -11729,8 +11727,8 @@ msgstr "收件人在签署文档时允许使用的签名类型。"
 
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-edit-dialog.tsx
-msgid "The URL for Documenso to send webhook events to."
-msgstr "Documenso 向其发送 Webhook 事件的 URL。"
+msgid "The URL for TNM Sign to send webhook events to."
+msgstr "TNM Sign 向其发送 Webhook 事件的 URL。"
 
 #: apps/remix/app/routes/_authenticated+/admin+/users.$id.tsx
 msgid "The user you are looking for may have been removed, renamed or may have never existed."
@@ -11884,8 +11882,8 @@ msgid "This document has been signed by all recipients"
 msgstr "该文档已由所有收件人签署"
 
 #: apps/remix/app/components/general/document/document-certificate-qr-view.tsx
-msgid "This document is available in your Documenso account. You can view more details, recipients, and audit logs there."
-msgstr "此文档在您的 Documenso 账户中可用。您可以在那里查看更多详情、收件人和审计日志。"
+msgid "This document is available in your TNM Sign account. You can view more details, recipients, and audit logs there."
+msgstr "此文档在您的 TNM Sign 账户中可用。您可以在那里查看更多详情、收件人和审计日志。"
 
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.$id._index.tsx
 msgid "This document is currently a draft and has not been sent"
@@ -12182,6 +12180,10 @@ msgstr "标题"
 #: packages/ui/primitives/document-flow/add-settings.types.ts
 msgid "Title cannot be empty"
 msgstr "标题不能为空"
+
+#: apps/remix/app/components/dialogs/account-delete-dialog.tsx
+msgid "TNM Sign will delete <0>all of your documents</0>, along with all of your completed documents, signatures, and all other resources belonging to your Account."
+msgstr "TNM Sign 将删除<0>你所有的文档</0>，包括所有已完成的文档、签名以及属于你账号的其他所有资源。"
 
 #: apps/remix/app/routes/_unauthenticated+/organisation.invite.$token.tsx
 msgid "To accept this invitation you must create an account."
@@ -12910,11 +12912,6 @@ msgstr "上传签名"
 #: packages/ui/primitives/signature-pad/signature-pad-upload.tsx
 msgid "Upload Signature"
 msgstr "上传签名"
-
-#: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
-#: packages/ui/primitives/document-upload-button.tsx
-#~ msgid "Upload Template"
-#~ msgstr "上传模板"
 
 #: packages/ui/primitives/document-dropzone.tsx
 msgid "Upload Template Document"
@@ -13747,8 +13744,8 @@ msgid "Welcome to {organisationName}"
 msgstr "欢迎加入 {organisationName}"
 
 #: packages/email/template-components/template-confirmation-email.tsx
-msgid "Welcome to Documenso!"
-msgstr "欢迎来到 Documenso！"
+msgid "Welcome to TNM Sign!"
+msgstr "欢迎来到 TNM Sign！"
 
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.sso.tsx
 msgid "Well-known URL is required"
@@ -13786,8 +13783,8 @@ msgid "Whether to enable the SSO portal for your organisation"
 msgstr "是否为您的组织启用 SSO 门户"
 
 #: apps/remix/app/routes/_profile+/p.$url.tsx
-msgid "While waiting for them to do so you can create your own Documenso account and get started with document signing right away."
-msgstr "在等待对方操作期间，你可以创建自己的 Documenso 账号，立即开始使用文档签署功能。"
+msgid "While waiting for them to do so you can create your own TNM Sign account and get started with document signing right away."
+msgstr "在等待对方操作期间，你可以创建自己的 TNM Sign 账号，立即开始使用文档签署功能。"
 
 #: apps/remix/app/components/dialogs/organisation-create-dialog.tsx
 msgid "Whitelabeling, unlimited members and more"
@@ -14054,8 +14051,8 @@ msgid "You can only detect fields in draft envelopes"
 msgstr "您只能在草稿信封中检测字段"
 
 #: packages/email/templates/confirm-team-email.tsx
-msgid "You can revoke access at any time in your team settings on Documenso <0>here</0>."
-msgstr "你可以随时在 Documenso 的团队设置中撤销访问权限，入口在<0>这里</0>。"
+msgid "You can revoke access at any time in your team settings on TNM Sign <0>here</0>."
+msgstr "你可以随时在 TNM Sign 的团队设置中撤销访问权限，入口在<0>这里</0>。"
 
 #: apps/remix/app/components/forms/public-profile-form.tsx
 msgid "You can update the profile URL by updating the team URL in the general settings page."
@@ -14201,8 +14198,8 @@ msgstr "您已被 <0>{0}</0> 邀请加入其组织。"
 
 #. placeholder {0}: organisation.name
 #: packages/lib/server-only/organisation/create-organisation-member-invites.ts
-msgid "You have been invited to join {0} on Documenso"
-msgstr "您已被邀请加入 Documenso 上的 {0}"
+msgid "You have been invited to join {0} on TNM Sign"
+msgstr "您已被邀请加入 TNM Sign 上的 {0}"
 
 #: packages/email/templates/organisation-invite.tsx
 msgid "You have been invited to join the following organisation"
@@ -14773,12 +14770,12 @@ msgid "Your email domain uses Microsoft SSO. Please use the Login button on the 
 msgstr "您的电子邮件域使用 Microsoft SSO。请使用主登录页面上的登录按钮。"
 
 #: apps/remix/app/routes/_unauthenticated+/verify-email.$token.tsx
-msgid "Your email has already been confirmed. You can now use all features of Documenso."
-msgstr "您的邮箱已确认。您现在可以使用 Documenso 的全部功能。"
+msgid "Your email has already been confirmed. You can now use all features of TNM Sign."
+msgstr "您的邮箱已确认。您现在可以使用 TNM Sign 的全部功能。"
 
 #: apps/remix/app/routes/_unauthenticated+/verify-email.$token.tsx
-msgid "Your email has been successfully confirmed! You can now use all features of Documenso."
-msgstr "你的邮箱已成功确认！你现在可以使用 Documenso 的所有功能。"
+msgid "Your email has been successfully confirmed! You can now use all features of TNM Sign."
+msgstr "你的邮箱已成功确认！你现在可以使用 TNM Sign 的所有功能。"
 
 #. placeholder {0}: teamEmail.team.name
 #. placeholder {1}: teamEmail.team.url
@@ -14859,8 +14856,8 @@ msgid "Your plan does not support inviting members. Please upgrade or your plan 
 msgstr "您的套餐不支持邀请成员。请升级您的套餐或通过 <0>{SUPPORT_EMAIL}</0> 联系销售了解更多选项。"
 
 #: apps/remix/app/components/general/organisations/organisation-billing-banner.tsx
-msgid "Your plan is no longer valid. Please subscribe to a new plan to continue using Documenso."
-msgstr "您的套餐已无效。请订阅新套餐以继续使用 Documenso。"
+msgid "Your plan is no longer valid. Please subscribe to a new plan to continue using TNM Sign."
+msgstr "您的套餐已无效。请订阅新套餐以继续使用 TNM Sign。"
 
 #: apps/remix/app/components/forms/profile.tsx
 msgid "Your profile has been updated successfully."
