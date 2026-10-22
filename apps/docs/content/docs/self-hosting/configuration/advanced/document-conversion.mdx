@@ -38,54 +38,38 @@ This feature is **opt-in for self-hosted instances**. When the conversion servic
 
 ## Build the Gotenberg Image
 
-The upstream `gotenberg/gotenberg:8-libreoffice` image works out of the box, but it ships only **metric-compatible font substitutes** (Carlito for Calibri, Liberation for Arial/Times/Courier). Layout widths are preserved but documents will look noticeably different from Word.
+Missing fonts can change line wrapping and pagination during DOCX conversion. The upstream LibreOffice image includes Carlito, Caladea, Liberation, and Noto, but it does not include every common Office font.
 
-For better fidelity, especially for non-Latin scripts, build a derived image that adds Microsoft Core Fonts and additional language fonts. The Documenso repository ships a reference Dockerfile at [`docker/development/Dockerfile.gotenberg`](https://github.com/documenso/documenso/blob/main/docker/development/Dockerfile.gotenberg) that you can use as a starting point:
+The reference [`Dockerfile.gotenberg`](https://github.com/documenso/documenso/blob/main/docker/development/Dockerfile.gotenberg) provides two build targets:
 
-```dockerfile
-FROM gotenberg/gotenberg:8-libreoffice
+| Target | Fonts added |
+| --- | --- |
+| `common-fonts` | Microsoft Core Fonts, Liberation Sans Narrow, TeX Gyre, and selected Wine TrueType fonts (Tahoma, Symbol, Wingdings). |
+| `extended-fonts` (default) | The common bundle plus additional language fonts from the reference image. |
 
-USER root
+The common bundle provides Arial, Arial Black, Times New Roman, Courier New, Georgia, Verdana, Trebuchet MS, Comic Sans MS, Impact, Andale Mono, and Webdings. It also supplies substitutes for Arial Narrow, Book Antiqua, Palatino Linotype, Century Schoolbook, and Bookman Old Style. Calibri and Cambria continue to use the upstream Carlito and Caladea substitutes. Calibri Light explicitly falls back to Carlito instead of Noto Sans.
 
-RUN echo "deb http://deb.debian.org/debian trixie contrib non-free" \
-      > /etc/apt/sources.list.d/contrib.list \
-    && echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
-      | debconf-set-selections \
-    && apt-get update -qq \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
-        ca-certificates \
-        ttf-mscorefonts-installer \
-        fonts-symbola \
-        fonts-noto-extra \
-        fonts-hosny-amiri \
-        fonts-thai-tlwg \
-        fonts-sil-padauk \
-        fonts-sarai \
-        fonts-samyak-taml \
-        culmus \
-        libfribidi0 \
-        libharfbuzz0b \
-    && fc-cache -f \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+The [`99-office-fonts.conf`](https://github.com/documenso/documenso/blob/main/docker/development/99-office-fonts.conf) rules keep installed originals preferred. [`check-fonts.sh`](https://github.com/documenso/documenso/blob/main/docker/development/check-fonts.sh) checks common families during the image build, catching missing downloads or unexpected generic substitutions.
 
-USER gotenberg
-```
+Fonts are installed and cached at image build time, with no package downloads or font detection service per conversion. The common target avoids the larger optional language bundle; the upstream image's existing language fonts remain available. This improves coverage but does not guarantee identical layout for every custom font, including newer families such as Aptos.
 
 <Callout type="warn">
-  `ttf-mscorefonts-installer` accepts the Microsoft Core Fonts EULA on your behalf via debconf. By
-  installing this image you are agreeing to those licence terms. Review them before publishing the
-  image.
+  `ttf-mscorefonts-installer` accepts the Microsoft Core Fonts EULA on your behalf via debconf. Review those licence terms before building or publishing the image.
 </Callout>
 
-Build and publish the image to a registry you control:
+Build from the repository root and publish to a registry you control:
 
 ```bash
-docker build -t registry.example.com/documenso/gotenberg:8 \
-  -f Dockerfile.gotenberg .
+docker build --target common-fonts -t registry.example.com/documenso/gotenberg:8 \
+  -f docker/development/Dockerfile.gotenberg docker/development
+docker run --rm --network none --entrypoint sh \
+  registry.example.com/documenso/gotenberg:8 /usr/local/bin/check-office-fonts
 docker push registry.example.com/documenso/gotenberg:8
 ```
 
-If you do not need extra fonts, skip the build step entirely and reference `gotenberg/gotenberg:8-libreoffice` directly in the next section.
+Omit `--target common-fonts` to include the extended language bundle. When copying the Dockerfile elsewhere, copy `99-office-fonts.conf` and `check-fonts.sh` alongside it as well.
+
+You can mount the fontconfig file read-only at `/etc/fonts/conf.d/99-office-fonts.conf` on an existing converter and recreate it, but aliases only help when their target fonts are installed. These changes apply when converting DOCX files, before signing; they do not rewrite stored signed PDFs or convert text to outlines or page images.
 
 ## Deploy the Service
 

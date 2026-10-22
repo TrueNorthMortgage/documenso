@@ -501,6 +501,10 @@ export const insertFieldInPDFV1 = async (pdf: PDFDocument, field: FieldWithSigna
 
         ...(isDebugMode ? { borderWidth: 1, borderColor: rgb(0, 0, 1) } : {}),
       });
+
+      // Mark the appearance clean with our embedded font before flattening.
+      // Otherwise pdf-lib regenerates dirty fields with unembedded Helvetica.
+      textField.updateAppearances(font);
     });
 
   return pdf;
