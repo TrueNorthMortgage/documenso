@@ -1,14 +1,17 @@
-FROM gotenberg/gotenberg:8-libreoffice
+FROM gotenberg/gotenberg:8-libreoffice AS common-fonts
 
 # Install Microsoft Core Fonts (Arial, Times New Roman, Courier New, Verdana,
 # Georgia, Comic Sans MS, Trebuchet MS, Impact, Andale Mono, Webdings) so that
-# LibreOffice can render typical Word documents faithfully. The default image
-# only ships metric-compatible substitutes (Carlito for Calibri, Liberation for
-# Arial/Times/Courier) which preserve layout widths but look noticeably wrong.
+# LibreOffice can use these originals instead of generic substitutes. Add small
+# open-source packs for Tahoma, Arial Narrow, and common PostScript families.
+# Install and cache fonts at build time; no downloads run during conversion.
 #
 # `ttf-mscorefonts-installer` lives in the non-free repo and requires accepting
 # the Microsoft EULA, which we do non-interactively via debconf-set-selections.
 USER root
+
+COPY 99-office-fonts.conf /etc/fonts/conf.d/99-office-fonts.conf
+COPY check-fonts.sh /usr/local/bin/check-office-fonts
 
 RUN echo "deb http://deb.debian.org/debian trixie contrib non-free" \
       > /etc/apt/sources.list.d/contrib.list \
@@ -19,8 +22,29 @@ RUN echo "deb http://deb.debian.org/debian trixie contrib non-free" \
         ca-certificates \
         wget \
         unzip \
-        culmus \
         ttf-mscorefonts-installer \
+        fonts-liberation-sans-narrow \
+        fonts-texgyre \
+        fonts-wine \
+    && mkdir -p /usr/local/share/fonts/wine \
+    && cp /usr/share/wine/fonts/tahoma.ttf /usr/share/wine/fonts/tahomabd.ttf \
+        /usr/share/wine/fonts/symbol.ttf /usr/share/wine/fonts/wingding.ttf \
+        /usr/local/share/fonts/wine/ \
+    && fc-cache -f \
+    && sh /usr/local/bin/check-office-fonts \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+USER gotenberg
+
+# Optional larger language bundle, preserving the reference image's coverage.
+# Deployments needing only common document fonts can build --target common-fonts.
+FROM common-fonts AS extended-fonts
+
+USER root
+
+RUN apt-get update -qq \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
+        culmus \
         fonts-symbola \
         fonts-noto-extra \
         fonts-hosny-amiri \
