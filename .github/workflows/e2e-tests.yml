@@ -1,51 +1,73 @@
 name: Playwright Tests
+
 on:
+  schedule:
+    - cron: '0 1 * * 1'
+      timezone: America/Edmonton
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   e2e_tests:
-    name: 'E2E Tests'
-    timeout-minutes: 60
+    name: Full E2E suite
+    timeout-minutes: 180
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Copy env
-        run: cp .env.example .env
-
-      - uses: ./.github/actions/node-install
-
-      - name: Start Services
-        run: npm run dx:up
-
-      - uses: ./.github/actions/playwright-install
-
-      - name: Create the database
-        run: npm run prisma:migrate-dev
-
-      - name: Seed the database
-        run: npm run prisma:seed
-
-      - name: Install playwright browsers
-        run: npx playwright install --with-deps
-
-      - name: Run Playwright tests
-        run: npm run ci
-        env:
-          # Needed since we use next start which will set the NODE_ENV to production
-          NEXT_PRIVATE_SIGNING_LOCAL_FILE_PATH: './example/cert.p12'
-          DANGEROUS_BYPASS_RATE_LIMITS: 'true'
-
-      - uses: actions/upload-artifact@v4
-        if: always()
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          name: test-results
-          path: 'packages/app-tests/**/test-results/*'
-          retention-days: 7
-    env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+          persist-credentials: false
+
+      - name: Prepare isolated test configuration
+        run: |
+          cp .env.example .env
+          mkdir -p .e2e-artifacts
+          # Do not load developer overrides or existing license files in CI.
+          for file in .env.local .env.test .env.test.local .documenso-license.json .documenso-license-backup.json; do
+            if [ -e "$file" ]; then
+              echo "::error::Unexpected local configuration in the CI checkout: $file"
+              exit 1
+            fi
+          done
+
+      - name: Run full E2E suite
+        id: e2e
+        env:
+          DOCUMENSO_E2E_ARTIFACTS_DIR: .e2e-artifacts
+          PLAYWRIGHT_HTML_OPEN: never
+        run: |
+          set -o pipefail
+          ./scripts/run-e2e-docker.sh --workers=2 --max-failures=0 --retries=1 2>&1 | tee .e2e-artifacts/runner.log
+
+      - name: Upload reports and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            packages/app-tests/playwright-report/
+            packages/app-tests/test-results/
+            .e2e-artifacts/*.log
+          # The explicit .e2e-artifacts log paths are hidden; no env files are uploaded.
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Summarize result
+        if: always()
+        env:
+          E2E_OUTCOME: ${{ steps.e2e.outcome }}
+        run: |
+          {
+            echo '## Full E2E suite'
+            echo "Result: ${E2E_OUTCOME}"
+            echo 'Scheduled for Mondays at 01:00 America/Edmonton; manual runs use the selected branch.'
+            echo 'Download the E2E artifact for the HTML report and failure screenshots, traces, videos, and service logs.'
+            echo 'Tests use an isolated database, synthetic fixtures, local mail sink, and public test certificate.'
+          } >> "$GITHUB_STEP_SUMMARY"

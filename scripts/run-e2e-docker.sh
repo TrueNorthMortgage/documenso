@@ -9,6 +9,8 @@ COMPOSE_PROJECT="${DOCUMENSO_E2E_COMPOSE_PROJECT:-documenso-e2e}"
 RUNNER_NAME="${DOCUMENSO_E2E_RUNNER_NAME:-documenso-e2e-runner}"
 PLAYWRIGHT_IMAGE="${DOCUMENSO_E2E_PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.56.1-noble}"
 NODE_MODULES_VOLUME="${COMPOSE_PROJECT}-node-modules"
+WORKSPACE_VOLUME="${COMPOSE_PROJECT}-workspace"
+ARTIFACTS_DIR="${DOCUMENSO_E2E_ARTIFACTS_DIR:-}"
 REUSE=false
 
 case "${1:-}" in
@@ -27,7 +29,9 @@ Examples:
   ./scripts/run-e2e-docker.sh --reuse e2e/envelope-editor-v2/envelope-actions.spec.ts
 
 Services are removed afterward. Test data, dependencies, and build output are
-kept for reuse. The development database is never used.
+kept for reuse. Source is copied to an isolated Docker volume; generated files
+and builds never write into the development checkout. Only reports are copied back.
+The development database is never used.
 EOF
     exit 0
     ;;
@@ -59,6 +63,20 @@ if [[ ! -f .env ]]; then
 fi
 
 cleanup() {
+  # Capture diagnostics before removing services, including on setup/test failure.
+  if [[ -n "$ARTIFACTS_DIR" ]]; then
+    mkdir -p "$ARTIFACTS_DIR"
+    docker logs "$RUNNER_NAME" > "$ARTIFACTS_DIR/app-and-tests.log" 2>&1 || true
+    docker compose \
+      --project-name "$COMPOSE_PROJECT" \
+      --file "$COMPOSE_FILE" \
+      --file "$E2E_COMPOSE_FILE" \
+      logs --no-color > "$ARTIFACTS_DIR/services.log" 2>&1 || true
+  fi
+  # Export only test reports; never copy generated source, configuration or databases.
+  for report in playwright-report test-results; do
+    docker cp "$RUNNER_NAME:/app/packages/app-tests/$report" "$ROOT_DIR/packages/app-tests/" >/dev/null 2>&1 || true
+  done
   docker rm -f "$RUNNER_NAME" >/dev/null 2>&1 || true
   docker compose \
     --project-name "$COMPOSE_PROJECT" \
@@ -68,14 +86,14 @@ cleanup() {
 }
 
 if [[ "$REUSE" == true ]]; then
-  if ! docker volume inspect "$NODE_MODULES_VOLUME" "${COMPOSE_PROJECT}_documenso_database" >/dev/null 2>&1; then
+  if ! docker volume inspect "$NODE_MODULES_VOLUME" "$WORKSPACE_VOLUME" "${COMPOSE_PROJECT}_documenso_database" >/dev/null 2>&1; then
     echo 'No reusable E2E setup found. Run without --reuse first.' >&2
     exit 1
   fi
 else
   # A normal run always starts with fresh isolated data and dependencies.
   docker compose --project-name "$COMPOSE_PROJECT" --file "$COMPOSE_FILE" --file "$E2E_COMPOSE_FILE" down --volumes --remove-orphans
-  docker volume rm "$NODE_MODULES_VOLUME" >/dev/null 2>&1 || true
+  docker volume rm "$NODE_MODULES_VOLUME" "$WORKSPACE_VOLUME" >/dev/null 2>&1 || true
 fi
 
 trap cleanup EXIT
@@ -98,13 +116,32 @@ docker compose \
 # concurrency locally; an explicit --workers argument can override this default.
 E2E_TEST_PATH="--workers=2 ${E2E_TEST_PATH:-$*}"
 
+# Copy source, including uncommitted edits, without local configuration, secrets,
+# dependencies or generated outputs. E2E never writes to the live dev source tree.
+docker run --rm \
+  --volume "$ROOT_DIR:/source:ro" \
+  --volume "$WORKSPACE_VOLUME:/app" \
+  --entrypoint bash \
+  "$PLAYWRIGHT_IMAGE" -lc '
+    set -euo pipefail
+    tar -C /source \
+      --exclude=.git --exclude=node_modules --exclude=.env --exclude=".env.*" \
+      --exclude=dev-env --exclude=dev-secrets --exclude=".aws" \
+      --exclude=".documenso-license*.json" --exclude="*.pem" \
+      --exclude=build --exclude=.turbo --exclude=.react-router --exclude=generated \
+      --exclude=playwright-report --exclude=test-results --exclude=.e2e-artifacts \
+      -cf - . | tar -C /app -xf -
+    cp /source/.env.example /app/.env
+  '
+
 docker run \
   --name "$RUNNER_NAME" \
   --network "${COMPOSE_PROJECT}_default" \
-  --volume "$ROOT_DIR:/app" \
+  --volume "$WORKSPACE_VOLUME:/app" \
   --volume "$NODE_MODULES_VOLUME:/app/node_modules" \
   --workdir /app \
   --env CI=true \
+  --env PLAYWRIGHT_HTML_OPEN=never \
   --env TURBO_TELEMETRY_DISABLED=1 \
   --env NEXT_TELEMETRY_DISABLED=1 \
   --env NEXT_PRIVATE_ROLLBAR_ACCESS_TOKEN= \
