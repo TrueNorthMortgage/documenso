@@ -25,7 +25,7 @@ export const ConfirmTeamEmailTemplate = ({
 }: ConfirmTeamEmailProps) => {
   const { _ } = useLingui();
 
-  const previewText = msg`Accept team email request for ${teamName} on Documenso`;
+  const previewText = msg`Accept team email request for ${teamName} on TNM Sign`;
 
   return (
     <Html>
@@ -51,7 +51,7 @@ export const ConfirmTeamEmailTemplate = ({
               <Text className="text-center text-base">
                 <Trans>
                   <span className="font-bold">{teamName}</span> has requested to use your email address for their team
-                  on Documenso.
+                  on TNM Sign.
                 </Trans>
               </Text>
 
@@ -80,7 +80,7 @@ export const ConfirmTeamEmailTemplate = ({
 
                 <Text className="mt-2 text-sm">
                   <Trans>
-                    You can revoke access at any time in your team settings on Documenso{' '}
+                    You can revoke access at any time in your team settings on TNM Sign{' '}
                     <Link href={`${baseUrl}/settings/teams`}>here</Link>.
                   </Trans>
                 </Text>

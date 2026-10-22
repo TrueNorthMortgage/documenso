@@ -25,7 +25,7 @@ export const TeamEmailRemovedTemplate = ({
 }: TeamEmailRemovedTemplateProps) => {
   const { _ } = useLingui();
 
-  const previewText = msg`Team email removed for ${teamName} on Documenso`;
+  const previewText = msg`Team email removed for ${teamName} on TNM Sign`;
 
   return (
     <Html>

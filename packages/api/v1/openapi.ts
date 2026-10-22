@@ -8,10 +8,10 @@ export const OpenAPIV1 = Object.assign(
     ApiContractV1,
     {
       info: {
-        title: 'Documenso API',
+        title: 'TNM Sign API',
         version: '1.0.0',
         description:
-          'API V1 is deprecated, but will continue to be supported. For more details, see https://docs.documenso.com/developers/public-api. \n\nThe Documenso API for retrieving, creating, updating and deleting documents.',
+          'API V1 is deprecated, but will continue to be supported. For more details, see https://docs.documenso.com/developers/public-api. \n\nThe TNM Sign API for retrieving, creating, updating and deleting documents.',
       },
       servers: [
         {
