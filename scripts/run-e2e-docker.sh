@@ -133,6 +133,8 @@ docker run --rm \
   --entrypoint bash \
   "$PLAYWRIGHT_IMAGE" -lc '
     set -euo pipefail
+    # Reuse keeps the app build, but deleted tests and baselines must not linger.
+    rm -rf /app/packages/app-tests/e2e /app/packages/app-tests/visual-regression
     tar -C /source \
       --exclude=.git --exclude=node_modules --exclude=.env --exclude=".env.*" \
       --exclude=dev-env --exclude=dev-secrets --exclude=".aws" \

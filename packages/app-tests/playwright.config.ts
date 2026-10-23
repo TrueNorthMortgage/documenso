@@ -44,8 +44,8 @@ export default defineConfig({
     baseURL: process.env.NEXT_PUBLIC_WEBAPP_URL || 'http://localhost:3000',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'retain-on-failure',
-    video: 'retain-on-failure',
+    trace: 'on-first-retry',
+    video: 'on-first-retry',
     screenshot: 'only-on-failure',
 
     /* Add explicit timeouts for actions */

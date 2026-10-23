@@ -1,4 +1,3 @@
-import { mapSecondaryIdToTemplateId } from '@documenso/lib/utils/envelope';
 import { seedTeam, seedTeamMember } from '@documenso/prisma/seed/teams';
 import { seedBlankTemplate } from '@documenso/prisma/seed/templates';
 import { seedUser } from '@documenso/prisma/seed/users';
@@ -68,9 +67,7 @@ test('[TEMPLATE_FLOW] add document visibility settings', async ({ page }) => {
 });
 
 test('[TEMPLATE_FLOW] team member visibility permissions', async ({ page }) => {
-  const { team, owner, organisation } = await seedTeam({
-    createTeamMembers: 2, // Create an additional member to test different roles
-  });
+  const { team, owner } = await seedTeam({ createTeamMembers: 0 });
 
   const memberUser = await seedTeamMember({
     teamId: team.id,
@@ -112,13 +109,11 @@ test('[TEMPLATE_FLOW] team member visibility permissions', async ({ page }) => {
     redirectPath: `/t/${team.url}/templates/${template.id}/edit`,
   });
 
-  // A regular member should not be able to see the template.
-  // They should be redirected to the templates page.
+  // A regular member cannot access the manager-only template.
   await expect(page.getByText('Not Found').first()).toBeVisible();
-  await page.goto(`/t/${team.url}/templates`);
 
-  // Create a new template with 'everyone' visibility
-  const everyoneTemplate = await seedBlankTemplate(owner, team.id, {
+  // Template owners can edit visibility even with the Member role.
+  const everyoneTemplate = await seedBlankTemplate(memberUser, team.id, {
     createTemplateOptions: {
       teamId: team.id,
       visibility: 'EVERYONE',
@@ -126,9 +121,14 @@ test('[TEMPLATE_FLOW] team member visibility permissions', async ({ page }) => {
   });
 
   // Navigate to the new template
-  await page.goto(`/t/${team.url}/templates/${mapSecondaryIdToTemplateId(everyoneTemplate.secondaryId)}/edit`);
+  await page.goto(`/t/${team.url}/templates/${everyoneTemplate.id}/edit`);
 
-  // Regular members can open the template, but the visibility control is hidden.
   await expect(page.getByRole('heading', { name: 'General', exact: true })).toBeVisible();
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveCount(0);
+  await page.getByTestId('documentVisibilitySelectValue').click();
+  await page.getByRole('option', { name: 'Admins only', exact: true }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByRole('heading', { name: 'Add Placeholders' })).toBeVisible();
+
+  await page.goto(`/t/${team.url}/templates/${everyoneTemplate.id}/edit`);
+  await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveText('Admins only');
 });

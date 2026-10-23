@@ -10,7 +10,10 @@ export const expectTextToNotBeVisible = async (page: Page, text: string) => {
 };
 
 export const expectToastTextToBeVisible = async (page: Page, text: string) => {
-  await expect(page.getByRole('region', { name: 'Notifications (F8)' }).getByText(text)).toBeVisible();
+  // Modal menus can hide the visible notification viewport from the accessibility tree.
+  await expect(
+    page.getByRole('region', { name: 'Notifications (F8)', includeHidden: true }).getByText(text),
+  ).toBeVisible();
 };
 
 export const openDropdownMenu = async (page: Page, dropdownButton: Locator) => {

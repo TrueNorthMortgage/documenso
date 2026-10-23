@@ -174,7 +174,7 @@ test.describe('API V2 Envelopes', () => {
                 type: FieldType.SIGNATURE,
                 identifier: 0,
                 page: 1,
-                positionX: 0,
+                positionX: 10,
                 positionY: 0,
                 width: 0,
                 height: 0,
@@ -262,9 +262,9 @@ test.describe('API V2 Envelopes', () => {
         },
         include: {
           documentMeta: true,
-          envelopeItems: true,
+          envelopeItems: { orderBy: { order: 'asc' } },
           recipients: true,
-          fields: true,
+          fields: { orderBy: { positionX: 'asc' } },
           envelopeAttachments: true,
         },
       });
@@ -327,6 +327,9 @@ test.describe('API V2 Envelopes', () => {
         width: field.width.toNumber(),
         height: field.height.toNumber(),
       }).toEqual(pick(payload.recipients[0].fields[0], ['type', 'page', 'positionX', 'positionY', 'width', 'height']));
+
+      expect(envelope.fields).toHaveLength(2);
+      expect(envelope.fields[1].positionX.toNumber()).toBe(10);
 
       // Expect string based ID to work.
       expect(field.envelopeItemId).toBe(

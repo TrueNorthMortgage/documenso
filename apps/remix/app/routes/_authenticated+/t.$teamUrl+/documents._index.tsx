@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from '@documenso/ui/primitives/tabs';
 import { msg } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { EnvelopeType, FolderType, OrganisationType } from '@prisma/client';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import { DocumentMoveToFolderDialog } from '~/components/dialogs/document-move-to-folder-dialog';
@@ -63,6 +63,12 @@ export default function DocumentsPage() {
   const [isBulkMoveDialogOpen, setIsBulkMoveDialogOpen] = useState(false);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [isBulkReassignDialogOpen, setIsBulkReassignDialogOpen] = useState(false);
+
+  // Keep table cell component identities stable when page state changes.
+  const handleMoveDocument = useCallback((documentId: number) => {
+    setDocumentToMove(documentId);
+    setIsMovingDocument(true);
+  }, []);
 
   const selectedEnvelopeIds = useMemo(() => {
     return Object.keys(rowSelection).filter((id) => rowSelection[id]);
@@ -204,10 +210,7 @@ export default function DocumentsPage() {
                 data={data}
                 isLoading={isLoading}
                 isLoadingError={isLoadingError}
-                onMoveDocument={(documentId) => {
-                  setDocumentToMove(documentId);
-                  setIsMovingDocument(true);
-                }}
+                onMoveDocument={handleMoveDocument}
                 enableSelection
                 rowSelection={rowSelection}
                 onRowSelectionChange={setRowSelection}
