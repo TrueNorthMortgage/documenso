@@ -308,7 +308,24 @@ test.describe('document editor', () => {
 
     const originalEnvelope = await prisma.envelope.findUniqueOrThrow({
       where: { id: envelopeId },
-      include: { recipients: true, envelopeItems: true, fields: true },
+      include: {
+        // Reminder scheduling runs asynchronously and is not part of correction preservation.
+        recipients: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            token: true,
+            signingOrder: true,
+            signingStatus: true,
+            authOptions: true,
+            signedAt: true,
+          },
+        },
+        envelopeItems: true,
+        fields: true,
+      },
     });
 
     await apiSignin({
@@ -331,7 +348,24 @@ test.describe('document editor', () => {
 
     const correctedEnvelope = await prisma.envelope.findUniqueOrThrow({
       where: { id: envelopeId },
-      include: { recipients: true, envelopeItems: true, fields: true },
+      include: {
+        // Reminder scheduling runs asynchronously and is not part of correction preservation.
+        recipients: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            token: true,
+            signingOrder: true,
+            signingStatus: true,
+            authOptions: true,
+            signedAt: true,
+          },
+        },
+        envelopeItems: true,
+        fields: true,
+      },
     });
 
     expect(correctedEnvelope.status).toBe(DocumentStatus.PENDING);

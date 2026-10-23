@@ -44,7 +44,9 @@ test('uploading placeholders into an existing draft creates missing recipients o
   await getEnvelopeItemDropzoneInput(page).setInputFiles(placeholderPdf);
   await expect(page.getByText('Recipients added from document placeholders', { exact: true })).toBeVisible();
   await expect(
-    page.locator('[role="status"]').getByText(/Review their names, email addresses, and roles before sending/),
+    page
+      .getByRole('region', { name: 'Notifications (F8)' })
+      .getByText(/Review their names, email addresses, and roles before sending/),
   ).toBeVisible();
   await expect.poll(() => prisma.recipient.count({ where: { envelopeId: surface.envelopeId } })).toBe(3);
   const recipients = await prisma.recipient.findMany({
@@ -153,12 +155,14 @@ for (const surfaceName of ['document editor', 'template editor', 'embedded creat
         } else {
           await expect(
             page
-              .locator('[role="status"]')
+              .getByRole('region', { name: 'Notifications (F8)' })
               .getByText(
                 kind === 'protected' ? /This PDF is protected and cannot be uploaded/ : /This PDF uses an XFA form/,
               ),
           ).toBeVisible();
-          await expect(page.locator('[role="status"]').getByText(/print.*to a new PDF/i)).toBeVisible();
+          await expect(
+            page.getByRole('region', { name: 'Notifications (F8)' }).getByText(/print.*to a new PDF/i),
+          ).toBeVisible();
         }
         if (surface.envelopeId) {
           expect(await snapshot(surface.envelopeId)).toEqual(before);

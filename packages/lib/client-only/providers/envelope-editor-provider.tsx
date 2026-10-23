@@ -125,11 +125,10 @@ export const EnvelopeEditorProvider = ({
   }, []);
 
   const setEnvelope: typeof _setEnvelope = (action) => {
-    _setEnvelope((prev) => {
-      const next = typeof action === 'function' ? action(prev) : action;
-      envelopeRef.current = next;
-      return next;
-    });
+    // Autosave flushes and form resets read this ref before React commits state.
+    const next = typeof action === 'function' ? action(envelopeRef.current) : action;
+    envelopeRef.current = next;
+    _setEnvelope(next);
   };
 
   const isEmbedded = editorConfig.embedded !== undefined;
@@ -169,7 +168,7 @@ export const EnvelopeEditorProvider = ({
 
         recipients = response.data;
       } else {
-        recipients = mapLocalRecipientsToRecipients({ envelope, localRecipients });
+        recipients = mapLocalRecipientsToRecipients({ envelope: envelopeRef.current, localRecipients });
       }
 
       setEnvelope((prev) => ({
@@ -179,9 +178,7 @@ export const EnvelopeEditorProvider = ({
       }));
 
       // Reset the local fields to ensure deleted recipient fields are removed.
-      editorFields.resetForm(
-        envelope.fields.filter((field) => recipients.some((recipient) => recipient.id === field.recipientId)),
-      );
+      editorFields.resetForm(envelopeRef.current.fields);
 
       setAutosaveError(false);
     } catch (err) {
@@ -453,7 +450,11 @@ export const EnvelopeEditorProvider = ({
   };
 
   const flushAutosave = async (): Promise<TEditorEnvelope> => {
-    await Promise.all([flushSetFields(), flushSetRecipients(), flushUpdateEnvelope()]);
+    // Finish pending field writes before recipient deletion filters their fields.
+    // Otherwise a field flush can restore fields belonging to a removed recipient.
+    await flushSetFields();
+    await flushSetRecipients();
+    await flushUpdateEnvelope();
 
     // Flush all registered external flushes (e.g., upload page's debounced item updates).
     const externalFlushes = Array.from(externalFlushCallbacksRef.current.values());

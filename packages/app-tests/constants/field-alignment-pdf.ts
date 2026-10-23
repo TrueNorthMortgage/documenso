@@ -695,7 +695,7 @@ export const ALIGNMENT_TEST_FIELDS: FieldTestData[] = [
   /**
    * @@@@@@@@@@@@@@@@@@@@@@@
    *
-   * PAGE 2 TEXT MULTILINE
+   * PAGE 3 TEXT MULTILINE (explicit crop keeps this an alignment fixture)
    *
    * @@@@@@@@@@@@@@@@@@@@@@@
    */
@@ -706,6 +706,7 @@ export const ALIGNMENT_TEST_FIELDS: FieldTestData[] = [
       textAlign: 'left',
       lineHeight: 2.24,
       type: 'text',
+      overflow: 'crop',
     },
     page: 3,
     ...calculatePositionPageThree(0, 0, 'full', 3),
@@ -719,6 +720,7 @@ export const ALIGNMENT_TEST_FIELDS: FieldTestData[] = [
       textAlign: 'center',
       lineHeight: 2.24,
       type: 'text',
+      overflow: 'crop',
     },
     page: 3,
     ...calculatePositionPageThree(3, 0, 'full', 3),
@@ -732,6 +734,7 @@ export const ALIGNMENT_TEST_FIELDS: FieldTestData[] = [
       textAlign: 'right',
       lineHeight: 2.24,
       type: 'text',
+      overflow: 'crop',
     },
     page: 3,
     ...calculatePositionPageThree(6, 0, 'full', 3),

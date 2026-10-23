@@ -43,7 +43,7 @@ jobs:
           PLAYWRIGHT_HTML_OPEN: never
         run: |
           set -o pipefail
-          ./scripts/run-e2e-docker.sh --workers=2 --max-failures=0 --retries=1 2>&1 | tee .e2e-artifacts/runner.log
+          ./scripts/run-e2e-docker.sh 2>&1 | tee .e2e-artifacts/runner.log
 
       - name: Upload reports and diagnostics
         if: always()

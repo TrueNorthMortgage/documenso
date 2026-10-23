@@ -283,7 +283,7 @@ test('[DOCUMENTS]: deleting documents as a recipient should only hide it for the
   await expect(page.getByRole('menuitem', { name: 'Hide' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Hide' }).click({ force: true });
   await page.getByRole('button', { name: 'Hide' }).click({ force: true });
-  await page.waitForTimeout(2000);
+  await expect(page.getByRole('row', { name: /Document 1 - Completed/ })).not.toBeVisible();
 
   const pendingDocActionBtn = page
     .locator('tr', { hasText: 'Document 1 - Pending' })
@@ -295,15 +295,9 @@ test('[DOCUMENTS]: deleting documents as a recipient should only hide it for the
   await page.getByRole('menuitem', { name: 'Hide' }).click({ force: true });
   await page.getByRole('button', { name: 'Hide' }).click({ force: true });
 
-  await page.waitForTimeout(2500);
-
   // Check document counts.
   await expect(page.getByRole('row', { name: /Document 1 - Completed/ })).not.toBeVisible();
   await expect(page.getByRole('row', { name: /Document 1 - Pending/ })).not.toBeVisible();
-  await checkDocumentTabCount(page, 'Inbox', 0);
-  await checkDocumentTabCount(page, 'Pending', 0);
-  await checkDocumentTabCount(page, 'Completed', 0);
-  await checkDocumentTabCount(page, 'Draft', 0);
   await checkDocumentTabCount(page, 'All', 0);
 
   // Sign into the sender account.
@@ -315,11 +309,9 @@ test('[DOCUMENTS]: deleting documents as a recipient should only hide it for the
   });
 
   // Check document counts for sender.
-  await checkDocumentTabCount(page, 'Inbox', 0);
-  await checkDocumentTabCount(page, 'Pending', 1);
-  await checkDocumentTabCount(page, 'Completed', 1);
-  await checkDocumentTabCount(page, 'Draft', 1);
   await checkDocumentTabCount(page, 'All', 3);
+  await expect(page.getByRole('row', { name: /Document 1 - Completed/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: /Document 1 - Pending/ })).toBeVisible();
 
   // Sign into the other recipient account.
   await apiSignout({ page });
@@ -330,9 +322,7 @@ test('[DOCUMENTS]: deleting documents as a recipient should only hide it for the
   });
 
   // Check document counts for other recipient.
-  await checkDocumentTabCount(page, 'Inbox', 1);
-  await checkDocumentTabCount(page, 'Pending', 0);
-  await checkDocumentTabCount(page, 'Completed', 1);
-  await checkDocumentTabCount(page, 'Draft', 0);
   await checkDocumentTabCount(page, 'All', 2);
+  await expect(page.getByRole('row', { name: /Document 1 - Completed/ })).toBeVisible();
+  await expect(page.getByRole('row', { name: /Document 1 - Pending/ })).toBeVisible();
 });

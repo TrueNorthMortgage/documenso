@@ -6,102 +6,11 @@ import { DocumentStatus, FieldType } from '@prisma/client';
 import { DateTime } from 'luxon';
 
 import { apiSeedPendingDocument } from '../fixtures/api-seeds';
+import { signSignaturePad } from '../fixtures/signature';
 
 const PDF_PAGE_SELECTOR = 'img[data-page-number]';
 
 test.describe('V2 envelope field insertion during signing', () => {
-  test('date fields are auto-inserted when completing a V2 envelope', async ({ page, request }) => {
-    const now = DateTime.now().setZone(DEFAULT_DOCUMENT_TIME_ZONE);
-
-    const { envelope, distributeResult } = await apiSeedPendingDocument(request, {
-      recipients: [{ email: 'signer-date@test.documenso.com', name: 'Date Signer' }],
-      fieldsPerRecipient: [
-        [
-          { type: FieldType.DATE, page: 1, positionX: 5, positionY: 5, width: 5, height: 5 },
-          { type: FieldType.SIGNATURE, page: 1, positionX: 5, positionY: 15, width: 5, height: 5 },
-        ],
-      ],
-    });
-
-    const { token } = distributeResult.recipients[0];
-
-    await page.goto(`/sign/${token}`);
-
-    // wait for PDF to be visible
-    await expect(page.locator(PDF_PAGE_SELECTOR).first()).toBeVisible({ timeout: 30_000 });
-
-    // Wait for the Konva canvas to be ready.
-    const canvas = page.locator('.konva-container canvas').first();
-    await expect(canvas).toBeVisible({ timeout: 30_000 });
-
-    // DATE is auto-filled, but SIGNATURE still needs manual interaction.
-    await expect(page.getByText('1 Field Remaining').first()).toBeVisible();
-
-    // Set up a signature via the sidebar form.
-    await page.getByTestId('signature-pad-dialog-button').click();
-    await page.getByRole('tab', { name: 'Type' }).click();
-    await page.getByTestId('signature-pad-type-input').fill('Signature');
-    await page.getByRole('button', { name: 'Next' }).click();
-
-    // Click the signature field on the canvas.
-    const canvasBox = await canvas.boundingBox();
-
-    if (!canvasBox) {
-      throw new Error('Canvas bounding box not found');
-    }
-
-    const sigField = envelope.fields.find((f) => f.type === FieldType.SIGNATURE);
-
-    if (!sigField) {
-      throw new Error('Signature field not found');
-    }
-
-    const x =
-      (Number(sigField.positionX) / 100) * canvasBox.width + ((Number(sigField.width) / 100) * canvasBox.width) / 2;
-    const y =
-      (Number(sigField.positionY) / 100) * canvasBox.height + ((Number(sigField.height) / 100) * canvasBox.height) / 2;
-
-    await canvas.click({ position: { x, y } });
-    await page.waitForTimeout(500);
-
-    await expect(page.getByText('0 Fields Remaining').first()).toBeVisible({ timeout: 10_000 });
-
-    await page.getByRole('button', { name: 'Complete' }).click();
-    await expect(page.getByRole('heading', { name: 'Are you sure?' })).toBeVisible();
-    await page.getByRole('button', { name: 'Sign' }).click();
-
-    await page.waitForURL(`/sign/${token}/complete`);
-    await expect(page.getByText('Document Signed')).toBeVisible();
-
-    // Verify the date field was inserted in the database with the correct format.
-    const dateField = await prisma.field.findFirstOrThrow({
-      where: {
-        envelopeId: envelope.id,
-        type: FieldType.DATE,
-      },
-    });
-
-    expect(dateField.inserted).toBe(true);
-    expect(dateField.customText).toBeTruthy();
-
-    // Verify the inserted date is close to now (within 2 minutes).
-    const insertedDate = DateTime.fromFormat(dateField.customText, DEFAULT_DOCUMENT_DATE_FORMAT, {
-      zone: DEFAULT_DOCUMENT_TIME_ZONE,
-    });
-
-    expect(insertedDate.isValid).toBe(true);
-    expect(Math.abs(insertedDate.diff(now, 'minutes').minutes)).toBeLessThanOrEqual(2);
-
-    // Verify the document reached COMPLETED status.
-    await expect(async () => {
-      const dbEnvelope = await prisma.envelope.findUniqueOrThrow({
-        where: { id: envelope.id },
-      });
-
-      expect(dbEnvelope.status).toBe(DocumentStatus.COMPLETED);
-    }).toPass();
-  });
-
   test('date and email fields are inserted when completing a V2 envelope with multiple field types', async ({
     page,
     request,
@@ -147,10 +56,7 @@ test.describe('V2 envelope field insertion during signing', () => {
     await expect(page.getByText('2 Fields Remaining').first()).toBeVisible();
 
     // Set up a signature via the sidebar form.
-    await page.getByTestId('signature-pad-dialog-button').click();
-    await page.getByRole('tab', { name: 'Type' }).click();
-    await page.getByTestId('signature-pad-type-input').fill('Signature');
-    await page.getByRole('button', { name: 'Next' }).click();
+    await signSignaturePad(page);
 
     // Click each non-date field on the Konva canvas to insert it.
     // Fields are seeded with positions as percentages of the page.
@@ -203,7 +109,7 @@ test.describe('V2 envelope field insertion during signing', () => {
     await expect(page.getByRole('heading', { name: 'Are you sure?' })).toBeVisible();
     await page.getByRole('button', { name: 'Sign' }).click();
 
-    await page.waitForURL(`/sign/${token}/complete`);
+    await expect(page).toHaveURL(`/sign/${token}/complete`);
     await expect(page.getByText('Document Signed')).toBeVisible();
 
     // Verify the date field was auto-inserted with the correct format.

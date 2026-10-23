@@ -26,8 +26,6 @@ const setupDocument = async (page: Page) => {
 const triggerAutosave = async (page: Page) => {
   await page.locator('body').click({ position: { x: 0, y: 0 } });
   await page.locator('#document-flow-form-container').blur();
-
-  await page.waitForTimeout(5000);
 };
 
 test.describe('AutoSave Settings Step', () => {
@@ -51,8 +49,9 @@ test.describe('AutoSave Settings Step', () => {
         teamId: team.id,
       });
 
-      await expect(page.getByRole('textbox', { name: 'Title *' })).toHaveValue(retrieved.title);
-    }).toPass();
+      expect(retrieved.title).toBe(newDocumentTitle);
+      await expect(page.getByRole('textbox', { name: 'Title *' })).toHaveValue(newDocumentTitle);
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the language change', async ({ page }) => {
@@ -78,7 +77,7 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.documentMeta?.language).toBe(expectedLanguageCode);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the document access change', async ({ page }) => {
@@ -104,7 +103,7 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.authOptions?.globalAccessAuth).toContain(accessValue);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the external ID change', async ({ page }) => {
@@ -130,7 +129,7 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.externalId).toBe(newExternalId);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the allowed signature types change', async ({ page }) => {
@@ -158,7 +157,7 @@ test.describe('AutoSave Settings Step', () => {
       expect(retrieved.documentMeta?.drawSignatureEnabled).toBe(false);
       expect(retrieved.documentMeta?.typedSignatureEnabled).toBe(false);
       expect(retrieved.documentMeta?.uploadSignatureEnabled).toBe(true);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the date format change', async ({ page }) => {
@@ -183,7 +182,7 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.documentMeta?.dateFormat).toBe("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the timezone change', async ({ page }) => {
@@ -208,7 +207,7 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.documentMeta?.timezone).toBe('Europe/London');
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the redirect URL change', async ({ page }) => {
@@ -234,7 +233,7 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.documentMeta?.redirectUrl).toBe(newRedirectUrl);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave multiple field changes together', async ({ page }) => {
@@ -274,6 +273,6 @@ test.describe('AutoSave Settings Step', () => {
       expect(retrieved.authOptions?.globalAccessAuth).toContain('ACCOUNT');
       expect(retrieved.externalId).toBe(newExternalId);
       expect(retrieved.documentMeta?.timezone).toBe('Europe/Berlin');
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 });

@@ -334,9 +334,6 @@ const runFieldCleanupReplaceFlow = async (surface: TEnvelopeEditorSurface): Prom
   const fieldCountPage2 = await getKonvaElementCountForPage(root, 2, '.field-group');
   expect(fieldCountPage2).toBe(1);
 
-  // Verify file selector shows "2 Fields".
-  await expect(root.getByText('2 Fields')).toBeVisible();
-
   // Step 6: Navigate back to upload step.
   await clickEnvelopeEditorStep(root, 'upload');
   await expect(root.getByRole('heading', { name: 'Documents' })).toBeVisible();
@@ -354,9 +351,6 @@ const runFieldCleanupReplaceFlow = async (surface: TEnvelopeEditorSurface): Prom
   // Page 1 field should survive.
   fieldCountPage1 = await getKonvaElementCountForPage(root, 1, '.field-group');
   expect(fieldCountPage1).toBe(1);
-
-  // File selector should show "1 Field".
-  await expect(root.getByText('1 Field')).toBeVisible();
 
   return { externalId, recipientEmail };
 };

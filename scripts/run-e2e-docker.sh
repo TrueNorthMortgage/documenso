@@ -19,6 +19,8 @@ case "${1:-}" in
 Usage: ./scripts/run-e2e-docker.sh [--reuse] [Playwright options or test paths]
 
 Default: install dependencies, reset the isolated test database, and build the app.
+Local and GitHub runs use 2 workers, 1 retry, and stop after the first failed test.
+Explicit Playwright options override these defaults.
 --reuse: rerun tests using the previous dependencies, database, and app build.
          Run without --reuse after app, dependency, or database schema changes.
 
@@ -75,7 +77,14 @@ cleanup() {
   fi
   # Export only test reports; never copy generated source, configuration or databases.
   for report in playwright-report test-results; do
-    docker cp "$RUNNER_NAME:/app/packages/app-tests/$report" "$ROOT_DIR/packages/app-tests/" >/dev/null 2>&1 || true
+    local report_tmp
+    report_tmp="$(mktemp -d)"
+    if docker cp "$RUNNER_NAME:/app/packages/app-tests/$report" "$report_tmp/" >/dev/null 2>&1; then
+      # Replace complete reports so screenshots from older runs cannot linger.
+      rm -rf -- "$ROOT_DIR/packages/app-tests/$report"
+      mv "$report_tmp/$report" "$ROOT_DIR/packages/app-tests/$report"
+    fi
+    rm -rf -- "$report_tmp"
   done
   docker rm -f "$RUNNER_NAME" >/dev/null 2>&1 || true
   docker compose \
@@ -112,9 +121,9 @@ docker compose \
   --file "$E2E_COMPOSE_FILE" \
   up --detach "$build_option" --wait database inbucket redis gotenberg
 
-# API and UI projects share this container with the app. Limit their combined
-# concurrency locally; an explicit --workers argument can override this default.
-E2E_TEST_PATH="--workers=2 ${E2E_TEST_PATH:-$*}"
+# Keep local and GitHub execution identical. Explicit options come last so callers
+# can override defaults when debugging a specific test.
+E2E_TEST_PATH="--workers=2 --max-failures=1 --retries=1 ${E2E_TEST_PATH:-$*}"
 
 # Copy source, including uncommitted edits, without local configuration, secrets,
 # dependencies or generated outputs. E2E never writes to the live dev source tree.
@@ -124,6 +133,8 @@ docker run --rm \
   --entrypoint bash \
   "$PLAYWRIGHT_IMAGE" -lc '
     set -euo pipefail
+    # Reuse keeps the app build, but deleted tests and baselines must not linger.
+    rm -rf /app/packages/app-tests/e2e /app/packages/app-tests/visual-regression
     tar -C /source \
       --exclude=.git --exclude=node_modules --exclude=.env --exclude=".env.*" \
       --exclude=dev-env --exclude=dev-secrets --exclude=".aws" \

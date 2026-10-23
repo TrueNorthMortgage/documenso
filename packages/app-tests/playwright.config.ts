@@ -34,8 +34,8 @@ export default defineConfig({
   maxFailures: process.env.CI ? 1 : undefined,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 4 : 1,
+  /* Match the shared Docker runner for direct Playwright invocations. */
+  retries: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html'], ['list']],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -44,8 +44,8 @@ export default defineConfig({
     baseURL: process.env.NEXT_PUBLIC_WEBAPP_URL || 'http://localhost:3000',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'retain-on-failure',
-    video: 'retain-on-failure',
+    trace: 'on-first-retry',
+    video: 'on-first-retry',
     screenshot: 'only-on-failure',
 
     /* Add explicit timeouts for actions */
@@ -84,7 +84,7 @@ export default defineConfig({
       testMatch: /e2e\/api\/.*\.spec\.ts/,
       // GitHub-hosted runners have fewer resources than the previous Warp runner.
       // Keep enough parallelism for speed without overloading the app/database.
-      workers: process.env.CI ? 4 : 10,
+      workers: process.env.CI ? 2 : 10,
     },
     // License tests that share a single license file - must run serially
     {
@@ -105,7 +105,8 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1200 },
       },
-      workers: calculateWorkers(),
+      // The Docker runner sets CI for both local and GitHub runs.
+      workers: process.env.CI ? 2 : calculateWorkers(),
     },
 
     // {
