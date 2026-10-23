@@ -764,8 +764,8 @@ export const OVERFLOW_TEST_FIELDS: OverflowFieldTestData[] = [
   // Box 1: Single-line crop
   {
     type: FieldType.TEXT,
-    fieldMeta: undefined,
-    seedFieldMeta: { type: 'text' },
+    fieldMeta: { type: 'text', overflow: 'crop' },
+    seedFieldMeta: { type: 'text', overflow: 'crop' },
     page: 8,
     positionX: 10,
     positionY: 15,
@@ -776,8 +776,8 @@ export const OVERFLOW_TEST_FIELDS: OverflowFieldTestData[] = [
   // Box 2: Multi-line crop
   {
     type: FieldType.TEXT,
-    fieldMeta: undefined,
-    seedFieldMeta: { type: 'text' },
+    fieldMeta: { type: 'text', overflow: 'crop' },
+    seedFieldMeta: { type: 'text', overflow: 'crop' },
     page: 8,
     positionX: 10,
     positionY: 30,

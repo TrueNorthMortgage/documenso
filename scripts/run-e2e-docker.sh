@@ -77,7 +77,14 @@ cleanup() {
   fi
   # Export only test reports; never copy generated source, configuration or databases.
   for report in playwright-report test-results; do
-    docker cp "$RUNNER_NAME:/app/packages/app-tests/$report" "$ROOT_DIR/packages/app-tests/" >/dev/null 2>&1 || true
+    local report_tmp
+    report_tmp="$(mktemp -d)"
+    if docker cp "$RUNNER_NAME:/app/packages/app-tests/$report" "$report_tmp/" >/dev/null 2>&1; then
+      # Replace complete reports so screenshots from older runs cannot linger.
+      rm -rf -- "$ROOT_DIR/packages/app-tests/$report"
+      mv "$report_tmp/$report" "$ROOT_DIR/packages/app-tests/$report"
+    fi
+    rm -rf -- "$report_tmp"
   done
   docker rm -f "$RUNNER_NAME" >/dev/null 2>&1 || true
   docker compose \
