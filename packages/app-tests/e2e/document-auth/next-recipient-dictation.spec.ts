@@ -69,7 +69,7 @@ test('[NEXT_RECIPIENT_DICTATION]: should allow updating next recipient when dict
 
   // Submit and verify completion
   await page.getByRole('button', { name: 'Sign' }).click();
-  await page.waitForURL(`${signUrl}/complete`);
+  await expect(page).toHaveURL(`${signUrl}/complete`);
 
   // Verify document and recipient states
   const updatedDocument = await prisma.envelope.findUniqueOrThrow({
@@ -153,7 +153,7 @@ test('[NEXT_RECIPIENT_DICTATION]: should not show dictation UI when disabled', a
 
   // Submit and verify completion
   await page.getByRole('button', { name: 'Sign' }).click();
-  await page.waitForURL(`${signUrl}/complete`);
+  await expect(page).toHaveURL(`${signUrl}/complete`);
 
   // Verify document and recipient states
 
@@ -237,7 +237,7 @@ test('[NEXT_RECIPIENT_DICTATION]: should work with parallel signing flow', async
 
     // Submit and verify completion
     await page.getByRole('button', { name: 'Sign' }).click();
-    await page.waitForURL(`${signUrl}/complete`);
+    await expect(page).toHaveURL(`${signUrl}/complete`);
   }
 
   // Verify final document and recipient states
@@ -333,7 +333,7 @@ test('[NEXT_RECIPIENT_DICTATION]: should allow assistant to dictate next signer'
 
   // Submit and verify completion
   await page.getByRole('button', { name: /Continue|Proceed/i }).click();
-  await page.waitForURL(`${signUrl}/complete`);
+  await expect(page).toHaveURL(`${signUrl}/complete`);
 
   // Verify document and recipient states
   await expect(async () => {
