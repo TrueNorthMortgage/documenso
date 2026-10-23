@@ -282,10 +282,10 @@ const runMultiRecipientFieldFlow = async (surface: TEnvelopeEditorSurface): Prom
   await getRecipientRemoveButtons(root).nth(1).click();
   await expect(getRecipientEmailInputs(root)).toHaveCount(1);
 
-  // Go back to fields and verify cascade removal.
+  // Recipient removal is debounced. Wait for its field cascade, not just
+  // the recipient input disappearing from the form.
   await clickEnvelopeEditorStep(root, 'addFields');
-  fieldCount = await getKonvaElementCountForPage(root, 1, '.field-group');
-  expect(fieldCount).toBe(1);
+  await expect.poll(() => getKonvaElementCountForPage(root, 1, '.field-group')).toBe(1);
 
   return {
     externalId,

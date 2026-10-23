@@ -128,7 +128,7 @@ test('[TEMPLATE_FLOW] team member visibility permissions', async ({ page }) => {
   // Navigate to the new template
   await page.goto(`/t/${team.url}/templates/${mapSecondaryIdToTemplateId(everyoneTemplate.secondaryId)}/edit`);
 
-  // Regular member should be able to see but not modify visibility
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toBeDisabled();
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toContainText('Everyone');
+  // Regular members can open the template, but the visibility control is hidden.
+  await expect(page.getByRole('heading', { name: 'General', exact: true })).toBeVisible();
+  await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveCount(0);
 });

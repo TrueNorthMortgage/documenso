@@ -1,3 +1,4 @@
+import { prisma } from '@documenso/prisma';
 import { seedBlankDocument, seedDocuments, seedTeamDocuments } from '@documenso/prisma/seed/documents';
 import { seedTeam, seedTeamEmail, seedTeamMember } from '@documenso/prisma/seed/teams';
 import { seedUser } from '@documenso/prisma/seed/users';
@@ -730,87 +731,31 @@ test('[TEAMS]: check that ADMIN role can change document visibility', async ({ p
   await expect(page.getByTestId('documentVisibilitySelectValue')).toContainText('Admins only');
 });
 
-test('[TEAMS]: check that MEMBER role cannot change visibility of EVERYONE documents', async ({ page }) => {
-  const { team, owner } = await seedTeam();
+// Exercise the browser permission boundary at every visibility level. The complete
+// role/ownership matrix is covered by packages/lib/utils/teams.test.ts.
+for (const visibility of Object.values(DocumentVisibility)) {
+  test(`[TEAMS]: MEMBER cannot change ${visibility} document visibility`, async ({ page }) => {
+    const { team } = await seedTeam();
+    const member = await seedTeamMember({ teamId: team.id, role: TeamMemberRole.MEMBER });
+    const document = await seedBlankDocument(member, team.id, {
+      createDocumentOptions: { visibility },
+    });
 
-  const teamMember = await seedTeamMember({
-    teamId: team.id,
-    role: TeamMemberRole.MEMBER,
+    await apiSignin({
+      page,
+      email: member.email,
+      redirectPath: `/t/${team.url}/documents/${document.id}/edit`,
+    });
+
+    await expect(page.getByRole('heading', { name: 'General', exact: true })).toBeVisible();
+    await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Add Signers', exact: true })).toBeVisible();
+    expect((await prisma.envelope.findUniqueOrThrow({ where: { id: document.id } })).visibility).toBe(visibility);
   });
+}
 
-  const document = await seedBlankDocument(teamMember, team.id, {
-    createDocumentOptions: {
-      visibility: DocumentVisibility.EVERYONE,
-    },
-  });
-
-  await apiSignin({
-    page,
-    email: teamMember.email,
-    redirectPath: `/t/${team.url}/documents/${document.id}/edit`,
-  });
-
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveText('Everyone');
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toBeDisabled();
-});
-
-test('[TEAMS]: check that MEMBER role can change visibility of MANAGER_AND_ABOVE documents', async ({ page }) => {
-  const { team, owner } = await seedTeam();
-
-  const teamMember = await seedTeamMember({
-    teamId: team.id,
-    role: TeamMemberRole.MEMBER,
-  });
-
-  const document = await seedBlankDocument(teamMember, team.id, {
-    createDocumentOptions: {
-      visibility: DocumentVisibility.MANAGER_AND_ABOVE,
-    },
-  });
-
-  await apiSignin({
-    page,
-    email: teamMember.email,
-    redirectPath: `/t/${team.url}/documents/${document.id}/edit`,
-  });
-
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveText('Managers and above');
-  await page.getByTestId('documentVisibilitySelectValue').click();
-  await page.getByLabel('Everyone').click();
-
-  await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByRole('heading', { name: 'Add Signers' })).toBeVisible();
-
-  await page.getByRole('button', { name: 'Go Back' }).click();
-  await expect(page.getByRole('heading', { name: 'General' })).toBeVisible();
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveText('Everyone');
-});
-
-test('[TEAMS]: check that MEMBER role cannot change visibility of ADMIN documents', async ({ page }) => {
-  const { team, owner } = await seedTeam();
-
-  const teamMember = await seedTeamMember({
-    teamId: team.id,
-    role: TeamMemberRole.MEMBER,
-  });
-
-  const document = await seedBlankDocument(teamMember, team.id, {
-    createDocumentOptions: {
-      visibility: DocumentVisibility.ADMIN,
-    },
-  });
-
-  await apiSignin({
-    page,
-    email: teamMember.email,
-    redirectPath: `/t/${team.url}/documents/${document.id}/edit`,
-  });
-
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveText('Admins only');
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toBeDisabled();
-});
-
-test('[TEAMS]: check that MANAGER role cannot change visibility of ADMIN documents', async ({ page }) => {
+test('[TEAMS]: MANAGER owner can change visibility of ADMIN documents', async ({ page }) => {
   const { team, owner } = await seedTeam();
 
   const teamManager = await seedTeamMember({
@@ -831,7 +776,14 @@ test('[TEAMS]: check that MANAGER role cannot change visibility of ADMIN documen
   });
 
   await expect(page.getByTestId('documentVisibilitySelectValue')).toHaveText('Admins only');
-  await expect(page.getByTestId('documentVisibilitySelectValue')).toBeDisabled();
+  await expect(page.getByRole('combobox', { name: 'Document visibility' })).toBeEnabled();
+  await page.getByRole('combobox', { name: 'Document visibility' }).click();
+  await page.getByRole('option', { name: 'Everyone', exact: true }).click();
+  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Add Signers', exact: true })).toBeVisible();
+  expect((await prisma.envelope.findUniqueOrThrow({ where: { id: document.id } })).visibility).toBe(
+    DocumentVisibility.EVERYONE,
+  );
 });
 
 test('[TEAMS]: users cannot see documents from other teams', async ({ page }) => {

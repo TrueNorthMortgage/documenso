@@ -72,6 +72,7 @@ for (const type of [FolderType.DOCUMENT, FolderType.TEMPLATE]) {
       await expect(page.locator('a[data-folder-name="Created in home"]')).toBeVisible();
       await page.reload();
       await expect(dialog).not.toBeVisible();
+      await expect(page.locator('a[data-folder-name="Created in home"]')).toBeVisible();
     });
   }
 }

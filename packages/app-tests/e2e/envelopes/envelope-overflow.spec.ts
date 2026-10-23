@@ -4,11 +4,9 @@ import { getEnvelopeItemPdfUrl } from '@documenso/lib/utils/envelope-download';
 import { prisma } from '@documenso/prisma';
 import { seedOverflowTestDocument } from '@documenso/prisma/seed/initial-seed';
 import { seedUser } from '@documenso/prisma/seed/users';
-import { createCanvas } from '@napi-rs/canvas';
 import type { TestInfo } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import { DocumentStatus, EnvelopeType, FieldType } from '@prisma/client';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pixelMatch from 'pixelmatch';
 import { PNG } from 'pngjs';
 
@@ -23,6 +21,7 @@ import type {
 import type { TDistributeEnvelopeRequest } from '../../../trpc/server/envelope-router/distribute-envelope.types';
 import { OVERFLOW_TEST_FIELDS } from '../../constants/field-overflow-pdf';
 import { apiSignin } from '../fixtures/authentication';
+import { renderPdfToImage } from '../fixtures/pdf-render';
 
 const WEBAPP_BASE_URL = NEXT_PUBLIC_WEBAPP_URL();
 const baseUrl = `${WEBAPP_BASE_URL}/api/v2`;
@@ -431,42 +430,6 @@ test.skip('download overflow images', async ({ page, request }) => {
 // ============================================================================
 // Helper functions
 // ============================================================================
-
-async function renderPdfToImage(pdfBytes: Uint8Array) {
-  const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
-  const pdf = await loadingTask.promise;
-
-  // Increase for higher resolution
-  const scale = 4;
-
-  return await Promise.all(
-    Array.from({ length: pdf.numPages }, async (_, index) => {
-      const page = await pdf.getPage(index + 1);
-
-      const viewport = page.getViewport({ scale });
-
-      const canvas = createCanvas(viewport.width, viewport.height);
-      const canvasContext = canvas.getContext('2d');
-      canvasContext.imageSmoothingEnabled = false;
-
-      await page.render({
-        // @ts-expect-error @napi-rs/canvas satisfies runtime requirements for pdfjs
-        canvas,
-        // @ts-expect-error @napi-rs/canvas satisfies runtime requirements for pdfjs
-        canvasContext,
-        viewport,
-      }).promise;
-
-      return {
-        image: await canvas.encode('png'),
-
-        // Rounded down because the certificate page somehow gives dimensions with decimals
-        width: Math.floor(viewport.width),
-        height: Math.floor(viewport.height),
-      };
-    }),
-  );
-}
 
 type CompareSignedPdfWithImagesOptions = {
   id: string;

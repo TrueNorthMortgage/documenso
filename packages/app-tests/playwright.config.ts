@@ -84,7 +84,7 @@ export default defineConfig({
       testMatch: /e2e\/api\/.*\.spec\.ts/,
       // GitHub-hosted runners have fewer resources than the previous Warp runner.
       // Keep enough parallelism for speed without overloading the app/database.
-      workers: process.env.CI ? 4 : 10,
+      workers: process.env.CI ? 2 : 10,
     },
     // License tests that share a single license file - must run serially
     {
@@ -105,7 +105,8 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1200 },
       },
-      workers: calculateWorkers(),
+      // The Docker runner sets CI for both local and GitHub runs.
+      workers: process.env.CI ? 2 : calculateWorkers(),
     },
 
     // {

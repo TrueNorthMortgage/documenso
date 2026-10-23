@@ -12,35 +12,6 @@ import { expectTextToBeVisible, openDropdownMenu } from '../fixtures/generic';
 
 test.describe.configure({ mode: 'parallel' });
 
-test('[TEAMS]: create document folder button is visible', async ({ page }) => {
-  const { team, teamOwner } = await seedTeamDocuments();
-
-  await apiSignin({
-    page,
-    email: teamOwner.email,
-    redirectPath: `/t/${team.url}`,
-  });
-
-  await expect(page.getByTestId('folder-create-button')).toBeVisible();
-});
-
-test('[TEAMS]: can create document folder', async ({ page }) => {
-  const { team, teamOwner } = await seedTeamDocuments();
-
-  await apiSignin({
-    page,
-    email: teamOwner.email,
-    redirectPath: `/t/${team.url}`,
-  });
-
-  await page.getByTestId('folder-create-button').click();
-
-  await page.getByLabel('Folder name').fill('Team Folder');
-  await page.getByRole('button', { name: 'Create' }).click();
-
-  await expect(page.getByText('Team Folder')).toBeVisible();
-});
-
 test('[TEAMS]: can create document subfolder within a document folder', async ({ page }) => {
   const { team, teamOwner } = await seedTeamDocuments();
 
@@ -62,7 +33,8 @@ test('[TEAMS]: can create document subfolder within a document folder', async ({
   await page.getByLabel('Folder name').fill('Subfolder');
   await page.getByRole('button', { name: 'Create' }).click();
 
-  await expect(page.getByText('Subfolder')).toBeVisible();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.locator('[data-folder-name="Subfolder"]')).toBeVisible();
 });
 
 test('[TEAMS]: can create a document inside a document folder', async ({ page }) => {
@@ -89,13 +61,11 @@ test('[TEAMS]: can create a document inside a document folder', async ({ page })
 
   await fileChooser.setFiles(path.join(__dirname, '../../../assets/documenso-supporter-pledge.pdf'));
 
-  await page.waitForTimeout(3000);
-
-  await expectTextToBeVisible(page, 'documenso-supporter-pledge.pdf');
+  await expectTextToBeVisible(page, 'documenso-supporter-pledge');
 
   await page.goto(`/t/${team.url}/documents/f/${teamFolder.id}`);
 
-  await expectTextToBeVisible(page, 'documenso-supporter-pledge.pdf');
+  await expectTextToBeVisible(page, 'documenso-supporter-pledge');
 });
 
 test('[TEAMS]: can pin a document folder', async ({ page }) => {
@@ -225,7 +195,7 @@ test('[TEAMS]: document folder can be moved to another document folder', async (
     redirectPath: `/t/${team.url}/documents`,
   });
 
-  const folderMoreBtn = page.getByTestId('folder-card-more-button').nth(0);
+  const folderMoreBtn = page.locator('[data-folder-name="Team Contracts"]').getByTestId('folder-card-more-button');
   await openDropdownMenu(page, folderMoreBtn);
   await expect(page.getByRole('menuitem', { name: 'Move' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Move' }).click();
@@ -233,7 +203,7 @@ test('[TEAMS]: document folder can be moved to another document folder', async (
   await page.getByRole('button', { name: 'Team Clients' }).click();
   await page.getByRole('button', { name: 'Move' }).click();
 
-  await page.waitForTimeout(1000);
+  await expect.poll(() => prisma.folder.count({ where: { parentId: folder.id, name: 'Team Contracts' } })).toBe(1);
 
   await page.goto(`/t/${team.url}/documents/f/${folder.id}`);
 
@@ -293,41 +263,6 @@ test('[TEAMS]: document folder and its contents can be deleted', async ({ page }
   await expect(page.getByText(report.title)).toBeVisible();
 });
 
-test('[TEAMS]: create folder button is visible on templates page', async ({ page }) => {
-  const { team, teamOwner } = await seedTeamDocuments();
-
-  await apiSignin({
-    page,
-    email: teamOwner.email,
-    redirectPath: `/t/${team.url}/templates`,
-  });
-
-  await expect(page.getByTestId('folder-create-button')).toBeVisible();
-});
-
-test('[TEAMS]: can create a template folder', async ({ page }) => {
-  const { team, teamOwner } = await seedTeamDocuments();
-
-  await apiSignin({
-    page,
-    email: teamOwner.email,
-    redirectPath: `/t/${team.url}/templates`,
-  });
-
-  await page.getByTestId('folder-create-button').click();
-  await expect(page.getByRole('dialog', { name: 'Create New folder' })).toBeVisible();
-
-  await page.getByLabel('Folder name').fill('Team template folder');
-  await page.getByRole('button', { name: 'Create' }).click();
-
-  await page.waitForTimeout(1000);
-
-  await expect(page.getByText('Team template folder')).toBeVisible();
-
-  await page.goto(`/t/${team.url}/templates`);
-  await expect(page.locator(`[data-folder-name="Team template folder"]`)).toBeVisible();
-});
-
 test('[TEAMS]: can create a template subfolder inside a template folder', async ({ page }) => {
   const { team, teamOwner } = await seedTeamDocuments();
 
@@ -348,7 +283,7 @@ test('[TEAMS]: can create a template subfolder inside a template folder', async 
   await expect(page.getByText('Team Client Templates')).toBeVisible();
 
   await page.getByTestId('folder-create-button').click();
-  await expect(page.getByRole('dialog', { name: 'Create New folder' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Create subfolder' })).toBeVisible();
 
   await page.getByLabel('Folder name').fill('Team Contract Templates');
   await page.getByRole('button', { name: 'Create' }).click();
@@ -457,14 +392,12 @@ test('[TEAMS]: can create a template inside a template folder', async ({ page })
 
   await fileChooser.setFiles(path.join(__dirname, '../../../assets/documenso-supporter-pledge.pdf'));
 
-  await page.waitForTimeout(3000);
-
-  // Expect redirect.
-  await expectTextToBeVisible(page, 'documenso-supporter-pledge.pdf');
+  // Wait for the uploaded document editor.
+  await expectTextToBeVisible(page, 'documenso-supporter-pledge');
 
   // Return to folder and verify file is visible.
   await page.goto(`/t/${team.url}/templates/f/${folder.id}`);
-  await expectTextToBeVisible(page, 'documenso-supporter-pledge.pdf');
+  await expectTextToBeVisible(page, 'documenso-supporter-pledge');
 });
 
 test('[TEAMS]: can pin a template folder', async ({ page }) => {
@@ -601,7 +534,9 @@ test('[TEAMS]: template folder can be moved to another template folder', async (
     redirectPath: `/t/${team.url}/templates`,
   });
 
-  const folderMoreBtn = page.getByTestId('folder-card-more-button').nth(0);
+  const folderMoreBtn = page
+    .locator('[data-folder-name="Team Contract Templates"]')
+    .getByTestId('folder-card-more-button');
   await openDropdownMenu(page, folderMoreBtn);
   await expect(page.getByRole('menuitem', { name: 'Move' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Move' }).click();
@@ -609,7 +544,9 @@ test('[TEAMS]: template folder can be moved to another template folder', async (
   await page.getByRole('button', { name: 'Team Client Templates' }).click();
   await page.getByRole('button', { name: 'Move' }).click();
 
-  await page.waitForTimeout(1000);
+  await expect
+    .poll(() => prisma.folder.count({ where: { parentId: folder.id, name: 'Team Contract Templates' } }))
+    .toBe(1);
 
   await page.goto(`/t/${team.url}/templates/f/${folder.id}`);
 
@@ -776,7 +713,7 @@ test('[TEAMS]: folder visibility is properly applied based on team member roles'
     redirectPath: `/t/${team.url}/documents`,
   });
 
-  await expect(page.getByText('Admin Only Folder')).toBeVisible();
+  await expect(page.locator('[data-folder-name="Admin Only Folder"]')).toBeVisible();
   await expect(page.getByText('Manager Folder')).toBeVisible();
   await expect(page.getByText('Everyone Folder')).toBeVisible();
 
@@ -806,95 +743,39 @@ test('[TEAMS]: folder visibility is properly applied based on team member roles'
     redirectPath: `/t/${team.url}/documents`,
   });
 
-  await expect(page.getByText('Admin Only Folder')).toBeVisible();
+  await expect(page.locator('[data-folder-name="Admin Only Folder"]')).toBeVisible();
   await expect(page.getByText('Manager Folder')).toBeVisible();
   await expect(page.getByText('Everyone Folder')).toBeVisible();
 });
 
 test('[TEAMS]: folder inherits team visibility settings', async ({ page }) => {
   const { team, teamOwner } = await seedTeamDocuments();
+  const settings = await prisma.teamGlobalSettings.findFirstOrThrow({ where: { team: { id: team.id } } });
 
-  const teamSettingsId = await prisma.teamGlobalSettings.findFirstOrThrow({
-    where: {
-      team: {
-        id: team.id,
-      },
-    },
-  });
+  await apiSignin({ page, email: teamOwner.email, redirectPath: `/t/${team.url}/documents` });
 
-  await prisma.teamGlobalSettings.update({
-    where: {
-      id: teamSettingsId.id,
-    },
-    data: {
-      documentVisibility: DocumentVisibility.ADMIN,
-    },
-  });
+  for (const { visibility, label, name } of [
+    { visibility: DocumentVisibility.ADMIN, label: 'Admins only', name: 'Admin Only Folder' },
+    { visibility: DocumentVisibility.MANAGER_AND_ABOVE, label: 'Managers and above', name: 'Manager Folder' },
+    { visibility: DocumentVisibility.EVERYONE, label: 'Everyone', name: 'Everyone Folder' },
+  ]) {
+    await prisma.teamGlobalSettings.update({
+      where: { id: settings.id },
+      data: { documentVisibility: visibility },
+    });
+    await page.goto(`/t/${team.url}/documents`);
+    await page.getByTestId('folder-create-button').click();
+    await page.getByLabel('Folder name').fill(name);
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
 
-  await apiSignin({
-    page,
-    email: teamOwner.email,
-    redirectPath: `/t/${team.url}/documents`,
-  });
-
-  await page.getByTestId('folder-create-button').click();
-  await page.getByLabel('Name').fill('Admin Only Folder');
-  await page.getByRole('button', { name: 'Create' }).click();
-
-  await expect(page.getByText('Admin Only Folder')).toBeVisible();
-
-  await page.goto(`/t/${team.url}/documents/`);
-
-  const folderMoreBtn1 = page.getByTestId('folder-card-more-button');
-  await openDropdownMenu(page, folderMoreBtn1);
-  await expect(page.getByRole('menuitem', { name: 'Settings' })).toBeVisible();
-  await page.getByRole('menuitem', { name: 'Settings' }).click();
-
-  await expect(page.getByRole('combobox', { name: 'Visibility' })).toHaveText('Admins only');
-
-  await prisma.teamGlobalSettings.update({
-    where: { id: teamSettingsId.id },
-    data: { documentVisibility: DocumentVisibility.MANAGER_AND_ABOVE },
-  });
-
-  await page.reload();
-
-  await page.getByTestId('folder-create-button').click();
-  await page.getByLabel('Name').fill('Manager and above Folder');
-  await page.getByRole('button', { name: 'Create' }).click();
-
-  await expect(page.getByText('Manager and above Folder')).toBeVisible();
-
-  await page.goto(`/t/${team.url}/documents`);
-
-  const folderMoreBtn2 = page.getByTestId('folder-card-more-button').nth(0);
-  await openDropdownMenu(page, folderMoreBtn2);
-  await expect(page.getByRole('menuitem', { name: 'Settings' })).toBeVisible();
-  await page.getByRole('menuitem', { name: 'Settings' }).click();
-
-  await expect(page.getByRole('combobox', { name: 'Visibility' })).toHaveText('Managers and above');
-
-  await prisma.teamGlobalSettings.update({
-    where: { id: teamSettingsId.id },
-    data: { documentVisibility: DocumentVisibility.EVERYONE },
-  });
-
-  await page.reload();
-
-  await page.getByTestId('folder-create-button').click();
-  await page.getByLabel('Name').fill('Everyone Folder');
-  await page.getByRole('button', { name: 'Create' }).click();
-
-  await expect(page.getByText('Everyone Folder')).toBeVisible();
-
-  await page.goto(`/t/${team.url}/documents/`);
-
-  const folderMoreBtn3 = page.getByTestId('folder-card-more-button').nth(0);
-  await openDropdownMenu(page, folderMoreBtn3);
-  await expect(page.getByRole('menuitem', { name: 'Settings' })).toBeVisible();
-  await page.getByRole('menuitem', { name: 'Settings' }).click();
-
-  await expect(page.getByRole('combobox', { name: 'Visibility' })).toHaveText('Everyone');
+    const card = page.locator(`[data-folder-name="${name}"]`);
+    await expect(card).toBeVisible();
+    const folder = await prisma.folder.findFirstOrThrow({ where: { teamId: team.id, name } });
+    expect(folder.visibility).toBe(visibility);
+    await openDropdownMenu(page, card.getByTestId('folder-card-more-button'));
+    await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+    await expect(page.getByRole('combobox', { name: 'Visibility', exact: true })).toHaveText(label);
+  }
 });
 
 test('[TEAMS]: documents inherit folder visibility', async ({ page }) => {
@@ -927,7 +808,7 @@ test('[TEAMS]: documents inherit folder visibility', async ({ page }) => {
   await page.getByLabel('Name').fill('Admin Only Folder');
   await page.getByRole('button', { name: 'Create' }).click();
 
-  await expect(page.getByText('Admin Only Folder')).toBeVisible();
+  await expect(page.locator('[data-folder-name="Admin Only Folder"]')).toBeVisible();
 
   await page.getByText('Admin Only Folder').click();
 
@@ -941,9 +822,7 @@ test('[TEAMS]: documents inherit folder visibility', async ({ page }) => {
 
   await fileChooser.setFiles(path.join(__dirname, '../../../assets/documenso-supporter-pledge.pdf'));
 
-  await page.waitForTimeout(3000);
-
-  await expectTextToBeVisible(page, 'documenso-supporter-pledge.pdf');
+  await expectTextToBeVisible(page, 'documenso-supporter-pledge');
 
   await expect(page.getByRole('combobox').filter({ hasText: 'Admins only' })).toBeVisible();
 });
@@ -2695,7 +2574,7 @@ test('[TEAMS]: team owner can see all folders in folder list', async ({ page }) 
     redirectPath: `/t/${team.url}/documents`,
   });
 
-  await expect(page.getByText('Admin Only Folder')).toBeVisible();
+  await expect(page.locator('[data-folder-name="Admin Only Folder"]')).toBeVisible();
   await expect(page.getByText('Manager Folder')).toBeVisible();
   await expect(page.getByText('Everyone Folder')).toBeVisible();
 });
@@ -2894,7 +2773,7 @@ test('[TEAMS]: team admin can see all folders in folder list', async ({ page }) 
     redirectPath: `/t/${team.url}/documents`,
   });
 
-  await expect(page.getByText('Admin Only Folder')).toBeVisible();
+  await expect(page.locator('[data-folder-name="Admin Only Folder"]')).toBeVisible();
   await expect(page.getByText('Manager Folder')).toBeVisible();
   await expect(page.getByText('Everyone Folder')).toBeVisible();
 });

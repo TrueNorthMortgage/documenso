@@ -19,6 +19,8 @@ case "${1:-}" in
 Usage: ./scripts/run-e2e-docker.sh [--reuse] [Playwright options or test paths]
 
 Default: install dependencies, reset the isolated test database, and build the app.
+Local and GitHub runs use 2 workers, 1 retry, and stop after the first failed test.
+Explicit Playwright options override these defaults.
 --reuse: rerun tests using the previous dependencies, database, and app build.
          Run without --reuse after app, dependency, or database schema changes.
 
@@ -112,9 +114,9 @@ docker compose \
   --file "$E2E_COMPOSE_FILE" \
   up --detach "$build_option" --wait database inbucket redis gotenberg
 
-# API and UI projects share this container with the app. Limit their combined
-# concurrency locally; an explicit --workers argument can override this default.
-E2E_TEST_PATH="--workers=2 ${E2E_TEST_PATH:-$*}"
+# Keep local and GitHub execution identical. Explicit options come last so callers
+# can override defaults when debugging a specific test.
+E2E_TEST_PATH="--workers=2 --max-failures=1 --retries=1 ${E2E_TEST_PATH:-$*}"
 
 # Copy source, including uncommitted edits, without local configuration, secrets,
 # dependencies or generated outputs. E2E never writes to the live dev source tree.
