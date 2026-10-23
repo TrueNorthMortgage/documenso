@@ -886,7 +886,7 @@ test('[TEAMS]: team member can move documents to everyone folder', async ({ page
     },
   });
 
-  await seedBlankFolder(teamOwner, team.id, {
+  const everyoneFolder = await seedBlankFolder(teamOwner, team.id, {
     createFolderOptions: {
       name: 'Everyone Folder',
       teamId: team.id,
@@ -911,7 +911,7 @@ test('[TEAMS]: team member can move documents to everyone folder', async ({ page
     },
   });
 
-  await seedBlankDocument(teamOwner, team.id, {
+  const everyoneDocument = await seedBlankDocument(teamOwner, team.id, {
     createDocumentOptions: {
       title: '[TEST] Everyone Document',
       teamId: team.id,
@@ -942,11 +942,12 @@ test('[TEAMS]: team member can move documents to everyone folder', async ({ page
   await page.getByRole('button', { name: 'Everyone Folder' }).click();
   await page.getByRole('button', { name: 'Move' }).click();
 
-  await page.waitForTimeout(3000);
+  await expect
+    .poll(async () => (await prisma.envelope.findUniqueOrThrow({ where: { id: everyoneDocument.id } })).folderId)
+    .toBe(everyoneFolder.id);
   await expect(page.getByText('[TEST] Everyone Document')).toBeVisible();
 
   await page.goto(`/t/${team.url}/documents`);
-  await page.waitForTimeout(3000);
 
   await expect(page.getByText('[TEST] Everyone Document')).not.toBeVisible();
 });

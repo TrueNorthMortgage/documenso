@@ -34,8 +34,8 @@ export default defineConfig({
   maxFailures: process.env.CI ? 1 : undefined,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 4 : 1,
+  /* Match the shared Docker runner for direct Playwright invocations. */
+  retries: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html'], ['list']],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
