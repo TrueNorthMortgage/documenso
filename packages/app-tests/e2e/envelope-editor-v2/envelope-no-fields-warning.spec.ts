@@ -12,7 +12,7 @@ import {
 for (const count of [1, 2]) {
   test(`sending ${count} documents without fields warns but does not block`, async ({ page }) => {
     const surface = await openDocumentEnvelopeEditor(page);
-    await clickAddMyselfButton(page);
+    await clickAddMyselfButton(page, { waitForSave: true });
     await setRecipientRole(page, 0, 'Needs to view');
     if (count === 2) {
       await addEnvelopeItemPdf(page, 'Second empty document.pdf');
@@ -42,12 +42,18 @@ for (const count of [1, 2]) {
 
 test('warns when only one document lacks fields and clears after that document is removed', async ({ page }) => {
   const surface = await openDocumentEnvelopeEditor(page);
-  await clickAddMyselfButton(page);
+  await clickAddMyselfButton(page, { waitForSave: true });
   await page.getByTestId('envelope-editor-step-addFields').first().click();
   await page.getByRole('button', { name: 'Signature', exact: true }).click();
   const canvas = page.locator('.konva-container canvas').first();
   await expect(canvas).toBeVisible();
-  await canvas.click({ position: { x: 120, y: 140 } });
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().includes('/api/trpc/envelope.field.set') && response.request().method() === 'POST',
+    ),
+    canvas.click({ position: { x: 120, y: 140 } }),
+  ]);
+  expect(response.ok()).toBe(true);
   await expect.poll(() => prisma.field.count({ where: { envelopeId: surface.envelopeId } })).toBe(1);
   await page.getByTestId('envelope-editor-step-upload').first().click();
   await addEnvelopeItemPdf(page, 'Empty attachment.pdf');

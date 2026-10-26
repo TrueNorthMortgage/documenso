@@ -280,17 +280,19 @@ test.describe('document editor', () => {
 
     expect(correctedEnvelope.correctionStartedAt).toBeNull();
 
-    const auditLog = await prisma.documentAuditLog.findFirst({
-      where: {
-        envelopeId,
-        type: 'EMAIL_SENT',
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    expect(auditLog).not.toBeNull();
-    expect((auditLog?.data as Record<string, unknown>).isResending).toBe(true);
-    expect((auditLog?.data as Record<string, unknown>).recipientEmail).toBe(recipientEmail);
+    // Initial-send jobs can finish after correction; match the correction email itself.
+    await expect
+      .poll(async () => {
+        const auditLog = await prisma.documentAuditLog.findFirst({
+          where: {
+            envelopeId,
+            type: 'EMAIL_SENT',
+            data: { path: ['isResending'], equals: true },
+          },
+        });
+        return auditLog?.data;
+      })
+      .toMatchObject({ isResending: true, recipientEmail });
 
     await expect(recipientPage.getByText('Correction in progress')).not.toBeVisible();
     await recipientPage.close();

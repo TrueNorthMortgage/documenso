@@ -15,6 +15,7 @@ test('[NEXT_RECIPIENT_DICTATION]: should allow updating next recipient when dict
   const { recipients, document } = await seedPendingDocumentWithFullFields({
     owner: user,
     teamId: team.id,
+    fields: [FieldType.SIGNATURE],
     recipients: [firstSigner, secondSigner, thirdSigner],
     recipientsCreateOptions: [{ signingOrder: 1 }, { signingOrder: 2 }, { signingOrder: 3 }],
     updateDocumentOptions: {
@@ -43,14 +44,9 @@ test('[NEXT_RECIPIENT_DICTATION]: should allow updating next recipient when dict
 
   await signSignaturePad(page);
 
-  // Fill in all fields
+  // Fill the signature required to exercise recipient routing
   for (const field of fields) {
     await page.locator(`#field-${field.id}`).getByRole('button').click();
-
-    if (field.type === FieldType.TEXT) {
-      await page.locator('#custom-text').fill('TEXT');
-      await page.getByRole('button', { name: 'Save' }).click();
-    }
 
     await expect(page.locator(`#field-${field.id}`)).toHaveAttribute('data-inserted', 'true');
   }
@@ -104,6 +100,7 @@ test('[NEXT_RECIPIENT_DICTATION]: should not show dictation UI when disabled', a
   const { recipients, document } = await seedPendingDocumentWithFullFields({
     owner: user,
     teamId: team.id,
+    fields: [FieldType.SIGNATURE],
     recipients: [firstSigner, secondSigner],
     recipientsCreateOptions: [{ signingOrder: 1 }, { signingOrder: 2 }],
     updateDocumentOptions: {
@@ -132,14 +129,9 @@ test('[NEXT_RECIPIENT_DICTATION]: should not show dictation UI when disabled', a
 
   await signSignaturePad(page);
 
-  // Fill in all fields
+  // Fill the signature required to exercise recipient routing
   for (const field of fields) {
     await page.locator(`#field-${field.id}`).getByRole('button').click();
-
-    if (field.type === FieldType.TEXT) {
-      await page.locator('#custom-text').fill('TEXT');
-      await page.getByRole('button', { name: 'Save' }).click();
-    }
 
     await expect(page.locator(`#field-${field.id}`)).toHaveAttribute('data-inserted', 'true');
   }
@@ -188,6 +180,7 @@ test('[NEXT_RECIPIENT_DICTATION]: should work with parallel signing flow', async
   const { recipients, document } = await seedPendingDocumentWithFullFields({
     owner: user,
     teamId: team.id,
+    fields: [FieldType.SIGNATURE],
     recipients: [firstSigner, secondSigner],
     recipientsCreateOptions: [{ signingOrder: 1 }, { signingOrder: 2 }],
     updateDocumentOptions: {
@@ -216,14 +209,9 @@ test('[NEXT_RECIPIENT_DICTATION]: should work with parallel signing flow', async
 
     await signSignaturePad(page);
 
-    // Fill in all fields
+    // Fill the signature required to exercise recipient routing
     for (const field of fields) {
       await page.locator(`#field-${field.id}`).getByRole('button').click();
-
-      if (field.type === FieldType.TEXT) {
-        await page.locator('#custom-text').fill('TEXT');
-        await page.getByRole('button', { name: 'Save' }).click();
-      }
 
       await expect(page.locator(`#field-${field.id}`)).toHaveAttribute('data-inserted', 'true');
     }
@@ -270,6 +258,7 @@ test('[NEXT_RECIPIENT_DICTATION]: should allow assistant to dictate next signer'
   const { recipients, document } = await seedPendingDocumentWithFullFields({
     owner: user,
     teamId: team.id,
+    fields: [FieldType.SIGNATURE],
     recipients: [assistant, signer, thirdSigner],
     recipientsCreateOptions: [
       { signingOrder: 1, role: RecipientRole.ASSISTANT },
@@ -298,18 +287,13 @@ test('[NEXT_RECIPIENT_DICTATION]: should allow assistant to dictate next signer'
 
   await page.getByRole('radio', { name: assistantRecipient.name }).click();
 
-  // Fill in all fields
+  // Fill the signature required to exercise recipient routing
   for (const field of fields) {
     await page.locator(`#field-${field.id}`).getByRole('button').click();
 
     if (field.type === FieldType.SIGNATURE) {
       await signDirectSignaturePad(page);
       await page.getByRole('button', { name: 'Sign', exact: true }).click();
-    }
-
-    if (field.type === FieldType.TEXT) {
-      await page.locator('#custom-text').fill('TEXT');
-      await page.getByRole('button', { name: 'Save' }).click();
     }
 
     await expect(page.locator(`#field-${field.id}`)).toHaveAttribute('data-inserted', 'true');
