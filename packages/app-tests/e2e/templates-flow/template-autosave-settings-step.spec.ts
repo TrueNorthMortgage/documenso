@@ -25,8 +25,6 @@ const setupTemplate = async (page: Page) => {
 const triggerAutosave = async (page: Page) => {
   await page.locator('body').click({ position: { x: 0, y: 0 } });
   await page.locator('#document-flow-form-container').blur();
-
-  await page.waitForTimeout(5000);
 };
 
 test.describe('AutoSave Settings Step - Templates', () => {
@@ -49,8 +47,9 @@ test.describe('AutoSave Settings Step - Templates', () => {
         teamId: team.id,
       });
 
-      await expect(page.getByRole('textbox', { name: 'Title *' })).toHaveValue(retrievedTemplate.title);
-    }).toPass();
+      expect(retrievedTemplate.title).toBe(newTemplateTitle);
+      await expect(page.getByRole('textbox', { name: 'Title *' })).toHaveValue(newTemplateTitle);
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the language change', async ({ page }) => {
@@ -75,7 +74,7 @@ test.describe('AutoSave Settings Step - Templates', () => {
       });
 
       expect(retrievedTemplate.templateMeta?.language).toBe(expectedLanguageCode);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the template access change', async ({ page }) => {
@@ -100,7 +99,7 @@ test.describe('AutoSave Settings Step - Templates', () => {
       });
 
       expect(retrievedTemplate.authOptions?.globalAccessAuth).toContain(accessValue);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the external ID change', async ({ page }) => {
@@ -125,7 +124,7 @@ test.describe('AutoSave Settings Step - Templates', () => {
       });
 
       expect(retrievedTemplate.externalId).toBe(newExternalId);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the allowed signature types change', async ({ page }) => {
@@ -152,7 +151,7 @@ test.describe('AutoSave Settings Step - Templates', () => {
       expect(retrievedTemplate.templateMeta?.drawSignatureEnabled).toBe(false);
       expect(retrievedTemplate.templateMeta?.typedSignatureEnabled).toBe(false);
       expect(retrievedTemplate.templateMeta?.uploadSignatureEnabled).toBe(true);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the date format change', async ({ page }) => {
@@ -176,7 +175,7 @@ test.describe('AutoSave Settings Step - Templates', () => {
       });
 
       expect(retrievedTemplate.templateMeta?.dateFormat).toBe("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the timezone change', async ({ page }) => {
@@ -200,7 +199,7 @@ test.describe('AutoSave Settings Step - Templates', () => {
       });
 
       expect(retrievedTemplate.templateMeta?.timezone).toBe('Europe/London');
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the redirect URL change', async ({ page }) => {
@@ -225,7 +224,7 @@ test.describe('AutoSave Settings Step - Templates', () => {
       });
 
       expect(retrievedTemplate.templateMeta?.redirectUrl).toBe(newRedirectUrl);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave multiple field changes together', async ({ page }) => {
@@ -264,6 +263,6 @@ test.describe('AutoSave Settings Step - Templates', () => {
       expect(retrievedTemplate.authOptions?.globalAccessAuth).toContain('ACCOUNT');
       expect(retrievedTemplate.externalId).toBe(newExternalId);
       expect(retrievedTemplate.templateMeta?.timezone).toBe('Europe/Berlin');
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 });

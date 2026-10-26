@@ -38,13 +38,15 @@ const snapshot = (envelopeId: string | undefined) => {
 
 test('uploading placeholders into an existing draft creates missing recipients once and warns', async ({ page }) => {
   const surface = await openDocumentEnvelopeEditor(page);
-  await clickAddMyselfButton(page);
+  await clickAddMyselfButton(page, { waitForSave: true });
   await expect(getRecipientEmailInputs(page).first()).toHaveValue(surface.userEmail);
   await expect.poll(() => prisma.recipient.count({ where: { envelopeId: surface.envelopeId } })).toBe(1);
   await getEnvelopeItemDropzoneInput(page).setInputFiles(placeholderPdf);
   await expect(page.getByText('Recipients added from document placeholders', { exact: true })).toBeVisible();
   await expect(
-    page.locator('[role="status"]').getByText(/Review their names, email addresses, and roles before sending/),
+    page
+      .getByRole('region', { name: 'Notifications (F8)' })
+      .getByText(/Review their names, email addresses, and roles before sending/),
   ).toBeVisible();
   await expect.poll(() => prisma.recipient.count({ where: { envelopeId: surface.envelopeId } })).toBe(3);
   const recipients = await prisma.recipient.findMany({
@@ -72,7 +74,7 @@ test('correction blocks recipient controls and rejects placeholder uploads needi
   page,
 }) => {
   const surface = await openDocumentEnvelopeEditor(page);
-  await clickAddMyselfButton(page);
+  await clickAddMyselfButton(page, { waitForSave: true });
   await expect.poll(() => prisma.recipient.count({ where: { envelopeId: surface.envelopeId } })).toBe(1);
   await prisma.envelope.update({
     where: { id: surface.envelopeId },
@@ -107,7 +109,7 @@ for (const surfaceName of ['document editor', 'template editor', 'embedded creat
                   mode: surfaceName === 'embedded create' ? 'create' : 'edit',
                 });
         if (!surface.isEmbedded) {
-          await clickAddMyselfButton(page);
+          await clickAddMyselfButton(page, { waitForSave: true });
           await expect
             .poll(() => prisma.recipient.count({ where: { envelopeId: surface.envelopeId, email: surface.userEmail } }))
             .toBe(1);
@@ -153,12 +155,14 @@ for (const surfaceName of ['document editor', 'template editor', 'embedded creat
         } else {
           await expect(
             page
-              .locator('[role="status"]')
+              .getByRole('region', { name: 'Notifications (F8)' })
               .getByText(
                 kind === 'protected' ? /This PDF is protected and cannot be uploaded/ : /This PDF uses an XFA form/,
               ),
           ).toBeVisible();
-          await expect(page.locator('[role="status"]').getByText(/print.*to a new PDF/i)).toBeVisible();
+          await expect(
+            page.getByRole('region', { name: 'Notifications (F8)' }).getByText(/print.*to a new PDF/i),
+          ).toBeVisible();
         }
         if (surface.envelopeId) {
           expect(await snapshot(surface.envelopeId)).toEqual(before);

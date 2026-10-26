@@ -23,11 +23,17 @@ const setupDocument = async (page: Page) => {
   return { user, team, document };
 };
 
-const triggerAutosave = async (page: Page) => {
-  await page.locator('body').click({ position: { x: 0, y: 0 } });
-  await page.locator('#document-flow-form-container').blur();
-
-  await page.waitForTimeout(5000);
+const changeSettingsAndWaitForSave = async (page: Page, change: () => Promise<void>) => {
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (response) => response.url().includes('/api/trpc/document.update') && response.request().method() === 'POST',
+    ),
+    (async () => {
+      await change();
+      await page.keyboard.press('Tab');
+    })(),
+  ]);
+  expect(response.ok()).toBe(true);
 };
 
 test.describe('AutoSave Settings Step', () => {
@@ -36,9 +42,9 @@ test.describe('AutoSave Settings Step', () => {
 
     const newDocumentTitle = 'New Document Title';
 
-    await page.getByRole('textbox', { name: 'Title *' }).fill(newDocumentTitle);
-
-    await triggerAutosave(page);
+    await changeSettingsAndWaitForSave(page, async () => {
+      await page.getByRole('textbox', { name: 'Title *' }).fill(newDocumentTitle);
+    });
 
     await expect(async () => {
       const retrieved = await getEnvelopeById({
@@ -51,8 +57,9 @@ test.describe('AutoSave Settings Step', () => {
         teamId: team.id,
       });
 
-      await expect(page.getByRole('textbox', { name: 'Title *' })).toHaveValue(retrieved.title);
-    }).toPass();
+      expect(retrieved.title).toBe(newDocumentTitle);
+      await expect(page.getByRole('textbox', { name: 'Title *' })).toHaveValue(newDocumentTitle);
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the language change', async ({ page }) => {
@@ -61,10 +68,10 @@ test.describe('AutoSave Settings Step', () => {
     const newDocumentLanguage = 'French';
     const expectedLanguageCode = 'fr';
 
-    await page.getByRole('combobox').first().click();
-    await page.getByRole('option', { name: newDocumentLanguage }).click();
-
-    await triggerAutosave(page);
+    await changeSettingsAndWaitForSave(page, async () => {
+      await page.getByRole('combobox').first().click();
+      await page.getByRole('option', { name: newDocumentLanguage }).click();
+    });
 
     await expect(async () => {
       const retrieved = await getEnvelopeById({
@@ -78,7 +85,7 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.documentMeta?.language).toBe(expectedLanguageCode);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the document access change', async ({ page }) => {
@@ -87,10 +94,10 @@ test.describe('AutoSave Settings Step', () => {
     const access = 'Require account';
     const accessValue = 'ACCOUNT';
 
-    await page.getByRole('combobox').nth(1).click();
-    await page.getByRole('option', { name: access }).click();
-
-    await triggerAutosave(page);
+    await changeSettingsAndWaitForSave(page, async () => {
+      await page.getByRole('combobox').nth(1).click();
+      await page.getByRole('option', { name: access }).click();
+    });
 
     await expect(async () => {
       const retrieved = await getEnvelopeById({
@@ -104,7 +111,7 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.authOptions?.globalAccessAuth).toContain(accessValue);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the external ID change', async ({ page }) => {
@@ -112,11 +119,11 @@ test.describe('AutoSave Settings Step', () => {
 
     const newExternalId = '1234567890';
 
-    await page.getByRole('button', { name: 'Advanced Options' }).click();
+    await changeSettingsAndWaitForSave(page, async () => {
+      await page.getByRole('button', { name: 'Advanced Options' }).click();
 
-    await page.getByRole('textbox', { name: 'External ID' }).fill(newExternalId);
-
-    await triggerAutosave(page);
+      await page.getByRole('textbox', { name: 'External ID' }).fill(newExternalId);
+    });
 
     await expect(async () => {
       const retrieved = await getEnvelopeById({
@@ -130,19 +137,19 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.externalId).toBe(newExternalId);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the allowed signature types change', async ({ page }) => {
     const { user, document, team } = await setupDocument(page);
 
-    await page.getByRole('button', { name: 'Advanced Options' }).click();
+    await changeSettingsAndWaitForSave(page, async () => {
+      await page.getByRole('button', { name: 'Advanced Options' }).click();
 
-    await page.getByRole('combobox').nth(3).click();
-    await page.getByRole('option', { name: 'Draw' }).click();
-    await page.getByRole('option', { name: 'Type' }).click();
-
-    await triggerAutosave(page);
+      await page.getByRole('combobox').nth(3).click();
+      await page.getByRole('option', { name: 'Draw' }).click();
+      await page.getByRole('option', { name: 'Type' }).click();
+    });
 
     await expect(async () => {
       const retrieved = await getEnvelopeById({
@@ -158,18 +165,18 @@ test.describe('AutoSave Settings Step', () => {
       expect(retrieved.documentMeta?.drawSignatureEnabled).toBe(false);
       expect(retrieved.documentMeta?.typedSignatureEnabled).toBe(false);
       expect(retrieved.documentMeta?.uploadSignatureEnabled).toBe(true);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the date format change', async ({ page }) => {
     const { user, document, team } = await setupDocument(page);
 
-    await page.getByRole('button', { name: 'Advanced Options' }).click();
+    await changeSettingsAndWaitForSave(page, async () => {
+      await page.getByRole('button', { name: 'Advanced Options' }).click();
 
-    await page.getByRole('combobox').nth(4).click();
-    await page.getByRole('option', { name: 'ISO 8601', exact: true }).click();
-
-    await triggerAutosave(page);
+      await page.getByRole('combobox').nth(4).click();
+      await page.getByRole('option', { name: 'ISO 8601', exact: true }).click();
+    });
 
     await expect(async () => {
       const retrieved = await getEnvelopeById({
@@ -183,18 +190,18 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.documentMeta?.dateFormat).toBe("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the timezone change', async ({ page }) => {
     const { user, document, team } = await setupDocument(page);
 
-    await page.getByRole('button', { name: 'Advanced Options' }).click();
+    await changeSettingsAndWaitForSave(page, async () => {
+      await page.getByRole('button', { name: 'Advanced Options' }).click();
 
-    await page.getByRole('combobox').nth(5).click();
-    await page.getByRole('option', { name: 'Europe/London' }).click();
-
-    await triggerAutosave(page);
+      await page.getByRole('combobox').nth(5).click();
+      await page.getByRole('option', { name: 'Europe/London' }).click();
+    });
 
     await expect(async () => {
       const retrieved = await getEnvelopeById({
@@ -208,7 +215,7 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.documentMeta?.timezone).toBe('Europe/London');
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave the redirect URL change', async ({ page }) => {
@@ -216,11 +223,11 @@ test.describe('AutoSave Settings Step', () => {
 
     const newRedirectUrl = 'https://documenso.com/test/';
 
-    await page.getByRole('button', { name: 'Advanced Options' }).click();
+    await changeSettingsAndWaitForSave(page, async () => {
+      await page.getByRole('button', { name: 'Advanced Options' }).click();
 
-    await page.getByRole('textbox', { name: 'Redirect URL' }).fill(newRedirectUrl);
-
-    await triggerAutosave(page);
+      await page.getByRole('textbox', { name: 'Redirect URL' }).fill(newRedirectUrl);
+    });
 
     await expect(async () => {
       const retrieved = await getEnvelopeById({
@@ -234,29 +241,29 @@ test.describe('AutoSave Settings Step', () => {
       });
 
       expect(retrieved.documentMeta?.redirectUrl).toBe(newRedirectUrl);
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 
   test('should autosave multiple field changes together', async ({ page }) => {
     const { user, document, team } = await setupDocument(page);
 
     const newTitle = 'Updated Document Title';
-    await page.getByRole('textbox', { name: 'Title *' }).fill(newTitle);
-
-    await page.getByRole('combobox').first().click();
-    await page.getByRole('option', { name: 'German' }).click();
-
-    await page.getByRole('combobox').nth(1).click();
-    await page.getByRole('option', { name: 'Require account' }).click();
-
-    await page.getByRole('button', { name: 'Advanced Options' }).click();
     const newExternalId = 'MULTI-TEST-123';
-    await page.getByRole('textbox', { name: 'External ID' }).fill(newExternalId);
+    await changeSettingsAndWaitForSave(page, async () => {
+      await page.getByRole('textbox', { name: 'Title *' }).fill(newTitle);
 
-    await page.getByRole('combobox').nth(5).click();
-    await page.getByRole('option', { name: 'Europe/Berlin' }).click();
+      await page.getByRole('combobox').first().click();
+      await page.getByRole('option', { name: 'German' }).click();
 
-    await triggerAutosave(page);
+      await page.getByRole('combobox').nth(1).click();
+      await page.getByRole('option', { name: 'Require account' }).click();
+
+      await page.getByRole('button', { name: 'Advanced Options' }).click();
+      await page.getByRole('textbox', { name: 'External ID' }).fill(newExternalId);
+
+      await page.getByRole('combobox').nth(5).click();
+      await page.getByRole('option', { name: 'Europe/Berlin' }).click();
+    });
 
     await expect(async () => {
       const retrieved = await getEnvelopeById({
@@ -274,6 +281,6 @@ test.describe('AutoSave Settings Step', () => {
       expect(retrieved.authOptions?.globalAccessAuth).toContain('ACCOUNT');
       expect(retrieved.externalId).toBe(newExternalId);
       expect(retrieved.documentMeta?.timezone).toBe('Europe/Berlin');
-    }).toPass();
+    }).toPass({ timeout: 10_000 });
   });
 });

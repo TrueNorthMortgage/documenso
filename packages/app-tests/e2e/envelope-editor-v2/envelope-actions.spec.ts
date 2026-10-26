@@ -280,17 +280,19 @@ test.describe('document editor', () => {
 
     expect(correctedEnvelope.correctionStartedAt).toBeNull();
 
-    const auditLog = await prisma.documentAuditLog.findFirst({
-      where: {
-        envelopeId,
-        type: 'EMAIL_SENT',
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    expect(auditLog).not.toBeNull();
-    expect((auditLog?.data as Record<string, unknown>).isResending).toBe(true);
-    expect((auditLog?.data as Record<string, unknown>).recipientEmail).toBe(recipientEmail);
+    // Initial-send jobs can finish after correction; match the correction email itself.
+    await expect
+      .poll(async () => {
+        const auditLog = await prisma.documentAuditLog.findFirst({
+          where: {
+            envelopeId,
+            type: 'EMAIL_SENT',
+            data: { path: ['isResending'], equals: true },
+          },
+        });
+        return auditLog?.data;
+      })
+      .toMatchObject({ isResending: true, recipientEmail });
 
     await expect(recipientPage.getByText('Correction in progress')).not.toBeVisible();
     await recipientPage.close();
@@ -308,7 +310,24 @@ test.describe('document editor', () => {
 
     const originalEnvelope = await prisma.envelope.findUniqueOrThrow({
       where: { id: envelopeId },
-      include: { recipients: true, envelopeItems: true, fields: true },
+      include: {
+        // Reminder scheduling runs asynchronously and is not part of correction preservation.
+        recipients: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            token: true,
+            signingOrder: true,
+            signingStatus: true,
+            authOptions: true,
+            signedAt: true,
+          },
+        },
+        envelopeItems: true,
+        fields: true,
+      },
     });
 
     await apiSignin({
@@ -331,7 +350,24 @@ test.describe('document editor', () => {
 
     const correctedEnvelope = await prisma.envelope.findUniqueOrThrow({
       where: { id: envelopeId },
-      include: { recipients: true, envelopeItems: true, fields: true },
+      include: {
+        // Reminder scheduling runs asynchronously and is not part of correction preservation.
+        recipients: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            role: true,
+            token: true,
+            signingOrder: true,
+            signingStatus: true,
+            authOptions: true,
+            signedAt: true,
+          },
+        },
+        envelopeItems: true,
+        fields: true,
+      },
     });
 
     expect(correctedEnvelope.status).toBe(DocumentStatus.PENDING);

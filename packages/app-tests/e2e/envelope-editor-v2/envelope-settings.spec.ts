@@ -26,7 +26,7 @@ const TEST_SETTINGS_VALUES = {
   language: 'French',
   dateFormat: 'DD/MM/YYYY',
   timezone: 'Europe/London',
-  distributionMethod: 'None',
+  distributionMethod: 'Email',
   expirationMode: 'Custom duration',
   expirationAmount: 5,
   expirationUnit: 'Weeks',
@@ -45,7 +45,7 @@ const DB_EXPECTED_VALUES = {
   language: 'fr',
   dateFormat: 'dd/MM/yyyy',
   timezone: 'Europe/London',
-  distributionMethod: DocumentDistributionMethod.NONE,
+  distributionMethod: DocumentDistributionMethod.EMAIL,
   envelopeExpirationPeriod: { unit: 'week', amount: 5 },
   reminderSettings: {
     sendAfter: { unit: 'day', amount: 3 },

@@ -19,6 +19,8 @@ case "${1:-}" in
 Usage: ./scripts/run-e2e-docker.sh [--reuse] [Playwright options or test paths]
 
 Default: install dependencies, reset the isolated test database, and build the app.
+Local and GitHub runs use 2 workers, 1 retry, and stop after the first failed test.
+Explicit Playwright options override these defaults.
 --reuse: rerun tests using the previous dependencies, database, and app build.
          Run without --reuse after app, dependency, or database schema changes.
 
@@ -75,7 +77,14 @@ cleanup() {
   fi
   # Export only test reports; never copy generated source, configuration or databases.
   for report in playwright-report test-results; do
-    docker cp "$RUNNER_NAME:/app/packages/app-tests/$report" "$ROOT_DIR/packages/app-tests/" >/dev/null 2>&1 || true
+    local report_tmp
+    report_tmp="$(mktemp -d)"
+    if docker cp "$RUNNER_NAME:/app/packages/app-tests/$report" "$report_tmp/" >/dev/null 2>&1; then
+      # Replace complete reports so screenshots from older runs cannot linger.
+      rm -rf -- "$ROOT_DIR/packages/app-tests/$report"
+      mv "$report_tmp/$report" "$ROOT_DIR/packages/app-tests/$report"
+    fi
+    rm -rf -- "$report_tmp"
   done
   docker rm -f "$RUNNER_NAME" >/dev/null 2>&1 || true
   docker compose \
@@ -100,6 +109,32 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+# Hash build inputs from the checkout, including uncommitted edits. E2E test-only
+# edits can reuse the app; changed application code requires a new build.
+source_cache_key="$(
+  git ls-files --cached --others --exclude-standard -z -- \
+    apps/remix packages assets example package.json package-lock.json turbo.json lingui.config.ts .env.example \
+    ':(exclude)packages/app-tests' |
+    docker run --rm -i --volume "$ROOT_DIR:/source:ro" --workdir /source \
+      --entrypoint node "$PLAYWRIGHT_IMAGE" -e '
+        const fs = require("node:fs");
+        const crypto = require("node:crypto");
+        const files = [...new Set(fs.readFileSync(0, "utf8").split("\0").filter(Boolean))].sort();
+        const hash = crypto.createHash("sha256");
+        for (const file of files) {
+          hash.update(file).update("\0");
+          if (fs.existsSync(file)) {
+            const content = fs.lstatSync(file).isSymbolicLink() ? fs.readlinkSync(file) : fs.readFileSync(file);
+            hash.update("present\0").update(content);
+          } else {
+            hash.update("deleted");
+          }
+          hash.update("\0");
+        }
+        process.stdout.write(hash.digest("hex"));
+      '
+)"
+
 build_option=--build
 if [[ "$REUSE" == true ]]; then
   build_option=--no-build
@@ -112,9 +147,9 @@ docker compose \
   --file "$E2E_COMPOSE_FILE" \
   up --detach "$build_option" --wait database inbucket redis gotenberg
 
-# API and UI projects share this container with the app. Limit their combined
-# concurrency locally; an explicit --workers argument can override this default.
-E2E_TEST_PATH="--workers=2 ${E2E_TEST_PATH:-$*}"
+# Keep local and GitHub execution identical. Explicit options come last so callers
+# can override defaults when debugging a specific test.
+E2E_TEST_PATH="--workers=2 --max-failures=1 --retries=1 ${E2E_TEST_PATH:-$*}"
 
 # Copy source, including uncommitted edits, without local configuration, secrets,
 # dependencies or generated outputs. E2E never writes to the live dev source tree.
@@ -124,6 +159,8 @@ docker run --rm \
   --entrypoint bash \
   "$PLAYWRIGHT_IMAGE" -lc '
     set -euo pipefail
+    # Reuse keeps the app build, but deleted tests and baselines must not linger.
+    rm -rf /app/packages/app-tests/e2e /app/packages/app-tests/visual-regression
     tar -C /source \
       --exclude=.git --exclude=node_modules --exclude=.env --exclude=".env.*" \
       --exclude=dev-env --exclude=dev-secrets --exclude=".aws" \
@@ -169,18 +206,20 @@ docker run \
   --env DANGEROUS_BYPASS_RATE_LIMITS=true \
   --env "E2E_REUSE=$REUSE" \
   --env "E2E_PLAYWRIGHT_IMAGE=$PLAYWRIGHT_IMAGE" \
+  --env "E2E_SOURCE_CACHE_KEY=$source_cache_key" \
   --env "E2E_TEST_PATH=$E2E_TEST_PATH" \
   "$PLAYWRIGHT_IMAGE" \
   bash -lc '
     set -Eeuo pipefail
 
     cache_key="$(sha256sum package.json package-lock.json)
-$E2E_PLAYWRIGHT_IMAGE"
+$E2E_PLAYWRIGHT_IMAGE
+$E2E_SOURCE_CACHE_KEY"
     ready_file=node_modules/.e2e-ready
 
     if [[ "$E2E_REUSE" == true ]]; then
       if [[ ! -f "$ready_file" || "$(cat "$ready_file")" != "$cache_key" || ! -f apps/remix/build/server/main.js ]]; then
-        echo "E2E setup is missing or dependencies changed. Run without --reuse first." >&2
+        echo "E2E build is missing or application/build inputs changed. Run without --reuse to rebuild before testing." >&2
         exit 1
       fi
       echo "Reusing E2E dependencies, test database, and app build. Test-file edits are loaded directly."

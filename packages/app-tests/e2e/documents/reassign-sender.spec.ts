@@ -1,7 +1,8 @@
 import { prisma } from '@documenso/prisma';
-import { DocumentStatus, TeamMemberRole } from '@documenso/prisma/client';
+import { DocumentStatus, OrganisationMemberRole, TeamMemberRole } from '@documenso/prisma/client';
 import { seedBlankDocument, seedDraftDocument } from '@documenso/prisma/seed/documents';
 import { seedBlankFolder } from '@documenso/prisma/seed/folders';
+import { seedOrganisationMembers } from '@documenso/prisma/seed/organisations';
 import { seedTeamMember } from '@documenso/prisma/seed/teams';
 import { seedUser } from '@documenso/prisma/seed/users';
 import { expect, test } from '@playwright/test';
@@ -139,17 +140,30 @@ test('ordinary members cannot reassign through a direct request', async ({ page 
 });
 
 test('member picker caps results at 15 and finds members by name and email', async ({ page }) => {
-  test.setTimeout(120_000);
-  const { user, team } = await seedUser();
-  const members = [];
-  for (let index = 0; index < 16; index++) {
-    members.push(await seedTeamMember({ teamId: team.id, name: `Candidate ${String(index).padStart(2, '0')}` }));
-  }
+  const { user, team, organisation } = await seedUser();
+  const members = await seedOrganisationMembers({
+    organisationId: organisation.id,
+    members: Array.from({ length: 16 }, (_, index) => ({
+      name: `Candidate ${String(index).padStart(2, '0')}`,
+      organisationRole: OrganisationMemberRole.MEMBER,
+    })),
+  });
   const document = await seedBlankDocument(user, team.id, { internalVersion: 2 });
   await apiSignin({ page, email: user.email, redirectPath: `/t/${team.url}/documents` });
   await page.getByRole('row').filter({ hasText: document.title }).getByTestId('document-table-action-btn').click();
   await page.getByRole('menuitem', { name: 'Reassign sender' }).click();
-  await page.getByRole('dialog').getByRole('combobox').click();
+  const dialog = page.getByRole('dialog', { name: 'Reassign sender', exact: true });
+  await expect(dialog).toBeVisible();
+  // A parent page update must preserve the open row dialog.
+  await page.evaluate((envelopeId) => {
+    const key = 'documents-bulk-selection';
+    const selection = JSON.parse(window.sessionStorage.getItem(key) || '{}');
+    const newValue = JSON.stringify({ ...selection, [envelopeId]: false });
+    window.sessionStorage.setItem(key, newValue);
+    window.dispatchEvent(new StorageEvent('storage', { key, newValue }));
+  }, document.id);
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('combobox').click();
   await expect(page.getByRole('option')).toHaveCount(15);
   await expect(page.getByRole('option').filter({ hasText: user.email })).toHaveCount(0);
   const target = members[15];

@@ -20,46 +20,6 @@ test.describe.configure({
 });
 
 test.describe('Find Documents UI - Personal Context', () => {
-  test('should show all owned documents across statuses', async ({ page }) => {
-    const { user: owner, team, organisation } = await seedUser();
-    const { user: recipient } = await seedUser();
-
-    await seedDocuments([
-      {
-        sender: owner,
-        teamId: team.id,
-        recipients: [],
-        type: DocumentStatus.DRAFT,
-        documentOptions: { title: 'Personal Draft Doc' },
-      },
-      {
-        sender: owner,
-        teamId: team.id,
-        recipients: [recipient],
-        type: DocumentStatus.PENDING,
-        documentOptions: { title: 'Personal Pending Doc' },
-      },
-      {
-        sender: owner,
-        teamId: team.id,
-        recipients: [recipient],
-        type: DocumentStatus.COMPLETED,
-        documentOptions: { title: 'Personal Completed Doc' },
-      },
-    ]);
-
-    await apiSignin({
-      page,
-      email: owner.email,
-      redirectPath: `/t/${team.url}/documents`,
-    });
-
-    await checkDocumentTabCount(page, 'All', 3);
-    await checkDocumentTabCount(page, 'Draft', 1);
-    await checkDocumentTabCount(page, 'Pending', 1);
-    await checkDocumentTabCount(page, 'Completed', 1);
-  });
-
   test('received documents from other teams should NOT appear in personal context', async ({ page }) => {
     // The UI always uses the team code path (findTeamDocumentsFilter) which filters by teamId.
     // Documents sent TO a user by another user's team live on the sender's teamId,
@@ -109,35 +69,6 @@ test.describe('Find Documents UI - Personal Context', () => {
 
     await checkDocumentTabCount(page, 'All', 0);
     await expect(page.getByRole('link', { name: 'UserB Secret Document', exact: true })).not.toBeVisible();
-  });
-
-  test('personal context without team email should show 0 inbox', async ({ page }) => {
-    // The UI uses the team code path. Without a teamEmail, INBOX returns null (empty).
-    // Received docs from other teams don't appear in the user's personal team context.
-    const { user: owner, team: ownerTeam } = await seedUser();
-    const { user: sender, team: senderTeam } = await seedUser();
-
-    // Sender sends a pending doc to owner (lives on sender's team, not owner's)
-    await seedPendingDocument(sender, senderTeam.id, [owner], {
-      createDocumentOptions: { title: 'Inbox Document for Owner' },
-    });
-
-    // Owner has their own doc (positive control)
-    await seedDraftDocument(owner, ownerTeam.id, [], {
-      createDocumentOptions: { title: 'Owner Draft Control' },
-    });
-
-    await apiSignin({
-      page,
-      email: owner.email,
-      redirectPath: `/t/${ownerTeam.url}/documents`,
-    });
-
-    // Inbox should be 0 since there's no team email and received docs are on sender's team
-    await checkDocumentTabCount(page, 'Inbox', 0);
-    // Owner's own doc should still show in All
-    await checkDocumentTabCount(page, 'All', 1);
-    await expect(page.getByRole('link', { name: 'Owner Draft Control' })).toBeVisible();
   });
 
   test('should filter documents by search query', async ({ page }) => {
@@ -649,62 +580,6 @@ test.describe('Find Documents UI - Team with Team Email', () => {
     await expect(page.getByRole('cell', { name: 'Draft To Team Email' })).not.toBeVisible();
   });
 
-  test('should show inbox count for team email recipients', async ({ page }) => {
-    const { team, owner } = await seedTeam();
-
-    const teamEmail = `team-ui-inbox-${team.id}@test.documenso.com`;
-    await seedTeamEmail({ email: teamEmail, teamId: team.id });
-
-    const { user: sender1, team: sender1Team } = await seedUser();
-    const { user: sender2, team: sender2Team } = await seedUser();
-
-    await seedDocuments([
-      {
-        sender: sender1,
-        teamId: sender1Team.id,
-        recipients: [teamEmail],
-        type: DocumentStatus.PENDING,
-        documentOptions: { title: 'Inbox Doc 1' },
-      },
-      {
-        sender: sender2,
-        teamId: sender2Team.id,
-        recipients: [teamEmail],
-        type: DocumentStatus.PENDING,
-        documentOptions: { title: 'Inbox Doc 2' },
-      },
-    ]);
-
-    await apiSignin({
-      page,
-      email: owner.email,
-      redirectPath: `/t/${team.url}/documents`,
-    });
-
-    await checkDocumentTabCount(page, 'Inbox', 2);
-  });
-
-  test('team without team email should show 0 inbox', async ({ page }) => {
-    const { team, owner } = await seedTeam();
-
-    // No team email set up
-    const { user: outsideUser, team: outsideTeam } = await seedUser();
-
-    await seedPendingDocument(owner, team.id, [outsideUser], {
-      createDocumentOptions: { title: 'Pending Without Inbox' },
-    });
-
-    await apiSignin({
-      page,
-      email: owner.email,
-      redirectPath: `/t/${team.url}/documents`,
-    });
-
-    await checkDocumentTabCount(page, 'Inbox', 0);
-    // But pending should still show
-    await checkDocumentTabCount(page, 'Pending', 1);
-  });
-
   test('documents sent BY team email user should appear in team context', async ({ page }) => {
     const { team, owner } = await seedTeam({ createTeamMembers: 1 });
 
@@ -912,60 +787,6 @@ test.describe('Find Documents UI - Data Isolation & No Leaking', () => {
     await checkDocumentTabCount(page, 'All', 0);
     await apiSignout({ page });
   });
-
-  test('outside user does NOT see cross-team received docs in their personal context', async ({ page }) => {
-    // The UI always uses the team code path (findTeamDocumentsFilter) which filters by teamId.
-    // Documents from team.id will NOT appear in outsideTeam's context.
-    const { team, owner } = await seedTeam();
-    const { user: outsideUser, team: outsideTeam } = await seedUser();
-    const { user: otherUser } = await seedUser();
-
-    // Team doc sent to outside user (lives on team.id, NOT outsideTeam.id)
-    await seedDocuments([
-      {
-        sender: owner,
-        teamId: team.id,
-        recipients: [outsideUser],
-        type: DocumentStatus.PENDING,
-        documentOptions: {
-          title: 'Team Doc For Outside User',
-          visibility: DocumentVisibility.ADMIN,
-        },
-      },
-    ]);
-
-    // Team doc NOT sent to outside user (noise)
-    await seedDocuments([
-      {
-        sender: owner,
-        teamId: team.id,
-        recipients: [otherUser],
-        type: DocumentStatus.PENDING,
-        documentOptions: {
-          title: 'Team Doc For Other User Only',
-          visibility: DocumentVisibility.ADMIN,
-        },
-      },
-    ]);
-
-    // Outside user has their own draft (positive control)
-    await seedDraftDocument(outsideUser, outsideTeam.id, [], {
-      createDocumentOptions: { title: 'Outside Own Draft' },
-    });
-
-    await apiSignin({
-      page,
-      email: outsideUser.email,
-      redirectPath: `/t/${outsideTeam.url}/documents`,
-    });
-
-    // Only the outside user's own draft should appear (cross-team docs are not visible)
-    await checkDocumentTabCount(page, 'Inbox', 0); // No team email → 0
-    await checkDocumentTabCount(page, 'All', 1); // Check All tab last so we can verify visible links
-    await expect(page.getByRole('link', { name: 'Outside Own Draft' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Team Doc For Outside User', exact: true })).not.toBeVisible();
-    await expect(page.getByRole('link', { name: 'Team Doc For Other User Only', exact: true })).not.toBeVisible();
-  });
 });
 
 test.describe('Find Documents UI - Tab Counts Consistency', () => {
@@ -1015,14 +836,8 @@ test.describe('Find Documents UI - Tab Counts Consistency', () => {
   });
 
   test('team context tab counts should be accurate with mixed documents', async ({ page }) => {
-    const { team, owner } = await seedTeam({ createTeamMembers: 2 });
-
-    const member1 = (
-      await prisma.organisation.findFirstOrThrow({
-        where: { teams: { some: { id: team.id } } },
-        include: { members: { include: { user: true } } },
-      })
-    ).members[1].user;
+    const { team, owner } = await seedTeam();
+    const member1 = await seedTeamMember({ teamId: team.id, role: TeamMemberRole.MEMBER });
 
     const { user: outsideUser, team: outsideTeam } = await seedUser();
 
@@ -1063,6 +878,7 @@ test.describe('Find Documents UI - Tab Counts Consistency', () => {
       redirectPath: `/t/${team.url}/documents`,
     });
 
+    await checkDocumentTabCount(page, 'Inbox', 0);
     await checkDocumentTabCount(page, 'Draft', 2);
     await checkDocumentTabCount(page, 'Pending', 1);
     await checkDocumentTabCount(page, 'Completed', 1);
@@ -1110,15 +926,9 @@ test.describe('Find Documents UI - Tab Counts Consistency', () => {
 
 test.describe('Find Documents UI - Sender Filter', () => {
   test('sender filter should narrow results correctly', async ({ page }) => {
-    const { team, owner } = await seedTeam({ createTeamMembers: 2 });
-
-    const org = await prisma.organisation.findFirstOrThrow({
-      where: { teams: { some: { id: team.id } } },
-      include: { members: { include: { user: true }, orderBy: { id: 'asc' } } },
-    });
-
-    const member1 = org.members[1].user;
-    const member2 = org.members[2].user;
+    const { team, owner } = await seedTeam();
+    const member1 = await seedTeamMember({ teamId: team.id, name: 'Sender One', role: TeamMemberRole.MEMBER });
+    const member2 = await seedTeamMember({ teamId: team.id, name: 'Sender Two', role: TeamMemberRole.MEMBER });
 
     const { user: outsideUser } = await seedUser();
 

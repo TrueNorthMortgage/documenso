@@ -271,8 +271,20 @@ export const clickEnvelopeEditorStep = async (root: Page, stepId: 'upload' | 'ad
   await root.locator(`[data-testid="envelope-editor-step-${stepId}"]`).first().click();
 };
 
-export const clickAddMyselfButton = async (root: Page) => {
-  await root.getByRole('button', { name: 'Add Myself' }).click();
+export const clickAddMyselfButton = async (root: Page, { waitForSave = false } = {}) => {
+  if (!waitForSave) {
+    await root.getByRole('button', { name: 'Add Myself' }).click();
+    return;
+  }
+
+  const [response] = await Promise.all([
+    root.waitForResponse(
+      (response) =>
+        response.url().includes('/api/trpc/envelope.recipient.set') && response.request().method() === 'POST',
+    ),
+    root.getByRole('button', { name: 'Add Myself' }).click(),
+  ]);
+  expect(response.ok()).toBe(true);
 };
 
 export const clickAddSignerButton = async (root: Page) => {

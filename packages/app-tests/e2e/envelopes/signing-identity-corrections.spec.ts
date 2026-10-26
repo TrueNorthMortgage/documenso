@@ -66,8 +66,8 @@ for (const mobile of [false, true]) {
 
       await clickField(2);
       const dialog = page.getByRole('dialog');
-      await expect(dialog.getByLabel('Initials', { exact: true })).toHaveValue('T');
-      await dialog.getByLabel('Initials', { exact: true }).fill('TW');
+      await expect(dialog.getByRole('textbox', { name: /^Initials\s*\*?$/ })).toHaveValue('T');
+      await dialog.getByRole('textbox', { name: /^Initials\s*\*?$/ }).fill('TW');
       await dialog.getByRole('button', { name: 'Enter', exact: true }).click();
       await expect.poll(async () => (await fieldValue(2)).customText).toBe('TW');
 

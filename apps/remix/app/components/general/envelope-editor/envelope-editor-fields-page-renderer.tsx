@@ -44,6 +44,7 @@ import {
   ClipboardPasteIcon,
   CopyPlusIcon,
   PencilIcon,
+  ScissorsIcon,
   SquareStackIcon,
   TrashIcon,
   TypeIcon,
@@ -283,6 +284,7 @@ type FieldContextMenuProps = {
   canEditValue: boolean;
   editValueType: TInlineEditableFieldType | null;
   canPaste: boolean;
+  onCut: () => void;
   onCopy: () => void;
   onPaste: () => void;
   onChangeRecipient: () => void;
@@ -302,6 +304,7 @@ const FieldContextMenu = ({
   canEditValue,
   editValueType,
   canPaste,
+  onCut,
   onCopy,
   onPaste,
   onChangeRecipient,
@@ -321,6 +324,15 @@ const FieldContextMenu = ({
       onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => event.stopPropagation()}
     >
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+        disabled={!canCopy || !canDelete}
+        onClick={onCut}
+      >
+        <ScissorsIcon className="h-3.5 w-3.5" />
+        <Trans>Cut</Trans>
+      </button>
       <button
         type="button"
         className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
@@ -1917,6 +1929,19 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       .map((field) => structuredClone(field));
   }, [editorFields, fieldClipboard]);
 
+  const cutSelectedFields = useCallback(() => {
+    const selectedFields = selectedKonvaFieldGroupsRef.current;
+
+    if (selectedFields.length === 0 || selectedFields.some((field) => !field.draggable())) {
+      return false;
+    }
+
+    copySelectedFields();
+    deletedSelectedFields();
+    setFieldContextMenu(null);
+    return true;
+  }, [copySelectedFields, deletedSelectedFields]);
+
   const pasteCopiedFields = useCallback(() => {
     if (fieldClipboard.current.length === 0) {
       return false;
@@ -2063,6 +2088,11 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         return;
       }
 
+      if (isModifierPressed && !event.altKey && key === 'x' && cutSelectedFields()) {
+        event.preventDefault();
+        return;
+      }
+
       if (isModifierPressed && !event.altKey && key === 'v' && pasteCopiedFields()) {
         event.preventDefault();
         return;
@@ -2095,6 +2125,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     copySelectedFields,
+    cutSelectedFields,
     deletedSelectedFields,
     editingFieldValue,
     editorFields,
@@ -2223,6 +2254,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     <>
       {selectedKonvaFieldGroups.length > 0 && interactiveTransformer.current && !isFieldChanging && (
         <FieldActionButtons
+          handleCutSelectedFields={cutSelectedFields}
           handleDuplicateSelectedFields={duplicatedSelectedFields}
           handleDuplicateSelectedFieldsOnAllPages={duplicatedSelectedFieldsOnAllPages}
           handleDeleteSelectedFields={deletedSelectedFields}
@@ -2281,6 +2313,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
           }
           editValueType={isInlineEditableField(contextMenuField) ? contextMenuField.type : null}
           canPaste={fieldClipboard.current.length > 0}
+          onCut={cutSelectedFields}
           onCopy={() => {
             copySelectedFields();
             setFieldContextMenu(null);
@@ -2363,6 +2396,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 };
 
 type FieldActionButtonsProps = React.HTMLAttributes<HTMLDivElement> & {
+  handleCutSelectedFields: () => void;
   handleDuplicateSelectedFields: () => void;
   handleDuplicateSelectedFieldsOnAllPages: () => void;
   handleDeleteSelectedFields: () => void;
@@ -2374,6 +2408,7 @@ type FieldActionButtonsProps = React.HTMLAttributes<HTMLDivElement> & {
 };
 
 const FieldActionButtons = ({
+  handleCutSelectedFields,
   handleDuplicateSelectedFields,
   handleDuplicateSelectedFieldsOnAllPages,
   handleDeleteSelectedFields,
@@ -2447,6 +2482,15 @@ const FieldActionButtons = ({
             <PencilIcon className="h-3 w-3" />
           </button>
         )}
+
+        <button
+          title={t`Cut`}
+          type="button"
+          className="rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
+          onClick={handleCutSelectedFields}
+        >
+          <ScissorsIcon className="h-3 w-3" />
+        </button>
 
         <button
           title={t`Duplicate`}
