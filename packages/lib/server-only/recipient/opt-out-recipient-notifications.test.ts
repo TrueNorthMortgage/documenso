@@ -1,3 +1,4 @@
+import { DocumentStatus, EnvelopeType, RecipientRole, SigningStatus } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
@@ -31,7 +32,12 @@ describe('optOutRecipientNotifications', () => {
     await optOutRecipientNotifications({ token: 'recipient-token' });
 
     expect(mocks.findFirst).toHaveBeenCalledWith({
-      where: { token: 'recipient-token', envelope: { deletedAt: null } },
+      where: {
+        token: 'recipient-token',
+        signingStatus: SigningStatus.NOT_SIGNED,
+        role: { not: RecipientRole.CC },
+        envelope: { deletedAt: null, type: EnvelopeType.DOCUMENT, status: DocumentStatus.PENDING },
+      },
       select: { id: true, envelopeId: true, name: true, email: true },
     });
     expect(mocks.tx.documentAuditLog.create).toHaveBeenCalledWith({
@@ -53,8 +59,10 @@ describe('optOutRecipientNotifications', () => {
         id: 1,
         envelopeId: 'envelope-1',
         token: 'recipient-token',
+        signingStatus: SigningStatus.NOT_SIGNED,
+        role: { not: RecipientRole.CC },
         notificationsOptedOutAt: null,
-        envelope: { deletedAt: null },
+        envelope: { deletedAt: null, type: EnvelopeType.DOCUMENT, status: DocumentStatus.PENDING },
       },
       data: { notificationsOptedOutAt: expect.any(Date), nextReminderAt: null },
     });
@@ -65,12 +73,30 @@ describe('optOutRecipientNotifications', () => {
 
     await expect(optOutRecipientNotifications({ token: 'invalid' })).rejects.toMatchObject({ code: 'NOT_FOUND' });
     expect(mocks.updateMany).not.toHaveBeenCalled();
+    expect(mocks.tx.documentAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('allows repeated confirmation without overwriting the original opt-out timestamp', async () => {
     mocks.updateMany.mockResolvedValue({ count: 0 });
     await expect(optOutRecipientNotifications({ token: 'recipient-token' })).resolves.toBeUndefined();
     expect(mocks.updateMany.mock.calls[0][0].where.notificationsOptedOutAt).toBeNull();
+    expect(mocks.tx.documentAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('does not write an opt-out or audit entry if the envelope completes after the lookup', async () => {
+    mocks.updateMany.mockImplementation(async ({ where }) => ({
+      count: where.envelope.status === DocumentStatus.PENDING ? 0 : 1,
+    }));
+
+    await optOutRecipientNotifications({ token: 'recipient-token' });
+
+    expect(mocks.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          envelope: { deletedAt: null, type: EnvelopeType.DOCUMENT, status: DocumentStatus.PENDING },
+        }),
+      }),
+    );
     expect(mocks.tx.documentAuditLog.create).not.toHaveBeenCalled();
   });
 

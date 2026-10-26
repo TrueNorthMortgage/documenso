@@ -31,7 +31,7 @@ export async function loader({ params }: Route.LoaderArgs) {
   return {
     hasOptedOut: recipient.notificationsOptedOutAt !== null,
     optedOutAt: recipient.notificationsOptedOutAt?.toISOString() ?? null,
-    canResume:
+    canChangeReminders:
       recipient.envelope.status === DocumentStatus.PENDING &&
       recipient.envelope.type === EnvelopeType.DOCUMENT &&
       recipient.signingStatus === SigningStatus.NOT_SIGNED &&
@@ -95,12 +95,16 @@ export const NotificationPreferencesPage = ({ loaderData, actionData }: Route.Co
         </p>
       )}
 
-      {hasOptedOut ? (
+      {!loaderData.canChangeReminders ? (
+        <p className="mt-4 text-muted-foreground">
+          <Trans>This envelope no longer requires your action. Reminder preferences cannot be changed.</Trans>
+        </p>
+      ) : hasOptedOut ? (
         <>
           <p className="mt-4 text-muted-foreground">
             <Trans>You will no longer receive automatic or manually sent reminders for this signing envelope.</Trans>
           </p>
-          {loaderData.canResume && loaderData.optedOutAt && (
+          {loaderData.optedOutAt && (
             <Form method="post" className="mt-6">
               <input type="hidden" name="intent" value="resume" />
               <input type="hidden" name="optedOutAt" value={loaderData.optedOutAt} />
