@@ -875,6 +875,65 @@ test.describe('document editor', () => {
     await runMultiSelectDuplicateAndCopyPasteFlow(surface);
   });
 
+  for (const control of ['keyboard', 'toolbar', 'context menu'] as const) {
+    test(`cut and paste multiple selected fields via ${control}`, async ({ page }) => {
+      const surface = await openDocumentEnvelopeEditor(page);
+      await updateExternalId(surface, `e2e-cut-paste-${nanoid()}`);
+      await setupRecipientsForFieldPlacement(surface);
+      await clickEnvelopeEditorStep(page, 'addFields');
+
+      await placeFieldOnPdf(page, 'Signature', { x: 140, y: 140 });
+      await placeFieldOnPdf(page, 'Text', { x: 260, y: 220 });
+      await selectFieldOnCanvas(page, { x: 140, y: 140 });
+      await page.keyboard.down('Shift');
+      await selectFieldOnCanvas(page, { x: 260, y: 220 });
+      await page.keyboard.up('Shift');
+      await expect.poll(() => getKonvaTransformerNodeCountForPage(page, 1)).toBe(2);
+
+      const originalPositions = (await getKonvaFieldPositionsForPage(page, 1)).sort((left, right) => left.x - right.x);
+      const canvas = page.locator('.konva-container canvas').first();
+
+      if (control === 'keyboard') {
+        await page.keyboard.press('ControlOrMeta+x');
+      } else if (control === 'toolbar') {
+        await page.getByRole('button', { name: 'Cut', exact: true }).click();
+      } else {
+        await canvas.click({ button: 'right', position: { x: 140, y: 140 } });
+        await page.getByRole('button', { name: 'Cut', exact: true }).filter({ hasText: 'Cut' }).click();
+      }
+
+      await expect.poll(() => getKonvaElementCountForPage(page, 1, '.field-group')).toBe(0);
+
+      if (control === 'keyboard') {
+        // Cutting an empty selection must leave the existing clipboard intact.
+        await page.keyboard.press('ControlOrMeta+x');
+        await canvas.hover({ position: { x: 300, y: 350 } });
+        await page.keyboard.press('ControlOrMeta+v');
+      } else {
+        await canvas.click({ button: 'right', position: { x: 300, y: 350 } });
+        await page.getByRole('button', { name: 'Paste', exact: true }).click();
+      }
+
+      await expect.poll(() => getKonvaElementCountForPage(page, 1, '.field-group')).toBe(2);
+      await expect.poll(() => getKonvaTransformerNodeCountForPage(page, 1)).toBe(2);
+      const pastedPositions = (await getKonvaFieldPositionsForPage(page, 1)).sort((left, right) => left.x - right.x);
+
+      expect(pastedPositions).not.toEqual(originalPositions);
+      expect(pastedPositions[1].x - pastedPositions[0].x).toBeCloseTo(originalPositions[1].x - originalPositions[0].x);
+      expect(pastedPositions[1].y - pastedPositions[0].y).toBeCloseTo(originalPositions[1].y - originalPositions[0].y);
+
+      await clickEnvelopeEditorStep(page, 'upload');
+      await clickEnvelopeEditorStep(page, 'addFields');
+      await expect.poll(() => getKonvaElementCountForPage(page, 1, '.field-group')).toBe(2);
+      await expect
+        .poll(async () => {
+          const fields = await prisma.field.findMany({ where: { envelopeId: surface.envelopeId } });
+          return fields.map((field) => field.type).sort();
+        })
+        .toEqual([FieldType.SIGNATURE, FieldType.TEXT]);
+    });
+  }
+
   test('drag multiple selected fields to another page', async ({ page }) => {
     const surface = await openDocumentEnvelopeEditor(page);
     await runCrossPageMultiFieldDragFlow(surface);
