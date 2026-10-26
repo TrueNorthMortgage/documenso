@@ -207,7 +207,13 @@ export default function DocumentsLogsPage({ loaderData }: Route.ComponentProps) 
       </section>
 
       <section className="mt-6">
-        <DocumentLogsTable documentId={document.id} userId={userId} timeZone={timeZone} />
+        <DocumentLogsTable
+          documentId={document.id}
+          userId={userId}
+          timeZone={timeZone}
+          recipients={recipients}
+          documentStatus={document.status}
+        />
       </section>
     </div>
   );

@@ -11,6 +11,7 @@ export const run = async ({ io }: { payload: TSendSigningRemindersSweepJobDefini
   const recipients = await prisma.recipient.findMany({
     where: {
       nextReminderAt: { lte: now },
+      notificationsOptedOutAt: null,
       signingStatus: SigningStatus.NOT_SIGNED,
       sendStatus: SendStatus.SENT,
       role: { not: RecipientRole.CC },

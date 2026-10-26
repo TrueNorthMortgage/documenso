@@ -618,6 +618,24 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
       you: msg`Signing window expired for ${data.recipientName || data.recipientEmail}`,
       user: msg`Signing window expired for ${data.recipientName || data.recipientEmail}`,
     }))
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.RECIPIENT_NOTIFICATIONS_OPTED_OUT }, ({ data }) => {
+      const message = msg`${data.recipientName || data.recipientEmail} disabled reminders for this envelope`;
+
+      return { anonymous: message, you: message, user: message };
+    })
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.RECIPIENT_NOTIFICATIONS_RESUMED }, ({ data }) => {
+      if (data.resumedByRecipient) {
+        const message = msg`${data.recipientName || data.recipientEmail} enabled reminders again for this envelope`;
+
+        return { anonymous: message, you: message, user: message };
+      }
+
+      return {
+        anonymous: msg`Reminders resumed for ${data.recipientName || data.recipientEmail}`,
+        you: msg`You resumed reminders for ${data.recipientName || data.recipientEmail}`,
+        user: msg`${user} resumed reminders for ${data.recipientName || data.recipientEmail}`,
+      };
+    })
     .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_DELEGATED_OWNER_CREATED }, ({ data }) => {
       const message = msg({
         message: `The document ownership was delegated to ${data.delegatedOwnerName || data.delegatedOwnerEmail} on behalf of ${data.teamName}`,

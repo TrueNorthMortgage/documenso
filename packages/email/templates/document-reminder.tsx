@@ -8,6 +8,7 @@ import { TemplateBrandLogo, TemplateBrandLogoStyles } from '../template-componen
 import { TemplateCustomMessageBody } from '../template-components/template-custom-message-body';
 import { TemplateDocumentReminder } from '../template-components/template-document-reminder';
 import { TemplateFooter } from '../template-components/template-footer';
+import { TemplateNotificationOptOut } from '../template-components/template-notification-opt-out';
 
 export type DocumentReminderEmailTemplateProps = {
   recipientName: string;
@@ -16,6 +17,7 @@ export type DocumentReminderEmailTemplateProps = {
   assetBaseUrl?: string;
   customBody?: string;
   role: RecipientRole;
+  notificationOptOutLink?: string;
 };
 
 export const DocumentReminderEmailTemplate = ({
@@ -25,6 +27,7 @@ export const DocumentReminderEmailTemplate = ({
   assetBaseUrl = 'http://localhost:3002',
   customBody,
   role = RecipientRole.SIGNER,
+  notificationOptOutLink,
 }: DocumentReminderEmailTemplateProps) => {
   const { _ } = useLingui();
 
@@ -69,6 +72,7 @@ export const DocumentReminderEmailTemplate = ({
 
           <Container className="mx-auto max-w-xl">
             <TemplateFooter />
+            <TemplateNotificationOptOut href={notificationOptOutLink} />
           </Container>
         </Section>
       </Body>

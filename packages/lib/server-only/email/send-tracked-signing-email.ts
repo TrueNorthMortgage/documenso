@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 
 import { mailer } from '@documenso/email/mailer';
-import type { EmailDeliveryPurpose } from '@prisma/client';
-import { EmailDeliveryStatus } from '@prisma/client';
+import { prisma } from '@documenso/prisma';
+import { EmailDeliveryPurpose, EmailDeliveryStatus } from '@prisma/client';
 import type { SendMailOptions, SentMessageInfo } from 'nodemailer';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
@@ -27,6 +27,18 @@ export const sendTrackedSigningEmail = async ({
   operationKey = randomUUID(),
   mail,
 }: TrackedSigningEmailOptions) => {
+  // Recheck at delivery time, including retries of jobs queued before the opt-out.
+  if (purpose === EmailDeliveryPurpose.REMINDER || purpose === EmailDeliveryPurpose.RESEND) {
+    const recipient = await prisma.recipient.findFirst({
+      where: { id: recipientId, envelopeId, notificationsOptedOutAt: null },
+      select: { id: true },
+    });
+
+    if (!recipient) {
+      return false;
+    }
+  }
+
   const postmarkCredential = getPostmarkWebhookSecret();
 
   if (!postmarkCredential) {

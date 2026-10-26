@@ -6,17 +6,30 @@ import { cn } from '@documenso/ui/lib/utils';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
+import type { DocumentStatus } from '@prisma/client';
 import { AlertTriangle, CheckCheckIcon, CheckIcon, Loader, MailOpen } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
 
+import {
+  type RecipientNotificationState,
+  RecipientNotificationsResumeButton,
+} from './recipient-notifications-resume-button';
+
 export type DocumentPageViewRecentActivityProps = {
   documentId: number;
   userId: number;
+  recipients: RecipientNotificationState[];
+  documentStatus: DocumentStatus;
 };
 
-export const DocumentPageViewRecentActivity = ({ documentId, userId }: DocumentPageViewRecentActivityProps) => {
+export const DocumentPageViewRecentActivity = ({
+  documentId,
+  userId,
+  recipients,
+  documentStatus,
+}: DocumentPageViewRecentActivityProps) => {
   const { _, i18n } = useLingui();
 
   const { data, isLoading, isLoadingError, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } =
@@ -133,12 +146,19 @@ export const DocumentPageViewRecentActivity = ({ documentId, userId }: DocumentP
                     ))}
                 </div>
 
-                <p
-                  className="flex-auto truncate py-0.5 text-muted-foreground text-xs leading-5 dark:text-muted-foreground/70"
-                  title={formatDocumentAuditLogAction(i18n, auditLog, userId).description}
-                >
-                  {formatDocumentAuditLogAction(i18n, auditLog, userId).description}
-                </p>
+                <div className="min-w-0 flex-auto">
+                  <p
+                    className="truncate py-0.5 text-muted-foreground text-xs leading-5 dark:text-muted-foreground/70"
+                    title={formatDocumentAuditLogAction(i18n, auditLog, userId).description}
+                  >
+                    {formatDocumentAuditLogAction(i18n, auditLog, userId).description}
+                  </p>
+                  <RecipientNotificationsResumeButton
+                    auditLog={auditLog}
+                    recipients={recipients}
+                    documentStatus={documentStatus}
+                  />
+                </div>
 
                 <time className="flex-none py-0.5 text-muted-foreground text-xs leading-5 dark:text-muted-foreground/70">
                   {DateTime.fromJSDate(auditLog.createdAt).toRelative({ style: 'short' })}

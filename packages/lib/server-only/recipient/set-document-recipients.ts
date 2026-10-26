@@ -180,6 +180,7 @@ export const setDocumentRecipients = async ({
                   latestEmailDeliveryAttemptId: null,
                   emailDeliveryStatus: null,
                   emailDeliveryEmail: null,
+                  notificationsOptedOutAt: null,
                 }
               : {}),
             name: recipient.name,

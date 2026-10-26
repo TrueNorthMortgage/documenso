@@ -290,6 +290,8 @@ export default function DocumentPage({ params }: Route.ComponentProps) {
               <DocumentPageViewRecentActivity
                 documentId={mapSecondaryIdToDocumentId(envelope.secondaryId)}
                 userId={user.id}
+                recipients={envelope.recipients}
+                documentStatus={envelope.status}
               />
             </div>
           </div>

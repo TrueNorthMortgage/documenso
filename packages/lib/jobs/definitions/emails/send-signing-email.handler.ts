@@ -80,6 +80,10 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
     return;
   }
 
+  if (isResending && !isCorrection && recipient.notificationsOptedOutAt) {
+    return;
+  }
+
   const isRecipientSigningRequestEmailEnabled = extractDerivedDocumentEmailSettings(
     envelope.documentMeta,
   ).recipientSigningRequest;
@@ -165,6 +169,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
       organisationType === OrganisationType.ORGANISATION ? team?.teamEmail?.email || user.email : user.email,
     assetBaseUrl,
     signDocumentLink,
+    notificationOptOutLink: `${NEXT_PUBLIC_WEBAPP_URL()}/notifications/${recipient.token}`,
     customBody: renderCustomEmailTemplate(emailMessage, customEmailTemplate),
     role: recipient.role,
     selfSigner,
@@ -176,7 +181,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
 
   if (isRecipientEmailValidForSending(recipient)) {
     const operationKey = await io.runTask('signing-email-operation-key', async () => randomUUID());
-    await io.runTask('send-signing-email', async () => {
+    const wasSent = await io.runTask('send-signing-email', async () => {
       const [html, text] = await Promise.all([
         renderEmailWithI18N(template, { lang: emailLanguage, branding }),
         renderEmailWithI18N(template, {
@@ -186,7 +191,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
         }),
       ]);
 
-      await sendTrackedSigningEmail({
+      const result = await sendTrackedSigningEmail({
         envelopeId: envelope.id,
         recipientId: recipient.id,
         recipientEmail: recipient.email,
@@ -208,7 +213,13 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
           text,
         },
       });
+
+      return result !== false;
     });
+
+    if (wasSent === false) {
+      return;
+    }
   }
 
   const sentAt = new Date();

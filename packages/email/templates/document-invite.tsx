@@ -11,6 +11,7 @@ import { TemplateCustomMessageBody } from '../template-components/template-custo
 import type { TemplateDocumentInviteProps } from '../template-components/template-document-invite';
 import { TemplateDocumentInvite } from '../template-components/template-document-invite';
 import { TemplateFooter } from '../template-components/template-footer';
+import { TemplateNotificationOptOut } from '../template-components/template-notification-opt-out';
 
 export type DocumentInviteEmailTemplateProps = Partial<TemplateDocumentInviteProps> & {
   customBody?: string;
@@ -20,6 +21,7 @@ export type DocumentInviteEmailTemplateProps = Partial<TemplateDocumentInvitePro
   teamEmail?: string;
   includeSenderDetails?: boolean;
   organisationType?: OrganisationType;
+  notificationOptOutLink?: string;
 };
 
 export const DocumentInviteEmailTemplate = ({
@@ -34,6 +36,7 @@ export const DocumentInviteEmailTemplate = ({
   teamName = '',
   includeSenderDetails,
   organisationType,
+  notificationOptOutLink,
 }: DocumentInviteEmailTemplateProps) => {
   const { _ } = useLingui();
 
@@ -108,6 +111,7 @@ export const DocumentInviteEmailTemplate = ({
 
           <Container className="mx-auto max-w-xl">
             <TemplateFooter />
+            <TemplateNotificationOptOut href={notificationOptOutLink} />
           </Container>
         </Section>
       </Body>

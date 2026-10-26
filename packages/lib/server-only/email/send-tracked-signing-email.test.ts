@@ -6,9 +6,10 @@ const mocks = vi.hoisted(() => {
     emailDeliveryAttempt: { findUnique: vi.fn(), create: vi.fn(), findUniqueOrThrow: vi.fn(), update: vi.fn() },
     recipient: { updateMany: vi.fn() },
   };
-  return { tx, sendMail: vi.fn(), applyStatus: vi.fn(), env: new Map<string, string>() };
+  return { tx, findRecipient: vi.fn(), sendMail: vi.fn(), applyStatus: vi.fn(), env: new Map<string, string>() };
 });
 
+vi.mock('@documenso/prisma', () => ({ prisma: { recipient: { findFirst: mocks.findRecipient } } }));
 vi.mock('@documenso/email/mailer', () => ({ mailer: { sendMail: mocks.sendMail } }));
 vi.mock('../../utils/env', () => ({ env: (key: string) => mocks.env.get(key) }));
 vi.mock('./email-delivery', () => ({
@@ -46,6 +47,7 @@ describe('tracked signing send', () => {
     mocks.tx.emailDeliveryAttempt.findUniqueOrThrow.mockResolvedValue(attempt);
     mocks.tx.recipient.updateMany.mockResolvedValue({ count: 1 });
     mocks.sendMail.mockResolvedValue({ messageId: 'smtp-message-id' });
+    mocks.findRecipient.mockResolvedValue({ id: 1 });
   });
 
   it('persists the attempt before sending and attaches metadata while preserving existing headers', async () => {
@@ -68,6 +70,49 @@ describe('tracked signing send', () => {
       attempt,
       expect.objectContaining({ status: EmailDeliveryStatus.ACCEPTED }),
     );
+  });
+
+  it.each([
+    EmailDeliveryPurpose.REMINDER,
+    EmailDeliveryPurpose.RESEND,
+  ])('suppresses %s at delivery time after a recipient opts out', async (purpose) => {
+    mocks.findRecipient.mockResolvedValue(null);
+
+    const result = await sendTrackedSigningEmail({ ...options, purpose });
+
+    expect(result).toBe(false);
+    expect(mocks.findRecipient).toHaveBeenCalledWith({
+      where: { id: 1, envelopeId: 'envelope-1', notificationsOptedOutAt: null },
+      select: { id: true },
+    });
+    expect(mocks.sendMail).not.toHaveBeenCalled();
+    expect(mocks.tx.emailDeliveryAttempt.create).not.toHaveBeenCalled();
+  });
+
+  it('also suppresses reminders when Postmark tracking is inactive', async () => {
+    mocks.env.set('NEXT_PRIVATE_SMTP_HOST', 'smtp.example.com');
+    mocks.findRecipient.mockResolvedValue(null);
+
+    expect(await sendTrackedSigningEmail({ ...options, purpose: EmailDeliveryPurpose.REMINDER })).toBe(false);
+    expect(mocks.sendMail).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    EmailDeliveryPurpose.REMINDER,
+    EmailDeliveryPurpose.RESEND,
+  ])('delivers %s to recipients who have not opted out', async (purpose) => {
+    await sendTrackedSigningEmail({ ...options, purpose });
+    expect(mocks.sendMail).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    EmailDeliveryPurpose.INVITATION,
+    EmailDeliveryPurpose.CORRECTION,
+  ])('preserves %s emails independently of reminder preferences', async (purpose) => {
+    mocks.findRecipient.mockResolvedValue(null);
+    await sendTrackedSigningEmail({ ...options, purpose });
+    expect(mocks.findRecipient).not.toHaveBeenCalled();
+    expect(mocks.sendMail).toHaveBeenCalledOnce();
   });
 
   it('resumes the same attempt without selecting it over a newer resend', async () => {

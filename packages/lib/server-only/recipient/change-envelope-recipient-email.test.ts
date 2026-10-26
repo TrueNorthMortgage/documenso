@@ -46,6 +46,7 @@ const signedRecipient = {
 const unsignedRecipient = {
   id: 2,
   email: 'incorrect@example.com',
+  notificationsOptedOutAt: new Date(),
   name: 'Unsigned Recipient',
   role: RecipientRole.SIGNER,
   signingStatus: SigningStatus.NOT_SIGNED,
@@ -102,6 +103,7 @@ describe('changeEnvelopeRecipientEmail', () => {
         sentAt: null,
         lastReminderSentAt: null,
         nextReminderAt: null,
+        notificationsOptedOutAt: null,
         expirationNotifiedAt: null,
       }),
     });
