@@ -109,6 +109,32 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+# Hash build inputs from the checkout, including uncommitted edits. E2E test-only
+# edits can reuse the app; changed application code requires a new build.
+source_cache_key="$(
+  git ls-files --cached --others --exclude-standard -z -- \
+    apps/remix packages assets example package.json package-lock.json turbo.json lingui.config.ts .env.example \
+    ':(exclude)packages/app-tests' |
+    docker run --rm -i --volume "$ROOT_DIR:/source:ro" --workdir /source \
+      --entrypoint node "$PLAYWRIGHT_IMAGE" -e '
+        const fs = require("node:fs");
+        const crypto = require("node:crypto");
+        const files = [...new Set(fs.readFileSync(0, "utf8").split("\0").filter(Boolean))].sort();
+        const hash = crypto.createHash("sha256");
+        for (const file of files) {
+          hash.update(file).update("\0");
+          if (fs.existsSync(file)) {
+            const content = fs.lstatSync(file).isSymbolicLink() ? fs.readlinkSync(file) : fs.readFileSync(file);
+            hash.update("present\0").update(content);
+          } else {
+            hash.update("deleted");
+          }
+          hash.update("\0");
+        }
+        process.stdout.write(hash.digest("hex"));
+      '
+)"
+
 build_option=--build
 if [[ "$REUSE" == true ]]; then
   build_option=--no-build
@@ -180,18 +206,20 @@ docker run \
   --env DANGEROUS_BYPASS_RATE_LIMITS=true \
   --env "E2E_REUSE=$REUSE" \
   --env "E2E_PLAYWRIGHT_IMAGE=$PLAYWRIGHT_IMAGE" \
+  --env "E2E_SOURCE_CACHE_KEY=$source_cache_key" \
   --env "E2E_TEST_PATH=$E2E_TEST_PATH" \
   "$PLAYWRIGHT_IMAGE" \
   bash -lc '
     set -Eeuo pipefail
 
     cache_key="$(sha256sum package.json package-lock.json)
-$E2E_PLAYWRIGHT_IMAGE"
+$E2E_PLAYWRIGHT_IMAGE
+$E2E_SOURCE_CACHE_KEY"
     ready_file=node_modules/.e2e-ready
 
     if [[ "$E2E_REUSE" == true ]]; then
       if [[ ! -f "$ready_file" || "$(cat "$ready_file")" != "$cache_key" || ! -f apps/remix/build/server/main.js ]]; then
-        echo "E2E setup is missing or dependencies changed. Run without --reuse first." >&2
+        echo "E2E build is missing or application/build inputs changed. Run without --reuse to rebuild before testing." >&2
         exit 1
       fi
       echo "Reusing E2E dependencies, test database, and app build. Test-file edits are loaded directly."
