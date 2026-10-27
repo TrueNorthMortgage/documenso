@@ -56,7 +56,6 @@ export const FolderCards = ({
     refetch,
   } = trpc.folder.getFolders.useInfiniteQuery(
     {
-      placeholderData: (previousData) => previousData,
       type,
       parentId,
       query: query.trim() || undefined,
@@ -65,6 +64,7 @@ export const FolderCards = ({
       sortDirection: folderSort.direction,
     },
     {
+      placeholderData: (previousData) => previousData,
       getNextPageParam: (lastPage) =>
         lastPage.currentPage < lastPage.totalPages ? lastPage.currentPage + 1 : undefined,
     },
