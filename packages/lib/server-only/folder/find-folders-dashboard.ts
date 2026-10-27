@@ -18,7 +18,7 @@ export type FindFoldersDashboardOptions = {
   childDepth?: number;
   page?: number;
   perPage?: number;
-  sortBy?: 'name' | 'owner' | 'items' | 'subfolders';
+  sortBy?: 'createdAt' | 'name' | 'owner' | 'items' | 'subfolders';
   sortDirection?: 'asc' | 'desc';
 };
 
@@ -37,8 +37,8 @@ export const findFoldersDashboard = async ({
   childDepth = 1,
   page = 1,
   perPage = 5,
-  sortBy = 'name',
-  sortDirection = 'asc',
+  sortBy = 'createdAt',
+  sortDirection = 'desc',
 }: FindFoldersDashboardOptions) => {
   const team = await getTeamById({ userId, teamId });
   if (parentId) {
@@ -75,13 +75,15 @@ export const findFoldersDashboard = async ({
 
   const orderBy: Prisma.FolderOrderByWithRelationInput[] = [
     { pinned: 'desc' },
-    ...(sortBy === 'owner' && canViewOwner
-      ? [{ user: { name: sortDirection } }]
-      : sortBy === 'items'
-        ? [{ envelopes: { _count: sortDirection } }]
-        : sortBy === 'subfolders'
-          ? [{ subfolders: { _count: sortDirection } }]
-          : [{ name: sortDirection }]),
+    ...(sortBy === 'createdAt'
+      ? [{ createdAt: sortDirection }]
+      : sortBy === 'owner' && canViewOwner
+        ? [{ user: { name: sortDirection } }]
+        : sortBy === 'items'
+          ? [{ envelopes: { _count: sortDirection } }]
+          : sortBy === 'subfolders'
+            ? [{ subfolders: { _count: sortDirection } }]
+            : [{ name: sortDirection }]),
     { name: 'asc' },
     { id: 'asc' },
   ];

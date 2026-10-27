@@ -24,6 +24,9 @@ for (const type of [FolderType.DOCUMENT, FolderType.TEMPLATE]) {
     await page.getByRole('button', { name: 'Load more', exact: true }).click();
     await expect(page.getByTestId('folder-card-more-button')).toHaveCount(8);
     await expect(page.getByRole('button', { name: 'Load more', exact: true })).not.toBeVisible();
+    await page.getByRole('button', { name: 'Sort folders', exact: true }).click();
+    await page.getByRole('menuitemradio', { name: 'Alphabetical', exact: true }).click();
+    await expect(page.getByTestId('folder-card-more-button')).toHaveCount(8);
     await page.getByRole('button', { name: 'Table', exact: true }).click();
     await expect(page.getByRole('link', { name: 'Browse 0', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Browse 7', exact: true })).not.toBeVisible();
@@ -48,6 +51,49 @@ for (const type of [FolderType.DOCUMENT, FolderType.TEMPLATE]) {
     await expect(page.getByTestId('folder-card-more-button')).toHaveCount(50);
     await page.getByRole('button', { name: 'Load more', exact: true }).click();
     await expect(page.getByTestId('folder-card-more-button')).toHaveCount(51);
+  });
+}
+
+for (const type of [FolderType.DOCUMENT, FolderType.TEMPLATE]) {
+  test(`${type}: changing folder sort preserves loaded batches and remembers the choice`, async ({ page }) => {
+    const { user, team } = await seedUser();
+    const route = type === FolderType.DOCUMENT ? 'documents' : 'templates';
+    await prisma.folder.createMany({
+      data: Array.from({ length: 14 }, (_, index) => ({
+        name: `Sort ${String(index).padStart(2, '0')}`,
+        userId: user.id,
+        teamId: team.id,
+        type,
+        createdAt: new Date(Date.UTC(2026, 0, index + 1)),
+      })),
+    });
+    await apiSignin({ page, email: user.email, redirectPath: `/t/${team.url}/${route}` });
+    const cards = page.locator('a[data-folder-id]');
+    await expect(cards).toHaveCount(6);
+    await expect(cards.first()).toHaveAttribute('data-folder-name', 'Sort 13');
+    await page.getByRole('button', { name: 'Load more', exact: true }).click();
+    await expect(cards).toHaveCount(12);
+
+    await page.getByRole('button', { name: 'Sort folders', exact: true }).click();
+    await page.getByRole('menuitemradio', { name: 'Alphabetical', exact: true }).click();
+    await expect(cards).toHaveCount(12);
+    await expect(cards.first()).toHaveAttribute('data-folder-name', 'Sort 00');
+    await expect(cards.last()).toHaveAttribute('data-folder-name', 'Sort 11');
+
+    await page.getByRole('button', { name: 'Sort folders', exact: true }).click();
+    await page.getByRole('menuitemradio', { name: 'Recently created', exact: true }).click();
+    await expect(cards).toHaveCount(12);
+    await expect(cards.first()).toHaveAttribute('data-folder-name', 'Sort 13');
+    await page.getByRole('button', { name: 'Load more', exact: true }).click();
+    await expect(cards).toHaveCount(14);
+
+    await page.getByRole('button', { name: 'Sort folders', exact: true }).click();
+    await page.getByRole('menuitemradio', { name: 'Alphabetical', exact: true }).click();
+    await expect(cards).toHaveCount(14);
+    await page.reload();
+    await expect(cards.first()).toHaveAttribute('data-folder-name', 'Sort 00');
+    await page.getByRole('button', { name: 'Table', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Sort folders', exact: true })).toContainText('Alphabetical');
   });
 }
 
