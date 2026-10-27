@@ -14,6 +14,7 @@ export const deleteDocumentMeta: TrpcRouteMeta = {
 
 export const ZDeleteDocumentRequestSchema = z.object({
   documentId: z.number(),
+  cancellationReason: z.string().trim().max(2000).optional(),
 });
 
 export const ZDeleteDocumentResponseSchema = ZSuccessResponseSchema;

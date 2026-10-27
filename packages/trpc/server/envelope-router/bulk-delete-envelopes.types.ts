@@ -13,6 +13,7 @@ import { z } from 'zod';
 // };
 
 export const ZBulkDeleteEnvelopesRequestSchema = z.object({
+  cancellationReason: z.string().trim().max(2000).optional(),
   envelopeIds: z
     .array(z.string())
     .min(1)

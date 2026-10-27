@@ -14,7 +14,7 @@ export const deleteDocumentRoute = authenticatedProcedure
   .output(ZDeleteDocumentResponseSchema)
   .mutation(async ({ input, ctx }) => {
     const { teamId } = ctx;
-    const { documentId } = input;
+    const { documentId, cancellationReason } = input;
 
     ctx.logger.info({
       input: {
@@ -32,6 +32,7 @@ export const deleteDocumentRoute = authenticatedProcedure
       userId,
       teamId,
       requestMetadata: ctx.metadata,
+      cancellationReason,
     });
 
     return ZGenericSuccessResponse;

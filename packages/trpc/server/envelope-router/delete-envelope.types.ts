@@ -14,6 +14,7 @@ export const deleteEnvelopeMeta: TrpcRouteMeta = {
 
 export const ZDeleteEnvelopeRequestSchema = z.object({
   envelopeId: z.string(),
+  cancellationReason: z.string().trim().max(2000).optional(),
 });
 
 export const ZDeleteEnvelopeResponseSchema = ZSuccessResponseSchema;

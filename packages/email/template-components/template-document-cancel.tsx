@@ -38,9 +38,7 @@ export const TemplateDocumentCancel = ({
         </Text>
 
         {cancellationReason && (
-          <Text className="mt-4 text-center text-base">
-            <Trans>Reason for cancellation: {cancellationReason}</Trans>
-          </Text>
+          <Text className="mt-4 whitespace-pre-line text-center text-base">{cancellationReason}</Text>
         )}
       </Section>
     </>

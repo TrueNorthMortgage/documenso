@@ -14,7 +14,7 @@ export const bulkDeleteEnvelopesRoute = authenticatedProcedure
   .output(ZBulkDeleteEnvelopesResponseSchema)
   .mutation(async ({ input, ctx }) => {
     const { teamId, user } = ctx;
-    const { envelopeIds } = input;
+    const { envelopeIds, cancellationReason } = input;
 
     ctx.logger.info({
       input: {
@@ -55,6 +55,7 @@ export const bulkDeleteEnvelopesRoute = authenticatedProcedure
               userId: user.id,
               teamId,
               requestMetadata: ctx.metadata,
+              cancellationReason,
             });
           } else if (envelopeType === EnvelopeType.TEMPLATE) {
             await deleteTemplate({

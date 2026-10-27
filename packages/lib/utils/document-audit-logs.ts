@@ -347,14 +347,22 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
       you: msg`You created the document`,
       user: msg`${user} created the document`,
     }))
-    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_DELETED }, () => ({
-      anonymous: msg({
-        message: `Document deleted`,
-        context: `Audit log format`,
-      }),
-      you: msg`You deleted the document`,
-      user: msg`${user} deleted the document`,
-    }))
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_DELETED }, ({ data }) =>
+      data.cancellationReason
+        ? {
+            anonymous: msg`Document cancelled. Message to client: ${data.cancellationReason}`,
+            you: msg`You cancelled the document. Message to client: ${data.cancellationReason}`,
+            user: msg`${user} cancelled the document. Message to client: ${data.cancellationReason}`,
+          }
+        : {
+            anonymous: msg({
+              message: `Document deleted`,
+              context: `Audit log format`,
+            }),
+            you: msg`You deleted the document`,
+            user: msg`${user} deleted the document`,
+          },
+    )
     .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_FIELDS_AUTO_INSERTED }, () => ({
       anonymous: msg({
         message: `System auto inserted fields`,

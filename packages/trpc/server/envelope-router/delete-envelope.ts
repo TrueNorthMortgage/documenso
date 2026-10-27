@@ -19,7 +19,7 @@ export const deleteEnvelopeRoute = authenticatedProcedure
   .output(ZDeleteEnvelopeResponseSchema)
   .mutation(async ({ input, ctx }) => {
     const { teamId } = ctx;
-    const { envelopeId } = input;
+    const { envelopeId, cancellationReason } = input;
 
     ctx.logger.info({
       input: {
@@ -52,6 +52,7 @@ export const deleteEnvelopeRoute = authenticatedProcedure
             id: envelopeId,
           },
           requestMetadata: ctx.metadata,
+          cancellationReason,
         }),
       )
       .with(EnvelopeType.TEMPLATE, async () =>

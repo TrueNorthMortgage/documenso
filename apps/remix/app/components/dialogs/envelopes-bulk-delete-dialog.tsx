@@ -9,11 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@documenso/ui/primitives/dialog';
+import { Label } from '@documenso/ui/primitives/label';
+import { Textarea } from '@documenso/ui/primitives/textarea';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { plural } from '@lingui/core/macro';
 import { Plural, Trans, useLingui } from '@lingui/react/macro';
 import { EnvelopeType } from '@prisma/client';
 import type * as DialogPrimitive from '@radix-ui/react-dialog';
+import { useEffect, useId, useState } from 'react';
 
 export type EnvelopesBulkDeleteDialogProps = {
   envelopeIds: string[];
@@ -33,6 +36,14 @@ export const EnvelopesBulkDeleteDialog = ({
 }: EnvelopesBulkDeleteDialogProps) => {
   const { t } = useLingui();
   const { toast } = useToast();
+  const [cancellationReason, setCancellationReason] = useState('');
+  const cancellationMessageId = useId();
+
+  useEffect(() => {
+    if (open) {
+      setCancellationReason('');
+    }
+  }, [open]);
 
   const trpcUtils = trpc.useUtils();
 
@@ -144,6 +155,21 @@ export const EnvelopesBulkDeleteDialog = ({
           </AlertDescription>
         </Alert>
 
+        {isDocument && (
+          <div className="space-y-2">
+            <Label htmlFor={cancellationMessageId}>
+              <Trans>Optional Message to Client</Trans>
+            </Label>
+            <Textarea
+              id={cancellationMessageId}
+              value={cancellationReason}
+              onChange={(event) => setCancellationReason(event.target.value)}
+              maxLength={2000}
+              disabled={isPending}
+            />
+          </div>
+        )}
+
         <DialogFooter>
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isPending}>
             <Trans>Cancel</Trans>
@@ -152,7 +178,10 @@ export const EnvelopesBulkDeleteDialog = ({
           <Button
             onClick={(e) => {
               e.preventDefault();
-              void bulkDeleteEnvelopes({ envelopeIds });
+              void bulkDeleteEnvelopes({
+                envelopeIds,
+                ...(isDocument && cancellationReason.trim() ? { cancellationReason: cancellationReason.trim() } : {}),
+              });
             }}
             loading={isPending}
             variant="destructive"
