@@ -63,10 +63,32 @@ describe('folder card page loading', () => {
           type: 'DOCUMENT',
           OR: expect.arrayContaining([{ userId: 1 }]),
         }),
-        orderBy: [{ pinned: 'desc' }, { name: 'asc' }, { name: 'asc' }, { id: 'asc' }],
+        orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }, { name: 'asc' }, { id: 'asc' }],
       }),
     );
     expect(result.folders[0]).not.toHaveProperty('ownerName');
+  });
+});
+
+describe('folder sort choices', () => {
+  it.each(['DOCUMENT', 'TEMPLATE'] as const)('defaults %s folders to newest first before pagination', async (type) => {
+    await findFoldersDashboard({ userId: 1, teamId: 2, type, perPage: 6 });
+    expect(mocks.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 0,
+        take: 6,
+        orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }, { name: 'asc' }, { id: 'asc' }],
+      }),
+    );
+  });
+
+  it('retains explicit alphabetical sorting', async () => {
+    await findFoldersDashboard({ userId: 1, teamId: 2, sortBy: 'name', sortDirection: 'asc' });
+    expect(mocks.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ pinned: 'desc' }, { name: 'asc' }, { name: 'asc' }, { id: 'asc' }],
+      }),
+    );
   });
 });
 

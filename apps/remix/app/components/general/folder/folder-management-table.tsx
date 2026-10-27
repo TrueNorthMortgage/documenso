@@ -1,6 +1,6 @@
 import { useUpdateSearchParams } from '@documenso/lib/client-only/hooks/use-update-search-params';
 import { useSession } from '@documenso/lib/client-only/providers/session';
-import { type FolderSort, parseFolderSort } from '@documenso/lib/utils/folder-sort';
+import type { FolderSort } from '@documenso/lib/utils/folder-sort';
 import {
   canExecuteTeamAction,
   canManageFolder,
@@ -55,18 +55,22 @@ type TFolderRow = TFolderWithSubfolders & {
   isExpanded: boolean;
   childControl?: { parentId: string; isLoading: boolean; queryIndex: number; hasError: boolean };
 };
-type TFolderSort = 'name' | 'owner' | 'items' | 'subfolders';
+type TFolderSort = FolderSort['by'];
 
 export const FolderManagementTable = ({
   type,
   parentId,
   toolbarActions,
   isFolderPage = false,
+  folderSort,
+  onSortChange,
 }: {
   type: FolderType;
   parentId: string | null;
   toolbarActions?: ReactNode;
   isFolderPage?: boolean;
+  folderSort: FolderSort;
+  onSortChange: (sort: FolderSort) => void;
 }) => {
   const { _ } = useLingui();
   const { user } = useSession();
@@ -78,10 +82,6 @@ export const FolderManagementTable = ({
   const pageSizeStorageKey = isFolderPage ? 'documenso.folder-page-size.all' : 'documenso.folder-page-size';
   const [folderPerPage, setFolderPerPage] = useState(defaultPageSize);
   const canViewOwner = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
-  const [folderSort, setFolderSort] = useState<FolderSort>({
-    by: 'name',
-    direction: 'asc',
-  });
   const [folderToMove, setFolderToMove] = useState<TFolderWithSubfolders | null>(null);
   const [folderToDelete, setFolderToDelete] = useState<TFolderWithSubfolders | null>(null);
   const [folderToSettings, setFolderToSettings] = useState<TFolderWithSubfolders | null>(null);
@@ -101,12 +101,9 @@ export const FolderManagementTable = ({
   }, [isFolderPage, pageSizeStorageKey]);
 
   useEffect(() => {
-    try {
-      setFolderSort(parseFolderSort(window.localStorage.getItem('documenso.folder-sort'), canViewOwner));
-    } catch {
-      // Storage is optional; keep the default sort when it is unavailable.
-    }
-  }, [canViewOwner]);
+    setExpandedFolders(new Set());
+    setChildPageCounts({});
+  }, [folderSort.by, folderSort.direction]);
 
   const { data, isLoading, isError } = trpc.folder.getFolders.useQuery(
     {
@@ -232,14 +229,7 @@ export const FolderManagementTable = ({
           onClick={() => {
             const direction: 'asc' | 'desc' = isActive && folderSort.direction === 'asc' ? 'desc' : 'asc';
             const nextSort = { by: sortBy, direction };
-            setFolderSort(nextSort);
-            setExpandedFolders(new Set());
-            try {
-              window.localStorage.setItem('documenso.folder-sort', JSON.stringify(nextSort));
-            } catch {
-              // Sorting still works when browser storage is unavailable.
-            }
-            updateSearchParams({ folderPage: 1 });
+            onSortChange(nextSort);
           }}
         >
           {label}
@@ -409,6 +399,7 @@ export const FolderManagementTable = ({
     childQueries,
     canViewOwner,
     folderSort,
+    onSortChange,
     rootPath,
     search,
     team.currentTeamRole,

@@ -1,9 +1,18 @@
+import { useUpdateSearchParams } from '@documenso/lib/client-only/hooks/use-update-search-params';
 import { useSession } from '@documenso/lib/client-only/providers/session';
-import { formatDocumentsPath, formatTemplatesPath } from '@documenso/lib/utils/teams';
+import { DEFAULT_FOLDER_SORT, type FolderSort, parseFolderSort } from '@documenso/lib/utils/folder-sort';
+import { canExecuteTeamAction, formatDocumentsPath, formatTemplatesPath } from '@documenso/lib/utils/teams';
 import { Button } from '@documenso/ui/primitives/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@documenso/ui/primitives/dropdown-menu';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FolderType } from '@prisma/client';
-import { ArrowUpRightIcon, LayoutGridIcon, ListIcon } from 'lucide-react';
+import { ArrowDownUpIcon, ArrowUpRightIcon, ChevronDownIcon, LayoutGridIcon, ListIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 
@@ -18,8 +27,31 @@ export const FolderBrowser = ({ type, parentId, isFolderPage = false }: FolderBr
   const { t } = useLingui();
   const { user } = useSession();
   const team = useCurrentTeam();
+  const updateSearchParams = useUpdateSearchParams();
   const [view, setView] = useState<'grid' | 'table'>('grid');
+  const [folderSort, setFolderSort] = useState<FolderSort>(DEFAULT_FOLDER_SORT);
   const storageKey = `documenso.folder-view.${user.id}`;
+  const sortStorageKey = `documenso.folder-sort.${user.id}`;
+  const canViewOwner = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
+
+  useEffect(() => {
+    try {
+      setFolderSort(parseFolderSort(window.localStorage.getItem(sortStorageKey), canViewOwner));
+    } catch {
+      setFolderSort(DEFAULT_FOLDER_SORT);
+    }
+  }, [sortStorageKey, canViewOwner]);
+
+  const changeSort = (nextSort: FolderSort) => {
+    setFolderSort(nextSort);
+    updateSearchParams({ folderPage: 1 });
+    try {
+      window.localStorage.setItem(sortStorageKey, JSON.stringify(nextSort));
+    } catch {
+      // Sorting still works when browser storage is unavailable.
+    }
+  };
+
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(storageKey);
@@ -42,6 +74,40 @@ export const FolderBrowser = ({ type, parentId, isFolderPage = false }: FolderBr
 
   const toolbarActions = (
     <div className="flex flex-wrap items-center gap-3">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" size="sm" variant="outline" aria-label={t`Sort folders`}>
+            <ArrowDownUpIcon className="mr-2 h-4 w-4" />
+            {folderSort.by === 'createdAt' && folderSort.direction === 'desc' ? (
+              <Trans>Recently created</Trans>
+            ) : folderSort.by === 'name' && folderSort.direction === 'asc' ? (
+              <Trans>Alphabetical</Trans>
+            ) : (
+              <Trans>Sort folders</Trans>
+            )}
+            <ChevronDownIcon className="ml-2 h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuRadioGroup
+            value={`${folderSort.by}:${folderSort.direction}`}
+            onValueChange={(value) => {
+              if (value === 'createdAt:desc') {
+                changeSort({ by: 'createdAt', direction: 'desc' });
+              } else if (value === 'name:asc') {
+                changeSort({ by: 'name', direction: 'asc' });
+              }
+            }}
+          >
+            <DropdownMenuRadioItem value="createdAt:desc">
+              <Trans>Recently created</Trans>
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="name:asc">
+              <Trans>Alphabetical</Trans>
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <fieldset aria-label={t`Folder layout`} className="flex gap-1">
         <Button
           type="button"
@@ -89,6 +155,8 @@ export const FolderBrowser = ({ type, parentId, isFolderPage = false }: FolderBr
           parentId={parentId}
           toolbarActions={toolbarActions}
           isFolderPage={isFolderPage}
+          folderSort={folderSort}
+          onSortChange={changeSort}
         />
       ) : (
         <FolderCards
@@ -97,6 +165,7 @@ export const FolderBrowser = ({ type, parentId, isFolderPage = false }: FolderBr
           parentId={parentId}
           toolbarActions={toolbarActions}
           perPage={isFolderPage ? 50 : 6}
+          folderSort={folderSort}
         />
       )}
     </div>

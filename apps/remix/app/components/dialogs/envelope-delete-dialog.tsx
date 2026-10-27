@@ -13,11 +13,13 @@ import {
   DialogTrigger,
 } from '@documenso/ui/primitives/dialog';
 import { Input } from '@documenso/ui/primitives/input';
+import { Label } from '@documenso/ui/primitives/label';
+import { Textarea } from '@documenso/ui/primitives/textarea';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { msg } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { DocumentStatus, EnvelopeType } from '@prisma/client';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { match, P } from 'ts-pattern';
 
 type EnvelopeDeleteDialogProps = {
@@ -47,9 +49,12 @@ export const EnvelopeDeleteDialog = ({
 
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [cancellationReason, setCancellationReason] = useState('');
+  const cancellationMessageId = useId();
   const [isDeleteEnabled, setIsDeleteEnabled] = useState(status === DocumentStatus.DRAFT);
 
   const isDocument = type === EnvelopeType.DOCUMENT;
+  const canAddCancellationMessage = canManageDocument && isDocument && status === DocumentStatus.PENDING;
 
   const { mutateAsync: deleteEnvelope, isPending } = trpcReact.envelope.delete.useMutation({
     onSuccess: async () => {
@@ -88,6 +93,7 @@ export const EnvelopeDeleteDialog = ({
   useEffect(() => {
     if (open) {
       setInputValue('');
+      setCancellationReason('');
       setIsDeleteEnabled(status === DocumentStatus.DRAFT);
     }
   }, [open, status]);
@@ -192,6 +198,21 @@ export const EnvelopeDeleteDialog = ({
           </Alert>
         )}
 
+        {canAddCancellationMessage && (
+          <div className="space-y-2">
+            <Label htmlFor={cancellationMessageId}>
+              <Trans>Optional Message to Client</Trans>
+            </Label>
+            <Textarea
+              id={cancellationMessageId}
+              value={cancellationReason}
+              onChange={(event) => setCancellationReason(event.target.value)}
+              maxLength={2000}
+              disabled={isPending}
+            />
+          </div>
+        )}
+
         {status !== DocumentStatus.DRAFT && canManageDocument && (
           <Input
             type="text"
@@ -211,7 +232,14 @@ export const EnvelopeDeleteDialog = ({
           <Button
             type="button"
             loading={isPending}
-            onClick={() => void deleteEnvelope({ envelopeId: id })}
+            onClick={() =>
+              void deleteEnvelope({
+                envelopeId: id,
+                ...(canAddCancellationMessage && cancellationReason.trim()
+                  ? { cancellationReason: cancellationReason.trim() }
+                  : {}),
+              })
+            }
             disabled={!isDeleteEnabled && canManageDocument}
             variant="destructive"
           >

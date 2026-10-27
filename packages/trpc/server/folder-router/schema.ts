@@ -69,7 +69,7 @@ export const ZDeleteFolderRequestSchema = z.object({
   folderId: z.string(),
 });
 
-export const ZFolderSortBySchema = z.enum(['name', 'owner', 'items', 'subfolders']);
+export const ZFolderSortBySchema = z.enum(['createdAt', 'name', 'owner', 'items', 'subfolders']);
 
 export const ZGetFoldersSchema = ZFindSearchParamsSchema.extend({
   query: z.string().trim().max(200).optional(),

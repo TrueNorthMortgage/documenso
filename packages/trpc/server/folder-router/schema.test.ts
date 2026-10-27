@@ -47,6 +47,13 @@ describe('ZUpdateFolderRequestSchema', () => {
 });
 
 describe('folder request limits', () => {
+  it('accepts recently created folder ordering', () => {
+    expect(ZGetFoldersSchema.parse({ sortBy: 'createdAt', sortDirection: 'desc' })).toMatchObject({
+      sortBy: 'createdAt',
+      sortDirection: 'desc',
+    });
+  });
+
   it.each([
     { parentId: 'x'.repeat(129) },
     { cursor: 1_000_001 },

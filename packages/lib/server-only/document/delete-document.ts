@@ -28,9 +28,16 @@ export type DeleteDocumentOptions = {
   userId: number;
   teamId: number;
   requestMetadata: ApiRequestMetadata;
+  cancellationReason?: string;
 };
 
-export const deleteDocument = async ({ id, userId, teamId, requestMetadata }: DeleteDocumentOptions) => {
+export const deleteDocument = async ({
+  id,
+  userId,
+  teamId,
+  requestMetadata,
+  cancellationReason,
+}: DeleteDocumentOptions) => {
   const user = await prisma.user.findUnique({
     where: {
       id: userId,
@@ -83,6 +90,8 @@ export const deleteDocument = async ({ id, userId, teamId, requestMetadata }: De
       envelope,
       user,
       requestMetadata,
+      cancellationReason:
+        envelope.status === DocumentStatus.PENDING ? cancellationReason?.trim() || undefined : undefined,
     });
 
     await triggerWebhook({
@@ -120,9 +129,15 @@ type HandleDocumentOwnerDeleteOptions = {
   };
   user: User;
   requestMetadata: ApiRequestMetadata;
+  cancellationReason?: string;
 };
 
-const handleDocumentOwnerDelete = async ({ envelope, user, requestMetadata }: HandleDocumentOwnerDeleteOptions) => {
+const handleDocumentOwnerDelete = async ({
+  envelope,
+  user,
+  requestMetadata,
+  cancellationReason,
+}: HandleDocumentOwnerDeleteOptions) => {
   if (envelope.deletedAt) {
     return;
   }
@@ -163,8 +178,7 @@ const handleDocumentOwnerDelete = async ({ envelope, user, requestMetadata }: Ha
 
   // Hard delete draft and pending documents.
   const deletedEnvelope = await prisma.$transaction(async (tx) => {
-    // Currently redundant since deleting a document will delete the audit logs.
-    // However may be useful if we disassociate audit logs and documents if required.
+    // Audit logs survive hard deletion with a null envelopeId.
     await tx.documentAuditLog.create({
       data: createDocumentAuditLogData({
         envelopeId: envelope.id,
@@ -172,6 +186,7 @@ const handleDocumentOwnerDelete = async ({ envelope, user, requestMetadata }: Ha
         metadata: requestMetadata,
         data: {
           type: 'HARD',
+          ...(cancellationReason ? { cancellationReason } : {}),
         },
       }),
     });
@@ -206,6 +221,7 @@ const handleDocumentOwnerDelete = async ({ envelope, user, requestMetadata }: Ha
         inviterName: user.name || undefined,
         inviterEmail: user.email,
         assetBaseUrl,
+        cancellationReason,
       });
 
       const [html, text] = await Promise.all([

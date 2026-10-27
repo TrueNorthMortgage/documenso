@@ -1,3 +1,4 @@
+import { prisma } from '@documenso/prisma';
 import { seedCompletedDocument, seedDraftDocument, seedPendingDocument } from '@documenso/prisma/seed/documents';
 import { seedUser } from '@documenso/prisma/seed/users';
 import { expect, test } from '@playwright/test';
@@ -127,12 +128,26 @@ test('[DOCUMENTS]: deleting a pending document should remove it from recipients'
   // delete document
   await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
+  const cancellationMessage = 'Please use the updated signing package.';
+  await page.getByLabel('Optional Message to Client', { exact: true }).fill(cancellationMessage);
   await page.getByPlaceholder("Type 'delete' to confirm").fill('delete');
   await page.getByRole('button', { name: 'Delete' }).click();
 
   await page.waitForTimeout(2500);
 
   await expect(page.getByRole('row', { name: /Document 1 - Pending/ })).not.toBeVisible();
+
+  await expect
+    .poll(async () =>
+      prisma.documentAuditLog.count({
+        where: {
+          type: 'DOCUMENT_DELETED',
+          userId: sender.user.id,
+          data: { path: ['cancellationReason'], equals: cancellationMessage },
+        },
+      }),
+    )
+    .toBe(1);
 
   // signout
   await apiSignout({ page });

@@ -305,6 +305,7 @@ export const ZDocumentAuditLogEventDocumentDeletedSchema = z.object({
   type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_DELETED),
   data: z.object({
     type: z.enum(['SOFT', 'HARD']),
+    cancellationReason: z.string().optional(),
   }),
 });
 
