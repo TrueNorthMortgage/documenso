@@ -22,6 +22,8 @@ export const ZDocumentAuditLogTypeSchema = z.enum([
   'RECIPIENT_CREATED',
   'RECIPIENT_DELETED',
   'RECIPIENT_UPDATED',
+  'RECIPIENT_NOTIFICATIONS_OPTED_OUT',
+  'RECIPIENT_NOTIFICATIONS_RESUMED',
 
   'ENVELOPE_ITEM_CREATED',
   'ENVELOPE_ITEM_DELETED',
@@ -755,6 +757,27 @@ export const ZDocumentAuditLogEventRecipientExpiredSchema = z.object({
   }),
 });
 
+export const ZDocumentAuditLogEventRecipientNotificationsOptedOutSchema = z.object({
+  type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.RECIPIENT_NOTIFICATIONS_OPTED_OUT),
+  data: z.object({
+    recipientId: z.number(),
+    recipientName: z.string(),
+    recipientEmail: z.string(),
+    optedOutAt: z.string().datetime(),
+  }),
+});
+
+export const ZDocumentAuditLogEventRecipientNotificationsResumedSchema = z.object({
+  type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.RECIPIENT_NOTIFICATIONS_RESUMED),
+  data: z.object({
+    recipientId: z.number(),
+    recipientName: z.string(),
+    recipientEmail: z.string(),
+    optOutAuditLogId: z.string().optional(),
+    resumedByRecipient: z.boolean().optional(),
+  }),
+});
+
 export const ZDocumentAuditLogEventSenderReassignedSchema = z.object({
   type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_SENDER_REASSIGNED),
   data: z.object({
@@ -818,6 +841,8 @@ export const ZDocumentAuditLogSchema = ZDocumentAuditLogBaseSchema.and(
     ZDocumentAuditLogEventRecipientUpdatedSchema,
     ZDocumentAuditLogEventRecipientRemovedSchema,
     ZDocumentAuditLogEventRecipientExpiredSchema,
+    ZDocumentAuditLogEventRecipientNotificationsOptedOutSchema,
+    ZDocumentAuditLogEventRecipientNotificationsResumedSchema,
   ]),
 );
 

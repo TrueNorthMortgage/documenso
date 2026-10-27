@@ -44,6 +44,7 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
     prisma.recipient.updateMany({
       where: {
         id: recipientId,
+        notificationsOptedOutAt: null,
         signingStatus: SigningStatus.NOT_SIGNED,
         sendStatus: SendStatus.SENT,
         role: { not: RecipientRole.CC },
@@ -179,6 +180,7 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
     documentName: envelope.title,
     assetBaseUrl,
     signDocumentLink,
+    notificationOptOutLink: `${NEXT_PUBLIC_WEBAPP_URL()}/notifications/${recipient.token}`,
     customBody: emailMessage,
     role: recipient.role,
   });
@@ -193,8 +195,8 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
   ]);
 
   const operationKey = await io.runTask('reminder-email-operation-key', async () => randomUUID());
-  await io.runTask('send-signing-reminder', async () => {
-    await sendTrackedSigningEmail({
+  const wasSent = await io.runTask('send-signing-reminder', async () => {
+    const result = await sendTrackedSigningEmail({
       envelopeId: envelope.id,
       recipientId: recipient.id,
       recipientEmail: recipient.email,
@@ -212,7 +214,13 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
         text,
       },
     });
+
+    return result !== false;
   });
+
+  if (wasSent === false) {
+    return;
+  }
 
   await prisma.documentAuditLog.create({
     data: createDocumentAuditLogData({

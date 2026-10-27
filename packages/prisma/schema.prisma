@@ -645,6 +645,7 @@ model Recipient {
   signedAt             DateTime?
   lastReminderSentAt   DateTime?
   nextReminderAt       DateTime?
+  notificationsOptedOutAt DateTime?
   authOptions          Json? /// [RecipientAuthOptions] @zod.custom.use(ZRecipientAuthOptionsSchema)
   signingOrder         Int? /// @zod.number.describe("The order in which the recipient should sign the document. Only works if the document is set to sequential signing.")
   rejectionReason      String?

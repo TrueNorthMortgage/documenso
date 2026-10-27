@@ -165,12 +165,18 @@ export const EnvelopeRedistributeDialog = ({
                               fallbackText={recipientAbbreviation(recipient)}
                             />
                             {recipient.email}
+                            {recipient.notificationsOptedOutAt && !envelope.correctionStartedAt && (
+                              <span className="text-muted-foreground text-xs">
+                                <Trans>Reminders disabled</Trans>
+                              </span>
+                            )}
                           </FormLabel>
 
                           <FormControl>
                             <Checkbox
                               className="h-5 w-5 rounded-full"
                               value={recipient.id}
+                              disabled={Boolean(recipient.notificationsOptedOutAt) && !envelope.correctionStartedAt}
                               checked={value.includes(recipient.id)}
                               onCheckedChange={(checked: boolean) =>
                                 checked

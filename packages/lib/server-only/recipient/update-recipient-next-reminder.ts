@@ -42,8 +42,8 @@ export const updateRecipientNextReminder = async (options: {
     lastReminderSentAt,
   });
 
-  await prisma.recipient.update({
-    where: { id: recipientId },
+  await prisma.recipient.updateMany({
+    where: { id: recipientId, envelopeId, notificationsOptedOutAt: null },
     data: { nextReminderAt },
   });
 };
@@ -75,6 +75,7 @@ export const recomputeNextReminderForEnvelope = async (envelopeId: string) => {
   const recipients = await prisma.recipient.findMany({
     where: {
       envelopeId,
+      notificationsOptedOutAt: null,
       signingStatus: SigningStatus.NOT_SIGNED,
       sendStatus: SendStatus.SENT,
       sentAt: { not: null },
@@ -97,8 +98,8 @@ export const recomputeNextReminderForEnvelope = async (envelopeId: string) => {
         lastReminderSentAt: recipient.lastReminderSentAt,
       });
 
-      await prisma.recipient.update({
-        where: { id: recipient.id },
+      await prisma.recipient.updateMany({
+        where: { id: recipient.id, envelopeId, notificationsOptedOutAt: null },
         data: { nextReminderAt },
       });
     }),

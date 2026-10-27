@@ -10,16 +10,24 @@ import { TableCell } from '@documenso/ui/primitives/table';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
+import type { DocumentStatus } from '@prisma/client';
 import type { DateTimeFormatOptions } from 'luxon';
 import { DateTime } from 'luxon';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import { UAParser } from 'ua-parser-js';
 
+import {
+  type RecipientNotificationState,
+  RecipientNotificationsResumeButton,
+} from '../general/document/recipient-notifications-resume-button';
+
 export type DocumentLogsTableProps = {
   documentId: number;
   userId?: number;
   timeZone: string;
+  recipients: RecipientNotificationState[];
+  documentStatus: DocumentStatus;
 };
 
 const dateFormat: DateTimeFormatOptions = {
@@ -27,7 +35,13 @@ const dateFormat: DateTimeFormatOptions = {
   hourCycle: 'h12',
 };
 
-export const DocumentLogsTable = ({ documentId, userId, timeZone }: DocumentLogsTableProps) => {
+export const DocumentLogsTable = ({
+  documentId,
+  userId,
+  timeZone,
+  recipients,
+  documentStatus,
+}: DocumentLogsTableProps) => {
   const { _, i18n } = useLingui();
 
   const [searchParams] = useSearchParams();
@@ -96,7 +110,16 @@ export const DocumentLogsTable = ({ documentId, userId, timeZone }: DocumentLogs
       {
         header: _(msg`Action`),
         accessorKey: 'type',
-        cell: ({ row }) => <span>{formatDocumentAuditLogAction(i18n, row.original, userId).description}</span>,
+        cell: ({ row }) => (
+          <div>
+            <p>{formatDocumentAuditLogAction(i18n, row.original, userId).description}</p>
+            <RecipientNotificationsResumeButton
+              auditLog={row.original}
+              recipients={recipients}
+              documentStatus={documentStatus}
+            />
+          </div>
+        ),
       },
       {
         header: _(msg`IP Address`),
@@ -117,7 +140,7 @@ export const DocumentLogsTable = ({ documentId, userId, timeZone }: DocumentLogs
         },
       },
     ] satisfies DataTableColumnDef<(typeof results)['data'][number]>[];
-  }, [_, i18n, userId, timeZone]);
+  }, [_, i18n, userId, timeZone, recipients, documentStatus]);
 
   return (
     <DataTable

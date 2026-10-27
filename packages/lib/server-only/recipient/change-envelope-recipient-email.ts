@@ -114,6 +114,7 @@ export const changeEnvelopeRecipientEmail = async ({
           readStatus: ReadStatus.NOT_OPENED,
           lastReminderSentAt: null,
           nextReminderAt: null,
+          notificationsOptedOutAt: null,
           expiresAt: resolveExpiresAt(envelope.documentMeta?.envelopeExpirationPeriod ?? null),
           expirationNotifiedAt: null,
         },

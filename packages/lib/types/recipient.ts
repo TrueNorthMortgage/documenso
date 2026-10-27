@@ -31,6 +31,7 @@ export const ZRecipientSchema = RecipientSchema.pick({
   signingOrder: true,
   rejectionReason: true,
 }).extend({
+  notificationsOptedOutAt: z.coerce.date().nullish(),
   emailDeliveryStatus: z.nativeEnum(EmailDeliveryStatus).nullish(),
   emailDeliveryEmail: z.string().nullish(),
   fields: ZFieldSchema.array(),
@@ -62,6 +63,7 @@ export const ZRecipientLiteSchema = RecipientSchema.pick({
   signingOrder: true,
   rejectionReason: true,
 }).extend({
+  notificationsOptedOutAt: z.coerce.date().nullish(),
   emailDeliveryStatus: z.nativeEnum(EmailDeliveryStatus).nullish(),
   emailDeliveryEmail: z.string().nullish(),
   // Backwards compatibility.
@@ -91,6 +93,7 @@ export const ZRecipientManySchema = RecipientSchema.pick({
   signingOrder: true,
   rejectionReason: true,
 }).extend({
+  notificationsOptedOutAt: z.coerce.date().nullish(),
   emailDeliveryStatus: z.nativeEnum(EmailDeliveryStatus).nullish(),
   emailDeliveryEmail: z.string().nullish(),
   user: UserSchema.pick({

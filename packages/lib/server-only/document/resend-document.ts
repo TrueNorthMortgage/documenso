@@ -140,9 +140,17 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
   const recipientsToRemind = envelope.recipients.filter(
     (recipient) =>
       recipients.includes(recipient.id) &&
+      (isCorrection || !recipient.notificationsOptedOutAt) &&
       recipient.signingStatus === SigningStatus.NOT_SIGNED &&
       recipient.role !== RecipientRole.CC,
   );
+
+  if (!isCorrection && recipientsToRemind.length === 0) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'No selected recipients are eligible for reminders',
+      userMessage: 'The selected recipients have completed the envelope or disabled reminders.',
+    });
+  }
 
   // Extend the expiration deadline for recipients being resent.
   if (expiresAt && recipientsToRemind.length > 0) {
@@ -277,6 +285,7 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
             : user.email,
         assetBaseUrl,
         signDocumentLink,
+        notificationOptOutLink: `${NEXT_PUBLIC_WEBAPP_URL()}/notifications/${recipient.token}`,
         customBody: renderCustomEmailTemplate(emailMessage, customEmailTemplate),
         role: recipient.role,
         selfSigner,
@@ -298,7 +307,7 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
 
       // Send email outside any transaction to avoid holding a connection
       // open during network I/O.
-      await sendTrackedSigningEmail({
+      const result = await sendTrackedSigningEmail({
         envelopeId: envelope.id,
         recipientId: recipient.id,
         recipientEmail: recipient.email,
@@ -317,6 +326,10 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
           text,
         },
       });
+
+      if (result === false) {
+        return;
+      }
 
       await prisma.documentAuditLog.create({
         data: createDocumentAuditLogData({

@@ -1,5 +1,6 @@
 import { useSession } from '@documenso/lib/client-only/providers/session';
 import { getRecipientType } from '@documenso/lib/client-only/recipient-type';
+import { AppError } from '@documenso/lib/errors/app-error';
 import type { TRecipientLite } from '@documenso/lib/types/recipient';
 import { recipientAbbreviation } from '@documenso/lib/utils/recipient-formatter';
 import type { Document } from '@documenso/prisma/types/document-legacy-schema';
@@ -66,7 +67,7 @@ export const DocumentResendDialog = ({ document, recipients }: DocumentResendDia
   const isDisabled =
     (!isOwner && !isCurrentTeamDocument) ||
     document.status !== 'PENDING' ||
-    !recipients.some((r) => r.signingStatus === SigningStatus.NOT_SIGNED);
+    !recipients.some((r) => r.signingStatus === SigningStatus.NOT_SIGNED && !r.notificationsOptedOutAt);
 
   const { mutateAsync: resendDocument } = trpcReact.document.redistribute.useMutation();
 
@@ -99,9 +100,11 @@ export const DocumentResendDialog = ({ document, recipients }: DocumentResendDia
 
       setIsOpen(false);
     } catch (err) {
+      const error = AppError.parseError(err);
+
       toast({
         title: _(msg`Something went wrong`),
-        description: _(msg`This document could not be re-sent at this time. Please try again.`),
+        description: error.userMessage || _(msg`This document could not be re-sent at this time. Please try again.`),
         variant: 'destructive',
         duration: 7500,
       });
@@ -146,12 +149,18 @@ export const DocumentResendDialog = ({ document, recipients }: DocumentResendDia
                           fallbackText={recipientAbbreviation(recipient)}
                         />
                         {recipient.email}
+                        {recipient.notificationsOptedOutAt && (
+                          <span className="text-muted-foreground text-xs">
+                            <Trans>Reminders disabled</Trans>
+                          </span>
+                        )}
                       </FormLabel>
 
                       <FormControl>
                         <Checkbox
                           className="h-5 w-5 rounded-full border border-neutral-400"
                           value={recipient.id}
+                          disabled={Boolean(recipient.notificationsOptedOutAt)}
                           checked={value.includes(recipient.id)}
                           onCheckedChange={(checked: boolean) =>
                             checked

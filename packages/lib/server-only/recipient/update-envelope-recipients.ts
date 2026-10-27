@@ -144,6 +144,7 @@ export const updateEnvelopeRecipients = async ({
                   latestEmailDeliveryAttemptId: null,
                   emailDeliveryStatus: null,
                   emailDeliveryEmail: null,
+                  notificationsOptedOutAt: null,
                 }
               : {}),
             name: mergedRecipient.name,
