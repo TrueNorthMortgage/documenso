@@ -1,12 +1,12 @@
 import { prisma } from '@documenso/prisma';
 import type { TemplateType } from '@prisma/client';
-import { EnvelopeType, type Prisma } from '@prisma/client';
 
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import type { FindResultResponse } from '../../types/search-params';
 import { getFolderPaths } from '../folder/get-folder-paths';
 import { getMemberRoles } from '../team/get-member-roles';
 import { getTeamById } from '../team/get-team';
+import { findRankedTemplateIds } from './find-ranked-template-ids';
 
 export type FindTemplatesOptions = {
   userId: number;
@@ -40,33 +40,6 @@ export const findTemplates = async ({
     }),
   ]);
 
-  const where: Prisma.EnvelopeWhereInput = {
-    type: EnvelopeType.TEMPLATE,
-    templateType: type,
-    AND: [
-      { teamId },
-      {
-        OR: [
-          {
-            visibility: {
-              in: TEAM_DOCUMENT_VISIBILITY_MAP[teamRole],
-            },
-          },
-          { userId, teamId },
-        ],
-      },
-      ...(includeAllFolders ? [] : [folderId ? { folderId } : { folderId: null }]),
-      query?.trim()
-        ? {
-            title: {
-              contains: query.trim(),
-              mode: 'insensitive',
-            },
-          }
-        : {},
-    ],
-  };
-
   const templateInclude = {
     team: {
       select: {
@@ -92,18 +65,27 @@ export const findTemplates = async ({
     },
   } as const;
 
-  const [data, count] = await Promise.all([
-    prisma.envelope.findMany({
-      where,
-      include: templateInclude,
-      skip: Math.max(page - 1, 0) * perPage,
-      take: perPage,
-      orderBy: {
-        createdAt: 'desc',
-      },
-    }),
-    prisma.envelope.count({ where }),
-  ]);
+  const { rows, count } = await findRankedTemplateIds({
+    userId,
+    teamId,
+    visibility: TEAM_DOCUMENT_VISIBILITY_MAP[teamRole],
+    type,
+    folderId,
+    includeAllFolders,
+    query,
+    page,
+    perPage,
+  });
+
+  const templates = await prisma.envelope.findMany({
+    where: { id: { in: rows.map((row) => row.id) } },
+    include: templateInclude,
+  });
+  const templatesById = new Map(templates.map((template) => [template.id, template]));
+  const data = rows.flatMap((row) => {
+    const template = templatesById.get(row.id);
+    return template ? [{ ...template, isFavorite: row.isFavorite }] : [];
+  });
 
   const folderPaths = await getFolderPaths(data.flatMap((template) => (template.folderId ? [template.folderId] : [])));
 

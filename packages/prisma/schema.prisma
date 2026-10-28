@@ -65,6 +65,7 @@ model User {
 
   folders   Folder[]
   envelopes Envelope[]
+  templateFavorites TemplateFavorite[]
 
   verificationTokens VerificationToken[]
   apiTokens          ApiToken[]
@@ -75,6 +76,17 @@ model User {
   avatarImage        AvatarImage?           @relation(fields: [avatarImageId], references: [id], onDelete: SetNull)
 
   @@index([email])
+}
+
+model TemplateFavorite {
+  userId     Int
+  envelopeId String
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  envelope Envelope @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, envelopeId])
+  @@index([envelopeId])
 }
 
 model TeamProfile {
@@ -416,6 +428,7 @@ model Envelope {
   shareLinks    DocumentShareLink[]
   auditLogs     DocumentAuditLog[]
   emailDeliveryAttempts EmailDeliveryAttempt[]
+  templateFavorites TemplateFavorite[]
 
   // Envelope settings
   authOptions Json? /// [DocumentAuthOptions] @zod.custom.use(ZDocumentAuthOptionsSchema)
@@ -445,6 +458,7 @@ model Envelope {
   envelopeAttachments EnvelopeAttachment[]
 
   @@index([type])
+  @@index([userId, type, source, templateId])
   @@index([status])
   @@index([userId])
   @@index([teamId])
