@@ -18,6 +18,7 @@ import { AlertTriangle, Building2Icon, Globe2Icon, InfoIcon, Link2Icon, Loader, 
 import { useMemo, useTransition } from 'react';
 import { Link } from 'react-router';
 
+import { TemplateFavoriteButton } from '~/components/general/template/template-favorite-button';
 import { TemplateType } from '~/components/general/template/template-type';
 import { useCurrentTeam } from '~/providers/team';
 
@@ -101,12 +102,15 @@ export const TemplatesTable = ({
       {
         header: _(msg`Title`),
         cell: ({ row }) => (
-          <Link
-            to={formatTemplateLink(row.original)}
-            className="block max-w-[10rem] cursor-pointer truncate font-medium hover:underline md:max-w-[20rem]"
-          >
-            {row.original.title}
-          </Link>
+          <div className="flex items-center gap-2">
+            <TemplateFavoriteButton envelopeId={row.original.envelopeId} isFavorite={row.original.isFavorite} />
+            <Link
+              to={formatTemplateLink(row.original)}
+              className="block max-w-[10rem] cursor-pointer truncate font-medium hover:underline md:max-w-[20rem]"
+            >
+              {row.original.title}
+            </Link>
+          </div>
         ),
       },
       {

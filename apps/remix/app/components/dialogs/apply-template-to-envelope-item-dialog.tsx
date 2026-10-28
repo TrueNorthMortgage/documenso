@@ -31,6 +31,8 @@ import { EnvelopeType } from '@prisma/client';
 import { CheckIcon, LayersIcon, LoaderIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { TemplateFavoriteButton } from '../general/template/template-favorite-button';
+
 type ApplyTemplateToEnvelopeItemDialogProps = {
   envelope: TEditorEnvelope;
   envelopeItemId?: string;
@@ -435,22 +437,35 @@ const ApplyTemplateToDocumentItemDialog = ({
                     return (
                       <TableRow key={template.envelopeId} data-state={isSelected ? 'selected' : undefined}>
                         <TableCell className="min-w-0" truncate={false}>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="h-auto w-full min-w-0 justify-start whitespace-normal px-2 py-1 text-left"
-                            onClick={() => setSelectedTemplateId(templateId)}
-                          >
-                            <CheckIcon className={`mr-2 h-4 w-4 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
-                            <span className="min-w-0">
-                              <span className="block break-words">{template.title}</span>
-                              {template.templatePath && (
-                                <span className="block break-words text-muted-foreground text-xs">
-                                  {template.templatePath}
-                                </span>
-                              )}
-                            </span>
-                          </Button>
+                          <div className="flex items-start gap-1">
+                            <TemplateFavoriteButton
+                              envelopeId={template.envelopeId}
+                              isFavorite={template.isFavorite}
+                              onFavoriteChange={(isFavorite) => {
+                                setLoadedTemplates((previous) =>
+                                  previous.map((row) =>
+                                    row.envelopeId === template.envelopeId ? { ...row, isFavorite } : row,
+                                  ),
+                                );
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="h-auto w-full min-w-0 justify-start whitespace-normal px-2 py-1 text-left"
+                              onClick={() => setSelectedTemplateId(templateId)}
+                            >
+                              <CheckIcon className={`mr-2 h-4 w-4 ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
+                              <span className="min-w-0">
+                                <span className="block break-words">{template.title}</span>
+                                {template.templatePath && (
+                                  <span className="block break-words text-muted-foreground text-xs">
+                                    {template.templatePath}
+                                  </span>
+                                )}
+                              </span>
+                            </Button>
+                          </div>
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-right">{documentCount}</TableCell>
                         <TableCell className="whitespace-nowrap text-right">{template.recipients.length}</TableCell>
