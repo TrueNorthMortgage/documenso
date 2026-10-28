@@ -286,7 +286,7 @@ export const ZFindTemplatesRequestSchema = ZFindSearchParamsSchema.extend({
 export const ZFindOrganisationTemplatesRequestSchema = ZFindSearchParamsSchema;
 
 export const ZFindTemplatesResponseSchema = ZFindResultResponse.extend({
-  data: ZTemplateManySchema.array(),
+  data: ZTemplateManySchema.extend({ isFavorite: z.boolean() }).array(),
 });
 
 export type TFindTemplatesResponse = z.infer<typeof ZFindTemplatesResponseSchema>;

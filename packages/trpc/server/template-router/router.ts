@@ -62,8 +62,10 @@ import {
   ZUpdateTemplateResponseSchema,
 } from './schema';
 import { searchTemplateRoute } from './search-template';
+import { updateTemplateFavoriteRoute } from './update-template-favorite';
 
 export const templateRouter = router({
+  updateFavorite: updateTemplateFavoriteRoute,
   pendingPrepare: pendingTemplatePreparationRoute,
   /**
    * @public
@@ -104,6 +106,7 @@ export const templateRouter = router({
           return {
             id: legacyTemplateId,
             envelopeId: envelope.id,
+            isFavorite: envelope.isFavorite,
             type: envelope.templateType,
             visibility: envelope.visibility,
             externalId: envelope.externalId,
@@ -153,6 +156,7 @@ export const templateRouter = router({
           return {
             id: legacyTemplateId,
             envelopeId: envelope.id,
+            isFavorite: envelope.isFavorite,
             type: envelope.templateType,
             visibility: envelope.visibility,
             externalId: envelope.externalId,

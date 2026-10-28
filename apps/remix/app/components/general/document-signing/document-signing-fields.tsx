@@ -26,14 +26,25 @@ type DocumentSigningFieldsInsertedProps = {
    * Defaults to left.
    */
   textAlign?: 'left' | 'center' | 'right';
+  allowHorizontalOverflow?: boolean;
 };
 
-export const DocumentSigningFieldsInserted = ({ children, textAlign = 'left' }: DocumentSigningFieldsInsertedProps) => {
+export const DocumentSigningFieldsInserted = ({
+  children,
+  textAlign = 'left',
+  allowHorizontalOverflow = false,
+}: DocumentSigningFieldsInsertedProps) => {
   return (
-    <div className="flex h-full w-full items-center overflow-hidden">
+    <div
+      className={cn(
+        'flex h-full w-full items-center',
+        allowHorizontalOverflow ? 'overflow-visible' : 'overflow-hidden',
+      )}
+    >
       <p
         className={cn(
-          'w-full whitespace-pre-wrap text-left text-[clamp(0.425rem,25cqw,0.825rem)] text-foreground duration-200',
+          'w-full text-left text-[clamp(0.425rem,25cqw,0.825rem)] text-foreground duration-200',
+          allowHorizontalOverflow ? 'whitespace-nowrap' : 'whitespace-pre-wrap',
           {
             '!text-center': textAlign === 'center',
             '!text-right': textAlign === 'right',
