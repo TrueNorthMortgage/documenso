@@ -8,6 +8,7 @@ import { type TFieldMetaSchema as FieldMeta, ZFieldMetaSchema } from '@documenso
 import type { TRecipientLite } from '@documenso/lib/types/recipient';
 import { nanoid } from '@documenso/lib/universal/id';
 import { ADVANCED_FIELD_TYPES_WITH_OPTIONAL_SETTING } from '@documenso/lib/utils/advanced-fields-helpers';
+import { getDefaultFieldDimensions } from '@documenso/lib/utils/field-dimensions';
 import { validateFieldsUninserted } from '@documenso/lib/utils/fields';
 import { parseMessageDescriptor } from '@documenso/lib/utils/i18n';
 import {
@@ -21,7 +22,7 @@ import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { FieldType, Prisma, RecipientRole, SendStatus } from '@prisma/client';
 import { CalendarDays, CheckSquare, ChevronDown, Contact, Disc, Hash, Mail, Type, User } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useHotkeys } from 'react-hotkeys-hook';
 
@@ -285,23 +286,20 @@ export const AddFieldsFormPartial = ({
     y: 0,
   });
 
-  const fieldBounds = useRef({
-    height: 0,
-    width: 0,
-  });
+  const fieldBounds = useMemo(() => getDefaultFieldDimensions(selectedField), [selectedField]);
 
   const onMouseMove = useCallback(
     (event: MouseEvent) => {
       setIsFieldWithinBounds(
-        isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.current.width, fieldBounds.current.height),
+        isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.width, fieldBounds.height),
       );
 
       setCoords({
-        x: event.clientX - fieldBounds.current.width / 2,
-        y: event.clientY - fieldBounds.current.height / 2,
+        x: event.clientX - fieldBounds.width / 2,
+        y: event.clientY - fieldBounds.height / 2,
       });
     },
-    [isWithinPageBounds],
+    [isWithinPageBounds, fieldBounds],
   );
 
   const onMouseClick = useCallback(
@@ -312,10 +310,7 @@ export const AddFieldsFormPartial = ({
 
       const $page = getPage(event, PDF_VIEWER_PAGE_SELECTOR);
 
-      if (
-        !$page ||
-        !isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.current.width, fieldBounds.current.height)
-      ) {
+      if (!$page || !isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.width, fieldBounds.height)) {
         setSelectedField(null);
         return;
       }
@@ -329,8 +324,8 @@ export const AddFieldsFormPartial = ({
       let pageY = ((event.pageY - top) / height) * 100;
 
       // Get the bounds as a percentage of the page width and height
-      const fieldPageWidth = (fieldBounds.current.width / width) * 100;
-      const fieldPageHeight = (fieldBounds.current.height / height) * 100;
+      const fieldPageWidth = (fieldBounds.width / width) * 100;
+      const fieldPageHeight = (fieldBounds.height / height) * 100;
 
       // And center it based on the bounds
       pageX -= fieldPageWidth / 2;
@@ -362,7 +357,7 @@ export const AddFieldsFormPartial = ({
       setIsFieldWithinBounds(false);
       setSelectedField(null);
     },
-    [append, isWithinPageBounds, selectedField, selectedSigner, getPage],
+    [append, isWithinPageBounds, selectedField, selectedSigner, getPage, fieldBounds],
   );
 
   const onFieldResize = useCallback(
@@ -508,30 +503,6 @@ export const AddFieldsFormPartial = ({
   }, [onMouseClick, onMouseMove, selectedField]);
 
   useEffect(() => {
-    const observer = new MutationObserver((_mutations) => {
-      const $page = document.querySelector(PDF_VIEWER_PAGE_SELECTOR);
-
-      if (!$page) {
-        return;
-      }
-
-      fieldBounds.current = {
-        height: Math.max(DEFAULT_HEIGHT_PX),
-        width: Math.max(DEFAULT_WIDTH_PX),
-      };
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
     const recipientsByRoleToDisplay = recipients.filter(
       (recipient) => recipient.role !== RecipientRole.CC && recipient.role !== RecipientRole.ASSISTANT,
     );
@@ -639,8 +610,8 @@ export const AddFieldsFormPartial = ({
                   style={{
                     top: coords.y,
                     left: coords.x,
-                    height: fieldBounds.current.height,
-                    width: fieldBounds.current.width,
+                    height: fieldBounds.height,
+                    width: fieldBounds.width,
                   }}
                 >
                   <span className="text-[clamp(0.425rem,25cqw,0.825rem)]">

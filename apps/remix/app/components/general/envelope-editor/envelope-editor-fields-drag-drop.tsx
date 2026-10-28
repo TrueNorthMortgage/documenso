@@ -4,6 +4,7 @@ import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/e
 import { PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
 import { FIELD_META_DEFAULT_VALUES } from '@documenso/lib/types/field-meta';
 import { nanoid } from '@documenso/lib/universal/id';
+import { getDefaultFieldDimensions } from '@documenso/lib/utils/field-dimensions';
 import { canRecipientFieldsBeModified } from '@documenso/lib/utils/recipients';
 import { SignatureIcon } from '@documenso/ui/icons/signature';
 import { getRecipientColorStyles } from '@documenso/ui/lib/recipient-colors';
@@ -23,13 +24,7 @@ import {
   TextIcon,
   UserIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
-const MIN_HEIGHT_PX = 12;
-const MIN_WIDTH_PX = 36;
-
-const DEFAULT_HEIGHT_PX = MIN_HEIGHT_PX * 2.5;
-const DEFAULT_WIDTH_PX = MIN_WIDTH_PX * 2.5;
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const fieldButtonList = [
   {
@@ -124,23 +119,20 @@ export const EnvelopeEditorFieldDragDrop = ({
     y: 0,
   });
 
-  const fieldBounds = useRef({
-    height: 0,
-    width: 0,
-  });
+  const fieldBounds = useMemo(() => getDefaultFieldDimensions(selectedField), [selectedField]);
 
   const onMouseMove = useCallback(
     (event: MouseEvent) => {
       setIsFieldWithinBounds(
-        isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.current.width, fieldBounds.current.height),
+        isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.width, fieldBounds.height),
       );
 
       setCoords({
-        x: event.clientX - fieldBounds.current.width / 2,
-        y: event.clientY - fieldBounds.current.height / 2,
+        x: event.clientX - fieldBounds.width / 2,
+        y: event.clientY - fieldBounds.height / 2,
       });
     },
-    [isWithinPageBounds],
+    [isWithinPageBounds, fieldBounds],
   );
 
   const onMouseClick = useCallback(
@@ -151,10 +143,7 @@ export const EnvelopeEditorFieldDragDrop = ({
 
       const $page = getPage(event, PDF_VIEWER_PAGE_SELECTOR);
 
-      if (
-        !$page ||
-        !isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.current.width, fieldBounds.current.height)
-      ) {
+      if (!$page || !isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.width, fieldBounds.height)) {
         setSelectedField(null);
         return;
       }
@@ -168,8 +157,8 @@ export const EnvelopeEditorFieldDragDrop = ({
       let pageY = ((event.pageY - top) / height) * 100;
 
       // Get the bounds as a percentage of the page width and height
-      const fieldPageWidth = (fieldBounds.current.width / width) * 100;
-      const fieldPageHeight = (fieldBounds.current.height / height) * 100;
+      const fieldPageWidth = (fieldBounds.width / width) * 100;
+      const fieldPageHeight = (fieldBounds.height / height) * 100;
 
       // And center it based on the bounds
       pageX -= fieldPageWidth / 2;
@@ -195,32 +184,16 @@ export const EnvelopeEditorFieldDragDrop = ({
       setIsFieldWithinBounds(false);
       setSelectedField(null);
     },
-    [isWithinPageBounds, selectedField, selectedRecipientId, selectedEnvelopeItemId, getPage, editorFields],
+    [
+      isWithinPageBounds,
+      selectedField,
+      selectedRecipientId,
+      selectedEnvelopeItemId,
+      getPage,
+      editorFields,
+      fieldBounds,
+    ],
   );
-
-  useEffect(() => {
-    const observer = new MutationObserver((_mutations) => {
-      const $page = document.querySelector(PDF_VIEWER_PAGE_SELECTOR);
-
-      if (!$page) {
-        return;
-      }
-
-      fieldBounds.current = {
-        height: Math.max(DEFAULT_HEIGHT_PX),
-        width: Math.max(DEFAULT_WIDTH_PX),
-      };
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
 
   useEffect(() => {
     if (selectedField) {
@@ -283,8 +256,8 @@ export const EnvelopeEditorFieldDragDrop = ({
           style={{
             top: coords.y,
             left: coords.x,
-            height: fieldBounds.current.height,
-            width: fieldBounds.current.width,
+            height: fieldBounds.height,
+            width: fieldBounds.width,
           }}
         >
           <span className="text-[clamp(0.425rem,25cqw,0.825rem)]">{t(FRIENDLY_FIELD_TYPE[selectedField])}</span>

@@ -10,6 +10,7 @@ import { type TFieldMetaSchema as FieldMeta, ZFieldMetaSchema } from '@documenso
 import type { TRecipientLite } from '@documenso/lib/types/recipient';
 import { nanoid } from '@documenso/lib/universal/id';
 import { ADVANCED_FIELD_TYPES_WITH_OPTIONAL_SETTING } from '@documenso/lib/utils/advanced-fields-helpers';
+import { getDefaultFieldDimensions } from '@documenso/lib/utils/field-dimensions';
 import { parseMessageDescriptor } from '@documenso/lib/utils/i18n';
 import { cn } from '@documenso/ui/lib/utils';
 import { Button } from '@documenso/ui/primitives/button';
@@ -44,7 +45,7 @@ import {
   Type,
   User,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { getRecipientColorStyles } from '../../lib/recipient-colors';
@@ -279,23 +280,20 @@ export const AddTemplateFieldsFormPartial = ({
     y: 0,
   });
 
-  const fieldBounds = useRef({
-    height: 0,
-    width: 0,
-  });
+  const fieldBounds = useMemo(() => getDefaultFieldDimensions(selectedField), [selectedField]);
 
   const onMouseMove = useCallback(
     (event: MouseEvent) => {
       setIsFieldWithinBounds(
-        isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.current.width, fieldBounds.current.height),
+        isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.width, fieldBounds.height),
       );
 
       setCoords({
-        x: event.clientX - fieldBounds.current.width / 2,
-        y: event.clientY - fieldBounds.current.height / 2,
+        x: event.clientX - fieldBounds.width / 2,
+        y: event.clientY - fieldBounds.height / 2,
       });
     },
-    [isWithinPageBounds],
+    [isWithinPageBounds, fieldBounds],
   );
 
   const onMouseClick = useCallback(
@@ -306,10 +304,7 @@ export const AddTemplateFieldsFormPartial = ({
 
       const $page = getPage(event, PDF_VIEWER_PAGE_SELECTOR);
 
-      if (
-        !$page ||
-        !isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.current.width, fieldBounds.current.height)
-      ) {
+      if (!$page || !isWithinPageBounds(event, PDF_VIEWER_PAGE_SELECTOR, fieldBounds.width, fieldBounds.height)) {
         setSelectedField(null);
         return;
       }
@@ -323,8 +318,8 @@ export const AddTemplateFieldsFormPartial = ({
       let pageY = ((event.pageY - top) / height) * 100;
 
       // Get the bounds as a percentage of the page width and height
-      const fieldPageWidth = (fieldBounds.current.width / width) * 100;
-      const fieldPageHeight = (fieldBounds.current.height / height) * 100;
+      const fieldPageWidth = (fieldBounds.width / width) * 100;
+      const fieldPageHeight = (fieldBounds.height / height) * 100;
 
       // And center it based on the bounds
       pageX -= fieldPageWidth / 2;
@@ -353,7 +348,7 @@ export const AddTemplateFieldsFormPartial = ({
       setIsFieldWithinBounds(false);
       setSelectedField(null);
     },
-    [append, isWithinPageBounds, selectedField, selectedSigner, getPage],
+    [append, isWithinPageBounds, selectedField, selectedSigner, getPage, fieldBounds],
   );
 
   const onFieldResize = useCallback(
@@ -419,30 +414,6 @@ export const AddTemplateFieldsFormPartial = ({
       window.removeEventListener('mouseup', onMouseClick);
     };
   }, [onMouseClick, onMouseMove, selectedField]);
-
-  useEffect(() => {
-    const observer = new MutationObserver((_mutations) => {
-      const $page = document.querySelector(PDF_VIEWER_PAGE_SELECTOR);
-
-      if (!$page) {
-        return;
-      }
-
-      fieldBounds.current = {
-        height: Math.max(DEFAULT_HEIGHT_PX),
-        width: Math.max(DEFAULT_WIDTH_PX),
-      };
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
 
   useEffect(() => {
     setSelectedSigner(recipients[0]);
@@ -578,8 +549,8 @@ export const AddTemplateFieldsFormPartial = ({
                   style={{
                     top: coords.y,
                     left: coords.x,
-                    height: fieldBounds.current.height,
-                    width: fieldBounds.current.width,
+                    height: fieldBounds.height,
+                    width: fieldBounds.width,
                   }}
                 >
                   <span className="text-[clamp(0.425rem,25cqw,0.825rem)]">

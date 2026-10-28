@@ -1,7 +1,7 @@
 import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/trpc';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import type { TRecipientActionAuth } from '@documenso/lib/types/document-auth';
-import { ZInitialsFieldMeta } from '@documenso/lib/types/field-meta';
+import { resolveFieldOverflowMode, ZInitialsFieldMeta } from '@documenso/lib/types/field-meta';
 import type { FieldWithSignature } from '@documenso/prisma/types/field-with-signature';
 import { trpc } from '@documenso/trpc/react';
 import type {
@@ -138,7 +138,10 @@ export const DocumentSigningInitialsField = ({
       )}
 
       {field.inserted && (
-        <DocumentSigningFieldsInserted textAlign={parsedFieldMeta?.textAlign}>
+        <DocumentSigningFieldsInserted
+          textAlign={parsedFieldMeta?.textAlign}
+          allowHorizontalOverflow={resolveFieldOverflowMode(parsedFieldMeta, field.type) === 'horizontal'}
+        >
           {field.customText}
         </DocumentSigningFieldsInserted>
       )}

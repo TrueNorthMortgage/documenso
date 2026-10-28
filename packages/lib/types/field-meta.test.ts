@@ -11,19 +11,19 @@ import {
 } from './field-meta';
 
 describe('field overflow defaults', () => {
-  it('uses automatic overflow for generic text fields', () => {
-    expect(DEFAULT_INITIALS_OVERFLOW_MODE).toBe('auto');
+  it('keeps initials horizontal and other generic text fields automatic', () => {
+    expect(DEFAULT_INITIALS_OVERFLOW_MODE).toBe('horizontal');
     expect(DEFAULT_NAME_OVERFLOW_MODE).toBe('auto');
     expect(DEFAULT_NUMBER_OVERFLOW_MODE).toBe('auto');
     expect(DEFAULT_TEXT_OVERFLOW_MODE).toBe('auto');
-    expect(resolveFieldOverflowMode({ type: 'initials' })).toBe('auto');
+    expect(resolveFieldOverflowMode({ type: 'initials' })).toBe('horizontal');
     expect(resolveFieldOverflowMode({ type: 'name' })).toBe('auto');
     expect(resolveFieldOverflowMode({ type: 'number' })).toBe('auto');
     expect(resolveFieldOverflowMode({ type: 'text' })).toBe('auto');
   });
 
   it('uses the field type when metadata is missing', () => {
-    expect(resolveFieldOverflowMode(undefined, 'INITIALS')).toBe('auto');
+    expect(resolveFieldOverflowMode(undefined, 'INITIALS')).toBe('horizontal');
     expect(resolveFieldOverflowMode(undefined, 'NAME')).toBe('auto');
     expect(resolveFieldOverflowMode(undefined, 'NUMBER')).toBe('auto');
     expect(resolveFieldOverflowMode(undefined, 'TEXT')).toBe('auto');
