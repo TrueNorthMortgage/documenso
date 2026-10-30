@@ -1,3 +1,5 @@
+import { AppError } from '@documenso/lib/errors/app-error';
+import { ZFolderNameSchema } from '@documenso/lib/types/folder-name';
 import { formatDocumentsPath, formatTemplatesPath } from '@documenso/lib/utils/teams';
 import { trpc } from '@documenso/trpc/react';
 import { Button } from '@documenso/ui/primitives/button';
@@ -26,7 +28,7 @@ import { z } from 'zod';
 import { useCurrentTeam } from '~/providers/team';
 
 const ZCreateFolderFormSchema = z.object({
-  name: z.string().min(1, { message: 'Folder name is required' }),
+  name: ZFolderNameSchema,
 });
 
 type TCreateFolderFormSchema = z.infer<typeof ZCreateFolderFormSchema>;
@@ -122,9 +124,11 @@ export const FolderCreateDialog = ({ type, trigger, parentFolderId, ...props }: 
         description: t`Folder created successfully`,
       });
     } catch (err) {
+      const error = AppError.parseError(err);
+
       toast({
         title: t`Failed to create folder`,
-        description: err instanceof Error ? err.message : t`An unknown error occurred while creating the folder.`,
+        description: error.userMessage ?? t`An error occurred while creating the folder. Please try again.`,
         variant: 'destructive',
       });
     }

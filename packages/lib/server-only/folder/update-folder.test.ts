@@ -89,3 +89,34 @@ describe('updateFolder', () => {
     expect(mocks.prisma.folder.update).toHaveBeenCalled();
   });
 });
+
+describe('folder rename validation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it.each(['invalid\u0000name', 'x'.repeat(256)])('rejects invalid rename %j before database access', async (name) => {
+    await expect(updateFolder({ userId: 1, teamId: 1, folderId: 'folder_1', data: { name } })).rejects.toMatchObject({
+      code: AppErrorCode.INVALID_BODY,
+    });
+    expect(mocks.prisma.folder.findFirst).not.toHaveBeenCalled();
+    expect(mocks.prisma.folder.update).not.toHaveBeenCalled();
+  });
+
+  it('allows a metadata-only update without rewriting a legacy oversized name', async () => {
+    mocks.getTeamById.mockResolvedValue({ currentTeamRole: TeamMemberRole.MANAGER });
+    mocks.prisma.folder.findFirst.mockResolvedValue({
+      id: 'folder_1',
+      userId: 1,
+      name: 'x'.repeat(4096),
+      visibility: DocumentVisibility.EVERYONE,
+    });
+    mocks.prisma.folder.update.mockResolvedValue({ id: 'folder_1' });
+
+    await updateFolder({ userId: 1, teamId: 1, folderId: 'folder_1', data: { pinned: true } });
+
+    expect(mocks.prisma.folder.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ name: undefined, pinned: true }) }),
+    );
+  });
+});

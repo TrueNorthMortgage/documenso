@@ -5,6 +5,7 @@ import type { TFolderType } from '../../types/folder-type';
 import { FolderType } from '../../types/folder-type';
 import { buildTeamWhereQuery } from '../../utils/teams';
 import { getTeamSettings } from '../team/get-team-settings';
+import { validateFolderName } from './validate-folder-name';
 
 export interface CreateFolderOptions {
   userId: number;
@@ -21,13 +22,7 @@ export const createFolder = async ({
   parentId,
   type = FolderType.DOCUMENT,
 }: CreateFolderOptions) => {
-  const trimmedName = name.trim();
-
-  if (!trimmedName) {
-    throw new AppError(AppErrorCode.INVALID_BODY, {
-      message: 'Folder name cannot be empty',
-    });
-  }
+  const trimmedName = validateFolderName(name);
 
   // This indirectly verifies whether the user has access to the team.
   const settings = await getTeamSettings({ userId, teamId });
