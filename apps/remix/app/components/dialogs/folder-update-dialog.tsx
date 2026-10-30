@@ -93,6 +93,13 @@ export const FolderUpdateDialog = ({ folder, isOpen, onOpenChange }: FolderUpdat
       if (error.code === AppErrorCode.NOT_FOUND) {
         toast({
           title: t`Folder not found`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: t`Failed to update folder`,
+          description: error.userMessage ?? t`An error occurred while updating the folder. Please try again.`,
+          variant: 'destructive',
         });
       }
     }
