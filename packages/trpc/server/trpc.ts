@@ -59,9 +59,30 @@ const t = initTRPC
         };
       }
 
+      const safeData = { ...data };
+
+      // Diagnostic stacks stay in onError/server logs, including in development responses.
+      delete safeData.stack;
+
+      const httpStatus = typeof data.httpStatus === 'number' ? data.httpStatus : shape.data.httpStatus;
+      const isServerFailure = httpStatus >= 500;
+      const safeMessage =
+        originalError instanceof AppError && originalError.userMessage
+          ? originalError.userMessage
+          : 'An unexpected error occurred. Please try again.';
+
+      if (isServerFailure && originalError instanceof AppError) {
+        safeData.appError = {
+          ...AppError.toJSON(originalError),
+          message: safeMessage,
+          userMessage: safeMessage,
+        };
+      }
+
       return {
         ...shape,
-        data,
+        message: isServerFailure ? safeMessage : shape.message,
+        data: safeData,
       };
     },
   });

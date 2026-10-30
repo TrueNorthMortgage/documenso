@@ -79,3 +79,16 @@ describe('folder request limits', () => {
     });
   });
 });
+
+describe('folder names are validated for both create and rename', () => {
+  it.each(['invalid\u0000name', 'x'.repeat(256), 'invalid\nname'])('rejects %j on both write routes', (name) => {
+    expect(ZCreateFolderRequestSchema.safeParse({ name }).success).toBe(false);
+    expect(ZUpdateFolderRequestSchema.safeParse({ folderId: 'folder_1', data: { name } }).success).toBe(false);
+  });
+
+  it('allows metadata updates without resubmitting an existing name', () => {
+    expect(ZUpdateFolderRequestSchema.parse({ folderId: 'folder_1', data: { pinned: true } })).toMatchObject({
+      data: { pinned: true },
+    });
+  });
+});

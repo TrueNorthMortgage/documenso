@@ -1,5 +1,6 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { DocumentVisibility } from '@documenso/lib/types/document-visibility';
+import { ZFolderNameSchema } from '@documenso/lib/types/folder-name';
 import { trpc } from '@documenso/trpc/react';
 import type { TFolderWithSubfolders } from '@documenso/trpc/server/folder-router/schema';
 import { Button } from '@documenso/ui/primitives/button';
@@ -32,7 +33,7 @@ export type FolderUpdateDialogProps = {
 } & Omit<DialogPrimitive.DialogProps, 'children'>;
 
 export const ZUpdateFolderFormSchema = z.object({
-  name: z.string().min(1),
+  name: ZFolderNameSchema,
   visibility: z.nativeEnum(DocumentVisibility).optional(),
 });
 
@@ -46,7 +47,12 @@ export const FolderUpdateDialog = ({ folder, isOpen, onOpenChange }: FolderUpdat
   const { mutateAsync: updateFolder } = trpc.folder.updateFolder.useMutation();
 
   const form = useForm<z.infer<typeof ZUpdateFolderFormSchema>>({
-    resolver: zodResolver(ZUpdateFolderFormSchema),
+    resolver: zodResolver(
+      ZUpdateFolderFormSchema.extend({
+        // Legacy names can remain unchanged when only visibility is being edited.
+        name: folder ? ZFolderNameSchema.or(z.literal(folder.name)) : ZFolderNameSchema,
+      }),
+    ),
     defaultValues: {
       name: folder?.name ?? '',
       visibility: folder?.visibility ?? DocumentVisibility.EVERYONE,
@@ -71,7 +77,7 @@ export const FolderUpdateDialog = ({ folder, isOpen, onOpenChange }: FolderUpdat
       await updateFolder({
         folderId: folder.id,
         data: {
-          name: data.name,
+          ...(data.name === folder.name ? {} : { name: data.name }),
           visibility: data.visibility,
         },
       });

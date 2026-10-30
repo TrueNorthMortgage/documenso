@@ -5,6 +5,7 @@ import type { DocumentVisibility } from '@documenso/prisma/generated/types';
 import { TEAM_DOCUMENT_VISIBILITY_MAP } from '../../constants/teams';
 import { buildTeamWhereQuery, canManageFolder } from '../../utils/teams';
 import { getTeamById } from '../team/get-team';
+import { validateFolderName } from './validate-folder-name';
 
 export interface UpdateFolderOptions {
   userId: number;
@@ -20,13 +21,7 @@ export interface UpdateFolderOptions {
 
 export const updateFolder = async ({ userId, teamId, folderId, data }: UpdateFolderOptions) => {
   const { parentId, name, visibility, pinned } = data;
-  const trimmedName = name?.trim();
-
-  if (name !== undefined && !trimmedName) {
-    throw new AppError(AppErrorCode.INVALID_BODY, {
-      message: 'Folder name cannot be empty',
-    });
-  }
+  const trimmedName = name === undefined ? undefined : validateFolderName(name);
 
   const team = await getTeamById({ userId, teamId });
 
