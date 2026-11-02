@@ -4,6 +4,7 @@ import type { ApiRequestMetadata } from '@documenso/lib/universal/extract-reques
 import { nanoid } from '@documenso/lib/universal/id';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
+import { getTemplateFieldPageReview } from '@documenso/lib/utils/template-field-page-review';
 import { prisma } from '@documenso/prisma';
 import {
   EnvelopeType,
@@ -21,6 +22,7 @@ import {
   shouldMatchTemplateRecipientsBySigningOrder,
 } from '../../utils/template-recipient-mapping';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { getEnvelopeItemPageCounts } from '../pdf/get-envelope-item-page-counts';
 import { getOrganisationTemplateById } from './get-organisation-template-by-id';
 import { getTemplateById } from './get-template-by-id';
 
@@ -32,6 +34,7 @@ export type ApplyTemplateToEnvelopeItemOptions = {
   templateId: number;
   templateItemId: string;
   replaceExistingFields: boolean;
+  excludedFieldIds?: number[];
   requestMetadata: ApiRequestMetadata;
 };
 
@@ -304,7 +307,10 @@ const getEnvelopeForTemplateAction = async ({
     include: {
       recipients: true,
       fields: true,
-      envelopeItems: true,
+      envelopeItems: {
+        where: { id: envelopeItemId },
+        include: { documentData: { select: { type: true, data: true } } },
+      },
       documentMeta: true,
     },
   });
@@ -336,6 +342,7 @@ export const applyTemplateToEnvelopeItem = async ({
   templateId,
   templateItemId,
   replaceExistingFields,
+  excludedFieldIds = [],
   requestMetadata,
 }: ApplyTemplateToEnvelopeItemOptions) => {
   const [envelope, template] = await Promise.all([
@@ -349,12 +356,39 @@ export const applyTemplateToEnvelopeItem = async ({
     });
   }
 
-  const sourceFields = template.fields.filter((field) => field.envelopeItemId === templateItemId);
+  const templateFields = template.fields.filter((field) => field.envelopeItemId === templateItemId);
 
-  if (sourceFields.length === 0) {
+  if (templateFields.length === 0) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
       message: 'Template item has no fields',
       userMessage: 'This template document has no fields to apply.',
+    });
+  }
+
+  const targetItem = envelope.envelopeItems.find((item) => item.id === envelopeItemId);
+
+  if (!targetItem) {
+    throw new AppError(AppErrorCode.NOT_FOUND, { message: 'Envelope item not found' });
+  }
+
+  const pageCounts = await getEnvelopeItemPageCounts([targetItem]);
+  const { fieldsToApply: sourceFields, omittedFields } = getTemplateFieldPageReview(
+    templateFields,
+    pageCounts.get(envelopeItemId) ?? 0,
+  );
+  const confirmedIds = new Set(excludedFieldIds);
+
+  if (confirmedIds.size !== omittedFields.length || omittedFields.some(({ field }) => !confirmedIds.has(field.id))) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'The fields omitted from this template application require confirmation.',
+      userMessage: 'Review and confirm the fields that will not be applied, then try again.',
+    });
+  }
+
+  if (sourceFields.length === 0) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'No template fields remain after excluding inaccessible fields.',
+      userMessage: 'No template fields can be applied to this document. Choose a different template.',
     });
   }
 

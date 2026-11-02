@@ -7,6 +7,7 @@ export const ZApplyTemplateToEnvelopeItemRequestSchema = z.object({
   templateId: z.number(),
   templateItemId: z.string(),
   replaceExistingFields: z.boolean(),
+  excludedFieldIds: z.array(z.number().int()).default([]),
 });
 
 export const ZApplyTemplateToEnvelopeItemResponseSchema = z.object({
