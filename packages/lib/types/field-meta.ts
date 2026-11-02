@@ -361,7 +361,7 @@ export const FIELD_TEXT_META_DEFAULT_VALUES: TTextFieldMeta = {
   label: '',
   placeholder: '',
   text: '',
-  required: false,
+  required: true,
   readOnly: false,
   overflow: DEFAULT_TEXT_OVERFLOW_MODE,
 };

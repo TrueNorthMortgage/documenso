@@ -19,7 +19,6 @@ import {
 } from '@prisma/client';
 import { DateTime } from 'luxon';
 import { match } from 'ts-pattern';
-
 import { DEFAULT_DOCUMENT_DATE_FORMAT } from '../../constants/date-formats';
 import type { TEnvelopeExpirationPeriod } from '../../constants/envelope-expiration';
 import type { SupportedLanguageCodes } from '../../constants/i18n';
@@ -29,6 +28,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE } from '../../types/document-audit-logs';
 import { ZRecipientAuthOptionsSchema } from '../../types/document-auth';
 import type { TDocumentEmailSettings } from '../../types/document-email';
 import type { TDocumentFormValues } from '../../types/document-form-values';
+import { parseEnvelopeShapes } from '../../types/envelope-shape';
 import type {
   TCheckboxFieldMeta,
   TDropdownFieldMeta,
@@ -509,6 +509,7 @@ export const createDocumentFromTemplate = async ({
         title: titleToUse.endsWith('.pdf') ? titleToUse.slice(0, -4) : titleToUse,
         documentDataId: newDocumentData.id,
         order: item.order !== undefined ? item.order : i + 1,
+        shapes: parseEnvelopeShapes(item.shapes),
       };
     }),
   );

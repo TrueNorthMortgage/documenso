@@ -36,6 +36,7 @@ export const getDocumentByAccessToken = async ({ token }: GetDocumentByAccessTok
           title: true,
           order: true,
           documentDataId: true,
+          shapes: true,
           envelopeId: true,
           documentData: {
             select: {

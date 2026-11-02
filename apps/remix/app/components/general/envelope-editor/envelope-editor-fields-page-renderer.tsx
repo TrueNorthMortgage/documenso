@@ -7,6 +7,7 @@ import {
   useCurrentEnvelopeRender,
 } from '@documenso/lib/client-only/providers/envelope-render-provider';
 import { PDF_VIEWER_PAGE_SELECTOR } from '@documenso/lib/constants/pdf-viewer';
+import { getEnvelopeTextStyle, type TEnvelopeShape } from '@documenso/lib/types/envelope-shape';
 import { FIELD_GROUP_TYPE } from '@documenso/lib/types/field-group';
 import { FIELD_META_DEFAULT_VALUES, type TNumberFieldMeta, type TTextFieldMeta } from '@documenso/lib/types/field-meta';
 import {
@@ -20,11 +21,19 @@ import {
   MIN_FIELD_HEIGHT_PX,
   MIN_FIELD_WIDTH_PX,
 } from '@documenso/lib/universal/field-renderer/field-renderer';
+import {
+  getEditorDragOrigin,
+  getEditorShape,
+  getEditorShapeGeometry,
+  getEditorFieldGroupFromTarget as getFieldGroupFromTarget,
+  renderEditorShape,
+} from '@documenso/lib/universal/field-renderer/render-editor-shape';
 import { renderField } from '@documenso/lib/universal/field-renderer/render-field';
 import {
   type FieldGroupDragPosition,
   getClampedFieldGroupPositions,
   getDragScrollDelta,
+  getFieldDragPreviewSize,
   getFieldNudgeDelta,
 } from '@documenso/lib/utils/field-drag';
 import { getFieldGroupValidationState, isRequiredField, type TFieldWithGroup } from '@documenso/lib/utils/field-groups';
@@ -39,24 +48,14 @@ import { FieldType } from '@prisma/client';
 import Konva from 'konva';
 import type { KonvaEventObject } from 'konva/lib/Node';
 import type { Transformer } from 'konva/lib/shapes/Transformer';
-import {
-  ClipboardIcon,
-  ClipboardPasteIcon,
-  CopyPlusIcon,
-  PencilIcon,
-  ScissorsIcon,
-  SquareStackIcon,
-  TrashIcon,
-  TypeIcon,
-  UserCircleIcon,
-} from 'lucide-react';
+import { CopyPlusIcon, PencilIcon, ScissorsIcon, SquareStackIcon, TrashIcon, UserCircleIcon } from 'lucide-react';
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-
 import { ConditionalFieldHighlightContext } from './conditional-field-highlight-context';
+import { EditorContextMenu } from './editor-context-menu';
 import { useEnvelopeEditorFieldDrag } from './envelope-editor-field-drag-context';
 import { fieldButtonList } from './envelope-editor-fields-drag-drop';
 import { EnvelopeRecipientSelectorCommand } from './envelope-recipient-selector';
+import { useEnvelopeShapesEditor } from './envelope-shapes-provider';
 
 const getClientPoint = (event: KonvaEventObject<Event>) => {
   const nativeEvent = event.evt as
@@ -81,9 +80,6 @@ const getClientPoint = (event: KonvaEventObject<Event>) => {
 
   return null;
 };
-
-const getFieldGroupFromTarget = (target: Konva.Node) =>
-  target.hasName('field-group') ? target : target.findAncestor('.field-group', true);
 
 const isNonPrimaryMouseClick = (event: KonvaEventObject<Event>) =>
   event.evt instanceof MouseEvent && event.evt.button !== 0;
@@ -120,7 +116,7 @@ const getInlineFieldValue = (field: TInlineEditableField) => {
 };
 
 type EditorFieldValueProps = {
-  field: TInlineEditableField;
+  field: TInlineEditableField | (TEnvelopeShape & { type: 'text' });
   initialValue: string;
   scale: number;
   pageHeight: number;
@@ -138,11 +134,14 @@ const EditorFieldValue = ({
   onCancel,
   onCommit,
 }: EditorFieldValueProps) => {
+  const { t } = useLingui();
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const numberInputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(initialValue);
   const [numberValidationError, setNumberValidationError] = useState<string | null>(null);
-  const isTextField = field.type === FieldType.TEXT && field.fieldMeta?.type === 'text';
+  const contentText = field.type === 'text' ? field : undefined;
+  const textMeta = field.type === FieldType.TEXT ? field.fieldMeta : undefined;
+  const isTextField = Boolean(contentText || textMeta);
   const isNumberField = field.type === FieldType.NUMBER && field.fieldMeta?.type === 'number';
 
   useEffect(() => {
@@ -189,14 +188,23 @@ const EditorFieldValue = ({
       >
         <Textarea
           ref={textAreaRef}
-          aria-label={field.fieldMeta.label || 'Text field'}
+          aria-label={contentText ? t`Document text` : textMeta?.label || 'Text field'}
           autoComplete="off"
           className="box-border h-full w-full resize-none overflow-auto rounded-[2px] border-2 border-primary bg-white px-2 py-1 text-black shadow-sm focus-visible:ring-2"
-          maxLength={field.fieldMeta.characterLimit || undefined}
-          placeholder={field.fieldMeta.placeholder}
+          maxLength={contentText ? 2000 : textMeta?.characterLimit || undefined}
+          placeholder={contentText ? t`Type text…` : textMeta?.placeholder}
           style={{
-            fontSize: `${Math.max(8, Number(field.fieldMeta.fontSize ?? 14) * scale)}px`,
-            textAlign: field.fieldMeta.textAlign,
+            fontSize: `${Math.max(8, Number(contentText?.fontSize ?? textMeta?.fontSize ?? 14) * scale)}px`,
+            textAlign: contentText?.textAlign ?? textMeta?.textAlign,
+            ...(contentText
+              ? {
+                  color: contentText.color,
+                  backgroundColor: contentText.fillColor ?? '#ffffff',
+                  fontFamily: getEnvelopeTextStyle(contentText).fontFamily,
+                  lineHeight: 1.2,
+                  padding: 0,
+                }
+              : {}),
           }}
           value={value}
           onBlur={() => onCommit(value)}
@@ -274,134 +282,6 @@ const EditorFieldValue = ({
   );
 };
 
-type FieldContextMenuProps = {
-  x: number;
-  y: number;
-  canCopy: boolean;
-  canDelete: boolean;
-  canChangeRecipient: boolean;
-  canDuplicate: boolean;
-  canEditValue: boolean;
-  editValueType: TInlineEditableFieldType | null;
-  canPaste: boolean;
-  onCut: () => void;
-  onCopy: () => void;
-  onPaste: () => void;
-  onChangeRecipient: () => void;
-  onDuplicate: () => void;
-  onDuplicateOnAllPages: () => void;
-  onEditValue: () => void;
-  onDelete: () => void;
-};
-
-const FieldContextMenu = ({
-  x,
-  y,
-  canCopy,
-  canDelete,
-  canChangeRecipient,
-  canDuplicate,
-  canEditValue,
-  editValueType,
-  canPaste,
-  onCut,
-  onCopy,
-  onPaste,
-  onChangeRecipient,
-  onDuplicate,
-  onDuplicateOnAllPages,
-  onEditValue,
-  onDelete,
-}: FieldContextMenuProps) => {
-  if (typeof document === 'undefined') {
-    return null;
-  }
-
-  return createPortal(
-    <div
-      className="fixed z-[70] min-w-40 rounded-md border border-border bg-background p-1 shadow-lg"
-      style={{ left: x, top: y }}
-      onContextMenu={(event) => event.preventDefault()}
-      onPointerDown={(event) => event.stopPropagation()}
-    >
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
-        disabled={!canCopy || !canDelete}
-        onClick={onCut}
-      >
-        <ScissorsIcon className="h-3.5 w-3.5" />
-        <Trans>Cut</Trans>
-      </button>
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
-        disabled={!canCopy}
-        onClick={onCopy}
-      >
-        <ClipboardIcon className="h-3.5 w-3.5" />
-        <Trans>Copy</Trans>
-      </button>
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
-        disabled={!canPaste}
-        onClick={onPaste}
-      >
-        <ClipboardPasteIcon className="h-3.5 w-3.5" />
-        <Trans>Paste</Trans>
-      </button>
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
-        disabled={!canChangeRecipient}
-        onClick={onChangeRecipient}
-      >
-        <UserCircleIcon className="h-3.5 w-3.5" />
-        <Trans>Assign recipient</Trans>
-      </button>
-      {canEditValue && (
-        <button
-          type="button"
-          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted"
-          onClick={onEditValue}
-        >
-          <TypeIcon className="h-3.5 w-3.5" />
-          {editValueType === FieldType.NUMBER ? <Trans>Enter number</Trans> : <Trans>Add text</Trans>}
-        </button>
-      )}
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
-        disabled={!canDuplicate}
-        onClick={onDuplicate}
-      >
-        <CopyPlusIcon className="h-3.5 w-3.5" />
-        <Trans>Duplicate</Trans>
-      </button>
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
-        disabled={!canDuplicate}
-        onClick={onDuplicateOnAllPages}
-      >
-        <SquareStackIcon className="h-3.5 w-3.5" />
-        <Trans>Duplicate on all pages</Trans>
-      </button>
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-destructive text-sm hover:bg-destructive/10 disabled:pointer-events-none disabled:opacity-50"
-        disabled={!canDelete}
-        onClick={onDelete}
-      >
-        <TrashIcon className="h-3.5 w-3.5" />
-        <Trans>Delete</Trans>
-      </button>
-    </div>,
-    document.body,
-  );
-};
-
 export const getPageAtPoint = (x: number, y: number) =>
   Array.from(document.querySelectorAll<HTMLElement>(PDF_VIEWER_PAGE_SELECTOR)).find((page) => {
     const rect = page.getBoundingClientRect();
@@ -460,6 +340,7 @@ type FieldDragState = {
   fields: Array<FieldGroupDragPosition & { fieldGroup: Konva.Group; pageNumber: number }>;
 };
 
+const EMPTY_SHAPES: TEnvelopeShape[] = [];
 const pageRendererRegistry = new Map<number, PageRenderer>();
 let lastPastePointer: PastePointer | null = null;
 
@@ -520,13 +401,15 @@ const getPasteTarget = (currentPage: PageRenderer) => {
   };
 };
 
-const getPastePositions = ({
+const getPastePositions = <
+  T extends { positionX: number; positionY: number; width: number; height: number; page: number },
+>({
   fields,
   page,
   x,
   y,
 }: {
-  fields: TLocalField[];
+  fields: T[];
   page: PageRenderer;
   x: number;
   y: number;
@@ -596,7 +479,10 @@ const syncFieldIndicators = (fieldGroup: Konva.Group, targetPage: PageRenderer, 
 
 export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageRenderData }) => {
   const { t, i18n } = useLingui();
+  const shapesEditor = useEnvelopeShapesEditor();
   const { envelope, editorFields, getRecipientColorKey } = useCurrentEnvelopeEditor();
+  const editorFieldsRef = useRef(editorFields);
+  editorFieldsRef.current = editorFields;
   const { currentEnvelopeItem, setRenderError } = useCurrentEnvelopeRender();
   const { highlightedFieldIds, selectionFieldIds, fieldNames } = useContext(ConditionalFieldHighlightContext);
   const {
@@ -604,6 +490,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     activeGroupPlacements,
     clearPendingSelection,
     fieldClipboard,
+    shapeClipboard,
     invalidPlacements,
     pendingSelectionFieldFormIds,
     setActiveGroupPlacements,
@@ -643,18 +530,26 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     (fieldFormId: string, valueOverride?: string) => {
       const field = editorFields.getFieldByFormId(fieldFormId);
 
-      if (!isInlineEditableField(field)) {
+      const content =
+        currentEnvelopeItem &&
+        shapesEditor?.getShapes(currentEnvelopeItem.id).find((shape) => shape.id === fieldFormId);
+      if (!isInlineEditableField(field) && content?.type !== 'text') {
         return;
       }
 
       setFieldContextMenu(null);
       setEditingFieldValue({
         formId: fieldFormId,
-        initialValue: valueOverride ?? getInlineFieldValue(field),
+        initialValue:
+          valueOverride ?? (isInlineEditableField(field) ? getInlineFieldValue(field) : (content?.text ?? '')),
       });
     },
-    [editorFields],
+    [editorFields, currentEnvelopeItem, shapesEditor],
   );
+
+  // Canvas event handlers can outlive the render that installed them.
+  const startInlineFieldEditingRef = useRef(startInlineFieldEditing);
+  startInlineFieldEditingRef.current = startInlineFieldEditing;
 
   const commitInlineFieldEditing = useCallback(
     (fieldFormId: string, value: string) => {
@@ -676,10 +571,32 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         });
       }
 
+      const shapes = currentEnvelopeItem && shapesEditor?.getShapes(currentEnvelopeItem.id);
+      if (
+        shapes?.some((shape) => shape.id === fieldFormId && shape.type === 'text' && (shape.text ?? '') !== value) &&
+        shapesEditor &&
+        currentEnvelopeItem
+      ) {
+        void shapesEditor.save(
+          currentEnvelopeItem.id,
+          shapes.map((shape) => (shape.id === fieldFormId ? { ...shape, text: value } : shape)),
+        );
+      }
+
       setEditingFieldValue(null);
     },
-    [editorFields],
+    [editorFields, currentEnvelopeItem, shapesEditor],
   );
+
+  useEffect(() => {
+    const content =
+      currentEnvelopeItem &&
+      shapesEditor?.getShapes(currentEnvelopeItem.id).find((shape) => shape.id === shapesEditor.textToEdit);
+    if (shapesEditor?.isEditable && content?.type === 'text' && content.page === pageNumber) {
+      shapesEditor.setTextToEdit(null);
+      startInlineFieldEditing(content.id);
+    }
+  }, [shapesEditor, currentEnvelopeItem, pageNumber, startInlineFieldEditing]);
 
   const openFieldContextMenu = useCallback(
     (event: KonvaEventObject<Event>) => {
@@ -764,6 +681,72 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     ],
   );
 
+  const itemShapes =
+    currentEnvelopeItem && shapesEditor ? shapesEditor.getShapes(currentEnvelopeItem.id) : EMPTY_SHAPES;
+  const localPageShapes = useMemo(
+    () =>
+      itemShapes.filter(
+        (shape) =>
+          shape.page === pageNumber &&
+          !invalidPlacements.some((placement) => placement.fieldFormId === shape.id) &&
+          !activeGroupPlacements.some((placement) => placement.fieldFormId === shape.id) &&
+          shape.id !== activePlacement?.fieldFormId,
+      ),
+    [itemShapes, pageNumber, invalidPlacements, activeGroupPlacements, activePlacement?.fieldFormId],
+  );
+  const saveShapeNodes = (nodes: Konva.Group[], targetPage: Pick<PageRenderer, 'pageWidth' | 'pageHeight'>) => {
+    if (!shapesEditor || !currentEnvelopeItem) {
+      return;
+    }
+    const updates = nodes.flatMap((node) => {
+      const shape = getEditorShapeGeometry(node, targetPage.pageWidth, targetPage.pageHeight);
+      return shape ? [shape] : [];
+    });
+    if (updates.length > 0) {
+      const previous = shapesEditor.getShapes(currentEnvelopeItem.id);
+      void shapesEditor.save(
+        currentEnvelopeItem.id,
+        previous.map((shape) => updates.find((update) => update.id === shape.id) ?? shape),
+      );
+    }
+  };
+  const raiseShapes = () => {
+    pageLayer.current?.find('.envelope-shape').forEach((shape) => {
+      shape.moveToTop();
+    });
+    interactiveTransformer.current?.moveToTop();
+  };
+
+  useEffect(() => {
+    let isCancelled = false;
+    const textShapes = localPageShapes.filter((shape) => shape.type === 'text');
+    if (isFieldChanging || textShapes.length === 0) {
+      return;
+    }
+    // Canvas text does not trigger web-font loading on its own. Remeasure after
+    // the selected bundled fonts are ready so wrapping matches the PDF output.
+    void Promise.all(
+      textShapes.map((shape) =>
+        document.fonts.load(`${shape.fontSize ?? 14}px "${getEnvelopeTextStyle(shape).fontFamily}"`),
+      ),
+    )
+      .then(() => {
+        if (isCancelled || !pageLayer.current) {
+          return;
+        }
+        textShapes.forEach(renderShapeOnLayer);
+        raiseShapes();
+        interactiveTransformer.current?.forceUpdate();
+        pageLayer.current.batchDraw();
+      })
+      .catch(() => {
+        // Retain the rendered fallback if a font asset cannot be loaded.
+      });
+    return () => {
+      isCancelled = true;
+    };
+  }, [localPageShapes, isFieldChanging]);
+
   const getDragPlacement = (fieldGroup: Konva.Group, clientPoint: { x: number; y: number } | null) => {
     const stageContainer = fieldGroup.getStage()?.container() ?? konvaContainer.current;
     const scrollContainer = stageContainer ? getScrollableParent(stageContainer) : null;
@@ -802,8 +785,11 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     // Use the dimensions captured at drag start. When multiple fields are
     // selected, getClientRect() can include the transformer's group bounds
     // for the anchor field and stretch its preview over the other fields.
-    const previewWidth = fieldPixelWidth;
-    const previewHeight = fieldPixelHeight;
+    const { width: previewWidth, height: previewHeight } = getFieldDragPreviewSize(
+      fieldWidth,
+      fieldHeight,
+      currentScale,
+    );
     const maxX = Math.max(0, scrollContainer.clientWidth - previewWidth);
     const maxY = Math.max(
       scrollContainer.scrollTop + scrollContainer.clientHeight - previewHeight,
@@ -1074,6 +1060,12 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       sourceLayer.batchDraw();
     }
 
+    targetPage.pageLayer.find('.envelope-shape').forEach((shape) => {
+      shape.moveToTop();
+    });
+    targetPage.pageLayer.find('Transformer').forEach((transformer) => {
+      transformer.moveToTop();
+    });
     targetPage.pageLayer.batchDraw();
     return positions;
   };
@@ -1103,9 +1095,13 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
       const clientPoint = getClientPoint(event);
       const originalPageNumber = getNumericAttr(fieldGroup, 'dragStartPage') ?? pageNumber;
-      const targetPageElement = clientPoint ? getPageAtPoint(clientPoint.x, clientPoint.y) : undefined;
-      const targetPageNumber = targetPageElement
-        ? Number(targetPageElement.dataset.pageNumber)
+      const hasShapes =
+        activeDragState?.fields.some((field) => getEditorShape(field.fieldGroup)) ??
+        Boolean(getEditorShape(fieldGroup));
+      const pointerPage = clientPoint ? getPageAtPoint(clientPoint.x, clientPoint.y) : undefined;
+      const targetPageElement = pointerPage;
+      const targetPageNumber = pointerPage
+        ? Number(pointerPage.dataset.pageNumber)
         : (getNumericAttr(fieldGroup, 'dragPageNumber') ?? originalPageNumber);
       const targetPage = pageRendererRegistry.get(targetPageNumber);
       const targetPageRect = targetPageElement?.getBoundingClientRect();
@@ -1133,15 +1129,33 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
                 },
               ],
             };
-      const positions = moveDraggedFieldsToPage(dragState, targetPage, fieldGroup.x(), fieldGroup.y());
-
-      if (dragState.fields.length > 1) {
-        completedGroupDragFieldFormIds.current = new Set(
-          dragState.fields.map((draggedField) => draggedField.fieldFormId),
-        );
+      if (dragState.fields.length > 1 || hasShapes) {
+        completedGroupDragFieldFormIds.current = new Set(dragState.fields.map((field) => field.fieldFormId));
+      }
+      const destinationBounds = targetPage.container.getBoundingClientRect();
+      const anchorX =
+        hasShapes && clientPoint
+          ? (clientPoint.x - destinationBounds.left - (getNumericAttr(fieldGroup, 'dragOffsetX') ?? 0)) /
+            targetPage.scale
+          : fieldGroup.x();
+      const anchorY =
+        hasShapes && clientPoint
+          ? (clientPoint.y - destinationBounds.top - (getNumericAttr(fieldGroup, 'dragOffsetY') ?? 0)) /
+            targetPage.scale
+          : fieldGroup.y();
+      const positions = moveDraggedFieldsToPage(dragState, targetPage, anchorX, anchorY);
+      if (hasShapes) {
+        setPendingSelectionFieldFormIds(dragState.fields.map((field) => field.fieldFormId));
       }
 
       for (const position of positions) {
+        if (
+          dragState.fields.some(
+            (field) => field.fieldFormId === position.fieldFormId && getEditorShape(field.fieldGroup),
+          )
+        ) {
+          continue;
+        }
         editorFields.updateFieldByFormId(position.fieldFormId, {
           page: targetPageNumber,
           positionX: position.positionX * 100,
@@ -1149,6 +1163,23 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         });
       }
 
+      if (hasShapes && shapesEditor && currentEnvelopeItem) {
+        const previous = shapesEditor.getShapes(currentEnvelopeItem.id);
+        void shapesEditor.save(
+          currentEnvelopeItem.id,
+          previous.map((shape) => {
+            const position = positions.find((position) => position.fieldFormId === shape.id);
+            return position
+              ? {
+                  ...shape,
+                  page: targetPageNumber,
+                  positionX: position.positionX * 100,
+                  positionY: position.positionY * 100,
+                }
+              : shape;
+          }),
+        );
+      }
       fieldDragState.current = null;
 
       setActivePlacement(null);
@@ -1421,7 +1452,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       }
 
       if (isInlineEditableField(field) && nativeEvent instanceof MouseEvent && nativeEvent.detail === 2) {
-        startInlineFieldEditing(field.formId);
+        startInlineFieldEditingRef.current(field.formId);
       }
 
       pageLayer.current?.batchDraw();
@@ -1439,6 +1470,57 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       console.error(err);
       setRenderError(true);
     }
+  };
+
+  const renderShapeOnLayer = (shape: TEnvelopeShape) => {
+    const layer = pageLayer.current;
+    if (!layer) {
+      return;
+    }
+    const existing = layer.findOne<Konva.Group>(`#${shape.id}`);
+    const group = renderEditorShape(shape, unscaledViewport.width, unscaledViewport.height, existing);
+    group.draggable(Boolean(shapesEditor?.isEditable));
+    if (!existing) {
+      layer.add(group);
+    }
+    group.off('click tap dblclick transformend dragmove dragend');
+    group.on('click tap', (event) => {
+      if (isNonPrimaryMouseClick(event) || !group.draggable()) {
+        return;
+      }
+      event.cancelBubble = true;
+      removePendingField();
+      const native = event.evt as MouseEvent;
+      const selected = selectedKonvaFieldGroupsRef.current;
+      setSelectedFields(
+        native.shiftKey || native.ctrlKey || native.metaKey
+          ? selected.includes(group)
+            ? selected.filter((node) => node !== group)
+            : [...selected, group]
+          : [group],
+      );
+      if (native.detail === 2 && shape.type === 'text') {
+        startInlineFieldEditingRef.current(shape.id);
+      }
+      layer.batchDraw();
+    });
+    group.on('dblclick', (event) => {
+      if (group.draggable()) {
+        event.cancelBubble = true;
+        setSelectedFields([group]);
+        if (shape.type === 'text') {
+          startInlineFieldEditingRef.current(shape.id);
+        }
+      }
+    });
+    group.on('transformend', () => {
+      const selectedShapes = selectedKonvaFieldGroupsRef.current.filter((node) => getEditorShape(node));
+      if (selectedShapes[0] === group) {
+        saveShapeNodes(selectedShapes, { pageWidth: unscaledViewport.width, pageHeight: unscaledViewport.height });
+      }
+    });
+    group.on('dragmove', handleFieldDragMove);
+    group.on('dragend', handleResizeOrMove);
   };
 
   /**
@@ -1480,27 +1562,35 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
     currentStage.on('mousemove touchmove', updatePastePointer);
     currentStage.on('contextmenu', (event) => openFieldContextMenuRef.current(event));
-    currentStage.on('dblclick', (event) => {
+    const editClickedValue = (event: KonvaEventObject<Event>) => {
       const fieldGroup = getFieldGroupFromTarget(event.target);
-
-      if (!fieldGroup) {
+      if (!fieldGroup?.draggable()) {
         return;
       }
-
-      const field = editorFields.getFieldByFormId(fieldGroup.id());
-
-      if (!isInlineEditableField(field)) {
+      const field = editorFieldsRef.current.getFieldByFormId(fieldGroup.id());
+      const content = getEditorShape(fieldGroup);
+      if (!isInlineEditableField(field) && content?.type !== 'text') {
         return;
       }
-
       event.cancelBubble = true;
       setSelectedFields([fieldGroup]);
-      startInlineFieldEditing(field.formId);
+      startInlineFieldEditingRef.current(fieldGroup.id());
+    };
+    currentStage.on('dblclick dbltap', editClickedValue);
+    currentStage.on('click', (event) => {
+      // The first click selects the item; the second can land on its transformer
+      // instead. Native detail still identifies that second click as a double-click.
+      if ((event.evt as MouseEvent).detail === 2) {
+        editClickedValue(event);
+      }
     });
 
     for (const field of localPageFields) {
       renderFieldOnLayer(field);
     }
+
+    localPageShapes.forEach(renderShapeOnLayer);
+    raiseShapes();
 
     // Handle stage click to deselect.
     currentStage.on('mousedown', (e) => {
@@ -1541,6 +1631,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         const currentPageNumber = getNumericAttr(fieldGroup, 'dragPageNumber') ?? pageNumber;
         const currentPage = pageRendererRegistry.get(currentPageNumber);
 
+        const hasShapeSelection = selectedFieldGroups.some((node) => getEditorShape(node));
         fieldDragState.current = {
           anchorFieldFormId: fieldGroup.id(),
           fields: selectedFieldGroups.map((selectedFieldGroup) => ({
@@ -1549,8 +1640,17 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
             height: getNumericAttr(selectedFieldGroup, 'dragFieldHeight') ?? selectedFieldGroup.height(),
             pageNumber: getNumericAttr(selectedFieldGroup, 'dragPageNumber') ?? currentPageNumber,
             width: getNumericAttr(selectedFieldGroup, 'dragFieldWidth') ?? selectedFieldGroup.width(),
-            x: selectedFieldGroup.x(),
-            y: selectedFieldGroup.y(),
+            // Konva may already have moved the anchor before dragstart fires.
+            // Snapshot the whole mixed group from the same saved coordinate frame.
+            ...getEditorDragOrigin(
+              selectedFieldGroup,
+              hasShapeSelection
+                ? (getEditorShape(selectedFieldGroup) ??
+                    editorFieldsRef.current.getFieldByFormId(selectedFieldGroup.id()))
+                : undefined,
+              currentPage?.pageWidth ?? unscaledViewport.width,
+              currentPage?.pageHeight ?? unscaledViewport.height,
+            ),
           })),
         };
 
@@ -1619,7 +1719,11 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       flipEnabled: false,
       boundBoxFunc: (oldBox, newBox) => {
         // Enforce minimum size
-        if (newBox.width < 30 || newBox.height < 20) {
+        if (
+          newBox.width < (interactiveTransformer.current?.nodes().every((node) => getEditorShape(node)) ? 1 : 30) ||
+          newBox.height <
+            (interactiveTransformer.current?.nodes().every((node) => getEditorShape(node)?.type === 'line') ? 0.01 : 20)
+        ) {
           return oldBox;
         }
 
@@ -1796,11 +1900,20 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       return;
     }
 
+    if (isFieldChanging) {
+      return;
+    }
     const currentPageLayer = pageLayer.current;
 
     // If doesn't exist in localFields, destroy it since it's been deleted.
     currentPageLayer.find('Group').forEach((group) => {
-      if (group.name() === 'field-group' && !localPageFields.some((field) => field.formId === group.id())) {
+      if (
+        group.hasName('field-group') &&
+        !pendingSelectionFieldFormIds.includes(group.id()) &&
+        !(getEditorShape(group)
+          ? localPageShapes.some((shape) => shape.id === group.id())
+          : localPageFields.some((field) => field.formId === group.id()))
+      ) {
         group.destroy();
       }
     });
@@ -1836,9 +1949,20 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       }
     });
 
+    localPageShapes.forEach((shape) => {
+      if (!isFieldRenderedOnAnotherPage(shape.id, currentPageLayer)) {
+        renderShapeOnLayer(shape);
+      }
+    });
+    raiseShapes();
+
     if (
       pendingSelectionFieldFormIds.length > 0 &&
-      pendingSelectionFieldFormIds.every((fieldFormId) => localPageFields.some((field) => field.formId === fieldFormId))
+      pendingSelectionFieldFormIds.every(
+        (fieldFormId) =>
+          localPageFields.some((field) => field.formId === fieldFormId) ||
+          localPageShapes.some((shape) => shape.id === fieldFormId),
+      )
     ) {
       const pendingSelectedFieldGroups = pendingSelectionFieldFormIds.flatMap((fieldFormId) => {
         const fieldGroup = currentPageLayer.findOne(`#${fieldFormId}`);
@@ -1858,7 +1982,11 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         return false;
       }
 
-      return localPageFields.some((field) => field.formId === fieldGroup.id());
+      return (
+        pendingSelectionFieldFormIds.includes(fieldGroup.id()) ||
+        localPageFields.some((field) => field.formId === fieldGroup.id()) ||
+        localPageShapes.some((shape) => shape.id === fieldGroup.id())
+      );
     });
 
     if (liveSelectedFieldGroups.length !== selectedKonvaFieldGroups.length) {
@@ -1874,6 +2002,8 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     fieldNames,
     highlightedFieldIds,
     localPageFields,
+    localPageShapes,
+    isFieldChanging,
     pendingSelectionFieldFormIds,
     selectedKonvaFieldGroups,
     selectionFieldIds,
@@ -1897,37 +2027,62 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     selectedKonvaFieldGroupsRef.current = fieldGroups;
     setSelectedKonvaFieldGroups(fieldGroups);
 
-    if (fieldGroups.length === 0 || fieldGroups.length > 1) {
-      editorFields.setSelectedField(null);
-    }
-
-    editorFields.setSelectedFieldFormIds(fieldGroups.map((fieldGroup) => fieldGroup.id()));
-
-    // Handle single field selection.
-    if (fieldGroups.length === 1) {
-      const fieldGroup = fieldGroups[0];
-
-      editorFields.setSelectedField(fieldGroup.id());
-      fieldGroup.moveToTop();
-    }
+    const fields = fieldGroups.filter((node) => !getEditorShape(node));
+    editorFields.setSelectedFieldFormIds(fields.map((node) => node.id()));
+    editorFields.setSelectedField(fieldGroups.length === 1 && fields.length === 1 ? fields[0].id() : null);
+    const shape = fieldGroups.length === 1 ? getEditorShape(fieldGroups[0]) : undefined;
+    shapesEditor?.syncSelection(shape && currentEnvelopeItem ? { itemId: currentEnvelopeItem.id, id: shape.id } : null);
+    interactiveTransformer.current?.enabledAnchors(
+      shape?.type === 'line' && shape.height === 0
+        ? ['middle-left', 'middle-right']
+        : [
+            'top-left',
+            'top-center',
+            'top-right',
+            'middle-left',
+            'middle-right',
+            'bottom-left',
+            'bottom-center',
+            'bottom-right',
+          ],
+    );
+    raiseShapes();
   };
+
+  useEffect(() => {
+    if (shapesEditor?.tool) {
+      setSelectedFields([]);
+    }
+  }, [shapesEditor?.tool]);
 
   const deletedSelectedFields = useCallback(() => {
     const fieldFormids = selectedKonvaFieldGroupsRef.current
       .map((field) => field.id())
       .filter((field) => field !== undefined);
 
-    editorFields.removeFieldsByFormId(fieldFormids);
-
+    const shapeIds = selectedKonvaFieldGroupsRef.current
+      .filter((node) => getEditorShape(node))
+      .map((node) => node.id());
+    editorFields.removeFieldsByFormId(fieldFormids.filter((id) => !shapeIds.includes(id)));
+    if (shapeIds.length > 0 && shapesEditor && currentEnvelopeItem) {
+      void shapesEditor.save(
+        currentEnvelopeItem.id,
+        shapesEditor.getShapes(currentEnvelopeItem.id).filter((shape) => !shapeIds.includes(shape.id)),
+      );
+    }
     setSelectedFields([]);
-  }, [editorFields]);
+  }, [editorFields, shapesEditor, currentEnvelopeItem?.id]);
 
   const copySelectedFields = useCallback(() => {
+    shapeClipboard.current = selectedKonvaFieldGroupsRef.current.flatMap((node) => {
+      const shape = getEditorShape(node);
+      return shape ? [{ ...shape }] : [];
+    });
     fieldClipboard.current = selectedKonvaFieldGroupsRef.current
       .map((fieldGroup) => editorFields.getFieldByFormId(fieldGroup.id()))
       .filter((field) => field !== undefined)
       .map((field) => structuredClone(field));
-  }, [editorFields, fieldClipboard]);
+  }, [editorFields, fieldClipboard, shapeClipboard]);
 
   const cutSelectedFields = useCallback(() => {
     const selectedFields = selectedKonvaFieldGroupsRef.current;
@@ -1943,40 +2098,53 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
   }, [copySelectedFields, deletedSelectedFields]);
 
   const pasteCopiedFields = useCallback(() => {
-    if (fieldClipboard.current.length === 0) {
+    if (fieldClipboard.current.length === 0 && shapeClipboard.current.length === 0) {
       return false;
     }
-
     const currentPage = pageRendererRegistry.get(pageNumber);
-
-    if (!currentPage) {
+    if (!currentPage || !currentEnvelopeItem) {
       return false;
     }
-
     const pasteTarget = getPasteTarget(currentPage);
-
-    const pastePositions = getPastePositions({
-      fields: fieldClipboard.current,
+    const positions = getPastePositions<TLocalField | TEnvelopeShape>({
+      fields: [...fieldClipboard.current, ...shapeClipboard.current],
       page: pasteTarget.page,
       x: pasteTarget.x,
       y: pasteTarget.y,
     });
-
     setSelectedFields([], true);
-
-    const newFields = pastePositions.map(({ field, positionX, positionY }) =>
-      editorFields.duplicateField(field, {
-        envelopeItemId: currentEnvelopeItem?.id,
-        page: pasteTarget.page.pageNumber,
-        positionX,
-        positionY,
-      }),
-    );
-
+    const newFields: TLocalField[] = [];
+    const newShapes: TEnvelopeShape[] = [];
+    for (const { field, positionX, positionY } of positions) {
+      if ('formId' in field) {
+        newFields.push(
+          editorFields.duplicateField(field, {
+            envelopeItemId: currentEnvelopeItem.id,
+            page: pasteTarget.page.pageNumber,
+            positionX,
+            positionY,
+          }),
+        );
+      } else {
+        newShapes.push({ ...field, id: crypto.randomUUID(), page: pasteTarget.page.pageNumber, positionX, positionY });
+      }
+    }
+    if (newShapes.length > 0 && shapesEditor) {
+      void shapesEditor.save(currentEnvelopeItem.id, [...shapesEditor.getShapes(currentEnvelopeItem.id), ...newShapes]);
+    }
     fieldClipboard.current = newFields;
-    setPendingSelectionFieldFormIds(newFields.map((field) => field.formId));
+    shapeClipboard.current = newShapes;
+    setPendingSelectionFieldFormIds([...newFields.map((field) => field.formId), ...newShapes.map((shape) => shape.id)]);
     return true;
-  }, [currentEnvelopeItem?.id, editorFields, fieldClipboard, pageLayer, pageNumber, setPendingSelectionFieldFormIds]);
+  }, [
+    currentEnvelopeItem?.id,
+    editorFields,
+    fieldClipboard,
+    shapeClipboard,
+    pageNumber,
+    shapesEditor,
+    setPendingSelectionFieldFormIds,
+  ]);
 
   /**
    * Moves the current selection by a small offset without dragging, so fields
@@ -2030,6 +2198,9 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         fieldGroup.position({ x: position.x, y: position.y });
         syncFieldIndicators(fieldGroup, targetPage, fieldGroup.getLayer());
 
+        if (getEditorShape(fieldGroup)) {
+          continue;
+        }
         editorFields.updateFieldByFormId(position.fieldFormId, {
           positionX: position.positionX * 100,
           positionY: position.positionY * 100,
@@ -2037,6 +2208,7 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       }
 
       if (hasMoved) {
+        saveShapeNodes(selectedFieldGroups, targetPage);
         interactiveTransformer.current?.forceUpdate();
         targetPage.pageLayer.batchDraw();
       }
@@ -2058,7 +2230,9 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
       if (
         target instanceof HTMLElement &&
-        (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+        (target.isContentEditable ||
+          ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
+          target.closest('[role="dialog"]'))
       ) {
         return;
       }
@@ -2070,15 +2244,21 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         selectedKonvaFieldGroupsRef.current.length === 1 ? selectedKonvaFieldGroupsRef.current[0] : undefined;
       const selectedField = selectedFieldGroup ? editorFields.getFieldByFormId(selectedFieldGroup.id()) : undefined;
 
+      const selectedContent = selectedFieldGroup ? getEditorShape(selectedFieldGroup) : undefined;
+
       if (
         !editingFieldValue &&
         !isModifierPressed &&
         !event.altKey &&
         event.key.length === 1 &&
-        isInlineEditableField(selectedField)
+        (isInlineEditableField(selectedField) || (selectedContent?.type === 'text' && selectedFieldGroup?.draggable()))
       ) {
         event.preventDefault();
-        startInlineFieldEditing(selectedField.formId, `${getInlineFieldValue(selectedField)}${event.key}`);
+        if (isInlineEditableField(selectedField)) {
+          startInlineFieldEditing(selectedField.formId, `${getInlineFieldValue(selectedField)}${event.key}`);
+        } else if (selectedContent?.type === 'text') {
+          startInlineFieldEditing(selectedContent.id, `${selectedContent.text ?? ''}${event.key}`);
+        }
         return;
       }
 
@@ -2112,6 +2292,16 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         return;
       }
 
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setSelectedFields([]);
+        return;
+      }
+      if (event.key === 'Enter' && selectedContent?.type === 'text' && selectedFieldGroup?.draggable()) {
+        event.preventDefault();
+        startInlineFieldEditing(selectedContent.id);
+        return;
+      }
       if (event.key !== 'Delete' && event.key !== 'Backspace') {
         return;
       }
@@ -2142,27 +2332,56 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     );
   };
 
-  const duplicatedSelectedFields = () => {
-    const fields = selectedKonvaFieldGroupsRef.current
-      .map((field) => editorFields.getFieldByFormId(field.id()))
-      .filter((field) => field !== undefined);
-
-    const duplicatedFields = fields.map((field) => editorFields.duplicateField(field));
-
-    setPendingSelectionFieldFormIds(duplicatedFields.map((field) => field.formId));
-  };
-
-  const duplicatedSelectedFieldsOnAllPages = () => {
-    const fields = selectedKonvaFieldGroupsRef.current
-      .map((field) => editorFields.getFieldByFormId(field.id()))
-      .filter((field) => field !== undefined);
-
-    for (const field of fields) {
-      editorFields.duplicateFieldToAllPages(field);
+  const duplicateSelection = (allPages: boolean) => {
+    const nodes = selectedKonvaFieldGroupsRef.current;
+    const fields = nodes.flatMap((node) => {
+      const field = editorFields.getFieldByFormId(node.id());
+      return field ? [field] : [];
+    });
+    const shapes = nodes.flatMap((node) => {
+      const shape = getEditorShape(node);
+      return shape ? [shape] : [];
+    });
+    const items = [...fields, ...shapes];
+    const deltaX = Math.max(0, Math.min(3, ...items.map((item) => 100 - item.positionX - item.width)));
+    const deltaY = Math.max(0, Math.min(3, ...items.map((item) => 100 - item.positionY - item.height)));
+    const newFields = fields.flatMap((field) =>
+      allPages
+        ? editorFields.duplicateFieldToAllPages(field)
+        : [
+            editorFields.duplicateField(field, {
+              positionX: field.positionX + deltaX,
+              positionY: field.positionY + deltaY,
+            }),
+          ],
+    );
+    const pages = Array.from(
+      { length: Number(konvaContainer.current?.closest('[data-pdf-content]')?.getAttribute('data-page-count')) || 1 },
+      (_, index) => index + 1,
+    );
+    const newShapes = shapes.flatMap((shape) =>
+      (allPages ? pages.filter((page) => page !== shape.page) : [shape.page]).map((page) => ({
+        ...shape,
+        id: crypto.randomUUID(),
+        page,
+        positionX: shape.positionX + (allPages ? 0 : deltaX),
+        positionY: shape.positionY + (allPages ? 0 : deltaY),
+      })),
+    );
+    if (newShapes.length > 0 && shapesEditor && currentEnvelopeItem) {
+      void shapesEditor.save(currentEnvelopeItem.id, [...shapesEditor.getShapes(currentEnvelopeItem.id), ...newShapes]);
     }
-
-    setSelectedFields([]);
+    if (allPages) {
+      setSelectedFields([]);
+    } else {
+      setPendingSelectionFieldFormIds([
+        ...newFields.map((field) => field.formId),
+        ...newShapes.map((shape) => shape.id),
+      ]);
+    }
   };
+  const duplicatedSelectedFields = () => duplicateSelection(false);
+  const duplicatedSelectedFieldsOnAllPages = () => duplicateSelection(true);
 
   /**
    * Create a field from a pending field.
@@ -2238,9 +2457,19 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
   }
 
   const editingField = editingFieldValue ? editorFields.getFieldByFormId(editingFieldValue.formId) : undefined;
+  const editingContent = editingFieldValue
+    ? itemShapes.find((shape) => shape.id === editingFieldValue.formId && shape.type === 'text')
+    : undefined;
+  const editingValue = isInlineEditableField(editingField)
+    ? editingField
+    : editingContent?.type === 'text'
+      ? { ...editingContent, type: 'text' as const }
+      : undefined;
   const contextMenuField = fieldContextMenu?.fieldFormId
     ? editorFields.getFieldByFormId(fieldContextMenu.fieldFormId)
     : undefined;
+  const selectedShape = selectedKonvaFieldGroups.length === 1 ? getEditorShape(selectedKonvaFieldGroups[0]) : undefined;
+  const hasSelectedFields = selectedKonvaFieldGroups.some((node) => !getEditorShape(node));
   const selectedInlineEditableField =
     selectedKonvaFieldGroups.length === 1 ? editorFields.getFieldByFormId(selectedKonvaFieldGroups[0].id()) : undefined;
   const selectedInlineEditableFieldFormId = isInlineEditableField(selectedInlineEditableField)
@@ -2260,11 +2489,15 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
           handleDeleteSelectedFields={deletedSelectedFields}
           handleChangeRecipient={changeSelectedFieldsRecipients}
           handleEditSelectedValue={() => {
-            if (selectedInlineEditableFieldFormId) {
+            if (selectedShape?.type === 'text') {
+              startInlineFieldEditing(selectedShape.id);
+            } else if (selectedInlineEditableFieldFormId) {
               startInlineFieldEditing(selectedInlineEditableFieldFormId);
             }
           }}
-          canEditValue={Boolean(selectedInlineEditableFieldFormId)}
+          canEditValue={Boolean(selectedInlineEditableFieldFormId || selectedShape?.type === 'text')}
+          canChangeRecipient={hasSelectedFields}
+          editLabel={selectedShape ? (selectedShape.type === 'text' ? t`Edit text` : t`Edit shape`) : undefined}
           editValueType={selectedInlineEditableFieldType}
           selectedFieldFormId={selectedKonvaFieldGroups.map((field) => field.id())}
           style={{
@@ -2279,10 +2512,10 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
         />
       )}
 
-      {editingFieldValue && isInlineEditableField(editingField) && (
+      {editingFieldValue && editingValue && (
         <EditorFieldValue
           key={editingFieldValue.formId}
-          field={editingField}
+          field={editingValue}
           initialValue={editingFieldValue.initialValue}
           pageHeight={unscaledViewport.height}
           pageWidth={unscaledViewport.width}
@@ -2293,26 +2526,36 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
       )}
 
       {fieldContextMenu && (
-        <FieldContextMenu
+        <EditorContextMenu
           x={fieldContextMenu.x}
           y={fieldContextMenu.y}
           canCopy={selectedKonvaFieldGroups.length > 0 && selectedKonvaFieldGroups.every((field) => field.draggable())}
           canDelete={
             selectedKonvaFieldGroups.length > 0 && selectedKonvaFieldGroups.every((field) => field.draggable())
           }
-          canChangeRecipient={
-            selectedKonvaFieldGroups.length > 0 && selectedKonvaFieldGroups.every((field) => field.draggable())
-          }
+          canChangeRecipient={hasSelectedFields && selectedKonvaFieldGroups.every((field) => field.draggable())}
           canDuplicate={
             selectedKonvaFieldGroups.length > 0 && selectedKonvaFieldGroups.every((field) => field.draggable())
           }
           canEditValue={
             selectedKonvaFieldGroups.length === 1 &&
             selectedKonvaFieldGroups[0]?.draggable() &&
-            isInlineEditableField(contextMenuField)
+            (isInlineEditableField(contextMenuField) || selectedShape?.type === 'text')
           }
-          editValueType={isInlineEditableField(contextMenuField) ? contextMenuField.type : null}
-          canPaste={fieldClipboard.current.length > 0}
+          editLabel={
+            selectedShape ? (
+              selectedShape.type === 'text' ? (
+                <Trans>Edit text</Trans>
+              ) : (
+                <Trans>Edit shape</Trans>
+              )
+            ) : contextMenuField?.type === FieldType.NUMBER ? (
+              <Trans>Enter number</Trans>
+            ) : (
+              <Trans>Add text</Trans>
+            )
+          }
+          canPaste={fieldClipboard.current.length > 0 || shapeClipboard.current.length > 0}
           onCut={cutSelectedFields}
           onCopy={() => {
             copySelectedFields();
@@ -2335,7 +2578,9 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
             setFieldContextMenu(null);
           }}
           onEditValue={() => {
-            if (isInlineEditableField(contextMenuField)) {
+            if (selectedShape?.type === 'text') {
+              startInlineFieldEditing(selectedShape.id);
+            } else if (isInlineEditableField(contextMenuField)) {
               startInlineFieldEditing(contextMenuField.formId);
             }
           }}
@@ -2404,6 +2649,8 @@ type FieldActionButtonsProps = React.HTMLAttributes<HTMLDivElement> & {
   handleEditSelectedValue: () => void;
   canEditValue: boolean;
   editValueType: TInlineEditableFieldType | null;
+  editLabel?: string;
+  canChangeRecipient: boolean;
   selectedFieldFormId: string[];
 };
 
@@ -2416,6 +2663,8 @@ const FieldActionButtons = ({
   handleEditSelectedValue,
   canEditValue,
   editValueType,
+  editLabel,
+  canChangeRecipient,
   selectedFieldFormId,
   ...props
 }: FieldActionButtonsProps) => {
@@ -2461,19 +2710,21 @@ const FieldActionButtons = ({
   return (
     <div className="flex flex-col items-center" {...props}>
       <div className="group flex w-fit items-center justify-evenly gap-x-1 rounded-md border bg-gray-900 p-0.5">
-        <button
-          title={t`Change Recipient`}
-          type="button"
-          className="rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
-          onClick={() => setShowRecipientSelector(true)}
-          onTouchEnd={() => setShowRecipientSelector(true)}
-        >
-          <UserCircleIcon className="h-3 w-3" />
-        </button>
+        {canChangeRecipient && (
+          <button
+            title={t`Change Recipient`}
+            type="button"
+            className="rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
+            onClick={() => setShowRecipientSelector(true)}
+            onTouchEnd={() => setShowRecipientSelector(true)}
+          >
+            <UserCircleIcon className="h-3 w-3" />
+          </button>
+        )}
 
         {canEditValue && (
           <button
-            title={editValueType === FieldType.NUMBER ? t`Edit number` : t`Edit text`}
+            title={editLabel ?? (editValueType === FieldType.NUMBER ? t`Edit number` : t`Edit text`)}
             type="button"
             className="rounded-sm p-1.5 text-gray-400 transition-colors hover:bg-white/10 hover:text-gray-100"
             onClick={handleEditSelectedValue}

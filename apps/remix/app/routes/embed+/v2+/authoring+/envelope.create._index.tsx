@@ -9,6 +9,7 @@ import {
   type TEmbedCreateEnvelopeAuthoring,
   ZEmbedCreateEnvelopeAuthoringSchema,
 } from '@documenso/lib/types/envelope-editor';
+import { parseEnvelopeShapes } from '@documenso/lib/types/envelope-shape';
 import type { TEnvelopeFieldAndMeta } from '@documenso/lib/types/field-meta';
 import { extractDerivedDocumentMeta } from '@documenso/lib/utils/document';
 import { buildEmbeddedEditorOptions, buildEmbeddedFeatures } from '@documenso/lib/utils/embed-config';
@@ -199,6 +200,10 @@ const EnvelopeCreatePage = ({ embedAuthoringOptions }: EnvelopeCreatePageProps) 
     });
 
     const payload: TCreateEnvelopePayload = {
+      documentShapes: sortedItems.map((item, index) => ({
+        identifier: index,
+        shapes: parseEnvelopeShapes(item.shapes),
+      })),
       title: envelope.title,
       type: envelope.type,
       externalId: envelope.externalId ?? undefined,

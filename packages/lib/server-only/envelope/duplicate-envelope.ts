@@ -2,8 +2,8 @@ import { prisma } from '@documenso/prisma';
 import { DocumentSource, EnvelopeType, type Prisma, WebhookTriggerEvents } from '@prisma/client';
 import pMap from 'p-map';
 import { omit } from 'remeda';
-
 import { AppError, AppErrorCode } from '../../errors/app-error';
+import { parseEnvelopeShapes } from '../../types/envelope-shape';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
 import { nanoid, prefixedId } from '../../universal/id';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
@@ -177,6 +177,7 @@ export const duplicateEnvelope = async ({
         data: {
           id: prefixedId('envelope_item'),
           title: envelopeItem.title,
+          shapes: parseEnvelopeShapes(envelopeItem.shapes),
           order: envelopeItem.order,
           envelopeId: duplicatedEnvelope.id,
           documentDataId: duplicatedDocumentData.id,

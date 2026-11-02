@@ -13,6 +13,7 @@ import { getRecipientColor } from '@documenso/ui/lib/recipient-colors';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { useLingui } from '@lingui/react/macro';
 import { EnvelopeType, Prisma, ReadStatus, SendStatus, SigningStatus } from '@prisma/client';
+import { useIsMutating } from '@tanstack/react-query';
 import type React from 'react';
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -391,9 +392,10 @@ export const EnvelopeEditorProvider = ({
     setEnvelope((prev) => ({ ...prev, ...localEnvelope }));
   };
 
+  const isShapesSaving = useIsMutating({ mutationKey: [['envelope', 'item', 'setShapes']] }) > 0;
   const isAutosaving = useMemo(() => {
-    return isFieldsMutationPending || isRecipientsMutationPending || isEnvelopeMutationPending;
-  }, [isFieldsMutationPending, isRecipientsMutationPending, isEnvelopeMutationPending]);
+    return isFieldsMutationPending || isRecipientsMutationPending || isEnvelopeMutationPending || isShapesSaving;
+  }, [isFieldsMutationPending, isRecipientsMutationPending, isEnvelopeMutationPending, isShapesSaving]);
 
   const relativePath = useMemo(() => {
     let documentRootPath = formatDocumentsPath(envelope.team.url);

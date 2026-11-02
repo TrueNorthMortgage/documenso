@@ -4,7 +4,8 @@ import '../konva/skia-backend';
 import type { FieldWithSignature } from '@documenso/prisma/types/field-with-signature';
 import Konva from 'konva';
 import type { Canvas } from 'skia-canvas';
-
+import type { TEnvelopeShape } from '../../types/envelope-shape';
+import { renderEnvelopeShapes } from '../../universal/field-renderer/render-envelope-shapes';
 import { renderField } from '../../universal/field-renderer/render-field';
 import { ensureFontLibrary } from './helpers';
 
@@ -12,9 +13,10 @@ type InsertFieldInPDFV2Options = {
   pageWidth: number;
   pageHeight: number;
   fields: FieldWithSignature[];
+  shapes?: TEnvelopeShape[];
 };
 
-export const insertFieldInPDFV2 = async ({ pageWidth, pageHeight, fields }: InsertFieldInPDFV2Options) => {
+export const insertFieldInPDFV2 = async ({ pageWidth, pageHeight, fields, shapes = [] }: InsertFieldInPDFV2Options) => {
   ensureFontLibrary();
 
   let stage: Konva.Stage | null = new Konva.Stage({ width: pageWidth, height: pageHeight });
@@ -40,6 +42,7 @@ export const insertFieldInPDFV2 = async ({ pageWidth, pageHeight, fields }: Inse
     });
   }
 
+  renderEnvelopeShapes(layer, shapes, pageWidth, pageHeight);
   stage.add(layer);
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions

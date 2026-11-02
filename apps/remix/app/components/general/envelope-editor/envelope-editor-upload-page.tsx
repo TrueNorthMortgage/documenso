@@ -163,7 +163,7 @@ export const EnvelopeEditorUploadPage = () => {
       // Update the envelope item with the new documentDataId.
       setLocalEnvelope({
         envelopeItems: envelope.envelopeItems.map((item) =>
-          item.id === data.id ? { ...item, documentDataId: data.documentDataId } : item,
+          item.id === data.id ? { ...item, documentDataId: data.documentDataId, shapes: [] } : item,
         ),
       });
 
@@ -345,7 +345,7 @@ export const EnvelopeEditorUploadPage = () => {
 
         setLocalEnvelope({
           envelopeItems: envelope.envelopeItems.map((item) =>
-            item.id === envelopeItemId ? { ...item, data, pageCount: newPageCount } : item,
+            item.id === envelopeItemId ? { ...item, data, pageCount: newPageCount, shapes: [] } : item,
           ),
           fields: remainingFields,
         });

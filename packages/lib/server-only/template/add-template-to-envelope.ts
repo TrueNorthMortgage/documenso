@@ -8,6 +8,7 @@ import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
 import { prisma } from '@documenso/prisma';
 import { DocumentStatus, EnvelopeType } from '@prisma/client';
+import { parseEnvelopeShapes } from '../../types/envelope-shape';
 
 import { canRecipientFieldsBeModified } from '../../utils/recipients';
 import { shouldMatchTemplateRecipientsBySigningOrder } from '../../utils/template-recipient-mapping';
@@ -187,6 +188,7 @@ export const addTemplateToEnvelope = async ({
           ? sourceEnvelopeItem.title.slice(0, -4)
           : sourceEnvelopeItem.title,
         documentDataId: documentData.id,
+        shapes: parseEnvelopeShapes(sourceEnvelopeItem.shapes),
         order,
       },
       include: {

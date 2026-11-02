@@ -1,3 +1,4 @@
+import { ZEnvelopeShapesSchema } from '@documenso/lib/types/envelope-shape';
 import { prisma } from '@documenso/prisma';
 import DocumentMetaSchema from '@documenso/prisma/generated/zod/modelSchema/DocumentMetaSchema';
 import EnvelopeItemSchema from '@documenso/prisma/generated/zod/modelSchema/EnvelopeItemSchema';
@@ -82,7 +83,9 @@ export const ZEnvelopeForSigningResponse = z.object({
       title: true,
       order: true,
       documentDataId: true,
-    }).array(),
+    })
+      .extend({ shapes: ZEnvelopeShapesSchema.optional() })
+      .array(),
 
     team: TeamSchema.pick({
       id: true,

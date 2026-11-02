@@ -1,6 +1,7 @@
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { generatePartialSignedPdf } from '@documenso/lib/server-only/pdf/generate-partial-signed-pdf';
 import { getTeamById } from '@documenso/lib/server-only/team/get-team';
+import { parseEnvelopeShapes } from '@documenso/lib/types/envelope-shape';
 import { getConditionalFieldVisibility } from '@documenso/lib/universal/conditional-field-visibility';
 import { sha256 } from '@documenso/lib/universal/crypto';
 import { getFileServerSide } from '@documenso/lib/universal/upload/get-file.server';
@@ -181,6 +182,8 @@ const handlePendingFileRequest = async ({
     ...field,
     envelopeInternalVersion: envelope.internalVersion,
   }));
+  const item = await prisma.envelopeItem.findFirstOrThrow({ where: { id: envelopeItemId, envelopeId: envelope.id } });
+  const shapes = parseEnvelopeShapes(item.shapes);
   const fieldVisibility = getConditionalFieldVisibility(fieldsWithVersion);
   const visibleFields = fieldsWithVersion.filter((field) => fieldVisibility.get(field.id) ?? true);
 
@@ -188,6 +191,7 @@ const handlePendingFileRequest = async ({
     sha256(
       JSON.stringify({
         envelopeStatus: envelope.status,
+        shapes,
         fields: visibleFields.map((field) => ({
           id: field.id,
           customText: field.customText,
@@ -221,6 +225,7 @@ const handlePendingFileRequest = async ({
   const pdf = await generatePartialSignedPdf({
     pdfData: file,
     fields: visibleFields,
+    shapes,
   });
 
   c.get('logger').info({

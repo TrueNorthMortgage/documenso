@@ -1,5 +1,6 @@
 import { ZDocumentAccessAuthTypesSchema, ZDocumentActionAuthTypesSchema } from '@documenso/lib/types/document-auth';
 import { ZDocumentMetaUpdateSchema } from '@documenso/lib/types/document-meta';
+import { ZEnvelopeShapesSchema } from '@documenso/lib/types/envelope-shape';
 import {
   ZClampedFieldHeightSchema,
   ZClampedFieldPositionXSchema,
@@ -37,6 +38,7 @@ export const ZUpdateEmbeddingEnvelopePayloadSchema = z.object({
          * This is not necesssarily a real id, it can be a temporary id for the envelope item.
          */
         id: z.string(),
+        shapes: ZEnvelopeShapesSchema.optional(),
 
         /**
          * The title of the envelope item.

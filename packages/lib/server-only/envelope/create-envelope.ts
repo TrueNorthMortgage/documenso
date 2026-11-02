@@ -28,6 +28,7 @@ import type {
 } from '../../types/document-auth';
 import type { TDocumentFormValues } from '../../types/document-form-values';
 import type { TEnvelopeAttachmentType } from '../../types/envelope-attachment';
+import type { TEnvelopeShape } from '../../types/envelope-shape';
 import type { TFieldAndMeta } from '../../types/field-meta';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../types/webhook-payload';
 import { getFileServerSide } from '../../universal/upload/get-file.server';
@@ -72,6 +73,7 @@ export type CreateEnvelopeOptions = {
       documentDataId: string;
       order?: number;
       placeholders?: PlaceholderInfo[];
+      shapes?: TEnvelopeShape[];
     }[];
     formValues?: TDocumentFormValues;
 
@@ -213,6 +215,7 @@ export const createEnvelope = async ({
         return {
           title: titleToUse.endsWith('.pdf') ? titleToUse.slice(0, -4) : titleToUse,
           documentDataId: newDocumentData.id,
+          shapes: item.shapes,
           order: item.order,
         };
       }),
@@ -323,6 +326,7 @@ export const createEnvelope = async ({
               title: stripPdfExtension(item.title || canonicalTitle),
               order: item.order !== undefined ? item.order : i + 1,
               documentDataId: item.documentDataId,
+              shapes: item.shapes ?? [],
             })),
           },
         },

@@ -1,4 +1,5 @@
 import { ZBaseEmbedDataSchema } from '@documenso/lib/types/embed-base-schemas';
+import { ZEnvelopeShapesSchema } from '@documenso/lib/types/envelope-shape';
 import { ZEnvelopeFieldSchema } from '@documenso/lib/types/field';
 import { ZEnvelopeRecipientLiteSchema } from '@documenso/lib/types/recipient';
 import { DocumentMetaSchema } from '@documenso/prisma/generated/zod/modelSchema/DocumentMetaSchema';
@@ -298,6 +299,7 @@ export const ZEditorEnvelopeSchema = EnvelopeSchema.pick({
     order: true,
     documentDataId: true,
   })
+    .extend({ shapes: ZEnvelopeShapesSchema.optional() })
     .extend({
       // Only used for embedded.
       data: z.instanceof(Uint8Array).optional(),
