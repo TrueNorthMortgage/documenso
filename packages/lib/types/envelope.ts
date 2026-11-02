@@ -1,3 +1,4 @@
+import { ZEnvelopeShapesSchema } from '@documenso/lib/types/envelope-shape';
 import { DocumentMetaSchema } from '@documenso/prisma/generated/zod/modelSchema/DocumentMetaSchema';
 import { EnvelopeItemSchema } from '@documenso/prisma/generated/zod/modelSchema/EnvelopeItemSchema';
 import { EnvelopeSchema } from '@documenso/prisma/generated/zod/modelSchema/EnvelopeSchema';
@@ -66,7 +67,9 @@ export const ZEnvelopeSchema = EnvelopeSchema.pick({
     id: true,
     title: true,
     order: true,
-  }).array(),
+  })
+    .extend({ shapes: ZEnvelopeShapesSchema.optional() })
+    .array(),
   directLink: TemplateDirectLinkSchema.pick({
     directTemplateRecipientId: true,
     enabled: true,

@@ -11,7 +11,6 @@ import type { DocumentData, Envelope, EnvelopeItem, Field } from '@prisma/client
 import { DocumentStatus, EnvelopeType, RecipientRole, SigningStatus, WebhookTriggerEvents } from '@prisma/client';
 import { nanoid } from 'nanoid';
 import { groupBy } from 'remeda';
-
 import { NEXT_PRIVATE_USE_PLAYWRIGHT_PDF } from '../../../constants/app';
 import { AppError, AppErrorCode } from '../../../errors/app-error';
 import { sendCompletedEmail } from '../../../server-only/document/send-completed-email';
@@ -23,6 +22,7 @@ import { legacy_insertFieldInPDF } from '../../../server-only/pdf/legacy-insert-
 import { getTeamSettings } from '../../../server-only/team/get-team-settings';
 import { triggerWebhook } from '../../../server-only/webhooks/trigger/trigger-webhook';
 import { DOCUMENT_AUDIT_LOG_TYPE, type TDocumentAuditLog } from '../../../types/document-audit-logs';
+import { parseEnvelopeShapes } from '../../../types/envelope-shape';
 import { mapEnvelopeToWebhookDocumentPayload, ZWebhookDocumentSchema } from '../../../types/webhook-payload';
 import { getConditionalFieldVisibility } from '../../../universal/conditional-field-visibility';
 import { prefixedId } from '../../../universal/id';
@@ -424,7 +424,14 @@ const decorateAndSignPdf = async ({
 
   // Handle V2 envelope insertions.
   if (envelope.internalVersion === 2) {
-    const fieldsGroupedByPage = groupBy(envelopeItemFields, (field) => field.page);
+    const shapes = parseEnvelopeShapes(envelopeItem.shapes);
+    const fieldsGroupedByPage: Record<number, typeof envelopeItemFields> = groupBy(
+      envelopeItemFields,
+      (field) => field.page,
+    );
+    for (const shape of shapes) {
+      fieldsGroupedByPage[shape.page] ??= [];
+    }
 
     for (const [pageNumber, fields] of Object.entries(fieldsGroupedByPage)) {
       const page = pdfDoc.getPage(Number(pageNumber) - 1);
@@ -440,6 +447,7 @@ const decorateAndSignPdf = async ({
         pageWidth,
         pageHeight,
         fields,
+        shapes: shapes.filter((shape) => shape.page === Number(pageNumber)),
       });
 
       const overlayPdf = await PDF.load(overlayBytes);

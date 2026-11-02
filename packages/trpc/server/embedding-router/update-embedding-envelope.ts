@@ -6,12 +6,14 @@ import { assertCanUpdateDocumentVisibility } from '@documenso/lib/server-only/en
 import { UNSAFE_createEnvelopeItems } from '@documenso/lib/server-only/envelope-item/create-envelope-items';
 import { UNSAFE_deleteEnvelopeItem } from '@documenso/lib/server-only/envelope-item/delete-envelope-item';
 import { UNSAFE_replaceEnvelopeItemPdf } from '@documenso/lib/server-only/envelope-item/replace-envelope-item-pdf';
+import { setEnvelopeItemShapes } from '@documenso/lib/server-only/envelope-item/set-envelope-item-shapes';
 import { UNSAFE_updateEnvelopeItems } from '@documenso/lib/server-only/envelope-item/update-envelope-items';
 import { setFieldsForDocument } from '@documenso/lib/server-only/field/set-fields-for-document';
 import { setFieldsForTemplate } from '@documenso/lib/server-only/field/set-fields-for-template';
 import { setDocumentRecipients } from '@documenso/lib/server-only/recipient/set-document-recipients';
 import { setTemplateRecipients } from '@documenso/lib/server-only/recipient/set-template-recipients';
 import { assertCanManageTemplate } from '@documenso/lib/server-only/template/validate-template-access';
+import { parseEnvelopeShapes } from '@documenso/lib/types/envelope-shape';
 import { nanoid } from '@documenso/lib/universal/id';
 import { PRESIGNED_ENVELOPE_ITEM_ID_PREFIX } from '@documenso/lib/utils/embed-config';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
@@ -348,6 +350,27 @@ export const updateEmbeddingEnvelopeRoute = procedure
       meta,
       requestMetadata: ctx.metadata,
     });
+
+    for (const item of data.envelopeItems) {
+      if (item.shapes === undefined) {
+        continue;
+      }
+      const itemId = embeddedEnvelopeItemIdMapping[item.id] ?? item.id;
+      const original = envelope.envelopeItems.find((original) => original.id === itemId);
+      const previousShapes = item.replaceFileIndex !== undefined ? [] : parseEnvelopeShapes(original?.shapes);
+      if (JSON.stringify(previousShapes) === JSON.stringify(item.shapes)) {
+        continue;
+      }
+      await setEnvelopeItemShapes({
+        envelopeId: envelope.id,
+        envelopeItemId: itemId,
+        userId: apiToken.userId,
+        teamId: apiToken.teamId,
+        shapes: item.shapes,
+        previousShapes,
+        requestMetadata: ctx.metadata,
+      });
+    }
 
     // Step 3: Update the recipients
     const recipientsWithClientId = data.recipients.map((recipient) => ({

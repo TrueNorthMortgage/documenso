@@ -40,6 +40,7 @@ type EnvelopeRenderOverrideSettings = {
 };
 
 type EnvelopeRenderItem = {
+  shapes?: unknown;
   id: string;
   title: string;
   order: number;
@@ -86,6 +87,7 @@ interface EnvelopeRenderProviderProps {
    * If data is optional then we build the URL based of the IDs.
    */
   envelopeItems: {
+    shapes?: unknown;
     id: string;
     title: string;
     order: number;

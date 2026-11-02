@@ -103,6 +103,7 @@ export const UNSAFE_replaceEnvelopeItemPdf = async ({
       },
       data: {
         documentDataId: newDocumentData.id,
+        shapes: [],
         title: data.title,
         order: data.order,
       },

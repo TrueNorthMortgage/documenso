@@ -2,6 +2,7 @@ import { ZDocumentAccessAuthTypesSchema, ZDocumentActionAuthTypesSchema } from '
 import { ZDocumentFormValuesSchema } from '@documenso/lib/types/document-form-values';
 import { ZDocumentMetaCreateSchema } from '@documenso/lib/types/document-meta';
 import { ZEnvelopeAttachmentTypeSchema } from '@documenso/lib/types/envelope-attachment';
+import { ZEnvelopeShapesSchema } from '@documenso/lib/types/envelope-shape';
 import {
   ZClampedFieldHeightSchema,
   ZClampedFieldPositionXSchema,
@@ -32,6 +33,10 @@ export const createEnvelopeMeta: TrpcRouteMeta = {
 };
 
 export const ZCreateEnvelopePayloadSchema = z.object({
+  documentShapes: z
+    .array(z.object({ identifier: z.number().int().min(0), shapes: ZEnvelopeShapesSchema }))
+    .max(50)
+    .optional(),
   title: ZDocumentTitleSchema,
   type: z.nativeEnum(EnvelopeType),
   delegatedDocumentOwner: zEmail().describe('The email of the user who will own the document.').optional(),

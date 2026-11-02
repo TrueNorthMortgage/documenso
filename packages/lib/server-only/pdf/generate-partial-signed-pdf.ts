@@ -1,12 +1,14 @@
 import type { FieldWithSignature } from '@documenso/prisma/types/field-with-signature';
 import { PDF } from '@libpdf/core';
 import { groupBy } from 'remeda';
+import type { TEnvelopeShape } from '../../types/envelope-shape';
 
 import { insertFieldInPDFV2 } from './insert-field-in-pdf-v2';
 
 type GeneratePartialSignedPdfOptions = {
   pdfData: Uint8Array;
   fields: FieldWithSignature[];
+  shapes?: TEnvelopeShape[];
 };
 
 /**
@@ -17,13 +19,16 @@ type GeneratePartialSignedPdfOptions = {
  * No PKI signature, no certificate page, no audit log appendix - this is a
  * preview of the in-progress envelope, not a final executed document.
  */
-export const generatePartialSignedPdf = async ({ pdfData, fields }: GeneratePartialSignedPdfOptions) => {
+export const generatePartialSignedPdf = async ({ pdfData, fields, shapes = [] }: GeneratePartialSignedPdfOptions) => {
   const pdfDoc = await PDF.load(pdfData);
 
   pdfDoc.flattenAll();
   pdfDoc.upgradeVersion('1.7');
 
-  const fieldsGroupedByPage = groupBy(fields, (field) => field.page);
+  const fieldsGroupedByPage: Record<number, FieldWithSignature[]> = groupBy(fields, (field) => field.page);
+  for (const shape of shapes) {
+    fieldsGroupedByPage[shape.page] ??= [];
+  }
 
   for (const [pageNumber, pageFields] of Object.entries(fieldsGroupedByPage)) {
     const page = pdfDoc.getPage(Number(pageNumber) - 1);
@@ -38,6 +43,7 @@ export const generatePartialSignedPdf = async ({ pdfData, fields }: GeneratePart
       pageWidth,
       pageHeight,
       fields: pageFields,
+      shapes: shapes.filter((shape) => shape.page === Number(pageNumber)),
     });
 
     const overlayPdf = await PDF.load(overlayBytes);

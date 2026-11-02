@@ -5,7 +5,8 @@ import { cn } from '@documenso/ui/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@documenso/ui/primitives/alert';
 import type { MessageDescriptor } from '@lingui/core';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { EnvelopeShapeOverlay } from './envelope-shape-overlay';
 
 import type { PDFViewerProps } from './pdf-viewer';
 import PDFViewerLazy from './pdf-viewer-lazy';
@@ -25,6 +26,16 @@ export const EnvelopePdfViewer = ({ errorMessage, className, showZoomControls, .
   const [zoomLevel, setZoomLevel] = useState<PdfZoomLevel>(DEFAULT_PDF_ZOOM_LEVEL);
 
   const { currentEnvelopeItem, renderError } = useCurrentEnvelopeRender();
+  const OriginalPageRenderer = props.customPageRenderer;
+  const PageRenderer = useMemo(() => {
+    const PageRendererWithShapes: NonNullable<PDFViewerProps['customPageRenderer']> = ({ pageData }) => (
+      <>
+        {OriginalPageRenderer && <OriginalPageRenderer pageData={pageData} />}
+        <EnvelopeShapeOverlay pageData={pageData} />
+      </>
+    );
+    return PageRendererWithShapes;
+  }, [OriginalPageRenderer]);
 
   if (renderError || !currentEnvelopeItem) {
     return (
@@ -51,6 +62,7 @@ export const EnvelopePdfViewer = ({ errorMessage, className, showZoomControls, .
     <PDFViewerLazy
       key={`${currentEnvelopeItem.envelopeId}-${currentEnvelopeItem.id}`}
       {...props}
+      customPageRenderer={PageRenderer}
       showZoomControls={showZoomControls}
       maxFitWidth={showZoomControls ? 800 : undefined}
       zoomLevel={showZoomControls ? zoomLevel : undefined}

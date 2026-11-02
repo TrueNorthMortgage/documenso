@@ -44,6 +44,7 @@ import { replaceEnvelopeItemPdfRoute } from './replace-envelope-item-pdf';
 import { replaceFilledSignaturesRoute } from './replace-filled-signatures';
 import { saveAsTemplateRoute } from './save-as-template';
 import { setEnvelopeFieldsRoute } from './set-envelope-fields';
+import { setEnvelopeItemShapesRoute } from './set-envelope-item-shapes';
 import { setEnvelopeRecipientsRoute } from './set-envelope-recipients';
 import { signEnvelopeFieldRoute } from './sign-envelope-field';
 import { signingStatusEnvelopeRoute } from './signing-status-envelope';
@@ -68,6 +69,7 @@ export const envelopeRouter = router({
     delete: deleteAttachmentRoute,
   },
   item: {
+    setShapes: setEnvelopeItemShapesRoute,
     getMany: getEnvelopeItemsRoute,
     getManyByToken: getEnvelopeItemsByTokenRoute,
     createMany: createEnvelopeItemsRoute,

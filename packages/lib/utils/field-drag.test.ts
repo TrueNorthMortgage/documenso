@@ -4,8 +4,20 @@ import {
   getClampedFieldGroupPositions,
   getClampedFieldPosition,
   getDragScrollDelta,
+  getFieldDragPreviewSize,
   getFieldNudgeDelta,
 } from './field-drag';
+
+describe('HTML drag preview size', () => {
+  it('keeps horizontal lines grabbable after leaving the page at reduced zoom', () => {
+    expect(getFieldDragPreviewSize(240, 0.1, 0.5)).toEqual({ width: 120, height: 8 });
+    expect(getFieldDragPreviewSize(240, 0, 0.5)).toEqual({ width: 120, height: 8 });
+  });
+
+  it('preserves the scaled size of ordinary fields and content', () => {
+    expect(getFieldDragPreviewSize(240, 80, 0.5)).toEqual({ width: 120, height: 40 });
+  });
+});
 
 describe('getDragScrollDelta', () => {
   const baseOptions = {

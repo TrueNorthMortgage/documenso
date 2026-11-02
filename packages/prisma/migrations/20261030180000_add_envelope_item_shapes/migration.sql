@@ -1,0 +1,1 @@
+ALTER TABLE "EnvelopeItem" ADD COLUMN "shapes" JSONB NOT NULL DEFAULT '[]';

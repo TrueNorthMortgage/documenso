@@ -126,6 +126,19 @@ describe('addTemplateToEnvelope', () => {
       id: 'template_item_1',
       envelopeId: 'template_1',
       title: 'Agreement.pdf',
+      shapes: [
+        {
+          id: '00000000-0000-4000-8000-000000000001',
+          type: 'ellipse',
+          page: 1,
+          positionX: 10,
+          positionY: 20,
+          width: 20,
+          height: 20,
+          color: '#000000',
+          thickness: 2,
+        },
+      ],
       documentData: { id: 'source_data', data: Buffer.from('source') },
     });
     mocks.getEnvelopeItemPermissions.mockReturnValue({ canFileBeChanged: true });
@@ -201,6 +214,11 @@ describe('addTemplateToEnvelope', () => {
       }),
     );
     expect(tx.field.create).toHaveBeenCalledTimes(2);
+    expect(tx.envelopeItem.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ shapes: [expect.objectContaining({ type: 'ellipse', page: 1 })] }),
+      }),
+    );
     expect(tx.field.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({

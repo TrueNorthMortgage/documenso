@@ -4,6 +4,7 @@ import type { TDocumentAuthOptions, TRecipientAuthOptions } from '@documenso/lib
 import type { TDocumentEmailSettings } from '@documenso/lib/types/document-email';
 import type { TDocumentFormValues } from '@documenso/lib/types/document-form-values';
 import type { TEnvelopeAttachmentType } from '@documenso/lib/types/envelope-attachment';
+import type { TEnvelopeShape } from '@documenso/lib/types/envelope-shape';
 import type { TFieldMetaNotOptionalSchema } from '@documenso/lib/types/field-meta';
 import type { TClaimFlags } from '@documenso/lib/types/subscription';
 
@@ -24,6 +25,7 @@ declare global {
     type FieldMeta = TFieldMetaNotOptionalSchema;
 
     type EnvelopeAttachmentType = TEnvelopeAttachmentType;
+    type EnvelopeShapes = TEnvelopeShape[];
 
     type DefaultRecipient = TDefaultRecipient;
   }

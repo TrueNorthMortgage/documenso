@@ -1,6 +1,12 @@
 export const DRAG_SCROLL_EDGE_PX = 96;
 export const DRAG_SCROLL_MAX_SPEED_PX_PER_SECOND = 480;
 
+// Keep thin content grabbable after it moves from Konva to the HTML drag overlay.
+export const getFieldDragPreviewSize = (width: number, height: number, scale: number) => ({
+  width: width * scale,
+  height: Math.max(8, height * scale),
+});
+
 type DragScrollDeltaOptions = {
   pointerY: number;
   containerTop: number;

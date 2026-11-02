@@ -9,6 +9,7 @@ import {
   type TEmbedEditEnvelopeAuthoring,
   ZEmbedEditEnvelopeAuthoringSchema,
 } from '@documenso/lib/types/envelope-editor';
+import { parseEnvelopeShapes } from '@documenso/lib/types/envelope-shape';
 import type { TEnvelopeFieldAndMeta } from '@documenso/lib/types/field-meta';
 import { buildEmbeddedEditorOptions, PRESIGNED_ENVELOPE_ITEM_ID_PREFIX } from '@documenso/lib/utils/embed-config';
 import { prisma } from '@documenso/prisma';
@@ -177,6 +178,7 @@ const EnvelopeEditPage = ({ embedAuthoringOptions }: EnvelopeEditPageProps) => {
 
       return {
         id: item.id,
+        shapes: parseEnvelopeShapes(item.shapes),
         title: item.title,
         order: item.order,
         // For new items, use `index` to reference the file.

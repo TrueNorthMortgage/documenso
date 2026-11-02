@@ -516,6 +516,9 @@ model EnvelopeItem {
 
   order Int
 
+  /// [EnvelopeShapes]
+  shapes Json @default("[]")
+
   documentDataId String
   documentData   DocumentData @relation(fields: [documentDataId], references: [id], onDelete: Cascade)
 

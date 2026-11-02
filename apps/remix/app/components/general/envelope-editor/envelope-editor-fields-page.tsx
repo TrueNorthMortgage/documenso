@@ -63,7 +63,6 @@ import { EditorFieldSignatureForm } from '~/components/forms/editor/editor-field
 import { EditorFieldTextForm } from '~/components/forms/editor/editor-field-text-form';
 import { EnvelopePdfViewer } from '~/components/general/pdf-viewer/envelope-pdf-viewer';
 import { useCurrentTeam } from '~/providers/team';
-
 import { ConditionalFieldHighlightContext } from './conditional-field-highlight-context';
 import { type InvalidFieldPlacement, useEnvelopeEditorFieldDrag } from './envelope-editor-field-drag-context';
 import { EnvelopeEditorFieldDragDrop } from './envelope-editor-fields-drag-drop';
@@ -71,6 +70,8 @@ import { EnvelopeEditorFieldsPageRenderer, getPageAtPoint } from './envelope-edi
 import { EnvelopeEditorRecipientsDialog } from './envelope-editor-recipients-dialog';
 import { EnvelopeRendererFileSelector } from './envelope-file-selector';
 import { EnvelopeRecipientSelector } from './envelope-recipient-selector';
+import { EnvelopeShapesPanel } from './envelope-shapes-panel';
+import { EnvelopeShapesProvider, useEnvelopeShapesEditor } from './envelope-shapes-provider';
 
 const FieldSettingsTypeTranslations: Record<FieldType, MessageDescriptor> = {
   [FieldType.SIGNATURE]: msg`Signature Settings`,
@@ -272,6 +273,7 @@ const useInvalidFieldPlacementDrag = ({
   scrollableContainerRef,
 }: InvalidFieldPlacementDragOptions) => {
   const { editorFields } = useCurrentEnvelopeEditor();
+  const shapesEditor = useEnvelopeShapesEditor();
   const {
     activeGroupPlacements,
     activePlacement,
@@ -307,7 +309,10 @@ const useInvalidFieldPlacementDrag = ({
       return;
     }
 
-    if (!placement || !editorFields.getFieldByFormId(placement.fieldFormId)) {
+    const hasShape =
+      placement &&
+      shapesEditor?.getShapes(placement.envelopeItemId).some((shape) => shape.id === placement.fieldFormId);
+    if (!placement || (!editorFields.getFieldByFormId(placement.fieldFormId) && !hasShape)) {
       if (isInvalidPlacement) {
         if (placement) {
           clearInvalidPlacement(placement.fieldFormId);
@@ -316,7 +321,7 @@ const useInvalidFieldPlacementDrag = ({
         setActivePlacement(null);
       }
     }
-  }, [clearInvalidPlacement, editorFields, isInvalidPlacement, isPrimary, placement, setActivePlacement]);
+  }, [clearInvalidPlacement, editorFields, shapesEditor, isInvalidPlacement, isPrimary, placement, setActivePlacement]);
 
   const isActivePlacement =
     !isInvalidPlacement && placement !== null && activePlacement?.fieldFormId === placement.fieldFormId;
@@ -441,14 +446,32 @@ const useInvalidFieldPlacementDrag = ({
             }
           }
 
-          if (currentPlacement) {
+          if (shapesEditor) {
+            const shapes = shapesEditor.getShapes(currentPlacement.envelopeItemId);
+            const nextShapes = shapes.map((shape) => {
+              const position = clampedPositions.find((position) => position.fieldFormId === shape.id);
+              return position
+                ? {
+                    ...shape,
+                    page: pageNumber,
+                    positionX: position.positionX * 100,
+                    positionY: position.positionY * 100,
+                  }
+                : shape;
+            });
+            if (nextShapes.some((shape, index) => shape !== shapes[index])) {
+              void shapesEditor.save(currentPlacement.envelopeItemId, nextShapes);
+            }
+          }
+
+          if (editorFields.getFieldByFormId(currentPlacement.fieldFormId)) {
             editorFields.setSelectedField(currentPlacement.fieldFormId);
             editorFields.setSelectedFieldFormIds([currentPlacement.fieldFormId]);
           }
           setActivePlacement(null);
           activeGroupPlacementsRef.current = [];
           setActiveGroupPlacements([]);
-          if (placements.length > 1) {
+          if (placements.length > 0) {
             setPendingSelectionFieldFormIds(placements.map((groupPlacement) => groupPlacement.fieldFormId));
           }
           const hasInvalidGroupPlacements = placements.some((groupPlacement) =>
@@ -481,6 +504,8 @@ const useInvalidFieldPlacementDrag = ({
     },
     [
       editorFields,
+      shapesEditor,
+      invalidPlacements,
       clearInvalidPlacement,
       isInvalidPlacement,
       scrollableContainerRef,
@@ -743,16 +768,9 @@ const ActiveFieldSelectionOverlay = ({
   const hasInvalidPlacement = currentPlacements.some((currentPlacement) =>
     invalidPlacements.some((placement) => placement.fieldFormId === currentPlacement.fieldFormId),
   );
-  const dragPlacement =
-    hasInvalidPlacement && (activePlacement ?? currentPlacements[0])
-      ? {
-          ...(activePlacement ?? currentPlacements[0]),
-          height: activePlacement?.height ?? bottom - top,
-          width: activePlacement?.width ?? right - left,
-          x: activePlacement?.x ?? left,
-          y: activePlacement?.y ?? top,
-        }
-      : null;
+  // The selection bounds can start above or left of its anchor item. Keep the
+  // item's coordinates when re-grabbing the group, or its layout jumps on drop.
+  const dragPlacement = hasInvalidPlacement ? (activePlacement ?? currentPlacements[0] ?? null) : null;
   const { handlePointerCancel, handlePointerDown, handlePointerMove, handlePointerUp } = useInvalidFieldPlacementDrag({
     isInvalidPlacement: hasInvalidPlacement,
     isPrimary: false,
@@ -814,6 +832,7 @@ const InvalidFieldPlacementSelection = ({
     setSelectedInvalidFieldFormIds,
   } = useEnvelopeEditorFieldDrag();
   const { editorFields } = useCurrentEnvelopeEditor();
+  const shapesEditor = useEnvelopeShapesEditor();
   const [selection, setSelection] = useState<{
     height: number;
     width: number;
@@ -854,6 +873,13 @@ const InvalidFieldPlacementSelection = ({
 
       event.preventDefault();
       editorFields.removeFieldsByFormId(fieldFormIds);
+      if (shapesEditor && currentEnvelopeItem) {
+        const shapes = shapesEditor.getShapes(currentEnvelopeItem.id);
+        const nextShapes = shapes.filter((shape) => !fieldFormIds.includes(shape.id));
+        if (nextShapes.length !== shapes.length) {
+          void shapesEditor.save(currentEnvelopeItem.id, nextShapes);
+        }
+      }
       fieldFormIds.forEach(clearInvalidPlacement);
       setActivePlacement(null);
       setActiveGroupPlacements([]);
@@ -867,6 +893,7 @@ const InvalidFieldPlacementSelection = ({
     clearInvalidPlacement,
     currentEnvelopeItem?.id,
     editorFields,
+    shapesEditor,
     invalidPlacements,
     selectedInvalidFieldFormIds,
     setActiveGroupPlacements,
@@ -1117,7 +1144,14 @@ const InvalidFieldPlacementOverlays = ({
   );
 };
 
-export const EnvelopeEditorFieldsPage = () => {
+export const EnvelopeEditorFieldsPage = () => (
+  <EnvelopeShapesProvider>
+    <EnvelopeEditorFieldsPageContent />
+  </EnvelopeShapesProvider>
+);
+
+const EnvelopeEditorFieldsPageContent = () => {
+  const shapeEditor = useEnvelopeShapesEditor();
   const [searchParams] = useSearchParams();
 
   const team = useCurrentTeam();
@@ -1499,10 +1533,16 @@ export const EnvelopeEditorFieldsPage = () => {
                 <Trans>Add Fields</Trans>
               </h3>
 
-              <EnvelopeEditorFieldDragDrop
-                selectedRecipientId={editorFields.selectedRecipient?.id ?? null}
-                selectedEnvelopeItemId={currentEnvelopeItem?.id ?? null}
-              />
+              <div onPointerDownCapture={() => shapeEditor?.setTool(null)}>
+                <EnvelopeEditorFieldDragDrop
+                  selectedRecipientId={editorFields.selectedRecipient?.id ?? null}
+                  selectedEnvelopeItemId={currentEnvelopeItem?.id ?? null}
+                />
+              </div>
+
+              <div className="-mx-4 my-4">
+                <EnvelopeShapesPanel />
+              </div>
 
               <ApplyTemplateToEnvelopeItemDialog
                 envelope={envelope}

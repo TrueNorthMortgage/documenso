@@ -1,4 +1,5 @@
 import type { TLocalField } from '@documenso/lib/client-only/hooks/use-editor-fields';
+import type { TEnvelopeShape } from '@documenso/lib/types/envelope-shape';
 import { removeFieldPlacement, upsertFieldPlacement } from '@documenso/lib/utils/field-placements';
 import type React from 'react';
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
@@ -20,6 +21,7 @@ type EnvelopeEditorFieldDragContextValue = {
   activePlacement: InvalidFieldPlacement | null;
   activeGroupPlacements: InvalidFieldPlacement[];
   fieldClipboard: React.MutableRefObject<TLocalField[]>;
+  shapeClipboard: React.MutableRefObject<TEnvelopeShape[]>;
   invalidPlacements: InvalidFieldPlacement[];
   pendingSelectionFieldFormIds: string[];
   selectedInvalidFieldFormIds: string[];
@@ -41,6 +43,7 @@ export const EnvelopeEditorFieldDragProvider = ({ children }: { children: React.
   const [pendingSelectionFieldFormIds, setPendingSelectionFieldFormIds] = useState<string[]>([]);
   const [selectedInvalidFieldFormIds, setSelectedInvalidFieldFormIds] = useState<string[]>([]);
   const fieldClipboard = useRef<TLocalField[]>([]);
+  const shapeClipboard = useRef<TEnvelopeShape[]>([]);
 
   const setInvalidPlacement = useCallback((placement: InvalidFieldPlacement) => {
     setInvalidPlacements((currentPlacements) => upsertFieldPlacement(currentPlacements, placement));
@@ -59,6 +62,7 @@ export const EnvelopeEditorFieldDragProvider = ({ children }: { children: React.
       activePlacement,
       activeGroupPlacements,
       fieldClipboard,
+      shapeClipboard,
       invalidPlacements,
       pendingSelectionFieldFormIds,
       selectedInvalidFieldFormIds,
