@@ -42,7 +42,7 @@ export const findOrganisationTemplates = async ({
         name: true,
       },
     },
-    fields: true,
+    fields: { include: { conditionalChildRule: true } },
     recipients: true,
     envelopeItems: {
       select: {

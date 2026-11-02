@@ -1,6 +1,8 @@
 import { useDebouncedValue } from '@documenso/lib/client-only/hooks/use-debounced-value';
 import { AppError } from '@documenso/lib/errors/app-error';
 import type { TEditorEnvelope } from '@documenso/lib/types/envelope-editor';
+import { getClientSideFieldTranslations } from '@documenso/lib/utils/fields';
+import { getTemplateFieldPageReview } from '@documenso/lib/utils/template-field-page-review';
 import {
   mapTemplateRecipientsByRole,
   shouldMatchTemplateRecipientsBySigningOrder,
@@ -26,7 +28,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Trans } from '@lingui/react/macro';
+import { Plural, Trans } from '@lingui/react/macro';
 import { EnvelopeType } from '@prisma/client';
 import { CheckIcon, LayersIcon, LoaderIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -150,7 +152,8 @@ const ApplyTemplateToDocumentItemDialog = ({
   trigger,
 }: ApplyTemplateToEnvelopeItemDialogProps) => {
   const { toast } = useToast();
-  const { _ } = useLingui();
+  const { _, i18n } = useLingui();
+  const fieldTranslations = getClientSideFieldTranslations(i18n);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebouncedValue(query, 300);
@@ -160,6 +163,7 @@ const ApplyTemplateToDocumentItemDialog = ({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>();
   const [selectedTemplateItemId, setSelectedTemplateItemId] = useState<string>();
   const [confirmReplacement, setConfirmReplacement] = useState(false);
+  const [confirmOmissions, setConfirmOmissions] = useState(false);
 
   const teamTemplatesQuery = trpc.template.findTemplates.useQuery(
     { page, perPage: 25, query: debouncedQuery.trim() || undefined, includeAllFolders: true },
@@ -183,15 +187,20 @@ const ApplyTemplateToDocumentItemDialog = ({
     { envelopeItemId: appliedTemplateSourceItemId ?? '' },
     { enabled: appliedTemplateSourceItemId !== null },
   );
+  const sourceFields = selectedTemplate?.fields.filter((field) => field.envelopeItemId === selectedTemplateItemId);
+  const targetItem = envelope.envelopeItems.find((item) => item.id === envelopeItemId);
+  const { fieldsToApply, omittedFields } = getTemplateFieldPageReview(
+    sourceFields ?? [],
+    isAddMode ? undefined : targetItem?.pageCount,
+  );
+  const omittedFieldCount = omittedFields.length;
+  const sourceFieldCount = sourceFields ? fieldsToApply.length : undefined;
   const hasRecipientMapping = canMapRecipients({
-    template: selectedTemplate,
+    template: selectedTemplate ? { ...selectedTemplate, fields: fieldsToApply } : undefined,
     templateItemId: selectedTemplateItemId,
     recipients: envelope.recipients,
     envelopeSigningOrder: envelope.documentMeta.signingOrder,
   });
-  const sourceFieldCount = selectedTemplate?.fields.filter(
-    (field) => field.envelopeItemId === selectedTemplateItemId,
-  ).length;
   const isLoading = teamTemplatesQuery.isLoading || organisationTemplatesQuery.isLoading;
   const isFetchingPage = teamTemplatesQuery.isFetching || organisationTemplatesQuery.isFetching;
   const hasNextPage =
@@ -200,6 +209,10 @@ const ApplyTemplateToDocumentItemDialog = ({
   const { mutateAsync: applyTemplate, isPending: isApplying } = trpc.envelope.template.apply.useMutation();
   const { mutateAsync: addTemplate, isPending: isAdding } = trpc.envelope.template.add.useMutation();
   const { mutateAsync: removeTemplate, isPending: isRemoving } = trpc.envelope.template.remove.useMutation();
+
+  useEffect(() => {
+    setConfirmOmissions(false);
+  }, [open, selectedTemplate, selectedTemplateItemId, envelopeItemId, targetItem?.pageCount]);
 
   useEffect(() => {
     if (!open) {
@@ -273,6 +286,7 @@ const ApplyTemplateToDocumentItemDialog = ({
       !selectedTemplate ||
       !selectedTemplateItemId ||
       (!isAddMode && (sourceFieldCount === 0 || !envelopeItemId)) ||
+      (omittedFieldCount > 0 && !confirmOmissions) ||
       !hasRecipientMapping
     ) {
       return;
@@ -302,6 +316,7 @@ const ApplyTemplateToDocumentItemDialog = ({
           templateId: selectedTemplate.id,
           templateItemId: selectedTemplateItemId,
           replaceExistingFields: targetFields.length > 0 ? confirmReplacement : false,
+          excludedFieldIds: confirmOmissions ? omittedFields.map(({ field }) => field.id) : [],
         });
 
         toast({
@@ -506,7 +521,7 @@ const ApplyTemplateToDocumentItemDialog = ({
             </Select>
           )}
 
-          {!isAddMode && selectedTemplate && (templateItemIds.length === 0 || sourceFieldCount === 0) && (
+          {!isAddMode && selectedTemplate && (templateItemIds.length === 0 || sourceFields?.length === 0) && (
             <Alert variant="warning">
               <AlertTitle>
                 <Trans>This template has no fields</Trans>
@@ -514,6 +529,66 @@ const ApplyTemplateToDocumentItemDialog = ({
               <AlertDescription>
                 <Trans>Select a template that contains fields.</Trans>
               </AlertDescription>
+            </Alert>
+          )}
+
+          {omittedFieldCount > 0 && (
+            <Alert variant="warning">
+              <AlertTitle>
+                <Trans>Review fields that will not be applied</Trans>
+              </AlertTitle>
+              <AlertDescription>
+                <Plural
+                  value={omittedFieldCount}
+                  one="# field will be omitted because this document has fewer pages or because it depends on an omitted field."
+                  other="# fields will be omitted because this document has fewer pages or because they depend on omitted fields."
+                />{' '}
+                <Trans>The original template will not change.</Trans>
+              </AlertDescription>
+              <ul className="my-3 max-h-60 divide-y overflow-y-auto rounded-md border bg-background">
+                {[...omittedFields]
+                  .sort((left, right) => left.field.page - right.field.page || left.field.id - right.field.id)
+                  .map(({ field, reason }) => {
+                    const recipient = selectedTemplate?.recipients.find(
+                      (candidate) => candidate.id === field.recipientId,
+                    );
+                    return (
+                      <li key={field.id} className="space-y-1 p-3 text-sm">
+                        <p className="font-medium">
+                          {fieldTranslations[field.type]} · <Trans>Page {field.page}</Trans>
+                        </p>
+                        {field.fieldMeta?.label && <p className="break-words text-sm">{field.fieldMeta.label}</p>}
+                        <p className="break-words text-muted-foreground">
+                          {recipient?.name || recipient?.email || _(msg`Recipient ${field.recipientId}`)}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {reason === 'missing-page' ? (
+                            <Trans>Page is missing from this document.</Trans>
+                          ) : reason === 'group' ? (
+                            <Trans>Part of a group containing an omitted field.</Trans>
+                          ) : (
+                            <Trans>Depends on an omitted field.</Trans>
+                          )}
+                        </p>
+                      </li>
+                    );
+                  })}
+              </ul>
+              {sourceFieldCount === 0 ? (
+                <p className="text-sm">
+                  <Trans>No fields remain to apply. Choose a different template.</Trans>
+                </p>
+              ) : (
+                <label className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    checked={confirmOmissions}
+                    onCheckedChange={(value) => setConfirmOmissions(value === true)}
+                  />
+                  <span>
+                    <Trans>I understand these fields will not be applied.</Trans>
+                  </span>
+                </label>
+              )}
             </Alert>
           )}
 
@@ -571,11 +646,18 @@ const ApplyTemplateToDocumentItemDialog = ({
               !selectedTemplate ||
               !selectedTemplateItemId ||
               (!isAddMode && sourceFieldCount === 0) ||
+              (omittedFieldCount > 0 && !confirmOmissions) ||
               !hasRecipientMapping ||
               (!isAddMode && targetFields.length > 0 && !confirmReplacement)
             }
           >
-            {isAddMode ? <Trans>Add Document</Trans> : <Trans>Apply Template</Trans>}
+            {isAddMode ? (
+              <Trans>Add Document</Trans>
+            ) : omittedFieldCount > 0 ? (
+              <Plural value={omittedFieldCount} one="Apply without # field" other="Apply without # fields" />
+            ) : (
+              <Trans>Apply Template</Trans>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -48,7 +48,7 @@ export const findTemplates = async ({
         name: true,
       },
     },
-    fields: true,
+    fields: { include: { conditionalChildRule: true } },
     recipients: true,
     envelopeItems: {
       select: {
