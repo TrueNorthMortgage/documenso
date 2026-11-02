@@ -7,8 +7,43 @@ import {
   DEFAULT_NAME_OVERFLOW_MODE,
   DEFAULT_NUMBER_OVERFLOW_MODE,
   DEFAULT_TEXT_OVERFLOW_MODE,
+  FIELD_META_DEFAULT_VALUES,
   resolveFieldOverflowMode,
+  ZEnvelopeFieldAndMetaSchema,
+  ZTextFieldMeta,
 } from './field-meta';
+
+describe('text field required defaults', () => {
+  it('requires newly placed text fields by default', () => {
+    expect(FIELD_META_DEFAULT_VALUES[FieldType.TEXT]).toMatchObject({ type: 'text', required: true });
+    expect(ZEnvelopeFieldAndMetaSchema.parse({ type: FieldType.TEXT }).fieldMeta).toMatchObject({
+      type: 'text',
+      required: true,
+    });
+  });
+
+  it('preserves an explicitly optional text field', () => {
+    expect(
+      ZEnvelopeFieldAndMetaSchema.parse({
+        type: FieldType.TEXT,
+        fieldMeta: { type: 'text', required: false },
+      }).fieldMeta,
+    ).toMatchObject({ type: 'text', required: false });
+  });
+
+  it('does not reinterpret legacy text metadata as required', () => {
+    expect(ZTextFieldMeta.parse({ type: 'text' }).required).toBeUndefined();
+    expect(
+      ZEnvelopeFieldAndMetaSchema.parse({ type: FieldType.TEXT, fieldMeta: { type: 'text' } }).fieldMeta,
+    ).not.toHaveProperty('required');
+  });
+
+  it('preserves defaults for other optional field types', () => {
+    for (const type of [FieldType.NUMBER, FieldType.RADIO, FieldType.CHECKBOX, FieldType.DROPDOWN]) {
+      expect(FIELD_META_DEFAULT_VALUES[type]).toMatchObject({ required: false });
+    }
+  });
+});
 
 describe('field overflow defaults', () => {
   it('keeps initials horizontal and other generic text fields automatic', () => {
