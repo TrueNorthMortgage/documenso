@@ -1,4 +1,4 @@
-FROM gotenberg/gotenberg:8-libreoffice AS common-fonts
+FROM gotenberg/gotenberg:8.39.0-libreoffice AS common-fonts
 
 # Install Microsoft Core Fonts (Arial, Times New Roman, Courier New, Verdana,
 # Georgia, Comic Sans MS, Trebuchet MS, Impact, Andale Mono, Webdings) so that
@@ -18,6 +18,7 @@ RUN echo "deb http://deb.debian.org/debian trixie contrib non-free" \
     && echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
       | debconf-set-selections \
     && apt-get update -qq \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
         ca-certificates \
         wget \

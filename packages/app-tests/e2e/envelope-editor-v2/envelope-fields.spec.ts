@@ -88,7 +88,10 @@ type FieldButtonName =
   | 'Dropdown';
 
 const placeFieldOnPdf = async (root: Page, fieldName: FieldButtonName, position: { x: number; y: number }) => {
-  await root.getByRole('button', { name: fieldName, exact: true }).click();
+  await root
+    .getByTestId('envelope-field-tools')
+    .getByRole('button', { name: fieldName, exact: true })
+    .click();
 
   const canvas = root.locator('.konva-container canvas').first();
   await expect(canvas).toBeVisible();

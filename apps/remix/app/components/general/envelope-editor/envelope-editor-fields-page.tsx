@@ -1533,7 +1533,7 @@ const EnvelopeEditorFieldsPageContent = () => {
                 <Trans>Add Fields</Trans>
               </h3>
 
-              <div onPointerDownCapture={() => shapeEditor?.setTool(null)}>
+              <div data-testid="envelope-field-tools" onPointerDownCapture={() => shapeEditor?.setTool(null)}>
                 <EnvelopeEditorFieldDragDrop
                   selectedRecipientId={editorFields.selectedRecipient?.id ?? null}
                   selectedEnvelopeItemId={currentEnvelopeItem?.id ?? null}
