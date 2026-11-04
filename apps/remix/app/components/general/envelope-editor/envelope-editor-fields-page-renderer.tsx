@@ -649,17 +649,11 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
 
   useEffect(() => {
     return () => {
-      const registeredPage = pageRendererRegistry.get(pageNumber);
-
-      if (registeredPage?.container === konvaContainer.current) {
-        pageRendererRegistry.delete(pageNumber);
-      }
-
       if (lastPastePointer?.pageNumber === pageNumber) {
         lastPastePointer = null;
       }
     };
-  }, [pageNumber, konvaContainer]);
+  }, [pageNumber]);
 
   const localPageFields = useMemo(
     () =>
@@ -1531,7 +1525,8 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     // snapGuideLayer.current = initializeSnapGuides(stage.current);
 
     // Add transformer for resizing and rotating.
-    interactiveTransformer.current = createInteractiveTransformer(currentStage, currentPageLayer);
+    const transformer = createInteractiveTransformer(currentStage, currentPageLayer);
+    interactiveTransformer.current = transformer;
 
     // Render the fields.
     pageRendererRegistry.set(pageNumber, {
@@ -1699,6 +1694,16 @@ export const EnvelopeEditorFieldsPageRenderer = ({ pageData }: { pageData: PageR
     currentStage.on('transformend', () => setIsFieldChanging(false));
 
     currentPageLayer.batchDraw();
+
+    return () => {
+      if (pageRendererRegistry.get(pageNumber)?.pageLayer === currentPageLayer) {
+        pageRendererRegistry.delete(pageNumber);
+      }
+
+      if (interactiveTransformer.current === transformer) {
+        interactiveTransformer.current = null;
+      }
+    };
   };
 
   /**

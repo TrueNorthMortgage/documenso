@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 
 import type { PageRenderData } from '../providers/envelope-render-provider';
 
-type RenderFunction = (props: { stage: Konva.Stage; pageLayer: Konva.Layer }) => void;
+type RenderFunction = (props: { stage: Konva.Stage; pageLayer: Konva.Layer }) => void | (() => void);
 
 export const usePageRenderer = (renderFunction: RenderFunction, pageData: PageRenderData) => {
   const { pageWidth, pageHeight, scale, imageLoadingState, pageNumber } = pageData;
@@ -60,7 +60,7 @@ export const usePageRenderer = (renderFunction: RenderFunction, pageData: PageRe
 
     stage.current.add(pageLayer.current);
 
-    renderFunction({
+    const cleanup = renderFunction({
       stage: stage.current,
       pageLayer: pageLayer.current,
     });
@@ -70,8 +70,10 @@ export const usePageRenderer = (renderFunction: RenderFunction, pageData: PageRe
     });
 
     return () => {
+      cleanup?.();
       stage.current?.destroy();
       stage.current = null;
+      pageLayer.current = null;
     };
   }, [imageLoadingState, scaledViewport]);
 
