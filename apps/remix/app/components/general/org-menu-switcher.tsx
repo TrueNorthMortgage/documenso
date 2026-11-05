@@ -275,6 +275,14 @@ export const OrgMenuSwitcher = () => {
                 </DropdownMenuItem>
               )}
 
+              {currentTeam && (
+                <DropdownMenuItem className="px-4 py-2 text-muted-foreground" asChild>
+                  <Link to={`/t/${currentTeam.url}/settings/email-templates`}>
+                    <Trans>Email Templates</Trans>
+                  </Link>
+                </DropdownMenuItem>
+              )}
+
               {currentTeam &&
                 (canExecuteTeamAction('MANAGE_TEAM', currentTeam.currentTeamRole) ||
                   (currentOrganisation &&
