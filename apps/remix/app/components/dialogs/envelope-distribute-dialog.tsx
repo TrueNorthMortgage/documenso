@@ -45,6 +45,8 @@ import * as z from 'zod';
 
 import { useEnvelopeEditorFieldDrag } from '~/components/general/envelope-editor/envelope-editor-field-drag-context';
 
+import { EnvelopeEmailMessagePicker } from './envelope-email-message-picker';
+
 export type EnvelopeDistributeDialogProps = {
   onDistribute?: () => Promise<void>;
   documentRootPath: string;
@@ -80,6 +82,7 @@ export const EnvelopeDistributeDialog = ({
   const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isMessagePickerOpen, setIsMessagePickerOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isScheduling, setIsScheduling] = useState(Boolean(envelope.scheduledSendAt) && envelope.userId === user.id);
 
@@ -436,11 +439,40 @@ export const EnvelopeDistributeDialog = ({
                               name="meta.subject"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>
-                                    <Trans>
-                                      Subject <span className="text-muted-foreground">(Optional)</span>
-                                    </Trans>
-                                  </FormLabel>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <FormLabel>
+                                      <Trans>
+                                        Subject <span className="text-muted-foreground">(Optional)</span>
+                                      </Trans>
+                                    </FormLabel>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      aria-expanded={isMessagePickerOpen}
+                                      onClick={() => setIsMessagePickerOpen((previous) => !previous)}
+                                    >
+                                      <Trans>Reuse message</Trans>
+                                    </Button>
+                                  </div>
+
+                                  {isOpen && isMessagePickerOpen && (
+                                    <EnvelopeEmailMessagePicker
+                                      teamId={envelope.teamId}
+                                      onSelect={({ subject, message }) => {
+                                        form.setValue('meta.subject', subject, {
+                                          shouldDirty: true,
+                                          shouldValidate: true,
+                                        });
+                                        form.setValue('meta.message', message, {
+                                          shouldDirty: true,
+                                          shouldValidate: true,
+                                        });
+                                        setIsMessagePickerOpen(false);
+                                        form.setFocus('meta.subject');
+                                      }}
+                                    />
+                                  )}
 
                                   <FormControl>
                                     <Input {...field} maxLength={255} />
