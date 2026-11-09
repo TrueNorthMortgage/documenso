@@ -66,6 +66,8 @@ model User {
   folders   Folder[]
   envelopes Envelope[]
   templateFavorites TemplateFavorite[]
+  recentEmailMessages EmailMessage[] @relation("RecentEmailMessageOwner")
+  emailMessageFavorites EmailMessageFavorite[]
 
   verificationTokens VerificationToken[]
   apiTokens          ApiToken[]
@@ -87,6 +89,32 @@ model TemplateFavorite {
 
   @@id([userId, envelopeId])
   @@index([envelopeId])
+}
+
+model EmailMessage {
+  id         String   @id @default(cuid())
+  teamId     Int
+  ownerId    Int?
+  name       String?
+  subject    String
+  message    String
+  lastSentAt DateTime?
+
+  team      Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  owner     User? @relation("RecentEmailMessageOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  favorites EmailMessageFavorite[]
+
+  @@index([teamId, ownerId, lastSentAt])
+}
+
+model EmailMessageFavorite {
+  userId    Int
+  messageId String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   EmailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@id([userId, messageId])
+  @@index([messageId])
 }
 
 model TeamProfile {
@@ -1137,6 +1165,7 @@ model Team {
   webhooks   Webhook[]
   teamGroups TeamGroup[]
   pendingPreparations PendingPreparation[]
+  emailMessages EmailMessage[]
 
   organisationId String
   organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)

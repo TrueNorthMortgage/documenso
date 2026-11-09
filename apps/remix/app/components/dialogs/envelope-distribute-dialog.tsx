@@ -37,13 +37,15 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro';
 import { DocumentDistributionMethod, DocumentStatus, EnvelopeType } from '@prisma/client';
 import { AnimatePresence, motion } from 'framer-motion';
 import { InfoIcon } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 import { match } from 'ts-pattern';
 import * as z from 'zod';
 
 import { useEnvelopeEditorFieldDrag } from '~/components/general/envelope-editor/envelope-editor-field-drag-context';
+
+import { EnvelopeEmailMessagePicker } from './envelope-email-message-picker';
 
 export type EnvelopeDistributeDialogProps = {
   onDistribute?: () => Promise<void>;
@@ -80,9 +82,13 @@ export const EnvelopeDistributeDialog = ({
   const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isMessagePickerOpen, setIsMessagePickerOpen] = useState(false);
+  const messagePickerTrigger = useRef<HTMLButtonElement>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isScheduling, setIsScheduling] = useState(Boolean(envelope.scheduledSendAt) && envelope.userId === user.id);
 
+  const trpcUtils = trpc.useUtils();
+  const savePersonalTemplate = trpc.team.emailMessage.createPersonal.useMutation(DO_NOT_INVALIDATE_QUERY_ON_MUTATION);
   const { mutateAsync: distributeEnvelope } = trpcReact.envelope.distribute.useMutation();
   const { mutateAsync: cancelScheduledSend, isPending: isCancellingScheduledSend } =
     trpcReact.envelope.cancelScheduledSend.useMutation();
@@ -121,6 +127,24 @@ export const EnvelopeDistributeDialog = ({
   const emails = emailData?.data || [];
 
   const distributionMethod = watch('meta.distributionMethod');
+  const canSavePersonalTemplate = Boolean(watch('meta.subject').trim() || watch('meta.message').trim());
+
+  const onSavePersonalTemplate = async () => {
+    const { subject, message } = form.getValues('meta');
+
+    try {
+      await savePersonalTemplate.mutateAsync({ teamId: envelope.teamId, subject, message });
+      void trpcUtils.team.emailMessage.find.invalidate({ teamId: envelope.teamId });
+      toast({ title: t`Saved to your email templates` });
+    } catch (err) {
+      const error = AppError.parseError(err);
+      toast({
+        title: t`Unable to save email template`,
+        description: error.userMessage ?? t`Please try again.`,
+        variant: 'destructive',
+      });
+    }
+  };
 
   const recipientsWithIndex = useMemo(
     () =>
@@ -436,11 +460,45 @@ export const EnvelopeDistributeDialog = ({
                               name="meta.subject"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>
-                                    <Trans>
-                                      Subject <span className="text-muted-foreground">(Optional)</span>
-                                    </Trans>
-                                  </FormLabel>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <FormLabel>
+                                      <Trans>
+                                        Subject <span className="text-muted-foreground">(Optional)</span>
+                                      </Trans>
+                                    </FormLabel>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      ref={messagePickerTrigger}
+                                      aria-expanded={isMessagePickerOpen}
+                                      onClick={() => setIsMessagePickerOpen((previous) => !previous)}
+                                    >
+                                      <Trans>Reuse message</Trans>
+                                    </Button>
+                                  </div>
+
+                                  {isOpen && isMessagePickerOpen && (
+                                    <EnvelopeEmailMessagePicker
+                                      teamId={envelope.teamId}
+                                      onCancel={() => {
+                                        setIsMessagePickerOpen(false);
+                                        messagePickerTrigger.current?.focus();
+                                      }}
+                                      onSelect={({ subject, message }) => {
+                                        form.setValue('meta.subject', subject, {
+                                          shouldDirty: true,
+                                          shouldValidate: true,
+                                        });
+                                        form.setValue('meta.message', message, {
+                                          shouldDirty: true,
+                                          shouldValidate: true,
+                                        });
+                                        setIsMessagePickerOpen(false);
+                                        form.setFocus('meta.subject');
+                                      }}
+                                    />
+                                  )}
 
                                   <FormControl>
                                     <Input {...field} maxLength={255} />
@@ -476,6 +534,17 @@ export const EnvelopeDistributeDialog = ({
                                       maxLength={5000}
                                     />
                                   </FormControl>
+                                  <div className="flex justify-end">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={!canSavePersonalTemplate || savePersonalTemplate.isPending}
+                                      onClick={() => void onSavePersonalTemplate()}
+                                    >
+                                      <Trans>Save as template</Trans>
+                                    </Button>
+                                  </div>
                                   <FormMessage />
                                 </FormItem>
                               )}

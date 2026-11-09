@@ -17,6 +17,7 @@ import { getI18nInstance } from '../../../client-only/providers/i18n-server';
 import { NEXT_PUBLIC_WEBAPP_URL } from '../../../constants/app';
 import { RECIPIENT_ROLE_TO_EMAIL_TYPE, RECIPIENT_ROLES_DESCRIPTION } from '../../../constants/recipient-roles';
 import { getEmailContext } from '../../../server-only/email/get-email-context';
+import { recordRecentEmailMessage } from '../../../server-only/email/record-recent-email-message';
 import { sendTrackedSigningEmail } from '../../../server-only/email/send-tracked-signing-email';
 import { updateRecipientNextReminder } from '../../../server-only/recipient/update-recipient-next-reminder';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '../../../types/document-audit-logs';
@@ -219,6 +220,17 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
 
     if (wasSent === false) {
       return;
+    }
+
+    if (!isCorrection && !isResending && !isDirectTemplate && documentMeta) {
+      await io.runTask('record-recent-email-message', async () => {
+        await recordRecentEmailMessage({
+          teamId: envelope.teamId,
+          userId,
+          subject: documentMeta.subject ?? '',
+          message: documentMeta.message ?? '',
+        });
+      });
     }
   }
 

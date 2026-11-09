@@ -6,12 +6,15 @@ import { resendTeamEmailVerification } from '@documenso/lib/server-only/team/res
 import { updateTeamEmail } from '@documenso/lib/server-only/team/update-team-email';
 
 import { authenticatedProcedure, router } from '../trpc';
+import { createEmailTemplateRoute } from './create-email-template';
+import { createPersonalEmailTemplateRoute } from './create-personal-email-template';
 import { createTeamRoute } from './create-team';
 import { createTeamGroupsRoute } from './create-team-groups';
 import { createTeamMembersRoute } from './create-team-members';
 import { deleteTeamRoute } from './delete-team';
 import { deleteTeamGroupRoute } from './delete-team-group';
 import { deleteTeamMemberRoute } from './delete-team-member';
+import { findEmailMessagesRoute } from './find-email-messages';
 import { findTeamGroupsRoute } from './find-team-groups';
 import { findTeamMembersRoute } from './find-team-members';
 import { findTeamsRoute } from './find-teams';
@@ -24,6 +27,8 @@ import {
   ZResendTeamEmailVerificationMutationSchema,
   ZUpdateTeamEmailMutationSchema,
 } from './schema';
+import { updateEmailMessageFavoriteRoute } from './update-email-message-favorite';
+import { updateEmailTemplateRoute } from './update-email-template';
 import { updateTeamRoute } from './update-team';
 import { updateTeamGroupRoute } from './update-team-group';
 import { updateTeamMemberRoute } from './update-team-member';
@@ -47,6 +52,13 @@ export const teamRouter = router({
     createMany: createTeamGroupsRoute,
     update: updateTeamGroupRoute,
     delete: deleteTeamGroupRoute,
+  },
+  emailMessage: {
+    find: findEmailMessagesRoute,
+    create: createEmailTemplateRoute,
+    createPersonal: createPersonalEmailTemplateRoute,
+    update: updateEmailTemplateRoute,
+    updateFavorite: updateEmailMessageFavoriteRoute,
   },
   settings: {
     update: updateTeamSettingsRoute,

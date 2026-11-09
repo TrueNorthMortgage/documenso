@@ -13,6 +13,7 @@ import {
   BracesIcon,
   Globe2Icon,
   GroupIcon,
+  MailIcon,
   Settings2Icon,
   SettingsIcon,
   Users2Icon,
@@ -42,8 +43,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     organisationId: team.organisationId,
     reference: { type: 'User', id: session.user.id },
   });
-  const isReportsRoute = new URL(request.url).pathname.endsWith('/settings/reports');
+  const { pathname } = new URL(request.url);
+  const isReportsRoute = pathname.endsWith('/settings/reports');
   const canViewSettings =
+    pathname.endsWith('/settings/email-templates') ||
     canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole) ||
     (isReportsRoute && canExecuteOrganisationAction('MANAGE_ORGANISATION', organisationRole));
 
@@ -65,6 +68,7 @@ export default function TeamsSettingsLayout() {
   const currentOrganisation = organisations.find((organisation) => organisation.id === team.organisationId);
   const canManageTeam = canExecuteTeamAction('MANAGE_TEAM', team.currentTeamRole);
   const canViewSettings =
+    pathname.endsWith('/settings/email-templates') ||
     canManageTeam ||
     (pathname.endsWith('/settings/reports') &&
       currentOrganisation &&
@@ -127,7 +131,20 @@ export default function TeamsSettingsLayout() {
       label: t`Reports`,
       icon: BarChart3Icon,
     },
-  ].filter((route) => canManageTeam || route.path.endsWith('/settings/reports'));
+    {
+      path: `/t/${team.url}/settings/email-templates`,
+      label: t`Email Templates`,
+      icon: MailIcon,
+    },
+  ].filter(
+    (route) =>
+      canManageTeam ||
+      route.path.endsWith('/settings/email-templates') ||
+      (canViewSettings &&
+        route.path.endsWith('/settings/reports') &&
+        currentOrganisation &&
+        canExecuteOrganisationAction('MANAGE_ORGANISATION', currentOrganisation.currentOrganisationRole)),
+  );
 
   if (!canViewSettings) {
     return (
