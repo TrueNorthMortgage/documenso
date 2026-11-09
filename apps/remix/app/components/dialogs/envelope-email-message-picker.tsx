@@ -12,10 +12,11 @@ import { useEffect, useState } from 'react';
 
 type EnvelopeEmailMessagePickerProps = {
   teamId: number;
+  onCancel: () => void;
   onSelect: (message: { subject: string; message: string }) => void;
 };
 
-export const EnvelopeEmailMessagePicker = ({ teamId, onSelect }: EnvelopeEmailMessagePickerProps) => {
+export const EnvelopeEmailMessagePicker = ({ teamId, onCancel, onSelect }: EnvelopeEmailMessagePickerProps) => {
   const { t } = useLingui();
   const { toast } = useToast();
   const [search, setSearch] = useState('');
@@ -89,7 +90,7 @@ export const EnvelopeEmailMessagePicker = ({ teamId, onSelect }: EnvelopeEmailMe
 
                 return (
                   <TableRow key={item.id}>
-                    <TableCell truncate={false}>
+                    <TableCell className="py-2" truncate={false}>
                       <div className="flex items-start gap-1">
                         <Button
                           type="button"
@@ -118,7 +119,15 @@ export const EnvelopeEmailMessagePicker = ({ teamId, onSelect }: EnvelopeEmailMe
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell>{item.lastSentAt ? <Trans>Recent</Trans> : <Trans>Team</Trans>}</TableCell>
+                    <TableCell className="py-2">
+                      {item.lastSentAt ? (
+                        <Trans>Recent</Trans>
+                      ) : item.isPersonal ? (
+                        <Trans>Saved</Trans>
+                      ) : (
+                        <Trans>Team</Trans>
+                      )}
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -126,6 +135,11 @@ export const EnvelopeEmailMessagePicker = ({ teamId, onSelect }: EnvelopeEmailMe
           </Table>
         </div>
       )}
+      <div className="flex justify-end">
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          <Trans>Cancel</Trans>
+        </Button>
+      </div>
     </div>
   );
 };

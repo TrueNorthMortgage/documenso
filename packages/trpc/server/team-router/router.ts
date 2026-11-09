@@ -7,6 +7,7 @@ import { updateTeamEmail } from '@documenso/lib/server-only/team/update-team-ema
 
 import { authenticatedProcedure, router } from '../trpc';
 import { createEmailTemplateRoute } from './create-email-template';
+import { createPersonalEmailTemplateRoute } from './create-personal-email-template';
 import { createTeamRoute } from './create-team';
 import { createTeamGroupsRoute } from './create-team-groups';
 import { createTeamMembersRoute } from './create-team-members';
@@ -55,6 +56,7 @@ export const teamRouter = router({
   emailMessage: {
     find: findEmailMessagesRoute,
     create: createEmailTemplateRoute,
+    createPersonal: createPersonalEmailTemplateRoute,
     update: updateEmailTemplateRoute,
     updateFavorite: updateEmailMessageFavoriteRoute,
   },
