@@ -4,7 +4,7 @@ import { env } from '@documenso/lib/utils/env';
 /**
  * How long a session should live for in milliseconds.
  */
-export const AUTH_SESSION_LIFETIME = 1000 * 60 * 60 * 24 * 30; // 30 days.
+export const AUTH_SESSION_LIFETIME = 1000 * 60 * 60 * 8; // 8 hours.
 
 export type OAuthClientOptions = {
   id: string;

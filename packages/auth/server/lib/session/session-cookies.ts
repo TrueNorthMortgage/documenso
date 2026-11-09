@@ -4,7 +4,6 @@ import { env } from '@documenso/lib/utils/env';
 import type { Context } from 'hono';
 import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie';
 
-import { AUTH_SESSION_LIFETIME } from '../../config';
 import { extractCookieFromHeaders } from '../utils/cookies';
 import { generateSessionToken } from './session';
 
@@ -30,7 +29,6 @@ export const sessionCookieOptions = {
   sameSite: useSecureCookies ? 'none' : 'lax',
   secure: useSecureCookies,
   domain: getCookieDomain(),
-  expires: new Date(Date.now() + AUTH_SESSION_LIFETIME),
 } as const;
 
 export const extractSessionCookieFromHeaders = (headers: Headers): string | null => {
@@ -55,8 +53,11 @@ export const getSessionCookie = async (c: Context): Promise<string | null> => {
  * @param c - The Hono context.
  * @param sessionToken - The session token to set.
  */
-export const setSessionCookie = async (c: Context, sessionToken: string) => {
-  await setSignedCookie(c, sessionCookieName, sessionToken, getAuthSecret(), sessionCookieOptions).catch((err) => {
+export const setSessionCookie = async (c: Context, sessionToken: string, expiresAt: Date) => {
+  await setSignedCookie(c, sessionCookieName, sessionToken, getAuthSecret(), {
+    ...sessionCookieOptions,
+    expires: expiresAt,
+  }).catch((err) => {
     appLog('SetSessionCookie', `Error setting signed cookie: ${err}`);
 
     throw err;
@@ -82,13 +83,7 @@ export const getCsrfCookie = async (c: Context) => {
 export const setCsrfCookie = async (c: Context) => {
   const csrfToken = generateSessionToken();
 
-  await setSignedCookie(c, csrfCookieName, csrfToken, getAuthSecret(), {
-    ...sessionCookieOptions,
-
-    // Explicity set to undefined for session lived cookie.
-    expires: undefined,
-    maxAge: undefined,
-  });
+  await setSignedCookie(c, csrfCookieName, csrfToken, getAuthSecret(), sessionCookieOptions);
 
   return csrfToken;
 };
