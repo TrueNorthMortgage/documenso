@@ -1,5 +1,6 @@
 import { tsRestHonoApp } from '@documenso/api/hono';
 import { auth } from '@documenso/auth/server';
+import { sessionRenewalMiddleware } from '@documenso/auth/server/lib/utils/get-session';
 import { jobsClient } from '@documenso/lib/jobs/client';
 import { LicenseClient } from '@documenso/lib/server-only/license/license-client';
 import { createRateLimitMiddleware } from '@documenso/lib/server-only/rate-limit/rate-limit-middleware';
@@ -76,6 +77,7 @@ const fileRateLimitMiddleware = createRateLimitMiddleware(fileUploadRateLimit);
  * Attach session and context to requests.
  */
 app.use(contextStorage());
+app.use(sessionRenewalMiddleware);
 app.use(appContext);
 
 /**
