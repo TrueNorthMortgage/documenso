@@ -76,17 +76,20 @@ const replaceEnvelopeItemPdf = async (
   // is intercepted and never actually shown to the user.
   const [fileChooser] = await Promise.all([root.waitForEvent('filechooser'), replaceButton.click()]);
 
-  await fileChooser.setFiles(file);
+  if (options?.isEmbedded) {
+    await fileChooser.setFiles(file);
+  } else {
+    // A fast replacement can finish before Playwright observes the disabled button.
+    const [response] = await Promise.all([
+      root.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === '/api/trpc/envelope.item.replacePdf' &&
+          response.request().method() === 'POST',
+      ),
+      fileChooser.setFiles(file),
+    ]);
 
-  // The button stays in the DOM but becomes disabled while the replace
-  // mutation is in flight, then re-enables once the mutation completes.
-  // Wait for both transitions to guarantee the replace has fully finished.
-  //
-  // For embedded surfaces the replacement is purely local state with no
-  // network round-trip, so it can complete before Playwright observes the
-  // disabled state. Skip the disabled assertion for embedded surfaces.
-  if (!options?.isEmbedded) {
-    await expect(replaceButton).toBeDisabled({ timeout: 15000 });
+    expect(response.ok()).toBe(true);
   }
 
   await expect(replaceButton).toBeEnabled({ timeout: 15000 });
@@ -99,7 +102,7 @@ const assertPdfPageCount = async (root: Page, expectedCount: number) => {
 };
 
 const placeFieldOnPdf = async (root: Page, fieldName: 'Signature' | 'Text', position: { x: number; y: number }) => {
-  await root.getByRole('button', { name: fieldName, exact: true }).click();
+  await root.getByTestId('envelope-field-tools').getByRole('button', { name: fieldName, exact: true }).click();
 
   const canvas = root.locator('.konva-container canvas').first();
   await expect(canvas).toBeVisible();
@@ -120,7 +123,7 @@ const placeFieldOnPage = async (
   fieldName: 'Signature' | 'Text',
   position: { x: number; y: number },
 ) => {
-  await root.getByRole('button', { name: fieldName, exact: true }).click();
+  await root.getByTestId('envelope-field-tools').getByRole('button', { name: fieldName, exact: true }).click();
 
   if (pageNumber > 1) {
     await scrollToPage(root, pageNumber);

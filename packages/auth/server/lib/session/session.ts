@@ -5,7 +5,18 @@ import { sha256 } from '@oslojs/crypto/sha2';
 import { encodeBase32LowerCaseNoPadding, encodeHexLowerCase } from '@oslojs/encoding';
 import { type Session, type User, UserSecurityAuditLogType } from '@prisma/client';
 
-import { AUTH_SESSION_LIFETIME } from '../../config';
+import { AUTH_SESSION_IDLE_TIMEOUT } from '../../config';
+
+const sessionUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  emailVerified: true,
+  avatarImageId: true,
+  twoFactorEnabled: true,
+  roles: true,
+  signature: true,
+} as const;
 
 /**
  * The user object to pass around the app.
@@ -37,14 +48,15 @@ export const generateSessionToken = (): string => {
 
 export const createSession = async (token: string, userId: number, metadata: RequestMetadata): Promise<Session> => {
   const hashedSessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+  const now = new Date();
 
   const session: Session = {
     id: hashedSessionId,
     sessionToken: hashedSessionId,
     userId,
-    updatedAt: new Date(),
-    createdAt: new Date(),
-    expiresAt: new Date(Date.now() + AUTH_SESSION_LIFETIME),
+    updatedAt: now,
+    createdAt: now,
+    expiresAt: new Date(now.getTime() + AUTH_SESSION_IDLE_TIMEOUT),
     ipAddress: metadata.ipAddress ?? null,
     userAgent: metadata.userAgent ?? null,
   };
@@ -65,31 +77,32 @@ export const createSession = async (token: string, userId: number, metadata: Req
   return session;
 };
 
-export const validateSessionToken = async (token: string): Promise<SessionValidationResult> => {
+export const validateSessionToken = async (token: string, renew = false): Promise<SessionValidationResult> => {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+  const now = new Date();
+  const idleSince = new Date(now.getTime() - AUTH_SESSION_IDLE_TIMEOUT);
+  const include = { user: { select: sessionUserSelect } } as const;
 
-  const result = await prisma.session.findUnique({
-    where: {
-      id: sessionId,
-    },
-    include: {
-      user: {
-        /**
-         * Do not expose anything sensitive here.
-         */
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          emailVerified: true,
-          avatarImageId: true,
-          twoFactorEnabled: true,
-          roles: true,
-          signature: true,
-        },
+  if (renew) {
+    // A concurrent request may already have renewed the session with a later deadline.
+    const [result] = await prisma.session.updateManyAndReturn({
+      where: {
+        id: sessionId,
+        user: { isNot: null },
+        expiresAt: { gt: now },
+        updatedAt: { gt: idleSince, lt: now },
       },
-    },
-  });
+      data: { updatedAt: now, expiresAt: new Date(now.getTime() + AUTH_SESSION_IDLE_TIMEOUT) },
+      include,
+    });
+
+    if (result?.user) {
+      const { user, ...session } = result;
+      return { session, user, isAuthenticated: true };
+    }
+  }
+
+  const result = await prisma.session.findUnique({ where: { id: sessionId }, include });
 
   if (!result?.user) {
     return { session: null, user: null, isAuthenticated: false };
@@ -97,22 +110,11 @@ export const validateSessionToken = async (token: string): Promise<SessionValida
 
   const { user, ...session } = result;
 
-  if (Date.now() >= session.expiresAt.getTime()) {
-    await prisma.session.delete({ where: { id: sessionId } });
-    return { session: null, user: null, isAuthenticated: false };
-  }
-
-  if (Date.now() >= session.expiresAt.getTime() - 1000 * 60 * 60 * 24 * 15) {
-    session.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30);
-
-    await prisma.session.update({
-      where: {
-        id: session.id,
-      },
-      data: {
-        expiresAt: session.expiresAt,
-      },
+  if (session.expiresAt <= now || session.updatedAt <= idleSince) {
+    await prisma.session.deleteMany({
+      where: { id: sessionId, OR: [{ expiresAt: { lte: now } }, { updatedAt: { lte: idleSince } }] },
     });
+    return { session: null, user: null, isAuthenticated: false };
   }
 
   return { session, user, isAuthenticated: true };

@@ -6,7 +6,7 @@ import { Button } from '@documenso/ui/primitives/button';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { redirect, useSearchParams } from 'react-router';
 
 import { SIGNUP_ERROR_MESSAGES } from '~/components/forms/signup';
@@ -67,6 +67,7 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
   const { _ } = useLingui();
 
   const [searchParams] = useSearchParams();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const errorParam = searchParams.get('error');
   const signupError = errorParam ? SIGNUP_ERROR_MESSAGES[errorParam] : undefined;
@@ -74,6 +75,17 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
   useEffect(() => {
     storeSelfHostedReturnTarget(getSelfHostedReturnTargetFromParams(searchParams, window.location.origin));
   }, [searchParams]);
+
+  useEffect(() => {
+    const resetRedirectState = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        setIsRedirecting(false);
+      }
+    };
+
+    window.addEventListener('pageshow', resetRedirectState);
+    return () => window.removeEventListener('pageshow', resetRedirectState);
+  }, []);
 
   const loginUrl = `/api/auth/oauth/authorize/oidc?redirectPath=${encodeURIComponent(returnTo || '/')}`;
 
@@ -91,7 +103,12 @@ export default function SignIn({ loaderData }: Route.ComponentProps) {
         size="lg"
         className="w-full max-w-64"
         disabled={!isOIDCSSOEnabled}
-        onClick={() => window.location.assign(loginUrl)}
+        loading={isRedirecting}
+        aria-busy={isRedirecting}
+        onClick={() => {
+          setIsRedirecting(true);
+          window.location.assign(loginUrl);
+        }}
       >
         <Trans>Login</Trans>
       </Button>

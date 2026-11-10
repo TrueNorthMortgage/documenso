@@ -88,10 +88,7 @@ type FieldButtonName =
   | 'Dropdown';
 
 const placeFieldOnPdf = async (root: Page, fieldName: FieldButtonName, position: { x: number; y: number }) => {
-  await root
-    .getByTestId('envelope-field-tools')
-    .getByRole('button', { name: fieldName, exact: true })
-    .click();
+  await root.getByTestId('envelope-field-tools').getByRole('button', { name: fieldName, exact: true }).click();
 
   const canvas = root.locator('.konva-container canvas').first();
   await expect(canvas).toBeVisible();
@@ -707,7 +704,11 @@ const runMultiSelectDuplicateAndCopyPasteFlow = async (surface: TEnvelopeEditorS
     bulkSettings.getByText('Add text to every selected text field before making the fields read-only.'),
   ).toBeVisible();
 
+  // Clear the group transformer before clicking a field inside its drag area.
+  await canvas.click({ position: { x: 450, y: 500 } });
+  await expect.poll(() => getKonvaTransformerNodeCountForPage(root, 1)).toBe(0);
   await selectFieldOnCanvas(root, { x: 260, y: 220 });
+  await expect.poll(() => getKonvaTransformerNodeCountForPage(root, 1)).toBe(1);
   await root.locator('[data-testid="field-form-text"]').fill('Read-only content');
   await root.locator('[data-testid="field-form-required"]').click();
 
