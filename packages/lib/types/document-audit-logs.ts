@@ -53,7 +53,6 @@ export const ZDocumentAuditLogTypeSchema = z.enum([
   'DOCUMENT_SENT', // When the document transitions from DRAFT to PENDING.
   'DOCUMENT_PREVIEW_SENT',
   'DOCUMENT_PREVIEW_OPENED',
-  'DOCUMENT_PREVIEW_REVOKED',
   'DOCUMENT_TITLE_UPDATED', // When the document title is updated.
   'DOCUMENT_EXTERNAL_ID_UPDATED', // When the document external ID is updated.
   'DOCUMENT_MOVED_TO_TEAM', // When the document is moved to a team.
@@ -812,7 +811,6 @@ export const ZDocumentAuditLogSchema = ZDocumentAuditLogBaseSchema.and(
   z.union([
     z.object({ type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_SENT), data: previewEventData }),
     z.object({ type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_OPENED), data: previewEventData.partial() }),
-    z.object({ type: z.literal(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_REVOKED), data: previewEventData }),
     ZDocumentAuditLogEventEnvelopeItemCreatedSchema,
     ZDocumentAuditLogEventEnvelopeItemDeletedSchema,
     ZDocumentAuditLogEventEnvelopeItemUpdatedSchema,

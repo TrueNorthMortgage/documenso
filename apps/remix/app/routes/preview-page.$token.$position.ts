@@ -1,4 +1,4 @@
-import { getEnvelopePreviewPage } from '@documenso/lib/server-only/envelope/envelope-preview';
+import { MAX_PREVIEW_PAGES, getEnvelopePreviewPage } from '@documenso/lib/server-only/envelope/envelope-preview';
 import { extractRequestMetadata } from '@documenso/lib/universal/extract-request-metadata';
 
 import type { Route } from './+types/preview-page.$token.$position';
@@ -12,12 +12,14 @@ const responseHeaders = {
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const { token, position } = params;
+  const pagePosition = Number(position);
   const destination = request.headers.get('Sec-Fetch-Dest');
   const revision = new URL(request.url).searchParams.get('v');
 
   if (
     !/^[a-f0-9]{64}$/.test(token) ||
-    !/^[1-9]\d?$/.test(position) ||
+    !/^[1-9]\d*$/.test(position) ||
+    pagePosition > MAX_PREVIEW_PAGES ||
     !revision ||
     !/^[a-f0-9]{64}$/.test(revision) ||
     (destination !== null && destination !== 'image' && destination !== 'empty')
@@ -25,7 +27,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     throw new Response(null, { status: 404, headers: responseHeaders });
   }
 
-  const image = await getEnvelopePreviewPage(token, Number(position), revision, extractRequestMetadata(request));
+  const image = await getEnvelopePreviewPage(token, pagePosition, revision, extractRequestMetadata(request));
 
   if (!image) {
     throw new Response(null, { status: 404, headers: responseHeaders });

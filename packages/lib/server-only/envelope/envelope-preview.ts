@@ -22,7 +22,7 @@ import { getEmailContext } from '../email/get-email-context';
 import { generatePartialSignedPdf } from '../pdf/generate-partial-signed-pdf';
 import { getEnvelopeWhereInput } from './get-envelope-by-id';
 
-const MAX_PREVIEW_PAGES = 50;
+export const MAX_PREVIEW_PAGES = 50;
 const MAX_PREVIEW_BYTES = 30 * 1024 * 1024;
 const MAX_PREVIEW_DIMENSION = 1800;
 
@@ -54,6 +54,11 @@ const previewSourceSelect = {
   },
 } satisfies Prisma.EnvelopeSelect;
 
+const previewAuthSelect = {
+  authOptions: true,
+  recipients: { select: { authOptions: true } },
+} satisfies Prisma.EnvelopeSelect;
+
 type PreviewSource = Prisma.EnvelopeGetPayload<{ select: typeof previewSourceSelect }>;
 type PreviewOwner = { envelopeId: string; teamId: number; userId: number };
 type PreviewActor = { id: number; email: string; name: string | null };
@@ -61,6 +66,33 @@ type PreviewActor = { id: number; email: string; name: string | null };
 const isSamePhase = (left: Date | null, right: Date | null) => left?.getTime() === right?.getTime();
 const getRevisionHash = ({ title, envelopeItems }: PreviewSource) =>
   hashToken(JSON.stringify({ title, envelopeItems }));
+
+const isAuthOptionsObjectOrNull = (value: unknown) =>
+  value === null || (typeof value === 'object' && !Array.isArray(value));
+
+const canAccessPreviewWithoutVerification = ({
+  authOptions,
+  recipients,
+}: Prisma.EnvelopeGetPayload<{ select: typeof previewAuthSelect }>) => {
+  if (!isAuthOptionsObjectOrNull(authOptions)) {
+    return false;
+  }
+
+  const documentAuth = ZDocumentAuthOptionsSchema.safeParse(authOptions);
+
+  return (
+    documentAuth.success &&
+    documentAuth.data.globalAccessAuth.length === 0 &&
+    recipients.every((recipient) => {
+      const recipientAuth = ZRecipientAuthOptionsSchema.safeParse(recipient.authOptions);
+      return (
+        isAuthOptionsObjectOrNull(recipient.authOptions) &&
+        recipientAuth.success &&
+        recipientAuth.data.accessAuth.length === 0
+      );
+    })
+  );
+};
 
 const getShareableEnvelopeWhere = async ({ envelopeId, teamId, userId }: PreviewOwner) => {
   const { envelopeWhereInput } = await getEnvelopeWhereInput({
@@ -85,7 +117,7 @@ const getShareableEnvelopeWhere = async ({ envelopeId, teamId, userId }: Preview
 };
 
 const getActivePreviewWhere = async (token: string) => {
-  const where = { tokenHash: hashToken(token), sentAt: { not: null } };
+  const where = { tokenHash: hashToken(token), activatedAt: { not: null } };
   const preview = await prisma.envelopePreview.findUnique({
     where,
     select: {
@@ -93,11 +125,11 @@ const getActivePreviewWhere = async (token: string) => {
       envelopeId: true,
       correctionStartedAt: true,
       revisionHash: true,
-      envelope: { select: { authOptions: true } },
+      envelope: { select: previewAuthSelect },
     },
   });
 
-  if (!preview || ZDocumentAuthOptionsSchema.parse(preview.envelope.authOptions).globalAccessAuth.length > 0) {
+  if (!preview || !canAccessPreviewWithoutVerification(preview.envelope)) {
     return null;
   }
 
@@ -107,9 +139,12 @@ const getActivePreviewWhere = async (token: string) => {
 
 export const getSharedEnvelopePreview = async (options: PreviewOwner) => {
   const where = await getShareableEnvelopeWhere(options);
-  const envelope = await prisma.envelope.findFirst({ where, select: { id: true, correctionStartedAt: true } });
+  const envelope = await prisma.envelope.findFirst({
+    where,
+    select: { id: true, correctionStartedAt: true, ...previewAuthSelect },
+  });
 
-  if (!envelope) {
+  if (!envelope || !canAccessPreviewWithoutVerification(envelope)) {
     return null;
   }
 
@@ -215,9 +250,8 @@ export const sendEnvelopePreview = async ({
     select: {
       ...previewSourceSelect,
       teamId: true,
-      authOptions: true,
+      ...previewAuthSelect,
       documentMeta: { select: { emailId: true, emailReplyTo: true, language: true } },
-      recipients: { select: { email: true, authOptions: true } },
     },
   });
 
@@ -227,14 +261,7 @@ export const sendEnvelopePreview = async ({
     });
   }
 
-  const globalAccess = ZDocumentAuthOptionsSchema.parse(envelope.authOptions).globalAccessAuth;
-  const hasProtectedRecipient = envelope.recipients.some(
-    (recipient) =>
-      emails.includes(recipient.email.toLowerCase()) &&
-      ZRecipientAuthOptionsSchema.parse(recipient.authOptions).accessAuth.length > 0,
-  );
-
-  if (globalAccess.length > 0 || hasProtectedRecipient) {
+  if (!canAccessPreviewWithoutVerification(envelope)) {
     throw new AppError(AppErrorCode.INVALID_REQUEST, {
       userMessage: 'Preview links are unavailable when recipient access verification is required.',
     });
@@ -279,7 +306,27 @@ export const sendEnvelopePreview = async ({
     renderEmailWithI18N(template, { lang: emailLanguage, branding, plainText: true }),
   ]);
 
-  const phase = previewEnvelopePhase(envelope.correctionStartedAt);
+  await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Envelope" WHERE id = ${envelopeId} FOR UPDATE`;
+    const current = await tx.envelopePreview.findUnique({
+      where: { id: previewId, envelope: previewEnvelopePhase(envelope.correctionStartedAt) },
+      select: { correctionStartedAt: true, openedAt: true, envelope: { select: previewAuthSelect } },
+    });
+
+    if (!current || !canAccessPreviewWithoutVerification(current.envelope)) {
+      throw new AppError(AppErrorCode.INVALID_REQUEST, { userMessage: 'The envelope changed. Try sending again.' });
+    }
+
+    await tx.envelopePreview.update({
+      where: { id: previewId },
+      data: {
+        tokenHash,
+        activatedAt: new Date(),
+        correctionStartedAt: envelope.correctionStartedAt,
+        openedAt: isSamePhase(current.correctionStartedAt, envelope.correctionStartedAt) ? current.openedAt : null,
+      },
+    });
+  });
 
   const failedEmails: string[] = [];
   let hasSentEmail = false;
@@ -299,32 +346,24 @@ export const sendEnvelopePreview = async ({
       continue;
     }
 
-    await prisma.$transaction(async (tx) => {
-      if (!hasSentEmail) {
-        await tx.$queryRaw`SELECT id FROM "Envelope" WHERE id = ${envelopeId} FOR UPDATE`;
-        const current = await tx.envelopePreview.findUniqueOrThrow({ where: { id: previewId } });
-        await tx.envelopePreview.update({
-          where: { id: previewId, envelope: phase },
-          data: {
-            tokenHash,
-            sentAt: new Date(),
-            correctionStartedAt: envelope.correctionStartedAt,
-            openedAt: isSamePhase(current.correctionStartedAt, envelope.correctionStartedAt) ? current.openedAt : null,
-          },
-        });
-      }
-
-      await tx.documentAuditLog.create({
-        data: createDocumentAuditLogData({
-          envelopeId,
-          type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_SENT,
-          data: { recipientEmail: email },
-          user,
-          requestMetadata,
-        }),
-      });
-    });
     hasSentEmail = true;
+
+    try {
+      await prisma.$transaction([
+        prisma.envelopePreview.update({ where: { id: previewId }, data: { sentAt: new Date() } }),
+        prisma.documentAuditLog.create({
+          data: createDocumentAuditLogData({
+            envelopeId,
+            type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_SENT,
+            data: { recipientEmail: email },
+            user,
+            requestMetadata,
+          }),
+        }),
+      ]);
+    } catch (error) {
+      console.error('Could not record preview email delivery', { envelopeId, error });
+    }
   }
 
   return { failedEmails, sharedPreview: hasSentEmail ? { previewUrl, isActive: true } : null };
@@ -352,17 +391,24 @@ export const getEnvelopePreview = async (token: string) => {
     return null;
   }
 
-  return await prisma.envelopePreview.findUnique({
+  const preview = await prisma.envelopePreview.findUnique({
     where: { ...active.where, revisionHash },
     select: {
       title: true,
       revisionHash: true,
+      envelope: { select: previewAuthSelect },
       pages: {
         orderBy: { position: 'asc' },
         select: { position: true, title: true, number: true, width: true, height: true },
       },
     },
   });
+
+  if (!preview || !canAccessPreviewWithoutVerification(preview.envelope)) {
+    return null;
+  }
+
+  return { title: preview.title, revisionHash: preview.revisionHash, pages: preview.pages };
 };
 
 export const getEnvelopePreviewPage = async (
@@ -383,12 +429,13 @@ export const getEnvelopePreviewPage = async (
     select: {
       envelopeId: true,
       openedAt: true,
+      envelope: { select: previewAuthSelect },
       pages: { where: { position }, select: { image: true } },
     },
   });
   const page = preview?.pages[0];
 
-  if (!preview || !page) {
+  if (!preview || !page || !canAccessPreviewWithoutVerification(preview.envelope)) {
     return null;
   }
 

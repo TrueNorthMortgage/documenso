@@ -1,10 +1,11 @@
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
+import { DocumentAuth } from '@documenso/lib/types/document-auth';
 import { prefixedId } from '@documenso/lib/universal/id';
 import { prisma } from '@documenso/prisma';
 import { seedBlankDocument } from '@documenso/prisma/seed/documents';
 import { seedUser } from '@documenso/prisma/seed/users';
 import { expect, test } from '@playwright/test';
-import { DocumentStatus, RecipientRole } from '@prisma/client';
+import { DocumentStatus, Prisma, RecipientRole } from '@prisma/client';
 
 import { apiSignin } from '../fixtures/authentication';
 
@@ -42,7 +43,7 @@ test('keeps one live preview link for an envelope through drafting and correctio
     },
   });
 
-  await prisma.recipient.create({
+  const signer = await prisma.recipient.create({
     data: { envelopeId: draft.id, email: firstEmail, name: 'Alex Morgan', role: RecipientRole.SIGNER, token: draft.id },
   });
 
@@ -151,8 +152,18 @@ test('keeps one live preview link for an envelope through drafting and correctio
     await page.locator('nav').getByRole('button', { name: 'Send preview link', exact: true }).click();
     await expect(dialog.getByRole('status')).toHaveText('Already shared');
     await expect(dialog.getByRole('textbox', { name: 'Preview link', exact: true })).toHaveValue(previewUrl);
+    await prisma.recipient.update({
+      where: { id: signer.id },
+      data: { authOptions: { accessAuth: [DocumentAuth.ACCOUNT], actionAuth: [] } },
+    });
+    await recipient.reload();
+    await expect(recipient.getByRole('heading', { name: 'This preview is unavailable' })).toBeVisible();
+    expect((await recipient.request.get(imagePath)).status()).toBe(404);
     await emailInputs.fill(additionalEmail);
     await dialog.getByLabel('Message (Optional)').fill('Please review the terms.');
+    await dialog.getByRole('button', { name: 'Send preview link', exact: true }).click();
+    await expect(dialog).toContainText('Preview links are unavailable when recipient access verification is required.');
+    await prisma.recipient.update({ where: { id: signer.id }, data: { authOptions: Prisma.DbNull } });
     await dialog.getByRole('button', { name: 'Send preview link', exact: true }).click();
     await expect(dialog.getByRole('status')).toHaveText('Preview link sent.');
     expect(await getPreviewPath(additionalEmail)).toBe(firstPath);

@@ -495,11 +495,6 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
 
       return { anonymous: description, you: description, user: description };
     })
-    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_REVOKED }, ({ data }) => ({
-      anonymous: msg`Preview access revoked for ${data.recipientEmail}`,
-      you: msg`You revoked preview access for ${data.recipientEmail}`,
-      user: msg`${user} revoked preview access for ${data.recipientEmail}`,
-    }))
     .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_STARTED }, () => ({
       anonymous: msg`Document correction started`,
       you: msg`You started correcting the document`,

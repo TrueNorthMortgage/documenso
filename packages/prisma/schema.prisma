@@ -920,6 +920,7 @@ model EnvelopePreview {
   title               String
   tokenHash           String    @unique
   createdAt           DateTime  @default(now())
+  activatedAt         DateTime?
   sentAt              DateTime?
   openedAt            DateTime?
   correctionStartedAt DateTime?
