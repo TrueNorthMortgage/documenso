@@ -129,14 +129,24 @@ export const DocumentLogsTable = ({
         header: _(msg`Browser`),
         cell: ({ row }) => {
           if (!row.original.userAgent) {
-            return 'N/A';
+            return <Trans>N/A</Trans>;
           }
 
           parser.setUA(row.original.userAgent);
 
-          const result = parser.getResult();
+          const { browser, os, device } = parser.getResult();
+          const browserLabel = browser.name && [browser.name, browser.version].filter(Boolean).join(' ');
+          const osLabel = os.name && [os.name, os.version].filter(Boolean).join(' ');
+          const deviceLabel =
+            device.type === 'mobile' ? _(msg`Phone`) : device.type === 'tablet' ? _(msg`Tablet`) : null;
+          const platformLabel = [osLabel, deviceLabel].filter(Boolean).join(' · ');
 
-          return result.browser.name ?? 'N/A';
+          return (
+            <div>
+              <p>{browserLabel || _(msg`N/A`)}</p>
+              {platformLabel && <p className="text-muted-foreground text-xs">{platformLabel}</p>}
+            </div>
+          );
         },
       },
     ] satisfies DataTableColumnDef<(typeof results)['data'][number]>[];

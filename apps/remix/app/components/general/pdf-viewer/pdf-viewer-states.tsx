@@ -12,14 +12,18 @@ export const PdfViewerLoadingState = () => {
 export const PdfViewerErrorState = () => {
   return (
     <div className="flex h-[80vh] max-h-[60rem] flex-col items-center justify-center bg-white/50 dark:bg-background">
-      <div className="text-center text-muted-foreground">
+      <div role="alert" className="max-w-sm px-4 text-center text-muted-foreground">
         <p>
-          <Trans>Something went wrong while loading the document.</Trans>
+          <Trans>We couldn’t display this document.</Trans>
         </p>
         <p className="mt-1 text-sm">
-          <Trans>Please try again or contact our support.</Trans>
+          <PdfViewerRecoveryMessage />
         </p>
       </div>
     </div>
   );
 };
+
+export const PdfViewerRecoveryMessage = () => (
+  <Trans>Try reloading. If the problem continues, reopen the link in an updated browser or on another device.</Trans>
+);

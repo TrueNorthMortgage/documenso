@@ -104,6 +104,34 @@ test.describe('PDF Viewer Rendering', () => {
   });
 
   test.describe('Recipient Signing', () => {
+    test('shows recovery instructions when the PDF worker stalls', async ({ page }) => {
+      const { user, team } = await seedUser();
+      const { recipients } = await seedPendingDocumentWithFullFields({
+        owner: user,
+        teamId: team.id,
+        recipients: ['signer-pdf-timeout@test.documenso.com'],
+        fields: [FieldType.SIGNATURE],
+        updateDocumentOptions: { internalVersion: 2 },
+      });
+
+      const workerAsset = /\/pdf\.worker(?:-[^/?]+)?\.mjs(?:\?(?!url(?:&|$)).*)?$/;
+      await page.route(workerAsset, (route) =>
+        route.fulfill({ contentType: 'text/javascript', body: 'self.addEventListener("message", () => {});' }),
+      );
+      await page.clock.install();
+
+      const workerResponse = page.waitForResponse((response) => workerAsset.test(response.url()));
+      await page.goto(`/sign/${recipients[0].token}`);
+      await workerResponse;
+
+      const alert = page.getByRole('alert').filter({ hasText: 'We couldn’t display this document.' });
+      await expect(alert).toHaveCount(0);
+      await page.clock.fastForward(60_001);
+
+      await expect(alert).toBeVisible();
+      await expect(alert).toContainText('reopen the link in an updated browser or on another device');
+    });
+
     test('should render PDF on signing page (V1 and V2)', async ({ page }) => {
       const { user, team } = await seedUser();
 
