@@ -17,6 +17,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@documenso/ui/primitives/form/form';
 import { Input } from '@documenso/ui/primitives/input';
 import { Textarea } from '@documenso/ui/primitives/textarea';
+import { useToast } from '@documenso/ui/primitives/use-toast';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { RecipientRole } from '@prisma/client';
 import { CopyIcon, PlusIcon, XIcon } from 'lucide-react';
@@ -52,6 +53,7 @@ export const EnvelopePreviewDialog = ({
   isCorrecting = false,
 }: EnvelopePreviewDialogProps) => {
   const { t } = useLingui();
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isSent, setIsSent] = useState(false);
@@ -117,6 +119,7 @@ export const EnvelopePreviewDialog = ({
       } else {
         setIsSent(true);
         replace([{ email: '' }]);
+        toast({ title: t`Preview link sent.`, duration: 5000 });
       }
 
       void utils.document.auditLog.find.invalidate();

@@ -8,6 +8,7 @@ import { expect, test } from '@playwright/test';
 import { DocumentStatus, Prisma, RecipientRole } from '@prisma/client';
 
 import { apiSignin } from '../fixtures/authentication';
+import { expectToastTextToBeVisible } from '../fixtures/generic';
 
 test('keeps one live preview link for an envelope through drafting and correction', async ({
   page,
@@ -59,6 +60,7 @@ test('keeps one live preview link for an envelope through drafting and correctio
   await dialog.getByLabel('Message (Optional)').fill('Please review the terms.');
   await dialog.getByRole('button', { name: 'Send preview link', exact: true }).click();
   await expect(dialog.getByRole('status')).toHaveText('Preview link sent.');
+  await expectToastTextToBeVisible(page, 'Preview link sent.');
   const previewUrl = await dialog.getByRole('textbox', { name: 'Preview link', exact: true }).inputValue();
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await dialog.getByRole('button', { name: 'Copy link' }).click();
@@ -149,7 +151,7 @@ test('keeps one live preview link for an envelope through drafting and correctio
 
     await dialog.getByRole('button', { name: 'Close', exact: true }).click();
     await page.goto(`/t/${team.url}/documents/${draft.id}/edit?step=addFields`);
-    await page.locator('nav').getByRole('button', { name: 'Send preview link', exact: true }).click();
+    await page.getByRole('button', { name: 'Send preview link', exact: true }).click();
     await expect(dialog.getByRole('status')).toHaveText('Already shared');
     await expect(dialog.getByRole('textbox', { name: 'Preview link', exact: true })).toHaveValue(previewUrl);
     await prisma.recipient.update({
@@ -201,7 +203,7 @@ test('keeps one live preview link for an envelope through drafting and correctio
     await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 
     await page.goto(`/t/${team.url}/documents/${draft.id}/edit?step=addFields`);
-    await page.getByRole('button', { name: 'Send preview link', exact: true }).nth(1).click();
+    await page.getByRole('button', { name: 'Send preview link', exact: true }).click();
     await expect(dialog).toContainText('until this correction ends');
     await expect(dialog.getByText('Preview link inactive')).toBeVisible();
     await expect(dialog.getByRole('textbox', { name: 'Preview link', exact: true })).toHaveValue(previewUrl);
