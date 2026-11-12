@@ -47,6 +47,15 @@ test('keeps one live preview link for an envelope through drafting and correctio
   const signer = await prisma.recipient.create({
     data: { envelopeId: draft.id, email: firstEmail, name: 'Alex Morgan', role: RecipientRole.SIGNER, token: draft.id },
   });
+  await prisma.recipient.create({
+    data: {
+      envelopeId: draft.id,
+      email: secondEmail,
+      name: 'Jamie Morgan',
+      role: RecipientRole.SIGNER,
+      token: prefixedId('recipient'),
+    },
+  });
 
   await apiSignin({ page, email: user.email, redirectPath: `/t/${team.url}/documents` });
   await page.getByRole('row').filter({ hasText: draft.title }).getByTestId('document-table-action-btn').click();
@@ -54,9 +63,10 @@ test('keeps one live preview link for an envelope through drafting and correctio
 
   const dialog = page.getByRole('dialog', { name: 'Send preview link' });
   const emailInputs = dialog.getByRole('textbox', { name: 'Recipient email', exact: true });
-  await expect(emailInputs).toHaveValue(firstEmail);
-  await dialog.getByRole('button', { name: 'Add email' }).click();
-  await emailInputs.nth(1).fill(secondEmail);
+  await expect(emailInputs).toHaveCount(2);
+  expect(
+    (await emailInputs.evaluateAll((inputs: HTMLInputElement[]) => inputs.map((input) => input.value))).sort(),
+  ).toEqual([firstEmail, secondEmail].sort());
   await dialog.getByLabel('Message (Optional)').fill('Please review the terms.');
   await dialog.getByRole('button', { name: 'Send preview link', exact: true }).click();
   await expect(dialog.getByRole('status')).toHaveText('Preview link sent.');
@@ -69,7 +79,7 @@ test('keeps one live preview link for an envelope through drafting and correctio
   await expect(prisma.envelope.findUnique({ where: { id: draft.id } })).resolves.toMatchObject({
     status: DocumentStatus.DRAFT,
   });
-  await expect(prisma.recipient.count({ where: { envelopeId: draft.id } })).resolves.toBe(1);
+  await expect(prisma.recipient.count({ where: { envelopeId: draft.id } })).resolves.toBe(2);
 
   const mailboxUrl = process.env.DOCUMENSO_TEST_INBUCKET_URL || 'http://inbucket:9000';
   const getPreviewPath = async (email: string) => {
@@ -154,6 +164,8 @@ test('keeps one live preview link for an envelope through drafting and correctio
     await page.getByRole('button', { name: 'Send preview link', exact: true }).click();
     await expect(dialog.getByRole('status')).toHaveText('Already shared');
     await expect(dialog.getByRole('textbox', { name: 'Preview link', exact: true })).toHaveValue(previewUrl);
+    await expect(emailInputs).toHaveCount(1);
+    await expect(emailInputs).toHaveValue('');
     await prisma.recipient.update({
       where: { id: signer.id },
       data: { authOptions: { accessAuth: [DocumentAuth.ACCOUNT], actionAuth: [] } },

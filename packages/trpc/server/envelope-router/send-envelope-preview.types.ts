@@ -1,3 +1,4 @@
+import { MAX_PREVIEW_RECIPIENTS } from '@documenso/lib/utils/envelope-preview';
 import { zEmail } from '@documenso/lib/utils/zod';
 import { z } from 'zod';
 
@@ -6,7 +7,7 @@ export const ZSendEnvelopePreviewRequestSchema = z.object({
   emails: z
     .array(zEmail().transform((email) => email.toLowerCase()))
     .min(1)
-    .max(10)
+    .max(MAX_PREVIEW_RECIPIENTS)
     .transform((emails) => [...new Set(emails)]),
   subject: z
     .string()

@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCopyToClipboard } from '@documenso/lib/client-only/hooks/use-copy-to-clipboard';
 import { AppError } from '@documenso/lib/errors/app-error';
+import { MAX_PREVIEW_RECIPIENTS } from '@documenso/lib/utils/envelope-preview';
 import { zEmail } from '@documenso/lib/utils/zod';
 import { trpc } from '@documenso/trpc/react';
 import { Alert, AlertDescription } from '@documenso/ui/primitives/alert';
@@ -22,7 +23,7 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { RecipientRole } from '@prisma/client';
 import { CopyIcon, PlusIcon, XIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -30,7 +31,7 @@ const ZPreviewFormSchema = z.object({
   recipients: z
     .array(z.object({ email: zEmail() }))
     .min(1)
-    .max(10),
+    .max(MAX_PREVIEW_RECIPIENTS),
   subject: z.string().trim().max(200),
   message: z.string().trim().max(5000),
 });
@@ -55,6 +56,7 @@ export const EnvelopePreviewDialog = ({
   const { t } = useLingui();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [isFormReady, setIsFormReady] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [isSent, setIsSent] = useState(false);
   const [copiedUrl, copy] = useCopyToClipboard();
@@ -64,18 +66,33 @@ export const EnvelopePreviewDialog = ({
   const previewUrl = sharedPreview?.previewUrl;
   const sendPreview = trpc.envelope.preview.send.useMutation();
   const form = useForm<z.infer<typeof ZPreviewFormSchema>>({ resolver: zodResolver(ZPreviewFormSchema) });
+  const { reset } = form;
   const { fields, append, remove, replace } = useFieldArray({ control: form.control, name: 'recipients' });
   const isSending = form.formState.isSubmitting;
-  const canSubmit = !previewQuery.isPending && !previewQuery.isError;
+  const canSubmit = isFormReady && !previewQuery.isError;
 
-  const resetFields = (prefill: boolean) => {
-    const signers = recipients.filter((recipient) => recipient.role === RecipientRole.SIGNER && recipient.email);
-    form.reset({
-      recipients: [{ email: prefill && signers.length === 1 ? signers[0].email : '' }],
+  useEffect(() => {
+    if (!isOpen || isFormReady || previewQuery.isFetching || sharedPreview === undefined || previewQuery.isError) {
+      return;
+    }
+
+    const signerEmails = sharedPreview
+      ? []
+      : [
+          ...new Set(
+            recipients
+              .filter((recipient) => recipient.role === RecipientRole.SIGNER && recipient.email.trim())
+              .map((recipient) => recipient.email.trim().toLowerCase()),
+          ),
+        ].slice(0, MAX_PREVIEW_RECIPIENTS);
+
+    reset({
+      recipients: signerEmails.length > 0 ? signerEmails.map((email) => ({ email })) : [{ email: '' }],
       subject: t`Preview: ${title}`.replace(/[\r\n]+/g, ' ').slice(0, 200),
       message: '',
     });
-  };
+    setIsFormReady(true);
+  }, [isOpen, isFormReady, previewQuery.isFetching, previewQuery.isError, sharedPreview, recipients, reset, t, title]);
 
   const onOpenChange = (open: boolean) => {
     if (isSending) {
@@ -83,7 +100,7 @@ export const EnvelopePreviewDialog = ({
     }
 
     if (open) {
-      resetFields(!utils.envelope.preview.get.getData({ envelopeId }));
+      setIsFormReady(false);
       setErrorMessage(undefined);
       setIsSent(false);
     }
@@ -149,7 +166,7 @@ export const EnvelopePreviewDialog = ({
 
         <Form {...form}>
           <form onSubmit={onSubmit}>
-            {previewQuery.isPending && (
+            {!isFormReady && !previewQuery.isError && (
               <p role="status" className="text-muted-foreground text-sm">
                 <Trans>Loading preview link…</Trans>
               </p>
@@ -201,7 +218,7 @@ export const EnvelopePreviewDialog = ({
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={fields.length >= 10}
+                  disabled={fields.length >= MAX_PREVIEW_RECIPIENTS}
                   onClick={() => append({ email: '' })}
                 >
                   <PlusIcon className="mr-2 h-4 w-4" />

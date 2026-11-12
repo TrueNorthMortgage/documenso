@@ -1,5 +1,7 @@
 import { DocumentStatus } from '@prisma/client';
 
+export const MAX_PREVIEW_RECIPIENTS = 10;
+
 export const canShareEnvelopePreview = ({
   status,
   correctionStartedAt,
