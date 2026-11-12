@@ -10,22 +10,19 @@ import {
 import { cn } from '@documenso/ui/lib/utils';
 import { Button } from '@documenso/ui/primitives/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@documenso/ui/primitives/select';
-import { useToast } from '@documenso/ui/primitives/use-toast';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 import pMap from 'p-map';
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?url';
+import type * as pdfjsLib from 'pdfjs-dist';
 import type React from 'react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import type { ScrollTarget } from '../virtual-list/use-virtual-list';
 import { useVirtualList } from '../virtual-list/use-virtual-list';
+import { loadPdfJs } from './load-pdfjs';
 import { PdfViewerPageImage } from './pdf-viewer-page-image';
 import { PdfViewerErrorState, PdfViewerLoadingState } from './pdf-viewer-states';
 import { useScrollToPage } from './use-scroll-to-page';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 type PageMeta = {
   width: number;
@@ -37,6 +34,7 @@ type LoadingState = 'loading' | 'loaded' | 'error';
 const LOW_RENDER_RESOLUTION = 1;
 const HIGH_RENDER_RESOLUTION = 2;
 const IDLE_RENDER_DELAY = 200;
+const PDF_LOAD_TIMEOUT_MS = 60_000;
 
 export type PDFViewerProps = {
   className?: string;
@@ -93,7 +91,6 @@ export default function PDFViewer({
   ...props
 }: PDFViewerProps) {
   const { t } = useLingui();
-  const { toast } = useToast();
 
   const $el = useRef<HTMLDivElement>(null);
 
@@ -120,20 +117,33 @@ export default function PDFViewer({
     }
 
     let isCancelled = false;
+    let loadingTask: pdfjsLib.PDFDocumentLoadingTask | undefined;
+    const controller = new AbortController();
+
+    const cancelLoad = () => {
+      isCancelled = true;
+      controller.abort();
+      if (loadingTask) {
+        void loadingTask.destroy().catch(console.error);
+        loadingTask = undefined;
+      }
+      pdfRef.current = null;
+    };
+
+    const timeout = setTimeout(() => {
+      cancelLoad();
+      setLoadingState('error');
+    }, PDF_LOAD_TIMEOUT_MS);
 
     const fetchMetadata = async () => {
       try {
         setLoadingState('loading');
         setPages([]);
 
-        if (isCancelled) {
-          return;
-        }
-
         let result: Uint8Array | null = typeof data === 'string' ? null : new Uint8Array(data);
 
         if (typeof data === 'string') {
-          const response = await fetch(data);
+          const response = await fetch(data, { signal: controller.signal });
 
           if (!response.ok) {
             throw new Error(`Failed to fetch PDF data: ${response.status}`);
@@ -146,26 +156,26 @@ export default function PDFViewer({
           return;
         }
 
-        const loadedPdf = await pdfjsLib.getDocument({
+        const pdfJs = await loadPdfJs();
+
+        if (isCancelled) {
+          return;
+        }
+
+        loadingTask = pdfJs.getDocument({
           data: result!,
           cMapUrl: '/static/cmaps/',
           // Some valid PDFs embed Type 1 fonts that browser font engines fail to load,
           // displaying their glyphs as boxes. Rendering PDF.js glyph paths avoids that
           // limitation without changing the uploaded or signed PDF.
           disableFontFace: true,
-        }).promise;
+        });
+        const loadedPdf = await loadingTask.promise;
 
         if (isCancelled) {
-          await loadedPdf.destroy();
           return;
         }
 
-        // Destroy previous PDF if it exists
-        if (pdfRef.current) {
-          await pdfRef.current.destroy();
-        }
-
-        // eslint-disable-next-line require-atomic-updates
         pdfRef.current = loadedPdf;
 
         // Fetch the pages
@@ -192,25 +202,18 @@ export default function PDFViewer({
         }
 
         console.error(err);
+        cancelLoad();
         setLoadingState('error');
-
-        toast({
-          title: t`Error`,
-          description: t`An error occurred while loading the document.`,
-          variant: 'destructive',
-        });
+      } finally {
+        clearTimeout(timeout);
       }
     };
 
     void fetchMetadata();
 
     return () => {
-      isCancelled = true;
-
-      if (pdfRef.current) {
-        void pdfRef.current.destroy();
-        pdfRef.current = null;
-      }
+      clearTimeout(timeout);
+      cancelLoad();
     };
   }, [data]);
 
@@ -540,6 +543,15 @@ const usePdfPageImage = ({ pageNumber, pdf, scale, scaledWidth, scaledHeight }: 
   const renderedScaleRef = useRef<number | null>(null);
   const renderedPageNumberRef = useRef<number | null>(null);
   const renderedPdfRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null);
+
+  useEffect(() => {
+    if (imageLoadingState !== 'loading') {
+      return;
+    }
+
+    const timeout = setTimeout(() => setImageLoadingState('error'), PDF_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(timeout);
+  }, [imageLoadingState]);
 
   useEffect(() => {
     let isCancelled = false;
