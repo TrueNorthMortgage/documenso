@@ -2,6 +2,7 @@ import { useSession } from '@documenso/lib/client-only/providers/session';
 import type { TEnvelope } from '@documenso/lib/types/envelope';
 import { isSameEmail } from '@documenso/lib/utils/email';
 import { getEnvelopeItemPermissions, mapSecondaryIdToDocumentId } from '@documenso/lib/utils/envelope';
+import { canShareEnvelopePreview } from '@documenso/lib/utils/envelope-preview';
 import { isEnvelopeReassignable } from '@documenso/lib/utils/envelope-reassignment';
 import { canExecuteTeamAction, formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { trpc as trpcReact } from '@documenso/trpc/react';
@@ -18,6 +19,7 @@ import {
   Copy,
   Download,
   Edit,
+  EyeIcon,
   FileOutputIcon,
   FilePenLineIcon,
   MoreHorizontal,
@@ -34,6 +36,7 @@ import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dia
 import { EnvelopeDeleteDialog } from '~/components/dialogs/envelope-delete-dialog';
 import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-dialog';
 import { EnvelopeDuplicateDialog } from '~/components/dialogs/envelope-duplicate-dialog';
+import { EnvelopePreviewDialog } from '~/components/dialogs/envelope-preview-dialog';
 import { EnvelopeReassignSenderDialog } from '~/components/dialogs/envelope-reassign-sender-dialog';
 import { EnvelopeRenameDialog } from '~/components/dialogs/envelope-rename-dialog';
 import { EnvelopeSaveAsTemplateDialog } from '~/components/dialogs/envelope-save-as-template-dialog';
@@ -98,6 +101,23 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
               <Trans>Edit</Trans>
             </Link>
           </DropdownMenuItem>
+        )}
+
+        {canManageDocument && canShareEnvelopePreview(envelope) && (
+          <EnvelopePreviewDialog
+            envelopeId={envelope.id}
+            title={envelope.title}
+            recipients={envelope.recipients}
+            isCorrecting={Boolean(envelope.correctionStartedAt)}
+            trigger={
+              <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
+                <div>
+                  <EyeIcon className="mr-2 h-4 w-4" />
+                  <Trans>Send preview link</Trans>
+                </div>
+              </DropdownMenuItem>
+            }
+          />
         )}
 
         {(isOwner || isCurrentTeamDocument) &&
