@@ -33,6 +33,7 @@ import { findEnvelopesRoute } from './find-envelopes';
 import { findReassignmentCandidatesRoute } from './find-reassignment-candidates';
 import { getEditorEnvelopeRoute } from './get-editor-envelope';
 import { getEnvelopeRoute } from './get-envelope';
+import { getSharedEnvelopePreviewRoute } from './get-shared-envelope-preview';
 import { getEnvelopeItemsRoute } from './get-envelope-items';
 import { getEnvelopeItemsByTokenRoute } from './get-envelope-items-by-token';
 import { getEnvelopesByIdsRoute } from './get-envelopes-by-ids';
@@ -43,6 +44,7 @@ import { removeTemplateFromEnvelopeItemRoute } from './remove-template-from-enve
 import { replaceEnvelopeItemPdfRoute } from './replace-envelope-item-pdf';
 import { replaceFilledSignaturesRoute } from './replace-filled-signatures';
 import { saveAsTemplateRoute } from './save-as-template';
+import { sendEnvelopePreviewRoute } from './send-envelope-preview';
 import { setEnvelopeFieldsRoute } from './set-envelope-fields';
 import { setEnvelopeItemShapesRoute } from './set-envelope-item-shapes';
 import { setEnvelopeRecipientsRoute } from './set-envelope-recipients';
@@ -105,6 +107,10 @@ export const envelopeRouter = router({
   find: findEnvelopesRoute,
   auditLog: {
     find: findEnvelopeAuditLogsRoute,
+  },
+  preview: {
+    get: getSharedEnvelopePreviewRoute,
+    send: sendEnvelopePreviewRoute,
   },
   bulk: {
     move: bulkMoveEnvelopesRoute,

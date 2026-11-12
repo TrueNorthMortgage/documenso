@@ -454,6 +454,7 @@ model Envelope {
   fields        Field[]
   fieldGroups   FieldGroup[]
   shareLinks    DocumentShareLink[]
+  preview       EnvelopePreview?
   auditLogs     DocumentAuditLog[]
   emailDeliveryAttempts EmailDeliveryAttempt[]
   templateFavorites TemplateFavorite[]
@@ -911,6 +912,35 @@ model DocumentShareLink {
   envelope Envelope @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
 
   @@unique([envelopeId, email])
+}
+
+model EnvelopePreview {
+  id                  String    @id @default(cuid())
+  envelopeId          String    @unique
+  title               String
+  tokenHash           String    @unique
+  createdAt           DateTime  @default(now())
+  sentAt              DateTime?
+  openedAt            DateTime?
+  correctionStartedAt DateTime?
+  revisionHash        String?
+
+  envelope Envelope              @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+  pages    EnvelopePreviewPage[]
+}
+
+model EnvelopePreviewPage {
+  previewId String
+  position  Int
+  title     String
+  number    Int
+  width     Int
+  height    Int
+  image     Bytes
+
+  preview EnvelopePreview @relation(fields: [previewId], references: [id], onDelete: Cascade)
+
+  @@id([previewId, position])
 }
 
 enum OrganisationType {

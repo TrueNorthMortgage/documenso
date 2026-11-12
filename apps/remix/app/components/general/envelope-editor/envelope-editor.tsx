@@ -1,6 +1,7 @@
 import type { EnvelopeEditorStep } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { mapSecondaryIdToTemplateId } from '@documenso/lib/utils/envelope';
+import { canShareEnvelopePreview } from '@documenso/lib/utils/envelope-preview';
 import { isEnvelopeReassignable } from '@documenso/lib/utils/envelope-reassignment';
 import { hasCompletedRecipient } from '@documenso/lib/utils/recipients';
 import { canExecuteTeamAction } from '@documenso/lib/utils/teams';
@@ -35,6 +36,7 @@ import { EnvelopeDeleteDialog } from '~/components/dialogs/envelope-delete-dialo
 import { EnvelopeDistributeDialog } from '~/components/dialogs/envelope-distribute-dialog';
 import { EnvelopeDownloadDialog } from '~/components/dialogs/envelope-download-dialog';
 import { EnvelopeDuplicateDialog } from '~/components/dialogs/envelope-duplicate-dialog';
+import { EnvelopePreviewDialog } from '~/components/dialogs/envelope-preview-dialog';
 import { EnvelopeReassignSenderDialog } from '~/components/dialogs/envelope-reassign-sender-dialog';
 import { EnvelopeRedistributeDialog } from '~/components/dialogs/envelope-redistribute-dialog';
 import { EnvelopeSaveAsTemplateDialog } from '~/components/dialogs/envelope-save-as-template-dialog';
@@ -357,6 +359,31 @@ export const EnvelopeEditor = () => {
 
             {isDocument && allowDistributing && (
               <>
+                {!isEmbedded && canShareEnvelopePreview(envelope) && (
+                  <EnvelopePreviewDialog
+                    envelopeId={envelope.id}
+                    title={envelope.title}
+                    recipients={envelope.recipients}
+                    beforeSend={flushAutosave}
+                    isCorrecting={Boolean(envelope.correctionStartedAt)}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start"
+                        aria-label={t(msg`Send preview link`)}
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                        {!minimizeLeftSidebar && (
+                          <span className="ml-2">
+                            <Trans>Send preview link</Trans>
+                          </span>
+                        )}
+                      </Button>
+                    }
+                  />
+                )}
+
                 <EnvelopeDistributeDialog
                   documentRootPath={relativePath.documentRootPath}
                   trigger={

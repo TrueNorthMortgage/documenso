@@ -3,6 +3,7 @@ import type { TDocumentMany as TDocumentRow } from '@documenso/lib/types/documen
 import { isDocumentCompleted } from '@documenso/lib/utils/document';
 import { getEnvelopeItemPermissions } from '@documenso/lib/utils/envelope';
 import { isEnvelopeReassignable } from '@documenso/lib/utils/envelope-reassignment';
+import { canShareEnvelopePreview } from '@documenso/lib/utils/envelope-preview';
 import { findRecipientByEmail } from '@documenso/lib/utils/recipients';
 import { canExecuteTeamAction, formatDocumentsPath } from '@documenso/lib/utils/teams';
 import { trpc as trpcReact } from '@documenso/trpc/react';
@@ -38,6 +39,7 @@ import { DocumentResendDialog } from '~/components/dialogs/document-resend-dialo
 import { EnvelopeCorrectDialog } from '~/components/dialogs/envelope-correct-dialog';
 import { EnvelopeDeleteDialog } from '~/components/dialogs/envelope-delete-dialog';
 import { EnvelopeDuplicateDialog } from '~/components/dialogs/envelope-duplicate-dialog';
+import { EnvelopePreviewDialog } from '~/components/dialogs/envelope-preview-dialog';
 import { EnvelopeReassignSenderDialog } from '~/components/dialogs/envelope-reassign-sender-dialog';
 import { EnvelopeSaveAsTemplateDialog } from '~/components/dialogs/envelope-save-as-template-dialog';
 import { DocumentRecipientLinkCopyDialog } from '~/components/general/document/document-recipient-link-copy-dialog';
@@ -150,6 +152,23 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
               <Trans>Edit</Trans>
             </Link>
           </DropdownMenuItem>
+        )}
+
+        {canManageDocument && canShareEnvelopePreview(row) && (
+          <EnvelopePreviewDialog
+            envelopeId={row.envelopeId}
+            title={row.title}
+            recipients={row.recipients}
+            isCorrecting={Boolean(row.correctionStartedAt)}
+            trigger={
+              <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
+                <div>
+                  <EyeIcon className="mr-2 h-4 w-4" />
+                  <Trans>Send preview link</Trans>
+                </div>
+              </DropdownMenuItem>
+            }
+          />
         )}
 
         {isPending &&

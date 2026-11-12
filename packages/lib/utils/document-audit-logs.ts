@@ -483,6 +483,23 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
       you: msg`You sent the document`,
       user: msg`${user} sent the document`,
     }))
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_SENT }, ({ data }) => ({
+      anonymous: msg`Preview link sent to ${data.recipientEmail}`,
+      you: msg`You sent a preview link to ${data.recipientEmail}`,
+      user: msg`${user} sent a preview link to ${data.recipientEmail}`,
+    }))
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_OPENED }, ({ data }) => {
+      const description = data.recipientEmail
+        ? msg`Preview link for ${data.recipientEmail} opened`
+        : msg`Preview link opened`;
+
+      return { anonymous: description, you: description, user: description };
+    })
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_REVOKED }, ({ data }) => ({
+      anonymous: msg`Preview access revoked for ${data.recipientEmail}`,
+      you: msg`You revoked preview access for ${data.recipientEmail}`,
+      user: msg`${user} revoked preview access for ${data.recipientEmail}`,
+    }))
     .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_CORRECTION_STARTED }, () => ({
       anonymous: msg`Document correction started`,
       you: msg`You started correcting the document`,

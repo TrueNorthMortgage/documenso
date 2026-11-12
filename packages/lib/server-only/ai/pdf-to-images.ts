@@ -2,6 +2,8 @@ import pMap from 'p-map';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { Canvas, Image, Path2D } from 'skia-canvas';
 
+import { AppError, AppErrorCode } from '../../errors/app-error';
+
 // @ts-expect-error napi-rs/canvas satisfies the requirements
 globalThis.Path2D = Path2D;
 // @ts-expect-error napi-rs/canvas satisfies the requirements
@@ -42,58 +44,67 @@ class SkiaCanvasFactory {
 
 export type PdfToImagesOptions = {
   scale?: number;
+  maxPages?: number;
+  maxDimension?: number;
 };
 
 export const pdfToImages = async (pdfBytes: Uint8Array, options: PdfToImagesOptions = {}) => {
-  const { scale = 2 } = options;
+  const { scale = 2, maxPages, maxDimension } = options;
 
-  const task = await pdfjsLib.getDocument({
+  const task = pdfjsLib.getDocument({
     data: pdfBytes,
     CanvasFactory: SkiaCanvasFactory,
   });
 
-  const pdf = await task.promise;
+  try {
+    const pdf = await task.promise;
 
-  const images = await pMap(
-    Array.from({ length: pdf.numPages }),
-    async (_, index) => {
-      const pageNumber = index + 1;
-      const page = await pdf.getPage(pageNumber);
+    if (maxPages !== undefined && pdf.numPages > maxPages) {
+      throw new AppError(AppErrorCode.INVALID_REQUEST, { userMessage: 'The preview exceeds the page limit.' });
+    }
 
-      const viewport = page.getViewport({ scale });
+    return await pMap(
+      Array.from({ length: pdf.numPages }),
+      async (_, index) => {
+        const pageNumber = index + 1;
+        const page = await pdf.getPage(pageNumber);
 
-      const canvas = new Canvas(viewport.width, viewport.height);
-      canvas.gpu = false;
+        const naturalSize = page.getViewport({ scale: 1 });
+        const renderScale = maxDimension
+          ? Math.min(scale, maxDimension / Math.max(naturalSize.width, naturalSize.height))
+          : scale;
+        const viewport = page.getViewport({ scale: renderScale });
 
-      const canvasContext = canvas.getContext('2d');
+        const canvas = new Canvas(viewport.width, viewport.height);
+        canvas.gpu = false;
 
-      await page.render({
-        // @ts-expect-error napi-rs/canvas satifies the requirements
-        canvas,
-        // @ts-expect-error napi-rs/canvas satifies the requirements
-        canvasContext,
-        viewport,
-      }).promise;
+        const canvasContext = canvas.getContext('2d');
 
-      const result = {
-        pageNumber,
-        image: await canvas.toBuffer('jpeg'),
-        width: Math.floor(viewport.width),
-        height: Math.floor(viewport.height),
-        pageWidth: viewport.width / scale,
-        pageHeight: viewport.height / scale,
-        mimeType: 'image/jpeg',
-      };
+        await page.render({
+          // @ts-expect-error napi-rs/canvas satifies the requirements
+          canvas,
+          // @ts-expect-error napi-rs/canvas satifies the requirements
+          canvasContext,
+          viewport,
+        }).promise;
 
-      void page.cleanup();
+        const result = {
+          pageNumber,
+          image: await canvas.toBuffer('jpeg'),
+          width: Math.floor(viewport.width),
+          height: Math.floor(viewport.height),
+          pageWidth: naturalSize.width,
+          pageHeight: naturalSize.height,
+          mimeType: 'image/jpeg',
+        };
 
-      return result;
-    },
-    { concurrency: 10 },
-  );
+        void page.cleanup();
 
-  void pdf.destroy().catch((e) => console.error(e));
-  void task.destroy().catch((e) => console.error(e));
-
-  return images;
+        return result;
+      },
+      { concurrency: 10 },
+    );
+  } finally {
+    await task.destroy().catch(console.error);
+  }
 };

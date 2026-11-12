@@ -1,6 +1,7 @@
 import { useCurrentEnvelopeEditor } from '@documenso/lib/client-only/providers/envelope-editor-provider';
 import { useOptionalSession } from '@documenso/lib/client-only/providers/session';
 import { getEnvelopeItemPermissions, mapSecondaryIdToTemplateId } from '@documenso/lib/utils/envelope';
+import { canShareEnvelopePreview } from '@documenso/lib/utils/envelope-preview';
 import { trpc } from '@documenso/trpc/react';
 import { cn } from '@documenso/ui/lib/utils';
 import { Badge } from '@documenso/ui/primitives/badge';
@@ -11,6 +12,7 @@ import { DocumentStatus, EnvelopeType, TemplateType } from '@prisma/client';
 import {
   AlertTriangleIcon,
   Building2Icon,
+  EyeIcon,
   FileTextIcon,
   Globe2Icon,
   LayersIcon,
@@ -24,6 +26,7 @@ import { Link } from 'react-router';
 import { match } from 'ts-pattern';
 
 import { EnvelopeDistributeDialog } from '~/components/dialogs/envelope-distribute-dialog';
+import { EnvelopePreviewDialog } from '~/components/dialogs/envelope-preview-dialog';
 import { EnvelopeRedistributeDialog } from '~/components/dialogs/envelope-redistribute-dialog';
 import { TemplateUseDialog } from '~/components/dialogs/template-use-dialog';
 import { AppLogo } from '~/components/general/app-logo';
@@ -233,6 +236,24 @@ export default function EnvelopeEditorHeader() {
           {match({ isEmbedded, isDocument, isTemplate, allowDistributing })
             .with({ isEmbedded: false, isDocument: true, allowDistributing: true }, () => (
               <>
+                {canShareEnvelopePreview(envelope) && (
+                  <EnvelopePreviewDialog
+                    envelopeId={envelope.id}
+                    title={envelope.title}
+                    recipients={envelope.recipients}
+                    beforeSend={flushAutosave}
+                    isCorrecting={Boolean(envelope.correctionStartedAt)}
+                    trigger={
+                      <Button variant="outline" size="sm" aria-label={t`Send preview link`}>
+                        <EyeIcon className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">
+                          <Trans>Send preview link</Trans>
+                        </span>
+                      </Button>
+                    }
+                  />
+                )}
+
                 <EnvelopeDistributeDialog
                   documentRootPath={relativePath.documentRootPath}
                   trigger={
