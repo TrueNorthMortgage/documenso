@@ -2,7 +2,14 @@ import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mailer } from '@documenso/email/mailer';
 import { DocumentPreviewEmailTemplate } from '@documenso/email/templates/document-preview';
 import { prisma } from '@documenso/prisma';
-import { DocumentStatus, EmailDeliveryPurpose, EmailDeliveryStatus, EnvelopeType, type Prisma } from '@prisma/client';
+import {
+  DocumentStatus,
+  type EmailDeliveryAttempt,
+  EmailDeliveryPurpose,
+  EmailDeliveryStatus,
+  EnvelopeType,
+  type Prisma,
+} from '@prisma/client';
 import { msg } from '@lingui/core/macro';
 import { createElement } from 'react';
 
@@ -335,12 +342,16 @@ export const sendEnvelopePreview = async ({
       message,
     });
 
+    let html: string;
+    let text: string;
+    let attempt: EmailDeliveryAttempt;
+
     try {
-      const [html, text] = await Promise.all([
+      [html, text] = await Promise.all([
         renderEmailWithI18N(template, { lang: emailLanguage, branding }),
         renderEmailWithI18N(template, { lang: emailLanguage, branding, plainText: true }),
       ]);
-      const attempt = await prisma.emailDeliveryAttempt.create({
+      attempt = await prisma.emailDeliveryAttempt.create({
         data: {
           id: attemptId,
           operationKey: attemptId,
@@ -352,7 +363,13 @@ export const sendEnvelopePreview = async ({
           messageStream: 'outbound',
         },
       });
+    } catch (error) {
+      console.error('Could not prepare preview email', { envelopeId, attemptId, error });
+      failedEmails.push(email);
+      continue;
+    }
 
+    try {
       await mailer.sendMail({
         to: [{ name: '', address: email }],
         from: senderEmail,
@@ -366,10 +383,10 @@ export const sendEnvelopePreview = async ({
       failedEmails.push(email);
       try {
         await withEmailDeliveryTransaction(async (tx) => {
-          const attempt = await tx.emailDeliveryAttempt.findUnique({ where: { id: attemptId } });
+          const currentAttempt = await tx.emailDeliveryAttempt.findUnique({ where: { id: attempt.id } });
 
-          if (attempt) {
-            await applyEmailDeliveryStatus(tx, attempt, {
+          if (currentAttempt) {
+            await applyEmailDeliveryStatus(tx, currentAttempt, {
               status: EmailDeliveryStatus.SEND_FAILED,
               occurredAt: new Date(),
               failureCode: 'SMTP_SEND_FAILED',
@@ -501,6 +518,7 @@ export const getEnvelopePreviewPage = async (
         return;
       }
 
+      // PostgreSQL rechecks openedAt after a concurrent update commits.
       const { count } = await tx.emailDeliveryAttempt.updateMany({
         where: attemptWhere,
         data: { openedAt: new Date() },
