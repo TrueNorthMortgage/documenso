@@ -2119,10 +2119,6 @@ msgstr "Cualquier fuente"
 msgid "Any Status"
 msgstr "Cualquier estado"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Anyone with the link can view the latest saved version while the envelope is in Draft."
-msgstr "Quien tenga el enlace puede ver la última versión guardada mientras el envío está en borrador."
-
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/settings-nav-mobile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings._layout.tsx
@@ -10556,10 +10552,6 @@ msgstr "Remitente reasignado de {from} a {to}"
 msgid "Senders reassigned"
 msgstr "Remitentes reasignados"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Sending reopens the same link for everyone who has it until this correction ends."
-msgstr "El envío abre nuevamente el mismo enlace para todos los que lo tienen hasta que este cambio termine."
-
 #: apps/remix/app/components/general/verify-email-banner.tsx
 msgid "Sending..."
 msgstr "Enviando..."
@@ -10618,6 +10610,10 @@ msgstr "Configuración"
 #: packages/ui/components/document/document-share-button.tsx
 msgid "Share"
 msgstr "Compartir"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Share a view-only preview of the documents in this envelope. Recipients can open the preview without signing, and the preview has no download option."
+msgstr "Comparte una vista previa de solo lectura de los documentos de este sobre. Los destinatarios pueden abrirla sin firmar y la vista previa no ofrece una opción de descarga."
 
 #: packages/lib/constants/template.ts
 msgid "Share the Link"

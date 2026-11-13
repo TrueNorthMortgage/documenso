@@ -2119,10 +2119,6 @@ msgstr "任意来源"
 msgid "Any Status"
 msgstr "任意状态"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Anyone with the link can view the latest saved version while the envelope is in Draft."
-msgstr "当信封处于草稿状态时，拥有链接的任何人可查看最新保存版本。"
-
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/settings-nav-mobile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings._layout.tsx
@@ -10556,10 +10552,6 @@ msgstr "发件人已从 {from} 重新分配为 {to}"
 msgid "Senders reassigned"
 msgstr "发件人已重新分配"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Sending reopens the same link for everyone who has it until this correction ends."
-msgstr "发送操作将为所有拥有该链接的人重新打开同一链接，直到此更正结束。"
-
 #: apps/remix/app/components/general/verify-email-banner.tsx
 msgid "Sending..."
 msgstr "正在发送..."
@@ -10618,6 +10610,10 @@ msgstr "设置"
 #: packages/ui/components/document/document-share-button.tsx
 msgid "Share"
 msgstr "分享"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Share a view-only preview of the documents in this envelope. Recipients can open the preview without signing, and the preview has no download option."
+msgstr "分享此信封中文档的仅供查看的预览。收件人无需签名即可打开预览，预览不提供下载选项。"
 
 #: packages/lib/constants/template.ts
 msgid "Share the Link"

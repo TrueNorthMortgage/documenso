@@ -109,7 +109,6 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
             envelopeId={envelope.id}
             title={envelope.title}
             recipients={envelope.recipients}
-            isCorrecting={Boolean(envelope.correctionStartedAt)}
             trigger={
               <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
                 <div>
