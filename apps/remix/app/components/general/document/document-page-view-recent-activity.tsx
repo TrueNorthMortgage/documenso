@@ -1,4 +1,5 @@
 import { DOCUMENT_AUDIT_LOG_TYPE } from '@documenso/lib/types/document-audit-logs';
+import { isEmailDeliveryFailure } from '@documenso/lib/universal/email-delivery';
 import { formatDocumentAuditLogAction } from '@documenso/lib/utils/document-audit-logs';
 import { trpc } from '@documenso/trpc/react';
 import { AnimateGenericFadeInOut } from '@documenso/ui/components/animate/animate-generic-fade-in-out';
@@ -7,7 +8,7 @@ import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import type { DocumentStatus } from '@prisma/client';
-import { AlertTriangle, CheckCheckIcon, CheckIcon, Loader, MailOpen } from 'lucide-react';
+import { AlertCircleIcon, AlertTriangle, CheckCheckIcon, CheckIcon, Loader, MailOpen } from 'lucide-react';
 import { DateTime } from 'luxon';
 import { useMemo } from 'react';
 import { match } from 'ts-pattern';
@@ -49,7 +50,10 @@ export const DocumentPageViewRecentActivity = ({
   const documentAuditLogs = useMemo(() => (data?.pages ?? []).flatMap((page) => page.data), [data]);
 
   return (
-    <section className="flex flex-col rounded-xl border border-border bg-widget dark:bg-background">
+    <section
+      id="recent-activity"
+      className="flex flex-col rounded-xl border border-border bg-widget dark:bg-background"
+    >
       <div className="flex flex-row items-center justify-between border-b px-4 py-3">
         <h1 className="font-medium text-foreground">
           <Trans>Recent activity</Trans>
@@ -120,23 +124,36 @@ export const DocumentPageViewRecentActivity = ({
                 </div>
 
                 <div className="relative flex h-6 w-6 flex-none items-center justify-center bg-widget text-foreground/40">
-                  {match(auditLog.type)
-                    .with(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_COMPLETED, () => (
+                  {match(auditLog)
+                    .with(
+                      { type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_EMAIL_DELIVERY_UPDATED },
+                      ({ data }) => isEmailDeliveryFailure(data.status),
+                      () => (
+                        <div className="rounded-full border border-gray-300 bg-widget p-1 dark:border-neutral-600">
+                          <AlertCircleIcon
+                            className="h-3 w-3 text-destructive"
+                            aria-hidden="true"
+                            data-testid="preview-email-delivery-warning"
+                          />
+                        </div>
+                      ),
+                    )
+                    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_COMPLETED }, () => (
                       <div className="rounded-full border border-gray-300 bg-widget p-1 dark:border-neutral-600">
                         <CheckCheckIcon className="h-3 w-3" aria-hidden="true" />
                       </div>
                     ))
-                    .with(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_RECIPIENT_COMPLETED, () => (
+                    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_RECIPIENT_COMPLETED }, () => (
                       <div className="rounded-full border border-gray-300 bg-widget p-1 dark:border-neutral-600">
                         <CheckIcon className="h-3 w-3" aria-hidden="true" />
                       </div>
                     ))
-                    .with(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_RECIPIENT_REJECTED, () => (
+                    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_RECIPIENT_REJECTED }, () => (
                       <div className="rounded-full border border-gray-300 bg-widget p-1 dark:border-neutral-600">
                         <AlertTriangle className="h-3 w-3" aria-hidden="true" />
                       </div>
                     ))
-                    .with(DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_OPENED, () => (
+                    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_OPENED }, () => (
                       <div className="rounded-full border border-gray-300 bg-widget p-1 dark:border-neutral-600">
                         <MailOpen className="h-3 w-3" aria-hidden="true" />
                       </div>

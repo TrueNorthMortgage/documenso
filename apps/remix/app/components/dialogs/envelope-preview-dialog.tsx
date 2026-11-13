@@ -21,10 +21,11 @@ import { Textarea } from '@documenso/ui/primitives/textarea';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { RecipientRole } from '@prisma/client';
-import { CopyIcon, PlusIcon, XIcon } from 'lucide-react';
+import { AlertCircleIcon, CopyIcon, PlusIcon, XIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { Link } from 'react-router';
 import { z } from 'zod';
 
 const ZPreviewFormSchema = z.object({
@@ -38,6 +39,7 @@ const ZPreviewFormSchema = z.object({
 
 type EnvelopePreviewDialogProps = {
   envelopeId: string;
+  documentRootPath: string;
   title: string;
   recipients: { email: string; role: RecipientRole }[];
   trigger: ReactNode;
@@ -47,6 +49,7 @@ type EnvelopePreviewDialogProps = {
 
 export const EnvelopePreviewDialog = ({
   envelopeId,
+  documentRootPath,
   title,
   recipients,
   trigger,
@@ -306,6 +309,24 @@ export const EnvelopePreviewDialog = ({
                 </Button>
               )}
             </DialogFooter>
+            {sharedPreview && (
+              <p className="mt-3 flex items-start gap-2 text-muted-foreground text-xs leading-5">
+                <AlertCircleIcon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  <Trans>
+                    Check{' '}
+                    <Link
+                      to={`${documentRootPath}/${envelopeId}#recent-activity`}
+                      onClick={() => onOpenChange(false)}
+                      className="font-medium text-foreground underline underline-offset-2"
+                    >
+                      Recent Activity
+                    </Link>{' '}
+                    for delivery updates, including bounces.
+                  </Trans>
+                </span>
+              </p>
+            )}
           </form>
         </Form>
       </DialogContent>

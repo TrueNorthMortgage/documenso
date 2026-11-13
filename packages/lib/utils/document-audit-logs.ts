@@ -490,8 +490,8 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
     }))
     .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_OPENED }, ({ data }) => {
       const description = data.recipientEmail
-        ? msg`Preview link for ${data.recipientEmail} opened`
-        : msg`Preview link opened`;
+        ? msg`Preview link opened from email sent to ${data.recipientEmail}`
+        : msg`Preview link opened directly`;
 
       return { anonymous: description, you: description, user: description };
     })
@@ -570,6 +570,18 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
         .with(EmailDeliveryStatus.SPAM_COMPLAINT, () => msg`Email reported as spam by ${data.recipientEmail}`)
         .with(EmailDeliveryStatus.SEND_FAILED, () => msg`Email could not be sent to ${data.recipientEmail}`)
         .otherwise(() => msg`Email delivery updated for ${data.recipientEmail}`);
+
+      return { anonymous: description, you: description, user: description };
+    })
+    .with({ type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_EMAIL_DELIVERY_UPDATED }, ({ data }) => {
+      const description = match(data.status)
+        .with(EmailDeliveryStatus.DELIVERED, () => msg`Preview email delivered to ${data.recipientEmail}`)
+        .with(EmailDeliveryStatus.DELAYED, () => msg`Preview email delivery delayed for ${data.recipientEmail}`)
+        .with(EmailDeliveryStatus.BOUNCED, () => msg`Preview email bounced for ${data.recipientEmail}`)
+        .with(EmailDeliveryStatus.BLOCKED, () => msg`Preview email delivery blocked for ${data.recipientEmail}`)
+        .with(EmailDeliveryStatus.SPAM_COMPLAINT, () => msg`Preview email reported as spam by ${data.recipientEmail}`)
+        .with(EmailDeliveryStatus.SEND_FAILED, () => msg`Preview email could not be sent to ${data.recipientEmail}`)
+        .otherwise(() => msg`Preview email delivery updated for ${data.recipientEmail}`);
 
       return { anonymous: description, you: description, user: description };
     })

@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 import { mailer } from '@documenso/email/mailer';
 import { prisma } from '@documenso/prisma';
@@ -6,9 +6,8 @@ import { EmailDeliveryPurpose, EmailDeliveryStatus } from '@prisma/client';
 import type { SendMailOptions, SentMessageInfo } from 'nodemailer';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
-import { env } from '../../utils/env';
 import { applyEmailDeliveryStatus, withEmailDeliveryTransaction } from './email-delivery';
-import { getPostmarkWebhookSecret } from './postmark-config';
+import { getPostmarkDeliveryHeaders, getPostmarkDeliveryScope } from './postmark-config';
 
 type TrackedSigningEmailOptions = {
   envelopeId: string;
@@ -39,17 +38,12 @@ export const sendTrackedSigningEmail = async ({
     }
   }
 
-  const postmarkCredential = getPostmarkWebhookSecret();
+  const providerScope = getPostmarkDeliveryScope();
 
-  if (!postmarkCredential) {
+  if (!providerScope) {
     return mailer.sendMail(mail);
   }
 
-  // A credential fingerprint scopes metadata without persisting or transmitting the credential.
-  const providerScope = createHash('sha256')
-    .update(env('NEXT_PRIVATE_SMTP_HOST') ?? '')
-    .update(postmarkCredential)
-    .digest('hex');
   const recipientAddress = recipientEmail.toLowerCase();
   const attempt = await withEmailDeliveryTransaction(async (tx) => {
     const existingAttempt = await tx.emailDeliveryAttempt.findUnique({ where: { operationKey } });
@@ -111,9 +105,7 @@ export const sendTrackedSigningEmail = async ({
       ...mail,
       headers: {
         ...mail.headers,
-        'X-PM-Message-Stream': attempt.messageStream,
-        'X-PM-Metadata-deliveryAttemptId': attempt.id,
-        'X-PM-Metadata-deliveryScope': attempt.providerScope,
+        ...getPostmarkDeliveryHeaders(attempt),
       },
     });
   } catch (error) {

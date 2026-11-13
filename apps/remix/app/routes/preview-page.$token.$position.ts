@@ -14,7 +14,9 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const { token, position } = params;
   const pagePosition = Number(position);
   const destination = request.headers.get('Sec-Fetch-Dest');
-  const revision = new URL(request.url).searchParams.get('v');
+  const { searchParams } = new URL(request.url);
+  const revision = searchParams.get('v');
+  const emailAttemptId = searchParams.get('email');
 
   if (
     !/^[a-f0-9]{64}$/.test(token) ||
@@ -27,7 +29,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     throw new Response(null, { status: 404, headers: responseHeaders });
   }
 
-  const image = await getEnvelopePreviewPage(token, pagePosition, revision, extractRequestMetadata(request));
+  const image = await getEnvelopePreviewPage(
+    token,
+    pagePosition,
+    revision,
+    extractRequestMetadata(request),
+    /^[a-f0-9-]{36}$/.test(emailAttemptId ?? '') ? (emailAttemptId ?? undefined) : undefined,
+  );
 
   if (!image) {
     throw new Response(null, { status: 404, headers: responseHeaders });

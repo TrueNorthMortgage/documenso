@@ -1,6 +1,6 @@
 import { prisma } from '@documenso/prisma';
 import type { EmailDeliveryAttempt } from '@prisma/client';
-import { EmailDeliveryStatus, Prisma } from '@prisma/client';
+import { EmailDeliveryPurpose, EmailDeliveryStatus, Prisma } from '@prisma/client';
 
 import { DOCUMENT_AUDIT_LOG_TYPE } from '../../types/document-audit-logs';
 import { reduceEmailDeliveryStatus } from '../../universal/email-delivery';
@@ -38,17 +38,42 @@ export const applyEmailDeliveryStatus = async (
     data: { status, statusAt: incoming.occurredAt, failureCode: incoming.failureCode },
   });
 
-  // A corrected address, newer resend or deleted recipient must not inherit an old failure.
-  await tx.recipient.updateMany({
-    where: {
-      id: attempt.recipientId,
-      latestEmailDeliveryAttemptId: attempt.id,
-      email: { equals: attempt.recipientEmail, mode: 'insensitive' },
-    },
-    data: { emailDeliveryStatus: status },
-  });
+  if (attempt.recipientId !== null) {
+    // A corrected address, newer resend or deleted recipient must not inherit an old failure.
+    await tx.recipient.updateMany({
+      where: {
+        id: attempt.recipientId,
+        latestEmailDeliveryAttemptId: attempt.id,
+        email: { equals: attempt.recipientEmail, mode: 'insensitive' },
+      },
+      data: { emailDeliveryStatus: status },
+    });
+  }
 
   if ([EmailDeliveryStatus.PENDING, EmailDeliveryStatus.ACCEPTED].some((value) => value === status)) {
+    return;
+  }
+
+  const data = {
+    attemptId: attempt.id,
+    recipientEmail: attempt.recipientEmail,
+    status,
+    occurredAt: incoming.occurredAt.toISOString(),
+    failureCode: incoming.failureCode,
+  };
+
+  if (attempt.purpose === EmailDeliveryPurpose.PREVIEW) {
+    await tx.documentAuditLog.create({
+      data: createDocumentAuditLogData({
+        type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_EMAIL_DELIVERY_UPDATED,
+        envelopeId: attempt.envelopeId,
+        data,
+      }),
+    });
+    return;
+  }
+
+  if (attempt.recipientId === null) {
     return;
   }
 
@@ -59,14 +84,10 @@ export const applyEmailDeliveryStatus = async (
       type: DOCUMENT_AUDIT_LOG_TYPE.EMAIL_DELIVERY_UPDATED,
       envelopeId: attempt.envelopeId,
       data: {
-        attemptId: attempt.id,
+        ...data,
         recipientId: recipient.id,
-        recipientEmail: attempt.recipientEmail,
         recipientName: recipient.name,
         recipientRole: recipient.role,
-        status,
-        occurredAt: incoming.occurredAt.toISOString(),
-        failureCode: incoming.failureCode,
       },
     }),
   });

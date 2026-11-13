@@ -5,7 +5,7 @@ import { prisma } from '@documenso/prisma';
 import { seedBlankDocument } from '@documenso/prisma/seed/documents';
 import { seedUser } from '@documenso/prisma/seed/users';
 import { expect, test } from '@playwright/test';
-import { DocumentStatus, Prisma, RecipientRole } from '@prisma/client';
+import { DocumentStatus, EmailDeliveryStatus, Prisma, RecipientRole } from '@prisma/client';
 
 import { apiSignin } from '../fixtures/authentication';
 import { expectToastTextToBeVisible } from '../fixtures/generic';
@@ -21,7 +21,6 @@ test('keeps one live preview link for an envelope through drafting and correctio
   const firstEmail = `${prefix}-first@example.com`;
   const secondEmail = `${prefix}-second@example.com`;
   const additionalEmail = `${prefix}-additional@example.com`;
-  const correctionEmail = `${prefix}-correction@example.com`;
   const secondDocumentTitle = 'Supplemental mortgage terms';
 
   const firstItem = await prisma.envelopeItem.findFirstOrThrow({
@@ -82,23 +81,25 @@ test('keeps one live preview link for an envelope through drafting and correctio
   await expect(prisma.recipient.count({ where: { envelopeId: draft.id } })).resolves.toBe(2);
 
   const mailboxUrl = process.env.DOCUMENSO_TEST_INBUCKET_URL || 'http://inbucket:9000';
-  const getPreviewPath = async (email: string) => {
+  const getPreviewPath = async (email: string, previousPath?: string) => {
     const mailbox = `${mailboxUrl}/api/v1/mailbox/${email.split('@')[0]}`;
     let path: string | undefined;
 
     await expect
       .poll(async () => {
         const messages = await request.get(mailbox);
-        const [message] = (await messages.json()) as Array<{ id: string }>;
+        for (const message of (await messages.json()) as Array<{ id: string }>) {
+          const detail = await request.get(`${mailbox}/${message.id}`);
+          const content = (await detail.json()) as { body: { html: string } };
+          const candidate = content.body.html.match(/\/preview\/[a-f0-9]{64}\?email=[a-f0-9-]{36}/)?.[0];
 
-        if (!message) {
-          return false;
+          if (candidate && candidate !== previousPath && content.body.html.includes('Please review the terms.')) {
+            path = candidate;
+            return true;
+          }
         }
 
-        const detail = await request.get(`${mailbox}/${message.id}`);
-        const content = (await detail.json()) as { body: { html: string } };
-        path = content.body.html.match(/\/preview\/[a-f0-9]{64}/)?.[0];
-        return Boolean(path && content.body.html.includes('Please review the terms.'));
+        return false;
       })
       .toBe(true);
 
@@ -111,8 +112,10 @@ test('keeps one live preview link for an envelope through drafting and correctio
 
   const firstPath = await getPreviewPath(firstEmail);
   const secondPath = await getPreviewPath(secondEmail);
-  expect(firstPath).toBe(secondPath);
-  expect(new URL(previewUrl).pathname).toBe(firstPath);
+  const basePath = new URL(previewUrl).pathname;
+  expect(firstPath).not.toBe(secondPath);
+  expect(firstPath.split('?')[0]).toBe(basePath);
+  expect(secondPath.split('?')[0]).toBe(basePath);
   const recipient = await browser.newPage({ baseURL: page.url() });
 
   try {
@@ -153,7 +156,7 @@ test('keeps one live preview link for an envelope through drafting and correctio
       )
       .toBe(true);
 
-    const previewToken = firstPath.split('/').pop();
+    const previewToken = basePath.split('/').pop();
     const pdfResponse = await recipient.request.get(
       `/api/files/token/${previewToken}/envelope/${draft.id}/envelopeItem/${firstItem.id}/dataId/${firstItem.documentDataId}/initial/item.pdf`,
     );
@@ -180,7 +183,11 @@ test('keeps one live preview link for an envelope through drafting and correctio
     await prisma.recipient.update({ where: { id: signer.id }, data: { authOptions: Prisma.DbNull } });
     await dialog.getByRole('button', { name: 'Send preview link', exact: true }).click();
     await expect(dialog.getByRole('status')).toHaveText('Preview link sent.');
-    expect(await getPreviewPath(additionalEmail)).toBe(firstPath);
+    const additionalPath = await getPreviewPath(additionalEmail);
+    expect(additionalPath.split('?')[0]).toBe(basePath);
+    await recipient.goto(additionalPath);
+    await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBeGreaterThan(0);
+    await expect(prisma.recipient.count({ where: { envelopeId: draft.id, email: additionalEmail } })).resolves.toBe(0);
 
     await prisma.envelope.update({ where: { id: draft.id }, data: { title: 'Updated draft' } });
     await prisma.envelopeItem.update({
@@ -219,13 +226,13 @@ test('keeps one live preview link for an envelope through drafting and correctio
     await expect(dialog).toContainText('until this correction ends');
     await expect(dialog.getByText('Preview link inactive')).toBeVisible();
     await expect(dialog.getByRole('textbox', { name: 'Preview link', exact: true })).toHaveValue(previewUrl);
-    await emailInputs.fill(correctionEmail);
+    await emailInputs.fill(firstEmail);
     await dialog.getByLabel('Message (Optional)').fill('Please review the terms.');
     await dialog.getByRole('button', { name: 'Send preview link', exact: true }).click();
     await expect(dialog.getByRole('status')).toHaveText('Preview link sent.');
 
-    const correctionPath = await getPreviewPath(correctionEmail);
-    expect(correctionPath).toBe(firstPath);
+    const correctionPath = await getPreviewPath(firstEmail, firstPath);
+    expect(correctionPath.split('?')[0]).toBe(basePath);
     await recipient.goto(correctionPath);
     await expect(recipient.getByRole('heading', { name: 'Updated draft' })).toBeVisible();
     await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBeGreaterThan(0);
@@ -234,6 +241,10 @@ test('keeps one live preview link for an envelope through drafting and correctio
     if (!correctionImagePath) {
       throw new Error('Expected a rendered correction preview page.');
     }
+
+    await recipient.goto(basePath);
+    await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBeGreaterThan(0);
+    await recipient.goto(correctionPath);
 
     await prisma.envelope.update({ where: { id: draft.id }, data: { correctionStartedAt: null } });
     await recipient.reload();
@@ -248,9 +259,44 @@ test('keeps one live preview link for an envelope through drafting and correctio
     const logs = await prisma.documentAuditLog.findMany({ where: { envelopeId: draft.id } });
     expect(logs.filter((log) => log.type === DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_SENT)).toHaveLength(4);
     const opens = logs.filter((log) => log.type === DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_OPENED);
-    expect(opens).toHaveLength(2);
-    expect(opens.map((log) => log.data)).toEqual([{}, {}]);
+    expect(opens).toHaveLength(5);
+    expect(opens.map((log) => log.data)).toEqual(
+      expect.arrayContaining([
+        {},
+        { recipientEmail: firstEmail, attemptId: firstPath.split('=')[1] },
+        { recipientEmail: secondEmail, attemptId: secondPath.split('=')[1] },
+        { recipientEmail: additionalEmail, attemptId: additionalPath.split('=')[1] },
+        { recipientEmail: firstEmail, attemptId: correctionPath.split('=')[1] },
+      ]),
+    );
     await expect(prisma.envelopePreview.count({ where: { envelopeId: draft.id } })).resolves.toBe(1);
+
+    await prisma.documentAuditLog.create({
+      data: {
+        envelopeId: draft.id,
+        type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_PREVIEW_EMAIL_DELIVERY_UPDATED,
+        createdAt: draft.createdAt,
+        data: {
+          attemptId: additionalPath.split('=')[1],
+          recipientEmail: additionalEmail,
+          status: EmailDeliveryStatus.BOUNCED,
+          occurredAt: new Date().toISOString(),
+          failureCode: 'HardBounce',
+        },
+      },
+    });
+    await dialog.getByRole('link', { name: 'Recent Activity', exact: true }).click();
+    await expect(page).toHaveURL(`/t/${team.url}/documents/${draft.id}#recent-activity`);
+    const activity = page.locator('#recent-activity');
+    await expect(activity.getByText(`You sent a preview link to ${firstEmail}`, { exact: true })).toHaveCount(2);
+    await expect(
+      activity.getByText(`Preview link opened from email sent to ${firstEmail}`, { exact: true }),
+    ).toHaveCount(2);
+    await expect(activity.getByText('Preview link opened directly', { exact: true })).toBeVisible();
+    const bounceRow = activity
+      .getByRole('listitem')
+      .filter({ hasText: `Preview email bounced for ${additionalEmail}` });
+    await expect(bounceRow.getByTestId('preview-email-delivery-warning')).toBeVisible();
   } finally {
     await recipient.close();
   }

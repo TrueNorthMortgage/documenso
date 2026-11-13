@@ -86,6 +86,29 @@ describe('durable Postmark processing', () => {
   });
 
   it.each([
+    EmailDeliveryStatus.DELIVERED,
+    EmailDeliveryStatus.BOUNCED,
+    EmailDeliveryStatus.SPAM_COMPLAINT,
+  ])('records preview email status %s without changing signing notifications', async (status) => {
+    mocks.tx.emailDeliveryAttempt.findUnique.mockResolvedValue({
+      ...attempt,
+      purpose: EmailDeliveryPurpose.PREVIEW,
+      recipientId: null,
+    });
+
+    expect(await processPostmarkEvent({ ...event, status })).toBe('MATCHED');
+    expect(mocks.tx.recipient.updateMany).not.toHaveBeenCalled();
+    expect(mocks.tx.recipient.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(mocks.tx.documentAuditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: 'DOCUMENT_PREVIEW_EMAIL_DELIVERY_UPDATED',
+        envelopeId: attempt.envelopeId,
+        data: expect.objectContaining({ attemptId: attempt.id, recipientEmail: attempt.recipientEmail, status }),
+      }),
+    });
+  });
+
+  it.each([
     { recipientEmail: 'another@example.com' },
     { providerScope: 'another-scope' },
     { messageStream: 'another-stream' },

@@ -105,6 +105,7 @@ export const DocumentPageViewDropdown = ({ envelope }: DocumentPageViewDropdownP
 
         {canManageDocument && canShareEnvelopePreview(envelope) && (
           <EnvelopePreviewDialog
+            documentRootPath={documentsPath}
             envelopeId={envelope.id}
             title={envelope.title}
             recipients={envelope.recipients}
