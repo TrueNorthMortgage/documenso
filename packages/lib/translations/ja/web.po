@@ -267,10 +267,26 @@ msgstr "{0, plural, other {選択したテンプレートを削除しようと�
 msgid "{0}"
 msgstr "{0}"
 
+#. placeholder {0}: page.title
+#. placeholder {1}: page.number
+#: apps/remix/app/routes/preview.$token.tsx
+msgid "{0} · Page {1}"
+msgstr "{0} · ページ {1}"
+
 #. placeholder {0}: team.name
 #: apps/remix/app/components/dialogs/public-profile-template-manage-dialog.tsx
 msgid "{0} direct signing templates"
 msgstr "{0} のダイレクト署名テンプレート"
+
+#. placeholder {0}: data.recipientName || data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "{0} disabled reminders for this envelope"
+msgstr "{0} がこのエングルフのリマインダーを無効にしました"
+
+#. placeholder {0}: data.recipientName || data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "{0} enabled reminders again for this envelope"
+msgstr "{0} がこのエングルフのリマインダーを有効にしました"
 
 #. placeholder {0}: t(FRIENDLY_FIELD_TYPE[field.type])
 #: packages/ui/components/document/envelope-recipient-field-tooltip.tsx
@@ -411,6 +427,14 @@ msgstr "{maximumEnvelopeItemCount, plural, other {1 つの封筒にアップロ�
 msgid "{names}. Review their names, email addresses, and roles before sending."
 msgstr "{names}。送信前に名前、メールアドレス、役割を確認してください。"
 
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
+msgid "{omittedFieldCount, plural, one {# field will be omitted because this document has fewer pages or because it depends on an omitted field.} other {# fields will be omitted because this document has fewer pages or because they depend on omitted fields.}}"
+msgstr "{omittedFieldCount, plural, one {# フィールドが省略されます。このドキュメントのページ数が少ないためまたは省略されたフィールドに依存しているため。} other {# フィールドが省略されます。このドキュメントのページ数が少ないためまたは省略されたフィールドに依存しているため。}}"
+
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
+msgid "{omittedFieldCount, plural, one {Apply without # field} other {Apply without # fields}}"
+msgstr "{omittedFieldCount, plural, one {適用なし # フィールド} other {適用なし # フィールド}}"
+
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
 msgid "{reassignedCount, plural, one {1 envelope has been reassigned.} other {# envelopes have been reassigned.}}"
 msgstr "{reassignedCount, plural, other {# 件のエンベロープが再割り当てされました。}}"
@@ -483,6 +507,11 @@ msgstr "{remaningLength, plural, other {# 文字残り}}"
 msgid "{selectedCount} selected"
 msgstr "{selectedCount} 件選択済み"
 
+#: packages/email/templates/document-preview.tsx
+#: packages/email/templates/document-preview.tsx
+msgid "{senderName} shared a preview of {title}"
+msgstr "{senderName} が {title} のプレビューを共有しました"
+
 #: packages/email/template-components/template-document-rejected.tsx
 msgid "{signerName} has rejected the document \"{documentName}\"."
 msgstr "{signerName} がドキュメント「{documentName}」を却下しました。"
@@ -528,6 +557,11 @@ msgstr "{user} が受信者を追加しました。"
 #: packages/lib/utils/document-audit-logs.ts
 msgid "{user} approved the document"
 msgstr "{user} が文書を承認しました。"
+
+#. placeholder {0}: data.cancellationReason
+#: packages/lib/utils/document-audit-logs.ts
+msgid "{user} cancelled the document. Message to client: {0}"
+msgstr "{user} がドキュメントをキャンセルしました。クライアントへのメッセージ: {0}"
 
 #: packages/lib/utils/document-audit-logs.ts
 msgid "{user} CC'd the document"
@@ -604,6 +638,16 @@ msgstr "{user} が文書用の2要素認証トークンをリクエストしま�
 #: packages/lib/utils/document-audit-logs.ts
 msgid "{user} resent an email to {0}"
 msgstr "{user} が {0} にメールを再送しました"
+
+#. placeholder {0}: data.recipientName || data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "{user} resumed reminders for {0}"
+msgstr "{user} が {0} に対してリマインダーを再開しました"
+
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "{user} sent a preview link to {0}"
+msgstr "{user} が {0} にプレビューリンクを送信しました"
 
 #. placeholder {0}: data.recipientEmail
 #: packages/lib/utils/document-audit-logs.ts
@@ -1247,6 +1291,7 @@ msgstr "操作"
 #: apps/remix/app/routes/_authenticated+/admin+/unsealed-documents._index.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains.$id.tsx
 #: apps/remix/app/routes/_authenticated+/o.$orgUrl.settings.email-domains.$id.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks._index.tsx
 msgid "Actions"
 msgstr "操作"
@@ -1362,6 +1407,10 @@ msgstr "別の値を追加"
 msgid "Add Attachment"
 msgstr "添付ファイルを追加"
 
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Add Content"
+msgstr "コンテンツの追加"
+
 #: apps/remix/app/components/dialogs/organisation-email-domain-create-dialog.tsx
 msgid "Add Custom Email Domain"
 msgstr "カスタムメールドメインを追加"
@@ -1374,6 +1423,7 @@ msgstr "ドキュメントの追加"
 msgid "Add document via template"
 msgstr "テンプレート経由でドキュメントを追加"
 
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
 #: apps/remix/app/components/dialogs/team-email-add-dialog.tsx
 msgid "Add email"
 msgstr "メールアドレスを追加"
@@ -1521,6 +1571,11 @@ msgstr "ドメイン所有者を検証するために、これらの DNS レコ�
 msgid "Add this URL to your provider's allowed redirect URIs"
 msgstr "この URL をプロバイダーの許可されたリダイレクト URI に追加してください"
 
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
+#: apps/remix/app/components/general/template/template-favorite-button.tsx
+msgid "Add to favorites"
+msgstr "お気に入りに追加"
+
 #: apps/remix/app/components/forms/branding-preferences-form.tsx
 msgid "Additional brand information to display at the bottom of emails"
 msgstr "メールの末尾に表示する追加のブランド情報"
@@ -1592,6 +1647,10 @@ msgstr "AI 機能"
 #: apps/remix/app/components/dialogs/ai-features-enable-dialog.tsx
 msgid "AI features are disabled for your team. Please ask your team owner or organisation owner to enable them."
 msgstr "チームではAI機能が無効になっています。チームオーナーまたは組織オーナーに有効化を依頼してください。"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Alignment"
+msgstr "アライメント"
 
 #: apps/remix/app/components/general/document/document-status.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
@@ -1708,9 +1767,18 @@ msgstr "生体認証、パスワードマネージャー、ハードウェアキ
 msgid "Almost done"
 msgstr "ほぼ完了しました"
 
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Alphabetical"
+msgstr "アルファベット順"
+
 #: apps/remix/app/components/forms/signup.tsx
 msgid "Already have an account? <0>Sign in instead</0>"
 msgstr "すでにアカウントをお持ちですか？<0>サインイン</0>"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Already shared"
+msgstr "すでに共有済み"
 
 #: apps/remix/app/components/tables/organisation-billing-invoices-table.tsx
 msgid "Amount"
@@ -1806,6 +1874,10 @@ msgstr "ドキュメントの完了処理中にエラーが発生しました。
 msgid "An error occurred while creating document from template."
 msgstr "テンプレートから文書を作成する際にエラーが発生しました。"
 
+#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
+msgid "An error occurred while creating the folder. Please try again."
+msgstr "フォルダの作成中にエラーが発生しました。再度お試しください。"
+
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 msgid "An error occurred while creating the webhook. Please try again."
 msgstr "Webhook の作成中にエラーが発生しました。もう一度お試しください。"
@@ -1833,10 +1905,6 @@ msgstr "ダイレクトリンク署名を有効にする際にエラーが発生
 #: apps/remix/app/components/dialogs/admin-user-enable-dialog.tsx
 msgid "An error occurred while enabling the user."
 msgstr "ユーザーの有効化中にエラーが発生しました。"
-
-#: apps/remix/app/components/general/pdf-viewer/pdf-viewer.tsx
-msgid "An error occurred while loading the document."
-msgstr "ドキュメントの読み込み中にエラーが発生しました。"
 
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
 msgid "An error occurred while moving the document."
@@ -1927,6 +1995,10 @@ msgstr "チェックアウトセッションの作成中にエラーが発生し
 msgid "An error occurred while updating the document settings."
 msgstr "文書設定の更新中にエラーが発生しました。"
 
+#: apps/remix/app/components/dialogs/folder-update-dialog.tsx
+msgid "An error occurred while updating the folder. Please try again."
+msgstr "フォルダの更新中にエラーが発生しました。再度お試しください。"
+
 #: apps/remix/app/components/general/document-signing/document-signing-checkbox-field.tsx
 msgid "An error occurred while updating the signature."
 msgstr "署名の更新中にエラーが発生しました。"
@@ -2015,10 +2087,6 @@ msgstr "予期しないエラーが発生しました。"
 msgid "An unknown error occurred"
 msgstr "不明なエラーが発生しました"
 
-#: apps/remix/app/components/dialogs/folder-create-dialog.tsx
-msgid "An unknown error occurred while creating the folder."
-msgstr "フォルダの作成中に不明なエラーが発生しました。"
-
 #: apps/remix/app/components/dialogs/folder-delete-dialog.tsx
 msgid "An unknown error occurred while deleting the folder."
 msgstr "フォルダの削除中に不明なエラーが発生しました。"
@@ -2050,6 +2118,10 @@ msgstr "すべてのソース"
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 msgid "Any Status"
 msgstr "すべてのステータス"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Anyone with the link can view the latest saved version while the envelope is in Draft."
+msgstr "リンクを持っている誰でも、文書がドラフト状態の間、最新の保存済みバージョンを閲覧できます。"
 
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/settings-nav-mobile.tsx
@@ -2183,7 +2255,11 @@ msgstr "このチームを本当に削除しますか？"
 msgid "Are you sure?"
 msgstr "本当によろしいですか？"
 
-#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+#: apps/remix/app/routes/preview.$token.tsx
+msgid "Ask the sender to share the preview again."
+msgstr "送信者に再びプレビューを共有してもらуйください。"
+
+#: apps/remix/app/components/general/envelope-editor/editor-context-menu.tsx
 msgid "Assign recipient"
 msgstr "受信者を割り当てる"
 
@@ -2342,6 +2418,7 @@ msgid "Back home"
 msgstr "ホームへ戻る"
 
 #: apps/remix/app/components/forms/branding-preferences-form.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
 msgid "Background"
 msgstr "背景"
 
@@ -2411,6 +2488,10 @@ msgstr "ボーダーの角丸"
 #: apps/remix/app/components/forms/branding-preferences-form.tsx
 msgid "Border radius size in REM units (e.g. 0.5rem)."
 msgstr "ボーダーの角丸サイズ（REM 単位、例: 0.5rem）。"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Border type"
+msgstr "ボーダーの種類"
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
 msgid "Bottom"
@@ -2565,6 +2646,7 @@ msgstr "メンバーが見つかりませんか？"
 #: apps/remix/app/components/dialogs/envelope-delete-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-duplicate-dialog.tsx
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
 #: apps/remix/app/components/dialogs/envelope-item-delete-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-item-edit-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
@@ -2648,6 +2730,7 @@ msgstr "メンバーが見つかりませんか？"
 #: apps/remix/app/components/tables/settings-security-passkey-table-actions.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/email-domains.$id.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/security.linked-accounts.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
 #: packages/ui/primitives/document-flow/field-item-advanced-settings.tsx
 #: packages/ui/primitives/document-flow/send-document-action-dialog.tsx
 #: packages/ui/primitives/signature-pad/signature-pad-dialog.tsx
@@ -2701,6 +2784,7 @@ msgid "Ccers"
 msgstr "Cc 受信者"
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
 msgid "Center"
 msgstr "中央"
 
@@ -2746,6 +2830,10 @@ msgstr "文字数制限"
 #: apps/remix/app/routes/_authenticated+/admin+/stats.tsx
 msgid "Charts"
 msgstr "グラフ"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Check <0>Recent Activity</0> for delivery updates, including bounces."
+msgstr "配信結果や配信エラーは<0>最近のアクティビティ</0>で確認できます。"
 
 #: apps/remix/app/components/dialogs/envelope-field-review-dialog.tsx
 msgid "Check your fields and any remaining requirements. Click a field to find it in the document."
@@ -2819,6 +2907,10 @@ msgstr "希望する認証方法を選択してください。"
 msgid "Choose..."
 msgstr "選択..."
 
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Circle"
+msgstr "円"
+
 #: apps/remix/app/components/general/claim-account.tsx
 msgid "Claim account"
 msgstr "アカウントを引き継ぐ"
@@ -2858,6 +2950,10 @@ msgstr "ここをクリックして再試行"
 msgid "Click here to upload"
 msgstr "ここをクリックしてアップロード"
 
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Click the selected tool again to cancel."
+msgstr "選択したツールを再度クリックしてキャンセルしてください。"
+
 #: apps/remix/app/components/general/avatar-with-recipient.tsx
 #: apps/remix/app/components/general/avatar-with-recipient.tsx
 msgid "Click to copy signing link for sending to recipient"
@@ -2895,6 +2991,7 @@ msgstr "クライアントシークレットは必須です"
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-item-delete-dialog.tsx
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
 #: apps/remix/app/components/dialogs/organisation-email-domain-records-dialog.tsx
 #: apps/remix/app/components/dialogs/public-profile-template-manage-dialog.tsx
@@ -2925,6 +3022,10 @@ msgstr "フォルダーを折りたたむ"
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 msgid "Collapse sidebar"
 msgstr "サイドバーを折りたたむ"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Color"
+msgstr "色"
 
 #: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
 msgid "Communication"
@@ -3132,6 +3233,14 @@ msgstr "お問い合わせ"
 msgid "Content"
 msgstr "コンテンツ"
 
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Content saves automatically"
+msgstr "コンテンツは自動で保存されます"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Content saves when you finish editing"
+msgstr "編集を終了すると内容が保存されます"
+
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 msgid "Context"
 msgstr "コンテキスト"
@@ -3226,6 +3335,7 @@ msgstr "ダウンロード時に署名証明書をドキュメントに含める
 msgid "Controls which signatures are allowed to be used when signing a document."
 msgstr "ドキュメントに署名するときに使用できる署名タイプを制御します。"
 
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
 #: apps/remix/app/components/general/document/document-recipient-link-copy-dialog.tsx
 msgid "Copied"
 msgstr "コピーしました"
@@ -3264,9 +3374,13 @@ msgid "Copied to clipboard"
 msgstr "クリップボードにコピーしました"
 
 #: apps/remix/app/components/general/document/document-recipient-link-copy-dialog.tsx
-#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+#: apps/remix/app/components/general/envelope-editor/editor-context-menu.tsx
 msgid "Copy"
 msgstr "コピー"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Copy link"
+msgstr "リンクをコピー"
 
 #: packages/ui/components/document/document-share-button.tsx
 msgid "Copy Link"
@@ -3328,6 +3442,14 @@ msgstr "修正が完了しました"
 #: apps/remix/app/routes/_recipient+/sign.$token+/_index.tsx
 msgid "Correction in progress"
 msgstr "修正中"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Could not check whether a preview has been shared."
+msgstr "プレビューが共有されたかどうかを確認できませんでした"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Could not send the preview link."
+msgstr "プレビューのリンクを送信できませんでした"
 
 #: apps/remix/app/components/dialogs/admin-organisation-create-dialog.tsx
 #: apps/remix/app/components/dialogs/folder-create-dialog.tsx
@@ -3659,6 +3781,11 @@ msgstr "カスタム組織グループ"
 msgid "Customise the colours used on your signing pages."
 msgstr "署名ページで使用されるカラーをカスタマイズします。"
 
+#: apps/remix/app/components/general/envelope-editor/editor-context-menu.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+msgid "Cut"
+msgstr "切り取り"
+
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
 msgid "Danger Zone"
 msgstr "危険ゾーン"
@@ -3671,6 +3798,10 @@ msgstr "ダークモード"
 #: apps/remix/app/routes/_authenticated+/dashboard.tsx
 msgid "Dashboard"
 msgstr "ダッシュボード"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Dashed"
+msgstr "点線"
 
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-date-field.tsx
@@ -3823,7 +3954,7 @@ msgstr "delete"
 #: apps/remix/app/components/dialogs/webhook-delete-dialog.tsx
 #: apps/remix/app/components/dialogs/webhook-delete-dialog.tsx
 #: apps/remix/app/components/general/document/document-page-view-dropdown.tsx
-#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+#: apps/remix/app/components/general/envelope-editor/editor-context-menu.tsx
 #: apps/remix/app/components/general/folder/folder-card.tsx
 #: apps/remix/app/components/general/folder/folder-management-table.tsx
 #: apps/remix/app/components/tables/admin-claims-table.tsx
@@ -3979,6 +4110,10 @@ msgstr "アカウントを削除しています..."
 #: apps/remix/app/components/dialogs/admin-organisation-delete-dialog.tsx
 msgid "Deletion scheduled"
 msgstr "削除がスケジュールされました"
+
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
+msgid "Depends on an omitted field."
+msgstr "省略されたフィールドに依存しています"
 
 #: apps/remix/app/components/general/webhook-logs-sheet.tsx
 msgid "Destination"
@@ -4182,6 +4317,11 @@ msgstr "DKIM レコードを生成しました。DNS レコードを追加して
 msgid "DNS Records"
 msgstr "DNS レコード"
 
+#: apps/remix/app/routes/_recipient+/notifications.$token.tsx
+#: packages/email/template-components/template-notification-opt-out.tsx
+msgid "Do not notify me about this signing envelope again"
+msgstr "この署名用のエングルをもう一度通知しません"
+
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "Documenso License"
 msgstr "Documenso ライセンス"
@@ -4253,6 +4393,11 @@ msgstr "修正中の書類"
 #: packages/lib/server-only/document/delete-document.ts
 msgid "Document Cancelled"
 msgstr "文書はキャンセルされました"
+
+#. placeholder {0}: data.cancellationReason
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Document cancelled. Message to client: {0}"
+msgstr "ドキュメントがキャンセルされました。クライアントへのメッセージ: {0}"
 
 #: apps/remix/app/components/general/admin-global-settings-section.tsx
 #: apps/remix/app/components/general/document/document-status.tsx
@@ -4454,6 +4599,10 @@ msgstr "ドキュメント設定"
 msgid "Document preferences updated"
 msgstr "文書設定を更新しました"
 
+#: apps/remix/app/routes/preview.$token.tsx
+msgid "Document preview"
+msgstr "ドキュメントのプレビュー"
+
 #: apps/remix/app/components/dialogs/document-resend-dialog.tsx
 msgid "Document re-sent"
 msgstr "文書を再送信しました"
@@ -4491,6 +4640,10 @@ msgstr "ドキュメントが送信されました"
 msgid "Document Settings"
 msgstr "ドキュメント設定"
 
+#: apps/remix/app/components/general/pdf-viewer/envelope-shape-overlay.tsx
+msgid "Document shapes"
+msgstr "ドキュメントの形状"
+
 #: apps/remix/app/routes/_recipient+/sign.$token+/complete.tsx
 msgid "Document Signed"
 msgstr "文書に署名しました"
@@ -4507,6 +4660,10 @@ msgstr "文書の署名プロセスはキャンセルされます"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/documents.$id.logs.tsx
 msgid "Document status"
 msgstr "文書のステータス"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+msgid "Document text"
+msgstr "ドキュメントのテキスト"
 
 #: apps/remix/app/components/general/admin-global-settings-section.tsx
 msgid "Document timezone"
@@ -4686,6 +4843,10 @@ msgstr "繰り返さない"
 msgid "Don't transfer (Delete all documents)"
 msgstr "転送しない（すべてのドキュメントを削除）"
 
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Dotted"
+msgstr "点線"
+
 #: apps/remix/app/components/forms/2fa/enable-authenticator-app-dialog.tsx
 #: apps/remix/app/components/forms/2fa/view-recovery-codes-dialog.tsx
 #: apps/remix/app/components/general/document/document-certificate-qr-view.tsx
@@ -4803,7 +4964,7 @@ msgstr "ドロップダウンの値"
 
 #: apps/remix/app/components/dialogs/envelope-duplicate-dialog.tsx
 #: apps/remix/app/components/general/document/document-page-view-dropdown.tsx
-#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+#: apps/remix/app/components/general/envelope-editor/editor-context-menu.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
 #: apps/remix/app/components/tables/documents-table-action-dropdown.tsx
 #: apps/remix/app/components/tables/templates-table-action-dropdown.tsx
@@ -4820,7 +4981,7 @@ msgstr "ドキュメントを複製"
 msgid "Duplicate Envelope"
 msgstr "封筒を複製"
 
-#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+#: apps/remix/app/components/general/envelope-editor/editor-context-menu.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
 #: packages/ui/primitives/document-flow/field-item.tsx
 msgid "Duplicate on all pages"
@@ -4861,10 +5022,15 @@ msgstr "例: 100"
 #: apps/remix/app/components/tables/documents-table-action-dropdown.tsx
 #: apps/remix/app/components/tables/settings-security-passkey-table-actions.tsx
 #: apps/remix/app/components/tables/templates-table-action-dropdown.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 msgid "Edit"
 msgstr "編集"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "Edit email template"
+msgstr "メールテンプレートの編集"
 
 #: apps/remix/app/components/dialogs/envelope-item-edit-dialog.tsx
 msgid "Edit Item"
@@ -4878,10 +5044,17 @@ msgstr "番号を編集"
 msgid "Edit scheduled send"
 msgstr "スケジュールされた送信を編集"
 
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+msgid "Edit shape"
+msgstr "形状の編集"
+
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.$id._index.tsx
 msgid "Edit Template"
 msgstr "テンプレートを編集"
 
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
 msgid "Edit text"
 msgstr "テキスト編集"
@@ -5157,6 +5330,13 @@ msgstr "メール設定"
 msgid "Email sign-up is disabled"
 msgstr "メールによる登録は無効です"
 
+#: apps/remix/app/components/general/org-menu-switcher.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings._layout.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "Email Templates"
+msgstr "メールテンプレート"
+
 #: apps/remix/app/components/dialogs/admin-organisation-delete-dialog.tsx
 msgid "Email the organisation owner to notify them of the deletion."
 msgstr "組織のオーナーに、この削除について通知するメールを送信します。"
@@ -5330,6 +5510,10 @@ msgstr "新しいフォルダ名を入力してください。フォルダを使
 #: apps/remix/app/components/dialogs/envelope-rename-dialog.tsx
 msgid "Enter a new title"
 msgstr "新しいタイトルを入力してください"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "Enter a subject or message."
+msgstr "件名またはメッセージを入力してください。"
 
 #: apps/remix/app/components/forms/subscription-claim-form.tsx
 msgid "Enter claim name"
@@ -5537,7 +5721,6 @@ msgstr "封筒を更新しました"
 #: apps/remix/app/components/general/envelope-signing/envelope-signer-page-renderer.tsx
 #: apps/remix/app/components/general/envelope/envelope-drop-zone-wrapper.tsx
 #: apps/remix/app/components/general/envelope/envelope-upload-button.tsx
-#: apps/remix/app/components/general/pdf-viewer/pdf-viewer.tsx
 #: apps/remix/app/components/general/template/template-edit-form.tsx
 #: apps/remix/app/components/general/template/template-edit-form.tsx
 #: apps/remix/app/components/general/template/template-edit-form.tsx
@@ -5568,10 +5751,6 @@ msgstr "アカウント連携の拒否時にエラーが発生しました"
 #: apps/remix/app/routes/_unauthenticated+/organisation.sso.confirmation.$token.tsx
 msgid "Error linking account"
 msgstr "アカウント連携時にエラーが発生しました"
-
-#: apps/remix/app/components/general/pdf-viewer/pdf-viewer-page-image.tsx
-msgid "Error loading page"
-msgstr "ページの読み込み中にエラーが発生しました。"
 
 #: apps/remix/app/components/embed/authoring/configure-document-upload.tsx
 msgid "Error uploading file"
@@ -5764,6 +5943,10 @@ msgstr "ドキュメントの更新に失敗しました"
 #: apps/remix/app/routes/embed+/v2+/authoring+/envelope.edit.$id.tsx
 msgid "Failed to update envelope. Please try again."
 msgstr "封筒の更新に失敗しました。もう一度お試しください。"
+
+#: apps/remix/app/components/dialogs/folder-update-dialog.tsx
+msgid "Failed to update folder"
+msgstr "フォルダの更新に失敗しました"
 
 #: apps/remix/app/components/dialogs/envelope-item-edit-dialog.tsx
 msgid "Failed to update item"
@@ -5959,6 +6142,14 @@ msgstr "フォルダは正常に更新されました"
 #: apps/remix/app/components/general/folder/folder-browser.tsx
 msgid "Folders"
 msgstr "フォルダー"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Font family"
+msgstr "フォントファミリー"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Font size"
+msgstr "フォントサイズ"
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/date-field.tsx
@@ -6356,6 +6547,10 @@ msgstr "私はこの文書の所有者です"
 msgid "I understand that I am providing my credentials to a 3rd party service configured by this organisation"
 msgstr "この組織が設定したサードパーティサービスに資格情報を提供することを理解しました"
 
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
+msgid "I understand these fields will not be applied."
+msgstr "これらの項目が適用されないことを理解しています。"
+
 #: apps/remix/app/components/dialogs/token-delete-dialog.tsx
 msgid "I'm sure! Delete it"
 msgstr "本当に削除します"
@@ -6713,6 +6908,10 @@ msgstr "参加日"
 msgid "Joined {0}"
 msgstr "{0} に参加"
 
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Justify"
+msgstr "両端揃え"
+
 #: apps/remix/app/routes/_authenticated+/admin+/teams.$id.tsx
 msgid "Key identifiers and relationships for this team."
 msgstr "このチームの主要な識別子と関連付けです。"
@@ -6829,6 +7028,7 @@ msgid "Leave organisation"
 msgstr "組織から退出"
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
 msgid "Left"
 msgstr "左"
 
@@ -6868,6 +7068,10 @@ msgstr "ライトモード"
 #: apps/remix/app/routes/_profile+/_layout.tsx
 msgid "Like to have your own public profile with agreements?"
 msgstr "自分の合意書付き公開プロフィールが欲しいですか？"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Line"
+msgstr "1行"
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
 msgid "Line height"
@@ -6943,6 +7147,10 @@ msgstr "フォルダーの作成先を読み込み中..."
 #: apps/remix/app/components/dialogs/folder-move-dialog.tsx
 msgid "Loading folders..."
 msgstr "フォルダーを読み込んでいます..."
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Loading preview link…"
+msgstr "プレビューリンクの読み込み中…"
 
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
 msgid "Loading selected envelopes and team members..."
@@ -7268,9 +7476,15 @@ msgstr "メンバー"
 msgid "Members that currently belong to this team."
 msgstr "現在このチームに所属しているメンバー。"
 
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
 #: apps/remix/app/components/forms/support-ticket-form.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
 msgid "Message"
 msgstr "メッセージ"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Message (Optional)"
+msgstr "メッセージ（オプション）"
 
 #: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
 #: apps/remix/app/components/embed/authoring/configure-document-advanced-settings.tsx
@@ -7379,6 +7593,8 @@ msgstr "マイフォルダ"
 
 #: apps/remix/app/components/tables/admin-document-logs-table.tsx
 #: apps/remix/app/components/tables/document-logs-table.tsx
+#: apps/remix/app/components/tables/document-logs-table.tsx
+#: apps/remix/app/components/tables/document-logs-table.tsx
 #: apps/remix/app/components/tables/internal-audit-log-table.tsx
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/certificate.tsx
 #: packages/lib/server-only/pdf/render-audit-logs.ts
@@ -7461,6 +7677,10 @@ msgstr "有効期限なし"
 msgid "Never expires"
 msgstr "有効期限なし"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "New email template"
+msgstr "新しいメールテンプレート"
+
 #: apps/remix/app/components/dialogs/folder-create-dialog.tsx
 msgid "New folder name"
 msgstr "新しいフォルダー名"
@@ -7486,6 +7706,10 @@ msgstr "新しいパスワード"
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
 msgid "New sender"
 msgstr "新しい送信者"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "New template"
+msgstr "新しいテンプレート"
 
 #: apps/remix/app/components/dialogs/team-group-create-dialog.tsx
 #: apps/remix/app/components/dialogs/team-member-create-dialog.tsx
@@ -7519,6 +7743,10 @@ msgstr "いいえ"
 #: apps/remix/app/components/tables/documents-table-empty-state.tsx
 msgid "No active drafts"
 msgstr "有効な下書きはありません"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "No border"
+msgstr "ボーダーなし"
 
 #: apps/remix/app/components/general/pdf-viewer/envelope-pdf-viewer.tsx
 #: apps/remix/app/components/general/pdf-viewer/pdf-viewer.tsx
@@ -7558,6 +7786,10 @@ msgstr "以下の文書にはフィールドが追加されていません。"
 msgid "No fields have been added to this document."
 msgstr "この文書にはフィールドが追加されていません。"
 
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
+msgid "No fields remain to apply. Choose a different template."
+msgstr "フィールドが残っていません。別のテンプレートを選択してください。"
+
 #: apps/remix/app/components/dialogs/envelope-field-review-dialog.tsx
 msgid "No fields to review."
 msgstr "確認するフィールドはありません。"
@@ -7565,6 +7797,10 @@ msgstr "確認するフィールドはありません。"
 #: apps/remix/app/components/dialogs/ai-field-detection-dialog.tsx
 msgid "No fields were detected in your document."
 msgstr "ドキュメント内でフィールドが検出されませんでした。"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "No fill"
+msgstr "埋め込みなし"
 
 #: apps/remix/app/components/dialogs/document-move-to-folder-dialog.tsx
 #: apps/remix/app/components/dialogs/envelopes-bulk-move-dialog.tsx
@@ -7590,6 +7826,14 @@ msgstr "グループが見つかりません"
 #: apps/remix/app/components/general/admin-license-card.tsx
 msgid "No License Configured"
 msgstr "ライセンスが設定されていません"
+
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
+msgid "No matching messages."
+msgstr "一致するメッセージがありません。"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "No matching templates."
+msgstr "一致するテンプレートがありません。"
 
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
@@ -7670,6 +7914,10 @@ msgstr "署名フィールドが見つかりません"
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
 msgid "No Stripe customer attached"
 msgstr "Stripe 顧客が紐づいていません"
+
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
+msgid "No subject"
+msgstr "件名なし"
 
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
 msgid "No subscription found"
@@ -7889,6 +8137,11 @@ msgstr "オプションの値を空にすることはできません"
 msgid "Optional — empty"
 msgstr "任意 — 空欄"
 
+#: apps/remix/app/components/dialogs/envelope-delete-dialog.tsx
+#: apps/remix/app/components/dialogs/envelopes-bulk-delete-dialog.tsx
+msgid "Optional Message to Client"
+msgstr "クライアント向けのオプションメッセージ"
+
 #: apps/remix/app/components/dialogs/sign-field-dropdown-dialog.tsx
 msgid "Options"
 msgstr "オプション"
@@ -8081,6 +8334,10 @@ msgstr "オリジナル"
 msgid "Otherwise, the document will be created as a draft."
 msgstr "チェックを入れない場合、文書は下書きとして作成されます。"
 
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Outline"
+msgstr "アウトライン"
+
 #: apps/remix/app/components/forms/document-preferences-form.tsx
 #: apps/remix/app/components/forms/email-preferences-form.tsx
 msgid "Override organisation settings"
@@ -8125,7 +8382,9 @@ msgstr "所有者: {0}"
 msgid "Ownership transferred to {organisationMemberName}."
 msgstr "所有権を {organisationMemberName} に移転しました。"
 
+#. placeholder {0}: field.page
 #. placeholder {0}: firstField.page
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-field-review-dialog.tsx
 msgid "Page {0}"
 msgstr "ページ {0}"
@@ -8140,10 +8399,18 @@ msgstr "ページ {0} / {1}"
 msgid "Page {pageNumber} of {numPages}"
 msgstr "{numPages} ページ中 {pageNumber} ページ目"
 
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
+msgid "Page is missing from this document."
+msgstr "このドキュメントにページが含まれていません。"
+
 #: apps/remix/app/components/tables/admin-organisations-table.tsx
 msgctxt "Subscription status"
 msgid "Paid"
 msgstr "有料"
+
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
+msgid "Part of a group containing an omitted field."
+msgstr "省略されたフィールドを含むグループの一部です。"
 
 #: apps/remix/app/components/dialogs/envelope-download-dialog.tsx
 msgctxt "Partially signed document (adjective)"
@@ -8237,7 +8504,7 @@ msgctxt "Subscription status"
 msgid "Past Due"
 msgstr "支払い遅延"
 
-#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+#: apps/remix/app/components/general/envelope-editor/editor-context-menu.tsx
 msgid "Paste"
 msgstr "ペースト"
 
@@ -8325,6 +8592,10 @@ msgstr "個人アカウント"
 #: apps/remix/app/routes/_authenticated+/inbox.tsx
 msgid "Personal Inbox"
 msgstr "個人用受信箱"
+
+#: apps/remix/app/components/tables/document-logs-table.tsx
+msgid "Phone"
+msgstr "電話番号"
 
 #: apps/remix/app/components/forms/editor/editor-field-checkbox-form.tsx
 #: packages/ui/primitives/document-flow/field-items-advanced-settings/checkbox-field.tsx
@@ -8519,6 +8790,10 @@ msgstr "認証アプリのトークン、またはバックアップコードを
 msgid "Please provide a token from your authenticator, or a backup code."
 msgstr "認証アプリのトークン、またはバックアップコードを入力してください。"
 
+#: apps/remix/app/components/general/document/recipient-notifications-resume-button.tsx
+msgid "Please refresh the envelope and try again."
+msgstr "この文書のパッケージを再読み込みし、再度お試しください。"
+
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v1.tsx
 msgid "Please review the document before approving."
 msgstr "承認する前にドキュメントを確認してください。"
@@ -8559,15 +8834,19 @@ msgstr "別のドメインをお試しください。"
 msgid "Please try again and make sure you enter the correct email address."
 msgstr "もう一度お試しいただき、正しいメールアドレスが入力されているか確認してください。"
 
-#: apps/remix/app/components/general/pdf-viewer/pdf-viewer-states.tsx
-msgid "Please try again or contact our support."
-msgstr "もう一度お試しいただくか、サポートにお問い合わせください。"
-
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 #: apps/remix/app/components/dialogs/change-envelope-recipient-email-dialog.tsx
+#: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
+#: apps/remix/app/components/general/template/template-favorite-button.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
 msgid "Please try again."
 msgstr "もう一度お試しください。"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-provider.tsx
+msgid "Please try again. Your shape change was not saved."
+msgstr "再度お試しください。形状の変更が保存されませんでした。"
 
 #. placeholder {0}: `'${t(deleteMessage)}'`
 #: apps/remix/app/components/dialogs/envelope-delete-dialog.tsx
@@ -8643,6 +8922,68 @@ msgstr "プレビュー"
 msgid "Preview and configure template."
 msgstr "テンプレートをプレビューして構成します。"
 
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Preview email bounced for {0}"
+msgstr "プレビューメールが {0} に配信されませんでした。"
+
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Preview email could not be sent to {0}"
+msgstr "{0} にプレビューメールを送信できませんでした。"
+
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Preview email delivered to {0}"
+msgstr "{0} にプレビューメールが配信されました。"
+
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Preview email delivery blocked for {0}"
+msgstr "{0} でプレビューメールの配信がブロックされました。"
+
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Preview email delivery delayed for {0}"
+msgstr "{0} でプレビューメールの配信が遅れました。"
+
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Preview email delivery updated for {0}"
+msgstr "{0} でのプレビューメールの配信が更新されました。"
+
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Preview email reported as spam by {0}"
+msgstr "{0} がプレビューメールを迷惑メールとして報告しました。"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Preview link"
+msgstr "プレビューリンク"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Preview link inactive"
+msgstr "プレビューリンクは無効です"
+
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Preview link opened directly"
+msgstr "プレビューリンクが直接開かれました"
+
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Preview link opened from email sent to {0}"
+msgstr "メールで{0}に送られたメールからプレビューリンクが開かれました"
+
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Preview link sent to {0}"
+msgstr "{0}にプレビューリンクを送信しました"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Preview link sent."
+msgstr "プレビューリンクを送信しました"
+
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-preview-page.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-preview-page.tsx
 msgid "Preview Mode"
@@ -8657,6 +8998,14 @@ msgstr "送信前に文書をプレビューします"
 msgid "Preview what the signed document will look like with placeholder data"
 msgstr "プレースホルダーデータを使用して、署名後の文書の見た目をプレビューします"
 
+#: packages/lib/server-only/envelope/envelope-preview.ts
+msgid "Preview: {previewTitle}"
+msgstr "プレビュー：{previewTitle}"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Preview: {title}"
+msgstr "プレビュー：{title}"
+
 #: apps/remix/app/components/forms/branding-preferences-form.tsx
 msgid "Primary"
 msgstr "プライマリ"
@@ -8668,6 +9017,10 @@ msgstr "主要なアクションの色。"
 #: apps/remix/app/components/forms/branding-preferences-form.tsx
 msgid "Primary Foreground"
 msgstr "プライマリ前景色"
+
+#: apps/remix/app/routes/preview.$token.tsx
+msgid "Printing is disabled for this preview."
+msgstr "このプレビューでは印刷が無効です"
 
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
 msgid "Privacy Office"
@@ -8831,10 +9184,6 @@ msgstr "準備完了"
 msgid "Reason"
 msgstr "理由"
 
-#: packages/email/template-components/template-document-cancel.tsx
-msgid "Reason for cancellation: {cancellationReason}"
-msgstr "キャンセル理由: {cancellationReason}"
-
 #: apps/remix/app/components/general/document/document-page-view-recipients.tsx
 msgid "Reason for rejection: "
 msgstr "却下理由: "
@@ -8875,6 +9224,10 @@ msgstr "このフィールドへの署名には再認証が必要です"
 msgid "Receives copy"
 msgstr "コピーを受け取る"
 
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
+msgid "Recent"
+msgstr "最近"
+
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
 #: apps/remix/app/routes/_authenticated+/settings+/security._index.tsx
 msgid "Recent activity"
@@ -8883,6 +9236,11 @@ msgstr "最近のアクティビティ"
 #: apps/remix/app/components/general/template/template-page-view-recent-activity.tsx
 msgid "Recent documents"
 msgstr "最近の文書"
+
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Recently created"
+msgstr "最近作成された"
 
 #: apps/remix/app/components/dialogs/change-envelope-recipient-email-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-field-review-dialog.tsx
@@ -8894,8 +9252,10 @@ msgstr "最近の文書"
 msgid "Recipient"
 msgstr "受信者"
 
+#. placeholder {0}: field.recipientId
 #. placeholder {0}: index + 1
 #. placeholder {0}: recipient.index + 1
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
 #: apps/remix/app/components/dialogs/template-use-dialog.tsx
@@ -8922,6 +9282,10 @@ msgstr "受信者が文書のCCに追加されました"
 #: packages/lib/utils/document-audit-logs.ts
 msgid "Recipient completed their task"
 msgstr "受信者が自分のタスクを完了しました"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Recipient email"
+msgstr "受取人メールアドレス"
 
 #: apps/remix/app/components/dialogs/change-envelope-recipient-email-dialog.tsx
 msgid "Recipient email changed"
@@ -9002,6 +9366,7 @@ msgid "Recipient viewed the document"
 msgstr "受信者が文書を閲覧しました"
 
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
 #: apps/remix/app/components/embed/authoring/configure-document-recipients.tsx
 #: apps/remix/app/components/general/document/document-page-view-recipients.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-recipient-form.tsx
@@ -9069,6 +9434,10 @@ msgstr "リカバリーコードをコピーしました"
 #: apps/remix/app/routes/_authenticated+/settings+/security._index.tsx
 msgid "Recovery codes"
 msgstr "リカバリーコード"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Rectangle"
+msgstr "矩形"
 
 #: packages/ui/primitives/signature-pad/signature-pad-color-picker.tsx
 msgid "Red"
@@ -9178,6 +9547,28 @@ msgstr "リマインダー: ドキュメントを{recipientActionVerb}してく�
 msgid "Reminders"
 msgstr "リマインダー"
 
+#: apps/remix/app/components/general/document/recipient-notifications-resume-button.tsx
+msgid "Reminders are enabled again for this recipient and envelope."
+msgstr "この受取人および文書パッケージに対して、再び通知が有効になりました。"
+
+#: apps/remix/app/routes/_recipient+/notifications.$token.tsx
+msgid "Reminders are enabled again for this signing envelope."
+msgstr "この署名文書パッケージに対して、再び通知が有効になりました。"
+
+#: apps/remix/app/components/dialogs/document-resend-dialog.tsx
+#: apps/remix/app/components/dialogs/envelope-redistribute-dialog.tsx
+msgid "Reminders disabled"
+msgstr "通知が無効になりました。"
+
+#: apps/remix/app/components/general/document/recipient-notifications-resume-button.tsx
+msgid "Reminders resumed"
+msgstr "通知が再開されました。"
+
+#. placeholder {0}: data.recipientName || data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Reminders resumed for {0}"
+msgstr "{0} に対して通知が再開されました。"
+
 #: apps/remix/app/components/dialogs/admin-organisation-member-delete-dialog.tsx
 #: apps/remix/app/components/dialogs/admin-team-member-delete-dialog.tsx
 #: apps/remix/app/components/dialogs/team-email-delete-dialog.tsx
@@ -9210,6 +9601,11 @@ msgstr "ドキュメント外のすべてのフィールドを削除する"
 msgid "Remove email domain"
 msgstr "メールドメインを削除"
 
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
+#: apps/remix/app/components/general/template/template-favorite-button.tsx
+msgid "Remove from favorites"
+msgstr "お気に入りから削除"
+
 #: apps/remix/app/components/dialogs/admin-organisation-member-delete-dialog.tsx
 #: apps/remix/app/components/dialogs/admin-team-member-delete-dialog.tsx
 msgid "Remove member"
@@ -9231,6 +9627,10 @@ msgstr "組織メンバーを削除"
 #: apps/remix/app/components/dialogs/ai-recipient-detection-dialog.tsx
 msgid "Remove recipient"
 msgstr "受信者を削除"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Remove recipient email"
+msgstr "受取人のメールアドレスを削除"
 
 #: apps/remix/app/components/dialogs/team-email-delete-dialog.tsx
 msgid "Remove team email"
@@ -9453,6 +9853,14 @@ msgstr "ドキュメント自体は厳重に機密扱いされ、共有される
 msgid "Restricted Access"
 msgstr "アクセス制限"
 
+#: apps/remix/app/components/general/document/recipient-notifications-resume-button.tsx
+msgid "Resume reminders"
+msgstr "通知を再開"
+
+#: apps/remix/app/routes/_recipient+/notifications.$token.tsx
+msgid "Resume reminders for this envelope"
+msgstr "この文書パッケージの通知を再開"
+
 #: apps/remix/app/components/tables/admin-document-jobs-table.tsx
 msgid "Retried"
 msgstr "再試行済み"
@@ -9496,6 +9904,14 @@ msgstr "テンプレート一覧に戻る"
 msgid "Return to TNM Sign sign in page here"
 msgstr "TNM Sign のサインインページへ戻る"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "Reusable subjects and messages for your team."
+msgstr "チーム用の再利用可能な件名とメッセージです。"
+
+#: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
+msgid "Reuse message"
+msgstr "メッセージを再利用"
+
 #: apps/remix/app/components/dialogs/envelope-field-review-dialog.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-page-view-v2.tsx
 #: apps/remix/app/components/general/envelope-signing/envelope-signer-header.tsx
@@ -9509,6 +9925,10 @@ msgstr "各受信者の保存済みの進捗を確認します。フィールド
 #: apps/remix/app/components/dialogs/envelope-field-review-dialog.tsx
 msgid "Review fields"
 msgstr "フィールドを確認"
+
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
+msgid "Review fields that will not be applied"
+msgstr "適用されないフィールドを確認してください。"
 
 #: packages/email/templates/organisation-account-link-confirmation.tsx
 msgid "Review request"
@@ -9530,6 +9950,7 @@ msgid "Revoke all sessions"
 msgstr "すべてのセッションを取り消す"
 
 #: apps/remix/app/components/forms/editor/editor-field-generic-field-forms.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
 msgid "Right"
 msgstr "右"
 
@@ -9583,6 +10004,10 @@ msgstr "保存"
 msgid "Save as Draft"
 msgstr "下書きとして保存"
 
+#: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
+msgid "Save as template"
+msgstr "テンプレートとして保存"
+
 #: apps/remix/app/components/dialogs/envelope-save-as-template-dialog.tsx
 #: apps/remix/app/components/dialogs/envelope-save-as-template-dialog.tsx
 #: apps/remix/app/components/general/document/document-page-view-dropdown.tsx
@@ -9598,9 +10023,25 @@ msgstr "テンプレートとして保存"
 msgid "Save failed"
 msgstr "保存に失敗しました"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "Save template"
+msgstr "テンプレートを保存"
+
 #: packages/ui/primitives/template-flow/add-template-fields.tsx
 msgid "Save Template"
 msgstr "テンプレートを保存"
+
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
+msgid "Saved"
+msgstr "保存されました"
+
+#: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
+msgid "Saved to your email templates"
+msgstr "メールテンプレートに保存されました"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Saving content…"
+msgstr "コンテンツの保存中です…"
 
 #: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
 msgid "Schedule"
@@ -9669,6 +10110,10 @@ msgstr "IDで検索"
 msgid "Search by name or email"
 msgstr "名前またはメールアドレスで検索"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "Search by name, subject, or message"
+msgstr "名前、件名、またはメッセージで検索"
+
 #: apps/remix/app/routes/_authenticated+/admin+/organisations._index.tsx
 msgid "Search by organisation ID, name, customer ID or owner email"
 msgstr "組織 ID、名前、顧客 ID、オーナーのメールアドレスで検索"
@@ -9712,9 +10157,21 @@ msgstr "言語を検索…"
 msgid "Search members by name or email"
 msgstr "名前またはメールアドレスでメンバーを検索"
 
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
+msgid "Search messages"
+msgstr "メッセージを検索"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "Search team templates"
+msgstr "チームのテンプレートを検索"
+
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 msgid "Search templates"
 msgstr "テンプレートを検索..."
+
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
+msgid "Search templates and recent messages"
+msgstr "テンプレートおよび最近のメッセージを検索"
 
 #: apps/remix/app/components/dialogs/webhook-create-dialog.tsx
 msgid "Secret"
@@ -10048,6 +10505,15 @@ msgstr "最初のリマインダーを送信するまでの期間"
 msgid "Send on Behalf of Team"
 msgstr "チームを代表して送信"
 
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+#: apps/remix/app/components/general/document/document-page-view-dropdown.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-editor.tsx
+#: apps/remix/app/components/tables/documents-table-action-dropdown.tsx
+msgid "Send preview link"
+msgstr "プレビューリンクを送信"
+
 #: packages/ui/components/document/document-email-checkboxes.tsx
 msgid "Send recipient expired email to the owner"
 msgstr "受信者の期限切れメールを所有者に送信する"
@@ -10064,6 +10530,10 @@ msgstr "次の受信者にリマインダーを送信する"
 #: apps/remix/app/routes/_authenticated+/admin+/documents.$id.tsx
 msgid "Send Status"
 msgstr "送信状況"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Send the preview to get a copyable link."
+msgstr "プレビューを送信して、コピー可能なリンクを取得します。"
 
 #: packages/ui/components/document/document-no-fields-warning.tsx
 msgid "Send without fields?"
@@ -10085,6 +10555,10 @@ msgstr "送信者を {from} から {to} に再割り当てしました"
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
 msgid "Senders reassigned"
 msgstr "送信者を再割り当てしました"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Sending reopens the same link for everyone who has it until this correction ends."
+msgstr "送信後に、そのリンクはすべてのユーザーに再開され、この修正が終了するまで有効です。"
 
 #: apps/remix/app/components/general/verify-email-banner.tsx
 msgid "Sending..."
@@ -10399,6 +10873,10 @@ msgstr "署名が完了しました"
 msgid "Signing Deadline Expired"
 msgstr "署名期限が切れました"
 
+#: apps/remix/app/routes/_recipient+/notifications.$token.tsx
+msgid "Signing envelope reminders"
+msgstr "署名用エンベロープのリマインダー"
+
 #: apps/remix/app/components/embed/embed-document-signing-page-v1.tsx
 msgid "Signing for"
 msgstr "署名対象"
@@ -10477,6 +10955,14 @@ msgstr "スキップしたエンベロープ"
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
 msgid "Software capable of opening and viewing PDF files (e.g., Adobe Acrobat Reader or a standard PDF-compatible browser)."
 msgstr "PDFファイルを開いて表示できるソフトウェア（ Adobe Acrobat Readerまたは標準のPDF互換ブラウザなど）。"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Solid"
+msgstr "濃い"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Some preview emails could not be sent. You can retry the addresses shown above."
+msgstr "プレビューメールの送信に失敗がありました。上記のアドレスを再試行できます。"
 
 #: apps/remix/app/components/dialogs/envelope-correct-dialog.tsx
 msgid "Some recipients have completed their action, so only limited corrections are available."
@@ -10559,10 +11045,6 @@ msgstr "フィールドの検出中に問題が発生しました。"
 msgid "Something went wrong while detecting recipients."
 msgstr "受信者の検出中に問題が発生しました。"
 
-#: apps/remix/app/components/general/pdf-viewer/pdf-viewer-states.tsx
-msgid "Something went wrong while loading the document."
-msgstr "ドキュメントの読み込み中に問題が発生しました。"
-
 #: apps/remix/app/components/general/document-signing/document-signing-auth-passkey.tsx
 msgid "Something went wrong while loading your passkeys."
 msgstr "パスキーの読み込み中に問題が発生しました。"
@@ -10628,6 +11110,12 @@ msgstr "監査ログをダウンロードできませんでした。後でもう
 msgid "Sorry, we were unable to download the certificate. Please try again later."
 msgstr "証明書をダウンロードできませんでした。後でもう一度お試しください。"
 
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+#: apps/remix/app/components/general/folder/folder-browser.tsx
+msgid "Sort folders"
+msgstr "フォルダの並べ替え"
+
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/components/tables/team-members-table.tsx
 msgid "Source"
@@ -10686,6 +11174,10 @@ msgstr "ステップ {0}/{1}"
 msgid "Step <0>{step} of {maxStep}</0>"
 msgstr "ステップ <0>{step} / {maxStep}</0>"
 
+#: apps/remix/app/routes/_recipient+/notifications.$token.tsx
+msgid "Stop automatic and manually sent reminders for this signing envelope only."
+msgstr "この署名用ファイルに対して自動送信および手動送信のリマインダーを停止します。"
+
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
 msgid "Storage capacity or access to a printer if you wish to retain digital copies or print physical records."
 msgstr "デジタルコピーを保持したり、物理的な記録を印刷したい場合は、ストレージ容量またはプリンタへのアクセス。"
@@ -10710,7 +11202,10 @@ msgstr "スタック期間"
 msgid "Subfolders"
 msgstr "サブフォルダー"
 
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
 #: apps/remix/app/components/forms/support-ticket-form.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
 msgid "Subject"
 msgstr "件名"
 
@@ -10891,10 +11386,15 @@ msgstr "システムテーマ"
 msgid "Table"
 msgstr "テーブル"
 
+#: apps/remix/app/components/tables/document-logs-table.tsx
+msgid "Tablet"
+msgstr "タブレット"
+
 #: apps/remix/app/components/dialogs/admin-swap-subscription-dialog.tsx
 msgid "Target Organisation"
 msgstr "対象の組織"
 
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
 #: apps/remix/app/components/tables/admin-user-teams-table.tsx
 #: apps/remix/app/components/tables/organisation-insights-table.tsx
 #: apps/remix/app/components/tables/organisation-teams-table.tsx
@@ -11088,6 +11588,7 @@ msgstr "このユーザーが所属しているチームと、そのロールで
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.$id._index.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/templates.$id.legacy_editor.tsx
 msgid "Template"
@@ -11169,6 +11670,10 @@ msgstr "テンプレートは旧式のフィールド挿入を使用していま
 #: apps/remix/app/components/dialogs/template-move-to-folder-dialog.tsx
 msgid "Template moved"
 msgstr "テンプレートを移動しました"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "Template name"
+msgstr "テンプレート名"
 
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
@@ -11254,6 +11759,8 @@ msgstr "テスト Webhook を送信しました"
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-text-field.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-drag-drop.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
 #: packages/lib/utils/fields.ts
 #: packages/ui/primitives/document-flow/add-fields.tsx
 #: packages/ui/primitives/document-flow/types.ts
@@ -11543,6 +12050,10 @@ msgstr "組織はバックグラウンドで削除されます。ドキュメン
 msgid "The organisation you are looking for may have been removed, renamed or may have never existed."
 msgstr "お探しの組織は削除されたか、名前が変更されたか、もともと存在しなかった可能性があります。"
 
+#: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
+msgid "The original template will not change."
+msgstr "元のテンプレートは変更されません。"
+
 #: apps/remix/app/components/general/generic-error-layout.tsx
 msgid "The page you are looking for was moved, removed, renamed or might never have existed."
 msgstr "お探しのページは移動・削除・名称変更されたか、最初から存在していなかった可能性があります。"
@@ -11794,6 +12305,10 @@ msgstr "これらはグローバル設定を上書きします。複数の方法
 msgid "They have permission on your behalf to:"
 msgstr "次の権限をあなたに代わって持ちます。"
 
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-panel.tsx
+msgid "Thickness"
+msgstr "厚さ"
+
 #: apps/remix/app/components/forms/signin.tsx
 msgid "This account has been disabled. Please contact support."
 msgstr "このアカウントは無効化されています。サポートにお問い合わせください。"
@@ -11950,6 +12465,10 @@ msgstr "この封筒は現在再送信できません。もう一度お試しく
 msgid "This envelope has been updated with corrections. Please review the latest version before you continue."
 msgstr "この封筒は修正されて更新されました。続行する前に最新バージョンを確認してください。"
 
+#: apps/remix/app/routes/_recipient+/notifications.$token.tsx
+msgid "This envelope no longer requires your action. Reminder preferences cannot be changed."
+msgstr "このファイルはもうアクションを必要としません。リマインダーの設定は変更できません。"
+
 #: apps/remix/app/components/dialogs/envelope-reassign-sender-dialog.tsx
 msgid "This envelope will move to the new sender's Home / Assigned to you folder. The folder will be created if needed, and its existing contents will be kept."
 msgstr "このエンベロープは、新しい送信者のホーム / Assigned to you フォルダーに移動します。必要に応じてフォルダーが作成され、既存の内容は維持されます。"
@@ -11986,6 +12505,10 @@ msgstr "このフォルダには複数のアイテムが含まれています。
 #: apps/remix/app/components/general/envelope-signing/envelope-signer-page-renderer.tsx
 msgid "This initials group allows a maximum of {0} fields."
 msgstr "このイニシャルグループは最大 {0} フィールドを許可します。"
+
+#: packages/email/templates/document-preview.tsx
+msgid "This is a preview of the documents. If you need to sign, you’ll receive a separate email."
+msgstr "このプレビューはドキュメントの確認です。署名が必要な場合は、別途メールが届きます。"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-settings-dialog.tsx
 #: packages/ui/primitives/template-flow/add-template-settings.tsx
@@ -12043,6 +12566,10 @@ msgstr "この PDF は保護されているためアップロードできませ�
 #: apps/remix/app/components/general/envelope/envelope-upload-button.tsx
 msgid "This PDF uses an XFA form which cannot be displayed reliably. Open it in Adobe Acrobat, print to a new PDF, then upload that copy."
 msgstr "このPDFは、信頼性の高い表示ができないXFAフォームを使用しています。Adobe Acrobatで開き、新しいPDFに印刷してから、そのコピーをアップロードします。"
+
+#: apps/remix/app/routes/preview.$token.tsx
+msgid "This preview is unavailable"
+msgstr "このプレビューは利用できません"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 #: packages/ui/primitives/document-flow/add-fields.tsx
@@ -12184,6 +12711,10 @@ msgstr "タイトルを空にすることはできません"
 #: apps/remix/app/components/dialogs/account-delete-dialog.tsx
 msgid "TNM Sign will delete <0>all of your documents</0>, along with all of your completed documents, signatures, and all other resources belonging to your Account."
 msgstr "TNM Sign は<0>すべての文書</0>と、完了済み文書・署名・アカウントに紐づくその他すべてのリソースを削除します。"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "To"
+msgstr "宛先"
 
 #: apps/remix/app/routes/_unauthenticated+/organisation.invite.$token.tsx
 msgid "To accept this invitation you must create an account."
@@ -12440,6 +12971,10 @@ msgstr "QUERY LENGTH LIMIT EXCEEDED. MAX ALLOWED QUERY : 500 CHARS"
 msgid "Try again"
 msgstr "再試行"
 
+#: apps/remix/app/components/general/pdf-viewer/pdf-viewer-states.tsx
+msgid "Try reloading. If the problem continues, reopen the link in an updated browser or on another device."
+msgstr "再読み込みを試してください。問題が解決しない場合は、更新されたブラウザまたは別のデバイスでリンクを再開してください。"
+
 #: apps/remix/app/components/dialogs/ai-features-enable-dialog.tsx
 msgid "Turn on AI detection to automatically find recipients and fields in your documents. AI providers do not retain your data for training."
 msgstr "AI検出をオンにすると、ドキュメント内の受信者とフィールドを自動的に検出できます。AIプロバイダーは、トレーニング目的でお客様のデータを保持しません。"
@@ -12493,6 +13028,10 @@ msgstr "コマンドを入力するか検索..."
 #: apps/remix/app/components/general/default-recipients-multiselect-combobox.tsx
 msgid "Type an email address to add a recipient"
 msgstr "受信者を追加するメールアドレスを入力してください"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page-renderer.tsx
+msgid "Type text…"
+msgstr "テキストを入力…"
 
 #: packages/ui/primitives/signature-pad/signature-pad-type.tsx
 msgid "Type your signature"
@@ -12558,9 +13097,17 @@ msgstr "文書履歴を読み込めませんでした"
 msgid "Unable to load documents"
 msgstr "文書を読み込めませんでした"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "Unable to load email templates."
+msgstr "メールテンプレートの読み込みに失敗しました。"
+
 #: apps/remix/app/components/general/folder/folder-cards.tsx
 msgid "Unable to load folders."
 msgstr "フォルダーを読み込めませんでした。"
+
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
+msgid "Unable to load messages."
+msgstr "メッセージの読み込みに失敗しました。"
 
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Unable to load team members. Close this dialog and try again."
@@ -12603,6 +13150,19 @@ msgstr "現在、認証を再送できません。もう一度お試しくださ
 msgid "Unable to reset password"
 msgstr "パスワードをリセットできません"
 
+#: apps/remix/app/components/general/document/recipient-notifications-resume-button.tsx
+msgid "Unable to resume reminders"
+msgstr "リマインダーの再開に失敗しました。"
+
+#: apps/remix/app/components/dialogs/envelope-distribute-dialog.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
+msgid "Unable to save email template"
+msgstr "メールテンプレートの保存に失敗しました。"
+
+#: apps/remix/app/components/general/envelope-editor/envelope-shapes-provider.tsx
+msgid "Unable to save shapes"
+msgstr "形状の保存に失敗しました。"
+
 #: apps/remix/app/components/forms/2fa/enable-authenticator-app-dialog.tsx
 #: apps/remix/app/components/forms/2fa/enable-authenticator-app-dialog.tsx
 msgid "Unable to setup two-factor authentication"
@@ -12612,6 +13172,11 @@ msgstr "二要素認証を設定できませんでした"
 #: apps/remix/app/components/forms/signin.tsx
 msgid "Unable to sign in"
 msgstr "サインインできませんでした"
+
+#: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
+#: apps/remix/app/components/general/template/template-favorite-button.tsx
+msgid "Unable to update favorite"
+msgstr "お気に入りの更新に失敗しました。"
 
 #: apps/remix/app/components/general/document-signing/document-signing-auth-2fa.tsx
 #: apps/remix/app/components/general/document-signing/document-signing-auth-passkey.tsx
@@ -13172,6 +13737,7 @@ msgid "View DNS Records"
 msgstr "DNS レコードを表示"
 
 #: packages/email/templates/document-created-from-direct-template.tsx
+#: packages/email/templates/document-preview.tsx
 msgid "View document"
 msgstr "ドキュメントを表示"
 
@@ -13349,6 +13915,14 @@ msgstr "このファイルを変換できませんでした。有効な Word ド
 #: apps/remix/app/routes/_authenticated+/admin+/organisations.$id.tsx
 msgid "We couldn't create a Stripe customer. Please try again."
 msgstr "Stripe 顧客を作成できませんでした。もう一度お試しください。"
+
+#: apps/remix/app/components/general/pdf-viewer/pdf-viewer-states.tsx
+msgid "We couldn’t display this document."
+msgstr "このドキュメントを表示できませんでした。"
+
+#: apps/remix/app/components/general/pdf-viewer/pdf-viewer-page-image.tsx
+msgid "We couldn’t display this page."
+msgstr "このページを表示できませんでした。"
 
 #: apps/remix/app/components/dialogs/ai-features-enable-dialog.tsx
 msgid "We couldn't enable AI features right now. Please try again."
@@ -14054,6 +14628,10 @@ msgstr "ドラフトの封筒でのみフィールドを検出できます"
 msgid "You can revoke access at any time in your team settings on TNM Sign <0>here</0>."
 msgstr "TNM Sign のチーム設定から、いつでもアクセス権を取り消すことができます。<0>こちら</0>。"
 
+#: apps/remix/app/routes/_recipient+/notifications.$token.tsx
+msgid "You can still open and sign the envelope using your original email link."
+msgstr "元のメールリンクを使って、まだ envelope を開き、署名できます。"
+
 #: apps/remix/app/components/forms/public-profile-form.tsx
 msgid "You can update the profile URL by updating the team URL in the general settings page."
 msgstr "チーム URL を一般設定ページで更新すると、プロフィール URL も更新されます。"
@@ -14073,6 +14651,11 @@ msgstr "作成されたドキュメントは、ダッシュボードの「テン
 #: packages/email/template-components/template-document-rejected.tsx
 msgid "You can view the document and its status by clicking the button below."
 msgstr "下のボタンをクリックすると、ドキュメントとそのステータスを表示できます。"
+
+#. placeholder {0}: data.cancellationReason
+#: packages/lib/utils/document-audit-logs.ts
+msgid "You cancelled the document. Message to client: {0}"
+msgstr "ドキュメントをキャンセルしました。お客様へのメッセージ：{0}"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-recipient-form.tsx
 #: packages/ui/primitives/document-flow/add-signers.tsx
@@ -14497,6 +15080,16 @@ msgstr "文書用の2要素認証トークンをリクエストしました"
 msgid "You resent an email to {0}"
 msgstr "{0} にメールを再送しました"
 
+#. placeholder {0}: data.recipientName || data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "You resumed reminders for {0}"
+msgstr "{0} へのリマインダーを再開しました"
+
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "You sent a preview link to {0}"
+msgstr "{0} にプレビューリンクを送信しました"
+
 #. placeholder {0}: data.recipientEmail
 #: packages/lib/utils/document-audit-logs.ts
 msgid "You sent an email to {0}"
@@ -14571,6 +15164,10 @@ msgstr "文書を閲覧しました"
 msgid "You will need to configure any claims or subscription after creating this organisation"
 msgstr "この組織を作成した後に、クレームやサブスクリプションを構成する必要があります。"
 
+#: apps/remix/app/routes/_recipient+/notifications.$token.tsx
+msgid "You will no longer receive automatic or manually sent reminders for this signing envelope."
+msgstr "この署名用エンベロープに関する自動および手動のリマインダーは今後届きません。"
+
 #: apps/remix/app/components/forms/2fa/enable-authenticator-app-dialog.tsx
 msgid "You will now be required to enter a code from your authenticator app when signing in."
 msgstr "今後、サインイン時には認証アプリのコード入力が必要になります。"
@@ -14578,6 +15175,10 @@ msgstr "今後、サインイン時には認証アプリのコード入力が必
 #: apps/remix/app/routes/_recipient+/sign.$token+/complete.tsx
 msgid "You will receive an email copy of the signed document once everyone has signed."
 msgstr "全員の署名が完了すると、署名済みドキュメントのコピーがメールで送信されます。"
+
+#: apps/remix/app/routes/_recipient+/notifications.$token.tsx
+msgid "You will still receive correction and completion emails."
+msgstr "修正と完了のお知らせメールは引き続き届きます。"
 
 #: apps/remix/app/components/dialogs/ai-features-enable-dialog.tsx
 msgid "You're an admin. You can enable AI features for this team right away. Everyone on the team will see AI detection once enabled."

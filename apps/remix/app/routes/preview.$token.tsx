@@ -11,15 +11,19 @@ export const headers: Route.HeadersFunction = () => ({
   'X-Robots-Tag': 'noindex, nofollow',
 });
 
-export async function loader({ params }: Route.LoaderArgs) {
+export async function loader({ params, request }: Route.LoaderArgs) {
   const { token } = params;
+  const emailAttemptId = new URL(request.url).searchParams.get('email');
   const preview = /^[a-f0-9]{64}$/.test(token) ? await getEnvelopePreview(token) : null;
 
-  return { preview: preview ?? null };
+  return {
+    preview: preview ?? null,
+    emailAttemptId: /^[a-f0-9-]{36}$/.test(emailAttemptId ?? '') ? emailAttemptId : null,
+  };
 }
 
 export default function EnvelopePreview({ loaderData, params }: Route.ComponentProps) {
-  const { preview } = loaderData;
+  const { preview, emailAttemptId } = loaderData;
 
   return (
     <>
@@ -48,7 +52,7 @@ export default function EnvelopePreview({ loaderData, params }: Route.ComponentP
                 onContextMenu={(event) => event.preventDefault()}
               >
                 <img
-                  src={`/preview-page/${params.token}/${page.position}?v=${preview.revisionHash}`}
+                  src={`/preview-page/${params.token}/${page.position}?v=${preview.revisionHash}${emailAttemptId ? `&email=${emailAttemptId}` : ''}`}
                   width={page.width}
                   height={page.height}
                   loading={index === 0 ? 'eager' : 'lazy'}

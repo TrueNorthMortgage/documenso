@@ -738,13 +738,14 @@ enum EmailDeliveryPurpose {
   CORRECTION
   RESEND
   REMINDER
+  PREVIEW
 }
 
 model EmailDeliveryAttempt {
   id String @id @default(cuid())
   operationKey String @unique
   envelopeId String
-  recipientId Int
+  recipientId Int?
   recipientEmail String @db.VarChar(255)
   purpose EmailDeliveryPurpose
   provider String
@@ -755,10 +756,11 @@ model EmailDeliveryAttempt {
   status EmailDeliveryStatus @default(PENDING)
   requestedAt DateTime @default(now())
   sentAt DateTime?
+  openedAt DateTime?
   statusAt DateTime @default(now())
   failureCode String?
   envelope Envelope @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
-  recipient Recipient @relation("RecipientEmailDeliveryAttempts", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipient Recipient? @relation("RecipientEmailDeliveryAttempts", fields: [recipientId], references: [id], onDelete: Cascade)
   latestForRecipient Recipient? @relation("LatestEmailDeliveryAttempt")
   events EmailDeliveryEvent[]
 

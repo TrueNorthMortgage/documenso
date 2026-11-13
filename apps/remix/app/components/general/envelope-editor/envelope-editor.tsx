@@ -361,6 +361,7 @@ export const EnvelopeEditor = () => {
               <>
                 {!isEmbedded && canShareEnvelopePreview(envelope) && (
                   <EnvelopePreviewDialog
+                    documentRootPath={relativePath.documentRootPath}
                     envelopeId={envelope.id}
                     title={envelope.title}
                     recipients={envelope.recipients}

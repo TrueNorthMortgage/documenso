@@ -156,6 +156,7 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
 
         {canManageDocument && canShareEnvelopePreview(row) && (
           <EnvelopePreviewDialog
+            documentRootPath={documentsPath}
             envelopeId={row.envelopeId}
             title={row.title}
             recipients={row.recipients}
