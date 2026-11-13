@@ -218,12 +218,11 @@ test('keeps one live preview link for an envelope through drafting and correctio
     await page.goto(`/t/${team.url}/documents/${draft.id}`);
     await page.getByTestId('document-page-view-action-btn').click();
     await page.getByRole('menuitem', { name: 'Send preview link' }).click();
-    await expect(dialog).toContainText('until this correction ends');
+    await expect(dialog).toContainText('the preview has no download option');
     await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 
     await page.goto(`/t/${team.url}/documents/${draft.id}/edit?step=addFields`);
     await page.getByRole('button', { name: 'Send preview link', exact: true }).click();
-    await expect(dialog).toContainText('until this correction ends');
     await expect(dialog.getByText('Preview link inactive')).toBeVisible();
     await expect(dialog.getByRole('textbox', { name: 'Preview link', exact: true })).toHaveValue(previewUrl);
     await emailInputs.fill(firstEmail);

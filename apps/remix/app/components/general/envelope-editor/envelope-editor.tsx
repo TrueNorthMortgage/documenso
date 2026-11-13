@@ -366,7 +366,6 @@ export const EnvelopeEditor = () => {
                     title={envelope.title}
                     recipients={envelope.recipients}
                     beforeSend={flushAutosave}
-                    isCorrecting={Boolean(envelope.correctionStartedAt)}
                     trigger={
                       <Button
                         variant="ghost"

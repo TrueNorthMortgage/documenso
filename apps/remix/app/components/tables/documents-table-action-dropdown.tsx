@@ -160,7 +160,6 @@ export const DocumentsTableActionDropdown = ({ row, onMoveDocument }: DocumentsT
             envelopeId={row.envelopeId}
             title={row.title}
             recipients={row.recipients}
-            isCorrecting={Boolean(row.correctionStartedAt)}
             trigger={
               <DropdownMenuItem asChild onSelect={(event) => event.preventDefault()}>
                 <div>

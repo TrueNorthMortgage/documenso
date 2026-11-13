@@ -2119,10 +2119,6 @@ msgstr "모든 소스"
 msgid "Any Status"
 msgstr "모든 상태"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Anyone with the link can view the latest saved version while the envelope is in Draft."
-msgstr "봉투가 임시 저장 상태일 동안, 링크를 가진 누구나 최신 저장된 버전을 볼 수 있습니다."
-
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/settings-nav-mobile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings._layout.tsx
@@ -10556,10 +10552,6 @@ msgstr "발신자가 {from}에서 {to}(으)로 재할당되었습니다"
 msgid "Senders reassigned"
 msgstr "발신자들이 재할당되었습니다"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Sending reopens the same link for everyone who has it until this correction ends."
-msgstr "전송 후 해당 링크는 누구나 다시 열 수 있으며, 이 수정이 종료될 때까지 동일한 링크를 공유합니다."
-
 #: apps/remix/app/components/general/verify-email-banner.tsx
 msgid "Sending..."
 msgstr "전송 중..."
@@ -10618,6 +10610,10 @@ msgstr "설정"
 #: packages/ui/components/document/document-share-button.tsx
 msgid "Share"
 msgstr "공유"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Share a view-only preview of the documents in this envelope. Recipients can open the preview without signing, and the preview has no download option."
+msgstr "이 봉투에 포함된 문서의 보기 전용 미리 보기를 공유할 수 있습니다. 수신자는 서명 없이 미리 보기를 열 수 있으며, 다운로드 옵션은 제공되지 않습니다."
 
 #: packages/lib/constants/template.ts
 msgid "Share the Link"

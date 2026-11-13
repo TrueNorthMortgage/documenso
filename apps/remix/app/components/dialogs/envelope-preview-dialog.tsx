@@ -44,7 +44,6 @@ type EnvelopePreviewDialogProps = {
   recipients: { email: string; role: RecipientRole }[];
   trigger: ReactNode;
   beforeSend?: () => Promise<unknown>;
-  isCorrecting?: boolean;
 };
 
 export const EnvelopePreviewDialog = ({
@@ -54,7 +53,6 @@ export const EnvelopePreviewDialog = ({
   recipients,
   trigger,
   beforeSend,
-  isCorrecting = false,
 }: EnvelopePreviewDialogProps) => {
   const { t } = useLingui();
   const { toast } = useToast();
@@ -153,17 +151,16 @@ export const EnvelopePreviewDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto" hideClose>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl" hideClose>
         <DialogHeader>
           <DialogTitle>
             <Trans>Send preview link</Trans>
           </DialogTitle>
           <DialogDescription>
-            {isCorrecting ? (
-              <Trans>Sending reopens the same link for everyone who has it until this correction ends.</Trans>
-            ) : (
-              <Trans>Anyone with the link can view the latest saved version while the envelope is in Draft.</Trans>
-            )}
+            <Trans>
+              Share a view-only preview of the documents in this envelope. Recipients can open the preview without
+              signing, and the preview has no download option.
+            </Trans>
           </DialogDescription>
         </DialogHeader>
 
@@ -277,11 +274,17 @@ export const EnvelopePreviewDialog = ({
                   <div className="flex items-center gap-2">
                     <Input
                       aria-label={t`Preview link`}
+                      className="min-w-0"
                       value={previewUrl}
                       readOnly
                       onFocus={(event) => event.currentTarget.select()}
                     />
-                    <Button type="button" variant="outline" onClick={() => void copy(previewUrl)}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="shrink-0 whitespace-nowrap"
+                      onClick={() => void copy(previewUrl)}
+                    >
                       <CopyIcon className="mr-2 h-4 w-4" />
                       {copiedUrl === previewUrl ? <Trans>Copied</Trans> : <Trans>Copy link</Trans>}
                     </Button>

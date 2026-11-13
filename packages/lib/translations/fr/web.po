@@ -2119,10 +2119,6 @@ msgstr "Toute source"
 msgid "Any Status"
 msgstr "Tout statut"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Anyone with the link can view the latest saved version while the envelope is in Draft."
-msgstr "Tout le monde avec le lien peut consulter la dernière version enregistrée pendant que l'enveloppe est en brouillon."
-
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/settings-nav-mobile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings._layout.tsx
@@ -10556,10 +10552,6 @@ msgstr "Rôle d’expéditeur réattribué de {from} à {to}"
 msgid "Senders reassigned"
 msgstr "Expéditeurs réattribués"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Sending reopens the same link for everyone who has it until this correction ends."
-msgstr "L'envoi réouvre le même lien pour tous ceux qui l'ont, jusqu'à la fin de cette correction."
-
 #: apps/remix/app/components/general/verify-email-banner.tsx
 msgid "Sending..."
 msgstr "Envoi..."
@@ -10618,6 +10610,10 @@ msgstr "Configuration"
 #: packages/ui/components/document/document-share-button.tsx
 msgid "Share"
 msgstr "Partager"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Share a view-only preview of the documents in this envelope. Recipients can open the preview without signing, and the preview has no download option."
+msgstr "Partagez un aperçu en lecture seule des documents de cette enveloppe. Les destinataires peuvent l’ouvrir sans signer et aucune option de téléchargement n’est proposée."
 
 #: packages/lib/constants/template.ts
 msgid "Share the Link"

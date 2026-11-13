@@ -2119,10 +2119,6 @@ msgstr "Dowolne źródło"
 msgid "Any Status"
 msgstr "Dowolny status"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Anyone with the link can view the latest saved version while the envelope is in Draft."
-msgstr "Każdy z osobą, która posiada link, może przeglądać ostatnią zapisaną wersję, podczas gdy koperta jest w stanie szkicu."
-
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/settings-nav-mobile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings._layout.tsx
@@ -10556,10 +10552,6 @@ msgstr "Nadawca zmieniony z {from} na {to}"
 msgid "Senders reassigned"
 msgstr "Nadawcy zmienieni"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Sending reopens the same link for everyone who has it until this correction ends."
-msgstr "Wysyłanie ponownie otwiera ten sam link dla wszystkich, którzy go mają, aż do zakończenia poprawki."
-
 #: apps/remix/app/components/general/verify-email-banner.tsx
 msgid "Sending..."
 msgstr "Wysyłanie..."
@@ -10618,6 +10610,10 @@ msgstr "Konfiguracja"
 #: packages/ui/components/document/document-share-button.tsx
 msgid "Share"
 msgstr "Udostępnij"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Share a view-only preview of the documents in this envelope. Recipients can open the preview without signing, and the preview has no download option."
+msgstr "Udostępnij podgląd dokumentów z tej koperty w trybie tylko do odczytu. Odbiorcy mogą otworzyć podgląd bez składania podpisu. Podgląd nie ma opcji pobierania."
 
 #: packages/lib/constants/template.ts
 msgid "Share the Link"

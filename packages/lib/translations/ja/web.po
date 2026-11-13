@@ -2119,10 +2119,6 @@ msgstr "すべてのソース"
 msgid "Any Status"
 msgstr "すべてのステータス"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Anyone with the link can view the latest saved version while the envelope is in Draft."
-msgstr "リンクを持っている誰でも、文書がドラフト状態の間、最新の保存済みバージョンを閲覧できます。"
-
 #: apps/remix/app/components/general/settings-nav-desktop.tsx
 #: apps/remix/app/components/general/settings-nav-mobile.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings._layout.tsx
@@ -10556,10 +10552,6 @@ msgstr "送信者を {from} から {to} に再割り当てしました"
 msgid "Senders reassigned"
 msgstr "送信者を再割り当てしました"
 
-#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
-msgid "Sending reopens the same link for everyone who has it until this correction ends."
-msgstr "送信後に、そのリンクはすべてのユーザーに再開され、この修正が終了するまで有効です。"
-
 #: apps/remix/app/components/general/verify-email-banner.tsx
 msgid "Sending..."
 msgstr "送信中..."
@@ -10618,6 +10610,10 @@ msgstr "セットアップ"
 #: packages/ui/components/document/document-share-button.tsx
 msgid "Share"
 msgstr "共有"
+
+#: apps/remix/app/components/dialogs/envelope-preview-dialog.tsx
+msgid "Share a view-only preview of the documents in this envelope. Recipients can open the preview without signing, and the preview has no download option."
+msgstr "このエンベロープ内のドキュメントを閲覧専用のプレビューとして共有できます。受信者は署名せずにプレビューを開けます。プレビューにダウンロード機能はありません。"
 
 #: packages/lib/constants/template.ts
 msgid "Share the Link"
