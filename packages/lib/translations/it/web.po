@@ -1653,6 +1653,7 @@ msgid "Alignment"
 msgstr "Allineamento"
 
 #: apps/remix/app/components/general/document/document-status.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 msgid "All"
 msgstr "Tutto"
@@ -2937,6 +2938,7 @@ msgid "Click here to get started"
 msgstr "Clicca qui per iniziare"
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/template/template-page-view-recent-activity.tsx
 #: apps/remix/app/components/tables/settings-public-profile-templates-table.tsx
 msgid "Click here to retry"
@@ -3053,6 +3055,7 @@ msgstr "Compila i campi per i seguenti firmatari."
 #: apps/remix/app/components/embed/multisign/multi-sign-document-list.tsx
 #: apps/remix/app/components/general/document/document-status.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-header.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/stack-avatars-with-tooltip.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/components/tables/admin-document-jobs-table.tsx
@@ -3843,6 +3846,10 @@ msgstr "David è il dipendente, Lucas è il manager"
 msgid "Decline"
 msgstr "Declina"
 
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Declined"
+msgstr "Rifiutato"
+
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
 msgid "Dedicated Broker / Agent"
 msgstr "Broker/Agente dedicato"
@@ -4106,6 +4113,10 @@ msgstr "Eliminazione account..."
 #: apps/remix/app/components/dialogs/admin-organisation-delete-dialog.tsx
 msgid "Deletion scheduled"
 msgstr "Eliminazione pianificata"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Delivery issues"
+msgstr "Problemi di consegna"
 
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 msgid "Depends on an omitted field."
@@ -6941,6 +6952,10 @@ msgstr "Lingua"
 msgid "Last 14 days"
 msgstr "Ultimi 14 giorni"
 
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Last 24 hours"
+msgstr "Ultime 24 ore"
+
 #: apps/remix/app/components/general/period-selector.tsx
 msgid "Last 30 days"
 msgstr "Ultimi 30 giorni"
@@ -7000,6 +7015,17 @@ msgstr "Ultima verifica"
 #: apps/remix/app/components/filters/date-range-filter.tsx
 msgid "Last Year"
 msgstr "Ultimo anno"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Latest activity"
+msgstr "Ultime attività"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Latest activity ({badgeText} new)"
+msgstr "Ultime attività ({badgeText} nuove)"
 
 #: apps/remix/app/components/forms/subscription-claim-form.tsx
 #: apps/remix/app/components/general/admin-license-card.tsx
@@ -7169,6 +7195,7 @@ msgstr "Caricamento modelli..."
 #: apps/remix/app/components/embed/embed-client-loading.tsx
 #: apps/remix/app/components/general/default-recipients-multiselect-combobox.tsx
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/organisation-groups-multiselect-combobox.tsx
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
@@ -7857,6 +7884,7 @@ msgid "No public profile templates found"
 msgstr "Nessun modello di profilo pubblico trovato"
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 msgid "No recent activity"
 msgstr "Nessuna attività recente"
 
@@ -8112,6 +8140,7 @@ msgstr "Ops! Qualcosa è andato storto."
 msgid "Open menu"
 msgstr "Apri menu"
 
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/stack-avatars-with-tooltip.tsx
 #: packages/email/template-components/template-document-recipient-opened.tsx
 msgid "Opened"
@@ -9502,6 +9531,11 @@ msgstr "Ricarica"
 msgid "Remembered your password? <0>Sign In</0>"
 msgstr "Ricordi la tua password? <0>Accedi</0>"
 
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Reminder sent to {0}"
+msgstr "Promemoria inviato a {0}"
+
 #: packages/email/templates/document-reminder.tsx
 msgid "Reminder to {action} {documentName}"
 msgstr "Promemoria per {action} {documentName}"
@@ -9540,6 +9574,7 @@ msgid "Reminder: Please {recipientActionVerb} your document"
 msgstr "Promemoria: per favore {recipientActionVerb} il tuo documento"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-settings-dialog.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 msgid "Reminders"
 msgstr "Promemoria"
 
@@ -10557,6 +10592,7 @@ msgid "Sending..."
 msgstr "Invio..."
 
 #: apps/remix/app/components/general/document/document-page-view-recipients.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/webhook-logs-sheet.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/certificate.tsx
@@ -10640,6 +10676,11 @@ msgstr "Mostra chiave di licenza"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 msgid "Show templates in your public profile for your audience to sign and get started quickly"
 msgstr "Mostra modelli nel tuo profilo pubblico per il tuo pubblico da firmare e iniziare rapidamente"
+
+#. placeholder {0}: items.length
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Showing the latest {0} of {total} events"
+msgstr "Visualizzazione dei {0} eventi più recenti su {total}"
 
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Showing up to 15 members. Search to find others."
@@ -13086,6 +13127,7 @@ msgid "Unable to join this organisation at this time."
 msgstr "Impossibile unirsi a questa organizzazione in questo momento."
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 msgid "Unable to load document history"
 msgstr "Impossibile caricare la cronologia del documento"
 

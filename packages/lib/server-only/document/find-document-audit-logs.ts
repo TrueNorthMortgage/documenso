@@ -6,6 +6,7 @@ import { DOCUMENT_AUDIT_LOG_TYPE } from '../../types/document-audit-logs';
 import type { FindResultResponse } from '../../types/search-params';
 import { parseDocumentAuditLogData } from '../../utils/document-audit-logs';
 import { getEnvelopeWhereInput } from '../envelope/get-envelope-by-id';
+import { automaticReminderAuditLogFilter, resentEmailAuditLogFilter } from './document-reminder-audit-log-filter';
 
 export interface FindDocumentAuditLogsOptions {
   userId: number;
@@ -82,13 +83,8 @@ export const findDocumentAuditLogs = async ({
           ],
         },
       },
-      {
-        type: DOCUMENT_AUDIT_LOG_TYPE.EMAIL_SENT,
-        data: {
-          path: ['isResending'],
-          equals: true,
-        },
-      },
+      automaticReminderAuditLogFilter,
+      resentEmailAuditLogFilter,
     ];
   }
 

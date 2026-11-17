@@ -1653,6 +1653,7 @@ msgid "Alignment"
 msgstr "对齐"
 
 #: apps/remix/app/components/general/document/document-status.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 msgid "All"
 msgstr "全部"
@@ -2937,6 +2938,7 @@ msgid "Click here to get started"
 msgstr "点击此处开始"
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/template/template-page-view-recent-activity.tsx
 #: apps/remix/app/components/tables/settings-public-profile-templates-table.tsx
 msgid "Click here to retry"
@@ -3053,6 +3055,7 @@ msgstr "请为以下签署人完成字段。"
 #: apps/remix/app/components/embed/multisign/multi-sign-document-list.tsx
 #: apps/remix/app/components/general/document/document-status.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-header.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/stack-avatars-with-tooltip.tsx
 #: apps/remix/app/components/general/template/template-page-view-documents-table.tsx
 #: apps/remix/app/components/tables/admin-document-jobs-table.tsx
@@ -3843,6 +3846,10 @@ msgstr "David 是员工，Lucas 是经理"
 msgid "Decline"
 msgstr "拒绝"
 
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Declined"
+msgstr "已拒绝"
+
 #: apps/remix/app/routes/_unauthenticated+/articles.signature-disclosure.tsx
 msgid "Dedicated Broker / Agent"
 msgstr "专职经纪人/代理"
@@ -4106,6 +4113,10 @@ msgstr "正在删除账号..."
 #: apps/remix/app/components/dialogs/admin-organisation-delete-dialog.tsx
 msgid "Deletion scheduled"
 msgstr "删除已计划"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Delivery issues"
+msgstr "投递问题"
 
 #: apps/remix/app/components/dialogs/apply-template-to-envelope-item-dialog.tsx
 msgid "Depends on an omitted field."
@@ -6941,6 +6952,10 @@ msgstr "语言"
 msgid "Last 14 days"
 msgstr "最近 14 天"
 
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Last 24 hours"
+msgstr "过去 24 小时"
+
 #: apps/remix/app/components/general/period-selector.tsx
 msgid "Last 30 days"
 msgstr "最近 30 天"
@@ -7000,6 +7015,17 @@ msgstr "上次验证时间"
 #: apps/remix/app/components/filters/date-range-filter.tsx
 msgid "Last Year"
 msgstr "去年"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Latest activity"
+msgstr "最新活动"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Latest activity ({badgeText} new)"
+msgstr "最新活动（{badgeText} 条新动态）"
 
 #: apps/remix/app/components/forms/subscription-claim-form.tsx
 #: apps/remix/app/components/general/admin-license-card.tsx
@@ -7169,6 +7195,7 @@ msgstr "正在加载模板..."
 #: apps/remix/app/components/embed/embed-client-loading.tsx
 #: apps/remix/app/components/general/default-recipients-multiselect-combobox.tsx
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/organisation-groups-multiselect-combobox.tsx
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
@@ -7857,6 +7884,7 @@ msgid "No public profile templates found"
 msgstr "未找到公开资料模板"
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 msgid "No recent activity"
 msgstr "暂无最近活动"
 
@@ -8112,6 +8140,7 @@ msgstr "噢！出错了。"
 msgid "Open menu"
 msgstr "打开菜单"
 
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/stack-avatars-with-tooltip.tsx
 #: packages/email/template-components/template-document-recipient-opened.tsx
 msgid "Opened"
@@ -9502,6 +9531,11 @@ msgstr "重新加载"
 msgid "Remembered your password? <0>Sign In</0>"
 msgstr "想起密码了？<0>登录</0>"
 
+#. placeholder {0}: data.recipientEmail
+#: packages/lib/utils/document-audit-logs.ts
+msgid "Reminder sent to {0}"
+msgstr "提醒已发送至 {0}"
+
 #: packages/email/templates/document-reminder.tsx
 msgid "Reminder to {action} {documentName}"
 msgstr "提醒您{action}{documentName}"
@@ -9540,6 +9574,7 @@ msgid "Reminder: Please {recipientActionVerb} your document"
 msgstr "提醒：请 {recipientActionVerb} 您的文档"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-settings-dialog.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 msgid "Reminders"
 msgstr "提醒"
 
@@ -10557,6 +10592,7 @@ msgid "Sending..."
 msgstr "正在发送..."
 
 #: apps/remix/app/components/general/document/document-page-view-recipients.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/webhook-logs-sheet.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 #: apps/remix/app/routes/_internal+/[__htmltopdf]+/certificate.tsx
@@ -10640,6 +10676,11 @@ msgstr "显示许可证密钥"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 msgid "Show templates in your public profile for your audience to sign and get started quickly"
 msgstr "在公开资料中展示模板，方便你的用户快速签署上手"
+
+#. placeholder {0}: items.length
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "Showing the latest {0} of {total} events"
+msgstr "显示 {total} 条事件中最新的 {0} 条"
 
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Showing up to 15 members. Search to find others."
@@ -13086,6 +13127,7 @@ msgid "Unable to join this organisation at this time."
 msgstr "当前无法加入此组织。"
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
 msgid "Unable to load document history"
 msgstr "无法加载文档历史"
 

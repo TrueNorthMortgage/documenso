@@ -13,6 +13,7 @@ import type {
 } from '../types/document-audit-logs';
 import {
   DOCUMENT_AUDIT_LOG_TYPE,
+  DOCUMENT_EMAIL_TYPE,
   DOCUMENT_META_DIFF_TYPE,
   FIELD_DIFF_TYPE,
   RECIPIENT_DIFF_TYPE,
@@ -586,6 +587,12 @@ export const formatDocumentAuditLogAction = (i18n: I18n, auditLog: TDocumentAudi
       return { anonymous: description, you: description, user: description };
     })
     .with({ type: DOCUMENT_AUDIT_LOG_TYPE.EMAIL_SENT }, ({ data }) => {
+      if (data.emailType === DOCUMENT_EMAIL_TYPE.REMINDER) {
+        const description = msg`Reminder sent to ${data.recipientEmail}`;
+
+        return { anonymous: description, you: description, user: description };
+      }
+
       if (data.isResending) {
         return {
           anonymous: msg({

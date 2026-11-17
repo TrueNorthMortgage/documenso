@@ -10,7 +10,8 @@ import { Trans } from '@lingui/react/macro';
 import type { DocumentStatus } from '@prisma/client';
 import { AlertCircleIcon, AlertTriangle, CheckCheckIcon, CheckIcon, Loader, MailOpen } from 'lucide-react';
 import { DateTime } from 'luxon';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useLocation } from 'react-router';
 import { match } from 'ts-pattern';
 
 import {
@@ -32,6 +33,16 @@ export const DocumentPageViewRecentActivity = ({
   documentStatus,
 }: DocumentPageViewRecentActivityProps) => {
   const { _, i18n } = useLingui();
+  const { hash, key } = useLocation();
+  const activityRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    // The envelope is loaded on the client, so the anchor may mount after navigation.
+    if (hash === '#recent-activity') {
+      activityRef.current?.scrollIntoView();
+      activityRef.current?.focus({ preventScroll: true });
+    }
+  }, [hash, key]);
 
   const { data, isLoading, isLoadingError, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } =
     trpc.document.auditLog.find.useInfiniteQuery(
@@ -52,7 +63,9 @@ export const DocumentPageViewRecentActivity = ({
   return (
     <section
       id="recent-activity"
-      className="flex flex-col rounded-xl border border-border bg-widget dark:bg-background"
+      ref={activityRef}
+      tabIndex={-1}
+      className="flex scroll-mt-20 flex-col rounded-xl border border-border bg-widget dark:bg-background"
     >
       <div className="flex flex-row items-center justify-between border-b px-4 py-3">
         <h1 className="font-medium text-foreground">
