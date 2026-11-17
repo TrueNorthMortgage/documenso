@@ -1,6 +1,6 @@
 import { EmailDeliveryStatus, RecipientRole, SigningStatus } from '@prisma/client';
 
-const failureStatuses: EmailDeliveryStatus[] = [
+export const EMAIL_DELIVERY_FAILURE_STATUSES: readonly EmailDeliveryStatus[] = [
   EmailDeliveryStatus.BOUNCED,
   EmailDeliveryStatus.BLOCKED,
   EmailDeliveryStatus.SPAM_COMPLAINT,
@@ -8,7 +8,7 @@ const failureStatuses: EmailDeliveryStatus[] = [
 ];
 
 export const isEmailDeliveryFailure = (status: EmailDeliveryStatus | null | undefined) =>
-  status != null && failureStatuses.includes(status);
+  status != null && EMAIL_DELIVERY_FAILURE_STATUSES.includes(status);
 
 export const hasEmailDeliveryWarning = (recipient: {
   email: string;

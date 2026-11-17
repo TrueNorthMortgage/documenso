@@ -33,10 +33,13 @@ import { findEnvelopesRoute } from './find-envelopes';
 import { findReassignmentCandidatesRoute } from './find-reassignment-candidates';
 import { getEditorEnvelopeRoute } from './get-editor-envelope';
 import { getEnvelopeRoute } from './get-envelope';
-import { getSharedEnvelopePreviewRoute } from './get-shared-envelope-preview';
+import { getEnvelopeActivityNotificationsRoute } from './get-envelope-activity-notifications';
 import { getEnvelopeItemsRoute } from './get-envelope-items';
 import { getEnvelopeItemsByTokenRoute } from './get-envelope-items-by-token';
 import { getEnvelopesByIdsRoute } from './get-envelopes-by-ids';
+import { getLatestEnvelopeActivityRoute } from './get-latest-envelope-activity';
+import { getSharedEnvelopePreviewRoute } from './get-shared-envelope-preview';
+import { markEnvelopeActivityReadRoute } from './mark-envelope-activity-read';
 import { pendingPreparationRoute } from './pending-preparation';
 import { reassignEnvelopeSenderRoute } from './reassign-envelope-sender';
 import { redistributeEnvelopeRoute } from './redistribute-envelope';
@@ -105,6 +108,11 @@ export const envelopeRouter = router({
     add: addTemplateToEnvelopeRoute,
   },
   find: findEnvelopesRoute,
+  activity: {
+    getLatest: getLatestEnvelopeActivityRoute,
+    getNotifications: getEnvelopeActivityNotificationsRoute,
+    markRead: markEnvelopeActivityReadRoute,
+  },
   auditLog: {
     find: findEnvelopeAuditLogsRoute,
   },

@@ -68,6 +68,7 @@ model User {
   templateFavorites TemplateFavorite[]
   recentEmailMessages EmailMessage[] @relation("RecentEmailMessageOwner")
   emailMessageFavorites EmailMessageFavorite[]
+  envelopeActivityReads EnvelopeActivityRead[]
 
   verificationTokens VerificationToken[]
   apiTokens          ApiToken[]
@@ -576,8 +577,21 @@ model DocumentAuditLog {
   ipAddress String?
 
   envelope Envelope? @relation(fields: [envelopeId], references: [id], onDelete: SetNull)
+  reads EnvelopeActivityRead[]
 
   @@index([envelopeId])
+}
+
+model EnvelopeActivityRead {
+  userId     Int
+  auditLogId String
+  readAt     DateTime @default(now())
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  auditLog DocumentAuditLog @relation(fields: [auditLogId], references: [id], onDelete: Cascade)
+
+  @@id([userId, auditLogId])
+  @@index([auditLogId])
 }
 
 enum DocumentDataType {

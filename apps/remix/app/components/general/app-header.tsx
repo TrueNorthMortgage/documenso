@@ -11,10 +11,12 @@ import { Link, useParams } from 'react-router';
 
 import { AppLogo } from '~/components/general/app-logo';
 import { SelfHostedReturnButton } from '~/components/general/self-hosted-return-button';
+import { useOptionalCurrentTeam } from '~/providers/team';
 
 import { AppCommandMenu } from './app-command-menu';
 import { AppNavDesktop } from './app-nav-desktop';
 import { AppNavMobile } from './app-nav-mobile';
+import { LatestEnvelopeActivity } from './latest-envelope-activity';
 import { MenuSwitcher } from './menu-switcher';
 import { OrgMenuSwitcher } from './org-menu-switcher';
 
@@ -23,7 +25,8 @@ export type HeaderProps = HTMLAttributes<HTMLDivElement>;
 export const Header = ({ className, ...props }: HeaderProps) => {
   const params = useParams();
 
-  const { organisations } = useSession();
+  const { organisations, user } = useSession();
+  const currentTeam = useOptionalCurrentTeam();
 
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const [isHamburgerMenuOpen, setIsHamburgerMenuOpen] = useState(false);
@@ -80,6 +83,15 @@ export const Header = ({ className, ...props }: HeaderProps) => {
             )}
           </Link>
         </Button>
+
+        {currentTeam && (
+          <LatestEnvelopeActivity
+            key={`${user.id}:${currentTeam.id}`}
+            userId={user.id}
+            teamId={currentTeam.id}
+            teamUrl={currentTeam.url}
+          />
+        )}
 
         <div className="md:ml-4">{isPersonalLayout(organisations) ? <MenuSwitcher /> : <OrgMenuSwitcher />}</div>
 
