@@ -1325,6 +1325,10 @@ msgstr "활성 세션"
 msgid "Active Subscriptions"
 msgstr "활성 구독"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Activity"
+msgstr "활동"
+
 #: apps/remix/app/components/dialogs/team-email-add-dialog.tsx
 #: apps/remix/app/components/general/document/document-attachments-popover.tsx
 #: apps/remix/app/components/general/document/embedded-editor-attachment-popover.tsx
@@ -1654,6 +1658,7 @@ msgstr "대비"
 
 #: apps/remix/app/components/general/document/document-status.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 msgid "All"
 msgstr "전체"
@@ -1722,6 +1727,7 @@ msgstr "전체 템플릿"
 
 #: apps/remix/app/components/filters/date-range-filter.tsx
 #: apps/remix/app/components/general/period-selector.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "All Time"
 msgstr "전체 기간"
 
@@ -2941,6 +2947,7 @@ msgstr "시작하려면 여기를 클릭하세요"
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/template/template-page-view-recent-activity.tsx
 #: apps/remix/app/components/tables/settings-public-profile-templates-table.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Click here to retry"
 msgstr "다시 시도하려면 여기를 클릭하세요"
 
@@ -3806,6 +3813,7 @@ msgstr "점선"
 #: apps/remix/app/components/general/document-signing/document-signing-date-field.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-drag-drop.tsx
 #: apps/remix/app/components/tables/settings-security-activity-table.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 #: packages/lib/utils/fields.ts
 #: packages/ui/primitives/document-flow/add-fields.tsx
 #: packages/ui/primitives/document-flow/types.ts
@@ -3831,6 +3839,10 @@ msgstr "날짜 형식"
 #: apps/remix/app/components/dialogs/sign-field-date-dialog.tsx
 msgid "Date is required"
 msgstr "날짜는 필수입니다"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Date range"
+msgstr "날짜 범위"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Date Settings"
@@ -5613,6 +5625,7 @@ msgid "Enterprise"
 msgstr "Enterprise"
 
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Envelope"
 msgstr "봉투"
 
@@ -5767,6 +5780,11 @@ msgstr "파일 업로드 중 오류가 발생했습니다."
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 msgid "Event"
 msgstr "이벤트"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Event type"
+msgstr "이벤트 유형"
 
 #: apps/remix/app/components/dialogs/webhook-test-dialog.tsx
 msgid "Event Type"
@@ -6953,10 +6971,12 @@ msgid "Last 14 days"
 msgstr "최근 14일"
 
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Last 24 hours"
 msgstr "지난 24시간"
 
 #: apps/remix/app/components/general/period-selector.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Last 30 days"
 msgstr "최근 30일"
 
@@ -6965,6 +6985,7 @@ msgid "Last 30 Days"
 msgstr "최근 30일"
 
 #: apps/remix/app/components/general/period-selector.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Last 7 days"
 msgstr "최근 7일"
 
@@ -7020,6 +7041,8 @@ msgstr "지난해"
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Latest activity"
 msgstr "최신 활동"
 
@@ -7200,6 +7223,7 @@ msgstr "템플릿을 로드 중..."
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/email-domains.$id.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Loading..."
 msgstr "로딩 중..."
 
@@ -7885,6 +7909,7 @@ msgstr "공개 프로필 템플릿이 없습니다"
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "No recent activity"
 msgstr "최근 활동 없음"
 
@@ -10157,6 +10182,11 @@ msgstr "조직 이름으로 검색"
 msgid "Search documents..."
 msgstr "문서 검색..."
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Search envelopes"
+msgstr "봉투 검색"
+
 #: apps/remix/app/components/general/folder/folder-cards.tsx
 msgid "Search folders"
 msgstr "폴더 검색"
@@ -10676,11 +10706,6 @@ msgstr "라이선스 키 표시하기"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 msgid "Show templates in your public profile for your audience to sign and get started quickly"
 msgstr "공개 프로필에 템플릿을 표시해, 사용자가 빠르게 서명하고 시작할 수 있도록 하세요"
-
-#. placeholder {0}: items.length
-#: apps/remix/app/components/general/latest-envelope-activity.tsx
-msgid "Showing the latest {0} of {total} events"
-msgstr "전체 {total}개 중 최신 이벤트 {0}개 표시"
 
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Showing up to 15 members. Search to find others."
@@ -13128,6 +13153,7 @@ msgstr "현재 이 조직에 참여할 수 없습니다."
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Unable to load document history"
 msgstr "문서 이력을 불러올 수 없습니다"
 
@@ -13280,6 +13306,12 @@ msgstr "연결 해제"
 #: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Unpin"
 msgstr "고정 해제"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Unread"
+msgstr "읽지 않음"
 
 #: apps/remix/app/routes/_authenticated+/admin+/_layout.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/unsealed-documents._index.tsx
@@ -13727,6 +13759,10 @@ msgstr "보기"
 #: apps/remix/app/routes/_authenticated+/settings+/security._index.tsx
 msgid "View activity"
 msgstr "활동 보기"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "View all activity"
+msgstr "모든 활동 보기"
 
 #: packages/email/templates/confirm-team-email.tsx
 msgid "View all documents sent to and from this email address"

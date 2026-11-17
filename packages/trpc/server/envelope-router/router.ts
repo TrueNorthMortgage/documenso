@@ -9,7 +9,6 @@ import { bulkDeleteEnvelopesRoute } from './bulk-delete-envelopes';
 import { bulkMoveEnvelopesRoute } from './bulk-move-envelopes';
 import { bulkReassignEnvelopeSenderRoute } from './bulk-reassign-envelope-sender';
 import { cancelScheduledSendRoute } from './cancel-scheduled-send';
-import { countNewEnvelopeActivityRoute } from './count-new-envelope-activity';
 import { createEnvelopeRoute } from './create-envelope';
 import { createEnvelopeCorrectionRoute } from './create-envelope-correction';
 import { createEnvelopeItemsRoute } from './create-envelope-items';
@@ -34,6 +33,7 @@ import { findEnvelopesRoute } from './find-envelopes';
 import { findReassignmentCandidatesRoute } from './find-reassignment-candidates';
 import { getEditorEnvelopeRoute } from './get-editor-envelope';
 import { getEnvelopeRoute } from './get-envelope';
+import { getEnvelopeActivityNotificationsRoute } from './get-envelope-activity-notifications';
 import { getEnvelopeItemsRoute } from './get-envelope-items';
 import { getEnvelopeItemsByTokenRoute } from './get-envelope-items-by-token';
 import { getEnvelopesByIdsRoute } from './get-envelopes-by-ids';
@@ -109,7 +109,7 @@ export const envelopeRouter = router({
   find: findEnvelopesRoute,
   activity: {
     getLatest: getLatestEnvelopeActivityRoute,
-    countNew: countNewEnvelopeActivityRoute,
+    getNotifications: getEnvelopeActivityNotificationsRoute,
   },
   auditLog: {
     find: findEnvelopeAuditLogsRoute,

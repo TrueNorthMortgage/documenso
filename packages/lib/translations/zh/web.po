@@ -1325,6 +1325,10 @@ msgstr "活动会话"
 msgid "Active Subscriptions"
 msgstr "有效订阅"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Activity"
+msgstr "活动"
+
 #: apps/remix/app/components/dialogs/team-email-add-dialog.tsx
 #: apps/remix/app/components/general/document/document-attachments-popover.tsx
 #: apps/remix/app/components/general/document/embedded-editor-attachment-popover.tsx
@@ -1654,6 +1658,7 @@ msgstr "对齐"
 
 #: apps/remix/app/components/general/document/document-status.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 msgid "All"
 msgstr "全部"
@@ -1722,6 +1727,7 @@ msgstr "所有模板"
 
 #: apps/remix/app/components/filters/date-range-filter.tsx
 #: apps/remix/app/components/general/period-selector.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "All Time"
 msgstr "全部时间"
 
@@ -2941,6 +2947,7 @@ msgstr "点击此处开始"
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/template/template-page-view-recent-activity.tsx
 #: apps/remix/app/components/tables/settings-public-profile-templates-table.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Click here to retry"
 msgstr "点击此处重试"
 
@@ -3806,6 +3813,7 @@ msgstr "虚线"
 #: apps/remix/app/components/general/document-signing/document-signing-date-field.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-drag-drop.tsx
 #: apps/remix/app/components/tables/settings-security-activity-table.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 #: packages/lib/utils/fields.ts
 #: packages/ui/primitives/document-flow/add-fields.tsx
 #: packages/ui/primitives/document-flow/types.ts
@@ -3831,6 +3839,10 @@ msgstr "日期格式"
 #: apps/remix/app/components/dialogs/sign-field-date-dialog.tsx
 msgid "Date is required"
 msgstr "日期是必需的"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Date range"
+msgstr "日期范围"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Date Settings"
@@ -5613,6 +5625,7 @@ msgid "Enterprise"
 msgstr "企业版"
 
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Envelope"
 msgstr "信封"
 
@@ -5767,6 +5780,11 @@ msgstr "上传文件时出错"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 msgid "Event"
 msgstr "事件"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Event type"
+msgstr "事件类型"
 
 #: apps/remix/app/components/dialogs/webhook-test-dialog.tsx
 msgid "Event Type"
@@ -6953,10 +6971,12 @@ msgid "Last 14 days"
 msgstr "最近 14 天"
 
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Last 24 hours"
 msgstr "过去 24 小时"
 
 #: apps/remix/app/components/general/period-selector.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Last 30 days"
 msgstr "最近 30 天"
 
@@ -6965,6 +6985,7 @@ msgid "Last 30 Days"
 msgstr "最近 30 天"
 
 #: apps/remix/app/components/general/period-selector.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Last 7 days"
 msgstr "最近 7 天"
 
@@ -7020,6 +7041,8 @@ msgstr "去年"
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Latest activity"
 msgstr "最新活动"
 
@@ -7200,6 +7223,7 @@ msgstr "正在加载模板..."
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/email-domains.$id.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Loading..."
 msgstr "正在加载..."
 
@@ -7885,6 +7909,7 @@ msgstr "未找到公开资料模板"
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "No recent activity"
 msgstr "暂无最近活动"
 
@@ -10157,6 +10182,11 @@ msgstr "按组织名称搜索"
 msgid "Search documents..."
 msgstr "搜索文档..."
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Search envelopes"
+msgstr "搜索信封"
+
 #: apps/remix/app/components/general/folder/folder-cards.tsx
 msgid "Search folders"
 msgstr "搜索文件夹"
@@ -10676,11 +10706,6 @@ msgstr "显示许可证密钥"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 msgid "Show templates in your public profile for your audience to sign and get started quickly"
 msgstr "在公开资料中展示模板，方便你的用户快速签署上手"
-
-#. placeholder {0}: items.length
-#: apps/remix/app/components/general/latest-envelope-activity.tsx
-msgid "Showing the latest {0} of {total} events"
-msgstr "显示 {total} 条事件中最新的 {0} 条"
 
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Showing up to 15 members. Search to find others."
@@ -13128,6 +13153,7 @@ msgstr "当前无法加入此组织。"
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Unable to load document history"
 msgstr "无法加载文档历史"
 
@@ -13280,6 +13306,12 @@ msgstr "取消关联"
 #: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Unpin"
 msgstr "取消固定"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Unread"
+msgstr "未读"
 
 #: apps/remix/app/routes/_authenticated+/admin+/_layout.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/unsealed-documents._index.tsx
@@ -13727,6 +13759,10 @@ msgstr "查看"
 #: apps/remix/app/routes/_authenticated+/settings+/security._index.tsx
 msgid "View activity"
 msgstr "查看活动"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "View all activity"
+msgstr "查看所有活动"
 
 #: packages/email/templates/confirm-team-email.tsx
 msgid "View all documents sent to and from this email address"

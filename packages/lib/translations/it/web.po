@@ -1325,6 +1325,10 @@ msgstr "Sessioni attive"
 msgid "Active Subscriptions"
 msgstr "Abbonamenti attivi"
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Activity"
+msgstr "Attività"
+
 #: apps/remix/app/components/dialogs/team-email-add-dialog.tsx
 #: apps/remix/app/components/general/document/document-attachments-popover.tsx
 #: apps/remix/app/components/general/document/embedded-editor-attachment-popover.tsx
@@ -1654,6 +1658,7 @@ msgstr "Allineamento"
 
 #: apps/remix/app/components/general/document/document-status.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 msgid "All"
 msgstr "Tutto"
@@ -1722,6 +1727,7 @@ msgstr "Tutti i modelli"
 
 #: apps/remix/app/components/filters/date-range-filter.tsx
 #: apps/remix/app/components/general/period-selector.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "All Time"
 msgstr "Tutto il tempo"
 
@@ -2941,6 +2947,7 @@ msgstr "Clicca qui per iniziare"
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/template/template-page-view-recent-activity.tsx
 #: apps/remix/app/components/tables/settings-public-profile-templates-table.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Click here to retry"
 msgstr "Clicca qui per riprovare"
 
@@ -3806,6 +3813,7 @@ msgstr "Tratteggiato"
 #: apps/remix/app/components/general/document-signing/document-signing-date-field.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-drag-drop.tsx
 #: apps/remix/app/components/tables/settings-security-activity-table.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 #: packages/lib/utils/fields.ts
 #: packages/ui/primitives/document-flow/add-fields.tsx
 #: packages/ui/primitives/document-flow/types.ts
@@ -3831,6 +3839,10 @@ msgstr "Formato data"
 #: apps/remix/app/components/dialogs/sign-field-date-dialog.tsx
 msgid "Date is required"
 msgstr "La data è obbligatoria"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Date range"
+msgstr "Intervallo di date"
 
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-fields-page.tsx
 msgid "Date Settings"
@@ -5613,6 +5625,7 @@ msgid "Enterprise"
 msgstr "Impresa"
 
 #: apps/remix/app/components/dialogs/envelopes-bulk-reassign-sender-dialog.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Envelope"
 msgstr "Busta"
 
@@ -5767,6 +5780,11 @@ msgstr "Errore durante il caricamento del file"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.webhooks.$id._index.tsx
 msgid "Event"
 msgstr "Evento"
+
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Event type"
+msgstr "Tipo di evento"
 
 #: apps/remix/app/components/dialogs/webhook-test-dialog.tsx
 msgid "Event Type"
@@ -6953,10 +6971,12 @@ msgid "Last 14 days"
 msgstr "Ultimi 14 giorni"
 
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Last 24 hours"
 msgstr "Ultime 24 ore"
 
 #: apps/remix/app/components/general/period-selector.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Last 30 days"
 msgstr "Ultimi 30 giorni"
 
@@ -6965,6 +6985,7 @@ msgid "Last 30 Days"
 msgstr "Ultimi 30 giorni"
 
 #: apps/remix/app/components/general/period-selector.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Last 7 days"
 msgstr "Ultimi 7 giorni"
 
@@ -7020,6 +7041,8 @@ msgstr "Ultimo anno"
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Latest activity"
 msgstr "Ultime attività"
 
@@ -7200,6 +7223,7 @@ msgstr "Caricamento modelli..."
 #: apps/remix/app/components/general/organisation-members-multiselect-combobox.tsx
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/email-domains.$id.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Loading..."
 msgstr "Caricamento in corso..."
 
@@ -7885,6 +7909,7 @@ msgstr "Nessun modello di profilo pubblico trovato"
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "No recent activity"
 msgstr "Nessuna attività recente"
 
@@ -10157,6 +10182,11 @@ msgstr "Cerca per nome organizzazione"
 msgid "Search documents..."
 msgstr "Cerca documenti..."
 
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Search envelopes"
+msgstr "Cerca buste"
+
 #: apps/remix/app/components/general/folder/folder-cards.tsx
 msgid "Search folders"
 msgstr "Cerca cartelle"
@@ -10676,11 +10706,6 @@ msgstr "Mostra chiave di licenza"
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.public-profile.tsx
 msgid "Show templates in your public profile for your audience to sign and get started quickly"
 msgstr "Mostra modelli nel tuo profilo pubblico per il tuo pubblico da firmare e iniziare rapidamente"
-
-#. placeholder {0}: items.length
-#: apps/remix/app/components/general/latest-envelope-activity.tsx
-msgid "Showing the latest {0} of {total} events"
-msgstr "Visualizzazione dei {0} eventi più recenti su {total}"
 
 #: apps/remix/app/components/general/reassignment-member-combobox.tsx
 msgid "Showing up to 15 members. Search to find others."
@@ -13128,6 +13153,7 @@ msgstr "Impossibile unirsi a questa organizzazione in questo momento."
 
 #: apps/remix/app/components/general/document/document-page-view-recent-activity.tsx
 #: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
 msgid "Unable to load document history"
 msgstr "Impossibile caricare la cronologia del documento"
 
@@ -13280,6 +13306,12 @@ msgstr "Scollega"
 #: apps/remix/app/components/general/folder/folder-management-table.tsx
 msgid "Unpin"
 msgstr "Rimuovi"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+#: apps/remix/app/routes/_authenticated+/t.$teamUrl+/activity.tsx
+msgid "Unread"
+msgstr "Non letto"
 
 #: apps/remix/app/routes/_authenticated+/admin+/_layout.tsx
 #: apps/remix/app/routes/_authenticated+/admin+/unsealed-documents._index.tsx
@@ -13727,6 +13759,10 @@ msgstr "Visualizza"
 #: apps/remix/app/routes/_authenticated+/settings+/security._index.tsx
 msgid "View activity"
 msgstr "Visualizza attività"
+
+#: apps/remix/app/components/general/latest-envelope-activity.tsx
+msgid "View all activity"
+msgstr "Visualizza tutte le attività"
 
 #: packages/email/templates/confirm-team-email.tsx
 msgid "View all documents sent to and from this email address"

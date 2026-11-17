@@ -10,7 +10,5 @@ export const getLatestEnvelopeActivityRoute = authenticatedProcedure
   .input(ZGetLatestEnvelopeActivityRequestSchema)
   .output(ZGetLatestEnvelopeActivityResponseSchema)
   .query(async ({ ctx, input }) => {
-    const { teamId, category } = input;
-
-    return await getLatestEnvelopeActivity({ userId: ctx.user.id, teamId, category });
+    return await getLatestEnvelopeActivity({ ...input, userId: ctx.user.id, userEmail: ctx.user.email });
   });

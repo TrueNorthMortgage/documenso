@@ -18,8 +18,10 @@ import {
   SendIcon,
 } from 'lucide-react';
 import { DateTime } from 'luxon';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router';
+
+import { useEnvelopeActivityReadState } from '~/hooks/use-envelope-activity-read-state';
 
 type LatestEnvelopeActivityProps = {
   userId: number;
@@ -29,7 +31,7 @@ type LatestEnvelopeActivityProps = {
 
 const ACTIVITY_REFRESH_INTERVAL_MS = 30_000;
 
-const activityCategories = {
+export const activityCategories = {
   sent: { label: msg`Sent`, Icon: SendIcon },
   opened: { label: msg`Opened`, Icon: EyeIcon },
   reminder: { label: msg`Reminders`, Icon: MailIcon },
@@ -43,60 +45,21 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
   const { t } = useLinguiMacro();
   const [isOpen, setIsOpen] = useState(false);
   const [category, setCategory] = useState<LatestEnvelopeActivityCategory>();
-  const [seenThrough, setSeenThrough] = useState<Date | null>();
+  const { readActivity, markRead } = useEnvelopeActivityReadState({ userId, teamId });
   const isFollowingActivityLink = useRef(false);
-  const storageKey = `latest-envelope-activity:${userId}:${teamId}`;
 
-  useEffect(() => {
-    const updateSeenThrough = (value: string | null) => {
-      const date = value ? new Date(value) : null;
-
-      setSeenThrough(date && Number.isFinite(date.getTime()) ? date : null);
-    };
-
-    try {
-      updateSeenThrough(window.localStorage.getItem(storageKey));
-    } catch {
-      setSeenThrough(null);
-    }
-
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === storageKey) {
-        updateSeenThrough(event.newValue);
-      }
-    };
-
-    window.addEventListener('storage', onStorage);
-
-    return () => window.removeEventListener('storage', onStorage);
-  }, [storageKey]);
-
-  const { data: badge } = trpc.envelope.activity.countNew.useQuery(
-    { teamId, seenThrough: seenThrough ?? undefined },
-    { enabled: seenThrough !== undefined && !isOpen, refetchInterval: ACTIVITY_REFRESH_INTERVAL_MS },
+  const { data: notifications } = trpc.envelope.activity.getNotifications.useQuery(
+    { teamId },
+    { enabled: readActivity !== undefined, refetchInterval: ACTIVITY_REFRESH_INTERVAL_MS },
   );
 
   const { data, isError, isPlaceholderData, refetch } = trpc.envelope.activity.getLatest.useQuery(
-    { teamId, category },
+    { teamId, category, page: 1, perPage: 10 },
     { enabled: isOpen, placeholderData: keepPreviousData, refetchInterval: ACTIVITY_REFRESH_INTERVAL_MS },
   );
 
-  const asOf = isPlaceholderData ? undefined : data?.asOf;
+  const unreadIds = new Set(notifications?.ids.filter((id) => !readActivity?.[id]));
   const items = isPlaceholderData ? undefined : data?.items;
-
-  useEffect(() => {
-    if (!isOpen || !asOf || seenThrough === undefined || (seenThrough && asOf <= seenThrough)) {
-      return;
-    }
-
-    setSeenThrough(asOf);
-
-    try {
-      window.localStorage.setItem(storageKey, asOf.toISOString());
-    } catch {
-      // Continue to track activity in this tab when browser storage is unavailable.
-    }
-  }, [asOf, isOpen, seenThrough, storageKey]);
 
   const onOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -106,11 +69,12 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
     }
   };
 
-  const newCount = !isOpen ? (badge?.count ?? 0) : 0;
+  const selectCategory = (nextCategory: LatestEnvelopeActivityCategory | undefined) => {
+    setCategory(nextCategory);
+  };
+
+  const newCount = unreadIds.size;
   const badgeText = newCount > 99 ? '99+' : String(newCount);
-  const total =
-    data?.summary.reduce((count, entry) => count + (!category || entry.category === category ? entry.count : 0), 0) ??
-    0;
 
   return (
     <Popover open={isOpen} onOpenChange={onOpenChange}>
@@ -145,7 +109,7 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
             isFollowingActivityLink.current = false;
           }
         }}
-        className="z-[70] flex max-h-[var(--radix-popover-content-available-height)] w-[min(26rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-lg p-0"
+        className="z-[70] flex max-h-[var(--radix-popover-content-available-height)] w-[min(34rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-lg p-0"
       >
         <div className="border-b p-4">
           <div className="flex items-center justify-between gap-2">
@@ -159,7 +123,7 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
 
           {(data?.summary ?? []).some(({ count }) => count > 0) && (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              <ActivityFilter isSelected={!category} onClick={() => setCategory(undefined)}>
+              <ActivityFilter isSelected={!category} onClick={() => selectCategory(undefined)}>
                 <Trans>All</Trans>
               </ActivityFilter>
 
@@ -169,7 +133,7 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
                   <ActivityFilter
                     key={itemCategory}
                     isSelected={category === itemCategory}
-                    onClick={() => setCategory(category === itemCategory ? undefined : itemCategory)}
+                    onClick={() => selectCategory(category === itemCategory ? undefined : itemCategory)}
                   >
                     <span className="tabular-nums">{count}</span>
                     {_(activityCategories[itemCategory].label)}
@@ -179,7 +143,7 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
           )}
         </div>
 
-        <div className="min-h-0 overflow-y-auto">
+        <div key={category ?? 'all'} className="min-h-0 overflow-y-auto">
           {isError && (
             <div className="px-4 py-6 text-center text-muted-foreground text-sm">
               <p>
@@ -207,14 +171,20 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
             <ul className="divide-y">
               {items.map(({ auditLog, category, envelopeTitle }) => {
                 const { Icon } = activityCategories[category];
+                const isUnread = unreadIds.has(auditLog.id);
                 const createdAt = DateTime.fromJSDate(auditLog.createdAt).setLocale(i18n.locale);
 
                 return (
                   <li key={auditLog.id}>
                     <Link
                       to={`/t/${teamUrl}/documents/${auditLog.envelopeId}#recent-activity`}
-                      className="flex items-start gap-2.5 px-4 py-3 hover:bg-muted focus-visible:bg-muted"
+                      className={cn(
+                        'flex items-start gap-2.5 px-4 py-3 hover:bg-muted focus-visible:bg-muted',
+                        isUnread && 'bg-primary/10',
+                      )}
                       onClick={(event) => {
+                        markRead(auditLog.id);
+
                         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
                           return;
                         }
@@ -230,7 +200,16 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
                         })}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-sm">{envelopeTitle}</p>
+                        <div className="flex items-center gap-2">
+                          {isUnread && (
+                            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary">
+                              <span className="sr-only">
+                                <Trans>Unread</Trans>
+                              </span>
+                            </span>
+                          )}
+                          <p className="truncate font-medium text-sm">{envelopeTitle}</p>
+                        </div>
                         <p className="break-words text-muted-foreground text-xs">
                           {formatDocumentAuditLogAction(i18n, auditLog, userId).description}
                         </p>
@@ -250,13 +229,19 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
           )}
         </div>
 
-        {items && items.length > 0 && total > items.length && (
-          <div className="border-t px-4 py-2 text-muted-foreground text-xs">
-            <Trans>
-              Showing the latest {items.length} of {total} events
-            </Trans>
-          </div>
-        )}
+        <div className="border-t p-2">
+          <Button asChild variant="ghost" className="w-full">
+            <Link
+              to={`/t/${teamUrl}/activity${category ? `?category=${category}` : ''}`}
+              onClick={() => {
+                isFollowingActivityLink.current = true;
+                onOpenChange(false);
+              }}
+            >
+              <Trans>View all activity</Trans>
+            </Link>
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
