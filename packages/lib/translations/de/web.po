@@ -8890,6 +8890,8 @@ msgstr "Bitte versuchen Sie es erneut und stellen Sie sicher, dass Sie die korre
 #: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
 #: apps/remix/app/components/general/template/template-favorite-button.tsx
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
 msgid "Please try again."
 msgstr "Bitte versuchen Sie es erneut."
@@ -11147,6 +11149,8 @@ msgstr "Beim Hochladen dieser Datei ist etwas schiefgelaufen"
 msgid "Something went wrong!"
 msgstr "Etwas ist schiefgelaufen!"
 
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
 #: packages/ui/primitives/data-table.tsx
 msgid "Something went wrong."
 msgstr "Etwas ist schief gelaufen."

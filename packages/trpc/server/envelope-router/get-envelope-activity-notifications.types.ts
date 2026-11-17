@@ -5,5 +5,5 @@ export const ZGetEnvelopeActivityNotificationsRequestSchema = z.object({
 });
 
 export const ZGetEnvelopeActivityNotificationsResponseSchema = z.object({
-  ids: z.string().array(),
+  count: z.number(),
 });

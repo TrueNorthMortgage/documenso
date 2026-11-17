@@ -8890,6 +8890,8 @@ msgstr "Por favor, intenta de nuevo y asegúrate de ingresar la dirección de co
 #: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
 #: apps/remix/app/components/general/template/template-favorite-button.tsx
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
 msgid "Please try again."
 msgstr "Por favor inténtalo de nuevo."
@@ -11147,6 +11149,8 @@ msgstr "Algo salió mal al cargar este archivo"
 msgid "Something went wrong!"
 msgstr "¡Algo salió mal!"
 
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
 #: packages/ui/primitives/data-table.tsx
 msgid "Something went wrong."
 msgstr "Algo salió mal."

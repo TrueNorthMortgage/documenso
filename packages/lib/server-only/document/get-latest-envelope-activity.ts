@@ -61,15 +61,15 @@ export const getEnvelopeActivityNotifications = async ({
   teamId,
 }: ActivityScope & { userEmail: string }) => {
   const where = await getActivityScope({ userId, teamId });
-  const notifications = await prisma.documentAuditLog.findMany({
+  const count = await prisma.documentAuditLog.count({
     where: {
       ...where,
       ...getNotificationFilter({ userId, userEmail }),
+      reads: { none: { userId } },
     },
-    select: { id: true },
   });
 
-  return { ids: notifications.map(({ id }) => id) };
+  return { count };
 };
 
 export const getLatestEnvelopeActivity = async ({
@@ -81,7 +81,6 @@ export const getLatestEnvelopeActivity = async ({
   period,
   query,
   unreadOnly,
-  readIds,
   userEmail,
 }: ActivityScope & {
   category?: LatestEnvelopeActivityCategory;
@@ -90,14 +89,13 @@ export const getLatestEnvelopeActivity = async ({
   period: 'day' | 'week' | 'month' | 'all';
   query: string;
   unreadOnly: boolean;
-  readIds: string[];
   userEmail: string;
 }) => {
   const where = {
     ...(await getActivityScope({ userId, teamId, period, query })),
     OR: Object.values(activityFilters),
     AND: unreadOnly ? getNotificationFilter({ userId, userEmail }) : undefined,
-    id: unreadOnly ? { notIn: readIds } : undefined,
+    reads: unreadOnly ? { none: { userId } } : undefined,
   } satisfies Prisma.DocumentAuditLogWhereInput;
   const filteredWhere = {
     ...where,
@@ -130,6 +128,7 @@ export const getLatestEnvelopeActivity = async ({
         email: true,
         userId: true,
         envelope: { select: { title: true } },
+        reads: { where: { userId }, select: { userId: true }, take: 1 },
       },
     }),
   ]);
@@ -142,7 +141,7 @@ export const getLatestEnvelopeActivity = async ({
     ),
   }));
 
-  const items = entries.flatMap(({ envelope, ...entry }) => {
+  const items = entries.flatMap(({ envelope, reads, ...entry }) => {
     const category = categoryByLogType[entry.type];
     const auditLog = ZDocumentAuditLogSchema.safeParse(entry);
 
@@ -155,6 +154,7 @@ export const getLatestEnvelopeActivity = async ({
         envelopeTitle: envelope.title,
         category,
         auditLog: auditLog.data,
+        isRead: reads.length > 0,
         isNotification:
           category === 'deliveryFailure' ||
           ((entry.type === DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_RECIPIENT_COMPLETED || category === 'declined') &&

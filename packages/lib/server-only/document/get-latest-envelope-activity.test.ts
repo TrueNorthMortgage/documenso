@@ -31,7 +31,6 @@ const options = {
   period: 'day' as const,
   query: '',
   unreadOnly: false,
-  readIds: [],
 };
 
 describe('latest envelope activity', () => {
@@ -149,13 +148,18 @@ describe('latest envelope activity', () => {
         email: actor,
         userId: null,
         envelope: { title: 'Envelope' },
+        reads: [],
       },
     ]);
 
     const result = await getLatestEnvelopeActivity(options);
 
     expect(result.items).toHaveLength(1);
-    expect(result.items[0]).toMatchObject({ isNotification: notification, auditLog: { id: 'event', type } });
+    expect(result.items[0]).toMatchObject({
+      isRead: false,
+      isNotification: notification,
+      auditLog: { id: 'event', type },
+    });
   });
 
   it('recognizes a self-action by user ID even if its actor email is missing', async () => {
@@ -170,10 +174,30 @@ describe('latest envelope activity', () => {
         email: null,
         userId: owner.userId,
         envelope: { title: 'Envelope' },
+        reads: [],
       },
     ]);
 
     expect((await getLatestEnvelopeActivity(options)).items[0].isNotification).toBe(false);
+  });
+
+  it('returns a persisted read marker without changing the event classification', async () => {
+    mocks.findMany.mockResolvedValue([
+      {
+        id: 'read-event',
+        envelopeId: 'envelope',
+        createdAt: new Date(),
+        type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_RECIPIENT_COMPLETED,
+        data: { ...recipientData, actionAuth: [] },
+        name: null,
+        email: recipientData.recipientEmail,
+        userId: null,
+        envelope: { title: 'Envelope' },
+        reads: [{ userId: owner.userId }],
+      },
+    ]);
+
+    expect((await getLatestEnvelopeActivity(options)).items[0]).toMatchObject({ isRead: true, isNotification: true });
   });
 
   it.each(['feed', 'badge'])('rejects inaccessible teams before querying the %s', async (target) => {

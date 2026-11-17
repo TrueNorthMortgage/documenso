@@ -8890,6 +8890,8 @@ msgstr "もう一度お試しいただき、正しいメールアドレスが入
 #: apps/remix/app/components/dialogs/envelope-email-message-picker.tsx
 #: apps/remix/app/components/general/envelope-editor/envelope-editor-upload-page.tsx
 #: apps/remix/app/components/general/template/template-favorite-button.tsx
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
 #: apps/remix/app/routes/_authenticated+/t.$teamUrl+/settings.email-templates.tsx
 msgid "Please try again."
 msgstr "もう一度お試しください。"
@@ -11147,6 +11149,8 @@ msgstr "ファイルのアップロード中に問題が発生しました"
 msgid "Something went wrong!"
 msgstr "問題が発生しました。"
 
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
+#: apps/remix/app/hooks/use-envelope-activity-read-state.ts
 #: packages/ui/primitives/data-table.tsx
 msgid "Something went wrong."
 msgstr "問題が発生しました。"

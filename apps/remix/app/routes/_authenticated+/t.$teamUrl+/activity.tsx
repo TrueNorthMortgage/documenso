@@ -35,7 +35,7 @@ const TeamActivityPage = ({ teamId, teamUrl }: { teamId: number; teamUrl: string
   const { t } = useLinguiMacro();
   const { user } = useSession();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { readActivity, markRead } = useEnvelopeActivityReadState({ userId: user.id, teamId });
+  const { isReady, markRead } = useEnvelopeActivityReadState({ userId: user.id, teamId });
   const category = ZLatestEnvelopeActivityCategorySchema.optional()
     .catch(undefined)
     .parse(searchParams.get('category') ?? undefined);
@@ -64,9 +64,8 @@ const TeamActivityPage = ({ teamId, teamUrl }: { teamId: number; teamUrl: string
       perPage,
       query,
       unreadOnly,
-      readIds: unreadOnly ? Object.keys(readActivity ?? {}) : [],
     },
-    { enabled: readActivity !== undefined, refetchInterval: 30_000 },
+    { enabled: isReady, refetchInterval: 30_000 },
   );
 
   const updateFilter = (name: string, value: string) => {
@@ -205,7 +204,7 @@ const TeamActivityPage = ({ teamId, teamUrl }: { teamId: number; teamUrl: string
                 </TableCell>
               </TableRow>
             )}
-            {(isLoading || readActivity === undefined) && (
+            {(isLoading || !isReady) && (
               <TableRow>
                 <TableCell colSpan={4} className="py-8 text-center">
                   <Trans>Loading...</Trans>
@@ -219,8 +218,8 @@ const TeamActivityPage = ({ teamId, teamUrl }: { teamId: number; teamUrl: string
                 </TableCell>
               </TableRow>
             )}
-            {data?.items.map(({ auditLog, category, envelopeTitle, isNotification }) => {
-              const isUnread = isNotification && !readActivity?.[auditLog.id];
+            {data?.items.map(({ auditLog, category, envelopeTitle, isNotification, isRead }) => {
+              const isUnread = isNotification && !isRead;
               const { Icon, label } = activityCategories[category];
 
               return (

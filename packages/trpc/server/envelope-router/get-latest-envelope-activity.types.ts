@@ -10,7 +10,6 @@ export const ZGetLatestEnvelopeActivityRequestSchema = z.object({
   period: z.enum(['day', 'week', 'month', 'all']).default('day'),
   query: z.string().max(200).default(''),
   unreadOnly: z.boolean().default(false),
-  readIds: z.string().array().default([]),
 });
 
 export const ZGetLatestEnvelopeActivityResponseSchema = z.object({
@@ -28,6 +27,7 @@ export const ZGetLatestEnvelopeActivityResponseSchema = z.object({
       category: ZLatestEnvelopeActivityCategorySchema,
       auditLog: ZDocumentAuditLogSchema,
       isNotification: z.boolean(),
+      isRead: z.boolean(),
     }),
   ),
 });

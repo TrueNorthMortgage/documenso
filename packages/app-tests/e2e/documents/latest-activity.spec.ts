@@ -7,6 +7,7 @@ import { expect, test } from '@playwright/test';
 import { EmailDeliveryStatus, type Prisma } from '@prisma/client';
 
 import { apiSignin } from '../fixtures/authentication';
+import { postTrpc } from '../fixtures/trpc';
 
 const recipientData = {
   recipientEmail: 'signer@example.invalid',
@@ -84,6 +85,7 @@ test('popup fetches the latest ten matching events and links to the standard pag
 
 test('counts actionable updates once and preserves per-event read state across the popup, page, and reloads', async ({
   page,
+  browser,
 }) => {
   const { user, team } = await seedUser();
   const envelope = await seedBlankDocument(user, team.id, { internalVersion: 2, key: 'Unread activity' });
@@ -189,14 +191,25 @@ test('counts actionable updates once and preserves per-event read state across t
   await expect(page.getByText('Preview email bounced for bounced@example.invalid', { exact: true })).toHaveCount(0);
 
   expect(
-    await page.evaluate(
-      ({ userId, teamId, eventId }) => {
-        const state = JSON.parse(localStorage.getItem(`read-envelope-activity:${userId}:${teamId}`) ?? '{}');
-        return typeof state[eventId];
-      },
-      { userId: user.id, teamId: team.id, eventId: signature.id },
-    ),
-  ).toBe('number');
+    await prisma.envelopeActivityRead.count({
+      where: { userId: user.id, auditLogId: signature.id },
+    }),
+  ).toBe(1);
+
+  const secondDevice = await browser.newContext();
+  try {
+    const otherPage = await secondDevice.newPage();
+    await apiSignin({ page: otherPage, email: user.email, redirectPath: `/t/${team.url}/activity?unread=true` });
+    await expect(otherPage.getByRole('button', { name: /^Latest activity/ })).toHaveAccessibleName(
+      'Latest activity (4 new)',
+    );
+    await expect(otherPage.getByTestId('data-table-count')).toHaveText('Showing 4 results.');
+    expect(
+      await otherPage.evaluate((key) => localStorage.getItem(key), `read-envelope-activity:${user.id}:${team.id}`),
+    ).toBeNull();
+  } finally {
+    await secondDevice.close();
+  }
 });
 
 test('date ranges and envelope search keep activity scoped to the selected owner and team', async ({ page }) => {
@@ -243,4 +256,81 @@ test('date ranges and envelope search keep activity scoped to the selected owner
   await expect(page.getByRole('heading', { name: 'Recent activity', exact: true })).toBeVisible();
   await page.goBack();
   await expect(page.getByText('No recent activity', { exact: true })).toBeVisible();
+});
+
+test('imports older browser read markers in bounded batches and retains them after a failed import', async ({
+  page,
+}) => {
+  const { user, team } = await seedUser();
+  const envelope = await seedBlankDocument(user, team.id, { internalVersion: 2, key: 'Legacy read markers' });
+  const oldDate = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+  const eventIds = Array.from({ length: 501 }, (_, index) => `legacy-${envelope.id}-${index}`);
+  await prisma.documentAuditLog.createMany({
+    data: eventIds.map((id) => ({
+      id,
+      envelopeId: envelope.id,
+      createdAt: oldDate,
+      type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_RECIPIENT_COMPLETED,
+      data: { ...recipientData, actionAuth: [] },
+      email: recipientData.recipientEmail,
+    })),
+  });
+
+  const foreign = await seedUser();
+  const foreignEnvelope = await seedBlankDocument(foreign.user, foreign.team.id, { internalVersion: 2 });
+  const foreignEvent = await prisma.documentAuditLog.create({
+    data: { envelopeId: foreignEnvelope.id, type: DOCUMENT_AUDIT_LOG_TYPE.DOCUMENT_SENT, data: {} },
+  });
+
+  await apiSignin({ page, email: user.email, redirectPath: `/t/${team.url}/activity?period=all&unread=true` });
+  await expect(page.getByRole('row').filter({ hasText: envelope.title }).first()).toBeVisible();
+  const storageKey = `read-envelope-activity:${user.id}:${team.id}`;
+  await page.evaluate(
+    ({ storageKey, eventIds, readAt }) => {
+      localStorage.setItem(storageKey, JSON.stringify(Object.fromEntries(eventIds.map((id) => [id, readAt]))));
+    },
+    { storageKey, eventIds: [...eventIds, foreignEvent.id], readAt: oldDate.getTime() },
+  );
+
+  await page.route('**/api/trpc/**', async (route) => {
+    if (route.request().url().includes('envelope.activity.markRead')) {
+      await route.fulfill({ status: 503, body: 'Temporary import failure' });
+    } else {
+      await route.continue();
+    }
+  });
+  await page.reload();
+  await expect(page.getByText('Something went wrong.', { exact: true }).first()).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), storageKey)).not.toBeNull();
+
+  await page.unroute('**/api/trpc/**');
+  const batchSizes: number[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('envelope.activity.markRead')) {
+      const payload = request.postDataJSON();
+      const operations = payload.json ? [payload] : Object.values(payload);
+      for (const operation of operations as Array<{ json: { eventIds: string[] } }>) {
+        batchSizes.push(operation.json.eventIds.length);
+      }
+    }
+  });
+  await page.reload();
+  await expect(page.getByText('No recent activity', { exact: true })).toBeVisible();
+  await expect.poll(() => prisma.envelopeActivityRead.count({ where: { userId: user.id } })).toBe(501);
+  expect(batchSizes.length).toBeGreaterThanOrEqual(6);
+  expect(batchSizes.every((size) => size > 0 && size <= 100)).toBe(true);
+  expect(await page.evaluate((key) => localStorage.getItem(key), storageKey)).toBeNull();
+  expect(await prisma.envelopeActivityRead.count({ where: { userId: user.id, auditLogId: foreignEvent.id } })).toBe(0);
+
+  const oversized = await postTrpc(page, team.id, 'envelope.activity.markRead', {
+    teamId: team.id,
+    eventIds: eventIds.slice(0, 101),
+  });
+  expect(oversized.status()).toBe(400);
+  const repeated = await postTrpc(page, team.id, 'envelope.activity.markRead', {
+    teamId: team.id,
+    eventIds: [eventIds[0], eventIds[0]],
+  });
+  expect(repeated.ok()).toBe(true);
+  expect(await prisma.envelopeActivityRead.count({ where: { userId: user.id } })).toBe(501);
 });

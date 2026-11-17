@@ -39,6 +39,7 @@ import { getEnvelopeItemsByTokenRoute } from './get-envelope-items-by-token';
 import { getEnvelopesByIdsRoute } from './get-envelopes-by-ids';
 import { getLatestEnvelopeActivityRoute } from './get-latest-envelope-activity';
 import { getSharedEnvelopePreviewRoute } from './get-shared-envelope-preview';
+import { markEnvelopeActivityReadRoute } from './mark-envelope-activity-read';
 import { pendingPreparationRoute } from './pending-preparation';
 import { reassignEnvelopeSenderRoute } from './reassign-envelope-sender';
 import { redistributeEnvelopeRoute } from './redistribute-envelope';
@@ -110,6 +111,7 @@ export const envelopeRouter = router({
   activity: {
     getLatest: getLatestEnvelopeActivityRoute,
     getNotifications: getEnvelopeActivityNotificationsRoute,
+    markRead: markEnvelopeActivityReadRoute,
   },
   auditLog: {
     find: findEnvelopeAuditLogsRoute,

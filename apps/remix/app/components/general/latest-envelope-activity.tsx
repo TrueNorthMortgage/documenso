@@ -45,20 +45,19 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
   const { t } = useLinguiMacro();
   const [isOpen, setIsOpen] = useState(false);
   const [category, setCategory] = useState<LatestEnvelopeActivityCategory>();
-  const { readActivity, markRead } = useEnvelopeActivityReadState({ userId, teamId });
+  const { isReady, markRead } = useEnvelopeActivityReadState({ userId, teamId });
   const isFollowingActivityLink = useRef(false);
 
   const { data: notifications } = trpc.envelope.activity.getNotifications.useQuery(
     { teamId },
-    { enabled: readActivity !== undefined, refetchInterval: ACTIVITY_REFRESH_INTERVAL_MS },
+    { enabled: isReady, refetchInterval: ACTIVITY_REFRESH_INTERVAL_MS },
   );
 
   const { data, isError, isPlaceholderData, refetch } = trpc.envelope.activity.getLatest.useQuery(
     { teamId, category, page: 1, perPage: 10 },
-    { enabled: isOpen, placeholderData: keepPreviousData, refetchInterval: ACTIVITY_REFRESH_INTERVAL_MS },
+    { enabled: isOpen && isReady, placeholderData: keepPreviousData, refetchInterval: ACTIVITY_REFRESH_INTERVAL_MS },
   );
 
-  const unreadIds = new Set(notifications?.ids.filter((id) => !readActivity?.[id]));
   const items = isPlaceholderData ? undefined : data?.items;
 
   const onOpenChange = (open: boolean) => {
@@ -73,7 +72,7 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
     setCategory(nextCategory);
   };
 
-  const newCount = unreadIds.size;
+  const newCount = isReady ? (notifications?.count ?? 0) : 0;
   const badgeText = newCount > 99 ? '99+' : String(newCount);
 
   return (
@@ -169,9 +168,9 @@ export const LatestEnvelopeActivity = ({ userId, teamId, teamUrl }: LatestEnvelo
 
           {items && items.length > 0 && (
             <ul className="divide-y">
-              {items.map(({ auditLog, category, envelopeTitle }) => {
+              {items.map(({ auditLog, category, envelopeTitle, isNotification, isRead }) => {
                 const { Icon } = activityCategories[category];
-                const isUnread = unreadIds.has(auditLog.id);
+                const isUnread = isNotification && !isRead;
                 const createdAt = DateTime.fromJSDate(auditLog.createdAt).setLocale(i18n.locale);
 
                 return (
