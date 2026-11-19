@@ -1,5 +1,6 @@
 import { getEnvelopePreview } from '@documenso/lib/server-only/envelope/envelope-preview';
 import { Trans } from '@lingui/react/macro';
+import { Fragment } from 'react';
 
 import { AppLogo } from '~/components/general/app-logo';
 
@@ -33,39 +34,38 @@ export default function EnvelopePreview({ loaderData, params }: Route.ComponentP
       <main className="min-h-screen bg-muted/30 px-4 py-6 print:hidden">
         <header className="mx-auto mb-6 flex max-w-3xl flex-col items-start gap-4">
           <AppLogo className="h-6 w-auto" />
-          {preview && (
-            <div>
-              <p className="text-muted-foreground text-sm">
-                <Trans>Document preview</Trans>
-              </p>
-              <h1 className="break-words font-semibold text-xl">{preview.title}</h1>
-            </div>
-          )}
+          {preview && <PreviewDocumentHeading title={preview.title} isPageHeading />}
         </header>
 
         {preview ? (
           <div className="mx-auto grid max-w-3xl gap-5">
             {preview.pages.map((page, index) => (
-              <figure
-                key={page.position}
-                className="select-none space-y-2 [-webkit-touch-callout:none]"
-                onContextMenu={(event) => event.preventDefault()}
-              >
-                <img
-                  src={`/preview-page/${params.token}/${page.position}?v=${preview.revisionHash}${emailAttemptId ? `&email=${emailAttemptId}` : ''}`}
-                  width={page.width}
-                  height={page.height}
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                  draggable={false}
-                  alt={`${page.title} — ${page.number}`}
-                  className="pointer-events-none h-auto w-full rounded-md border bg-white"
-                />
-                <figcaption className="text-center text-muted-foreground text-sm">
-                  <Trans>
-                    {page.title} · Page {page.number}
-                  </Trans>
-                </figcaption>
-              </figure>
+              <Fragment key={page.position}>
+                {index > 0 && page.number === 1 && (
+                  <header className="mt-6">
+                    <PreviewDocumentHeading title={page.title} />
+                  </header>
+                )}
+                <figure
+                  className="select-none space-y-2 [-webkit-touch-callout:none]"
+                  onContextMenu={(event) => event.preventDefault()}
+                >
+                  <img
+                    src={`/preview-page/${params.token}/${page.position}?v=${preview.revisionHash}${emailAttemptId ? `&email=${emailAttemptId}` : ''}`}
+                    width={page.width}
+                    height={page.height}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    draggable={false}
+                    alt={`${page.title} — ${page.number}`}
+                    className="pointer-events-none h-auto w-full rounded-md border bg-white"
+                  />
+                  <figcaption className="text-center text-muted-foreground text-sm">
+                    <Trans>
+                      {page.title} · Page {page.number}
+                    </Trans>
+                  </figcaption>
+                </figure>
+              </Fragment>
             ))}
           </div>
         ) : (
@@ -82,3 +82,18 @@ export default function EnvelopePreview({ loaderData, params }: Route.ComponentP
     </>
   );
 }
+
+const PreviewDocumentHeading = ({ title, isPageHeading = false }: { title: string; isPageHeading?: boolean }) => {
+  const Heading = isPageHeading ? 'h1' : 'h2';
+
+  return (
+    <div>
+      {isPageHeading && (
+        <p className="text-muted-foreground text-sm">
+          <Trans>Document preview</Trans>
+        </p>
+      )}
+      <Heading className="break-words font-semibold text-xl">{title}</Heading>
+    </div>
+  );
+};
