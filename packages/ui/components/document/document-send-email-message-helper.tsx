@@ -9,6 +9,10 @@ export const DocumentSendEmailMessageHelper = () => {
 
       <ul className="mt-2 flex list-inside list-disc flex-col gap-y-2 text-sm">
         <li className="text-muted-foreground">
+          <code className="rounded bg-muted-foreground/20 p-1 text-muted-foreground text-sm">{'{sender.name}'}</code> -{' '}
+          <Trans>The sender's name</Trans>
+        </li>
+        <li className="text-muted-foreground">
           <code className="rounded bg-muted-foreground/20 p-1 text-muted-foreground text-sm">{'{signer.name}'}</code> -{' '}
           <Trans>The signer's name</Trans>
         </li>

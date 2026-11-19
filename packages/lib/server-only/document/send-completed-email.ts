@@ -207,6 +207,7 @@ export const sendCompletedEmail = async ({ id, requestMetadata }: SendDocumentOp
   await Promise.all(
     recipientsToNotify.map(async (recipient) => {
       const customEmailTemplate = {
+        'sender.name': owner.name ?? '',
         'signer.name': recipient.name,
         'signer.email': recipient.email,
         'document.name': envelope.title,

@@ -155,6 +155,7 @@ export const run = async ({ payload, io }: { payload: TSendSigningEmailJobDefini
   }
 
   const customEmailTemplate = {
+    'sender.name': user.name ?? '',
     'signer.name': name,
     'signer.email': email,
     'document.name': envelope.title,

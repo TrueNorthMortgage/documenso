@@ -11,6 +11,7 @@ import { createPersonalEmailTemplateRoute } from './create-personal-email-templa
 import { createTeamRoute } from './create-team';
 import { createTeamGroupsRoute } from './create-team-groups';
 import { createTeamMembersRoute } from './create-team-members';
+import { deletePersonalEmailMessageRoute } from './delete-personal-email-message';
 import { deleteTeamRoute } from './delete-team';
 import { deleteTeamGroupRoute } from './delete-team-group';
 import { deleteTeamMemberRoute } from './delete-team-member';
@@ -57,6 +58,7 @@ export const teamRouter = router({
     find: findEmailMessagesRoute,
     create: createEmailTemplateRoute,
     createPersonal: createPersonalEmailTemplateRoute,
+    deletePersonal: deletePersonalEmailMessageRoute,
     update: updateEmailTemplateRoute,
     updateFavorite: updateEmailMessageFavoriteRoute,
   },
