@@ -152,6 +152,7 @@ export const run = async ({ payload, io }: { payload: TProcessSigningReminderJob
   }
 
   const customEmailTemplate = {
+    'sender.name': envelope.user.name ?? '',
     'signer.name': recipient.name,
     'signer.email': recipient.email,
     'document.name': envelope.title,

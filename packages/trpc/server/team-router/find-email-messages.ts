@@ -7,7 +7,7 @@ import { ZFindEmailMessagesRequestSchema } from './find-email-messages.types';
 export const findEmailMessagesRoute = authenticatedProcedure
   .input(ZFindEmailMessagesRequestSchema)
   .query(async ({ input, ctx }) => {
-    const { teamId, query, teamOnly } = input;
+    const { teamId, query, teamOnly, limit } = input;
     const userId = ctx.user.id;
 
     await getTeamById({ teamId, userId });
@@ -43,11 +43,13 @@ export const findEmailMessagesRoute = authenticatedProcedure
         },
         select,
         orderBy: [{ name: 'asc' }, { lastSentAt: 'desc' }, { id: 'asc' }],
+        take: limit,
       }),
       prisma.emailMessage.findMany({
         where: { teamId, lastSentAt: null, AND: [search, { OR: visibleOwners }], NOT: favorite },
         select,
         orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        take: limit,
       }),
       teamOnly
         ? []
@@ -55,11 +57,11 @@ export const findEmailMessagesRoute = authenticatedProcedure
             where: { teamId, ownerId: userId, lastSentAt: { not: null }, ...search, NOT: favorite },
             select,
             orderBy: [{ lastSentAt: 'desc' }, { id: 'asc' }],
-            take: query ? 50 : 5,
+            take: limit ?? (query ? 50 : 5),
           }),
     ]);
 
-    return [...favorites, ...templates, ...recent].map(({ favorites, ownerId, ...item }) => ({
+    return [...favorites, ...templates, ...recent].slice(0, limit).map(({ favorites, ownerId, ...item }) => ({
       ...item,
       isPersonal: ownerId !== null,
       isFavorite: favorites.length > 0,

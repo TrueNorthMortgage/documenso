@@ -4,4 +4,5 @@ export const ZFindEmailMessagesRequestSchema = z.object({
   teamId: z.number().int(),
   query: z.string().trim().max(255).default(''),
   teamOnly: z.boolean().default(false),
+  limit: z.number().int().min(1).max(100).optional(),
 });

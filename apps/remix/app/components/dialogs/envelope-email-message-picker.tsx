@@ -2,12 +2,21 @@ import { DO_NOT_INVALIDATE_QUERY_ON_MUTATION } from '@documenso/lib/constants/tr
 import { AppError } from '@documenso/lib/errors/app-error';
 import { trpc } from '@documenso/trpc/react';
 import { Button } from '@documenso/ui/primitives/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@documenso/ui/primitives/dialog';
 import { Input } from '@documenso/ui/primitives/input';
 import { SpinnerBox } from '@documenso/ui/primitives/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@documenso/ui/primitives/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@documenso/ui/primitives/tooltip';
 import { useToast } from '@documenso/ui/primitives/use-toast';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { StarIcon } from 'lucide-react';
+import { StarIcon, Trash2Icon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type EnvelopeEmailMessagePickerProps = {
@@ -22,8 +31,11 @@ export const EnvelopeEmailMessagePicker = ({ teamId, onCancel, onSelect }: Envel
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [favoriteOverrides, setFavoriteOverrides] = useState<Record<string, boolean>>({});
-  const messages = trpc.team.emailMessage.find.useQuery({ teamId, query }, { refetchOnMount: 'always' });
+  const [messageToDelete, setMessageToDelete] = useState<{ id: string; title: string } | null>(null);
+  const trpcUtils = trpc.useUtils();
+  const messages = trpc.team.emailMessage.find.useQuery({ teamId, query, limit: 5 }, { refetchOnMount: 'always' });
   const favorite = trpc.team.emailMessage.updateFavorite.useMutation(DO_NOT_INVALIDATE_QUERY_ON_MUTATION);
+  const deletePersonalMessage = trpc.team.emailMessage.deletePersonal.useMutation(DO_NOT_INVALIDATE_QUERY_ON_MUTATION);
 
   useEffect(() => {
     const timer = setTimeout(() => setQuery(search.trim()), 250);
@@ -38,6 +50,25 @@ export const EnvelopeEmailMessagePicker = ({ teamId, onCancel, onSelect }: Envel
       const error = AppError.parseError(err);
       toast({
         title: t`Unable to update favorite`,
+        description: error.userMessage ?? t`Please try again.`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const onDelete = async () => {
+    if (!messageToDelete) {
+      return;
+    }
+
+    try {
+      await deletePersonalMessage.mutateAsync({ teamId, id: messageToDelete.id });
+      setMessageToDelete(null);
+      await trpcUtils.team.emailMessage.find.invalidate({ teamId });
+    } catch (err) {
+      const error = AppError.parseError(err);
+      toast({
+        title: t`Unable to delete message`,
         description: error.userMessage ?? t`Please try again.`,
         variant: 'destructive',
       });
@@ -89,7 +120,7 @@ export const EnvelopeEmailMessagePicker = ({ teamId, onCancel, onSelect }: Envel
                 const isFavorite = favoriteOverrides[item.id] ?? item.isFavorite;
 
                 return (
-                  <TableRow key={item.id}>
+                  <TableRow key={item.id} className="group">
                     <TableCell className="py-2" truncate={false}>
                       <div className="flex items-start gap-1">
                         <Button
@@ -104,19 +135,40 @@ export const EnvelopeEmailMessagePicker = ({ teamId, onCancel, onSelect }: Envel
                         >
                           <StarIcon className={isFavorite ? 'h-4 w-4 fill-yellow-500 text-yellow-500' : 'h-4 w-4'} />
                         </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="h-auto min-w-0 flex-1 justify-start px-2 py-1 text-left"
-                          onClick={() => onSelect(item)}
-                        >
-                          <span className="min-w-0">
-                            <span className="block truncate">{item.name ?? (item.subject || t`No subject`)}</span>
-                            {item.message && (
-                              <span className="block truncate text-muted-foreground text-xs">{item.message}</span>
-                            )}
-                          </span>
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="h-auto min-w-0 flex-1 justify-start px-2 py-1 text-left"
+                              onClick={() => onSelect(item)}
+                            >
+                              <span className="min-w-0">
+                                <span className="block truncate">{item.name ?? (item.subject || t`No subject`)}</span>
+                                {item.message && (
+                                  <span className="block truncate text-muted-foreground text-xs">{item.message}</span>
+                                )}
+                              </span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-h-[50vh] max-w-sm overflow-y-auto whitespace-pre-wrap break-words">
+                            <p className="font-semibold">{item.subject || t`No subject`}</p>
+                            {item.message && <p className="mt-1">{item.message}</p>}
+                          </TooltipContent>
+                        </Tooltip>
+                        {item.isPersonal && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 shrink-0 p-0 text-destructive transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:opacity-0"
+                            aria-label={t`Delete message`}
+                            disabled={deletePersonalMessage.isPending}
+                            onClick={() => setMessageToDelete({ id: item.id, title: item.subject || t`No subject` })}
+                          >
+                            <Trash2Icon className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="py-2">
@@ -140,6 +192,44 @@ export const EnvelopeEmailMessagePicker = ({ teamId, onCancel, onSelect }: Envel
           <Trans>Cancel</Trans>
         </Button>
       </div>
+      <Dialog
+        open={messageToDelete !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen && !deletePersonalMessage.isPending) {
+            setMessageToDelete(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              <Trans>Delete message?</Trans>
+            </DialogTitle>
+            <DialogDescription>
+              <Trans>Are you sure you want to permanently delete this message? This cannot be undone.</Trans>
+            </DialogDescription>
+          </DialogHeader>
+          <p className="break-words text-sm">{messageToDelete?.title}</p>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={deletePersonalMessage.isPending}
+              onClick={() => setMessageToDelete(null)}
+            >
+              <Trans>Cancel</Trans>
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              loading={deletePersonalMessage.isPending}
+              onClick={() => void onDelete()}
+            >
+              <Trans>Delete</Trans>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

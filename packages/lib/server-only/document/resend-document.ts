@@ -268,6 +268,7 @@ export const resendDocument = async ({ id, userId, recipients, teamId, requestMe
       }
 
       const customEmailTemplate = {
+        'sender.name': user.name ?? '',
         'signer.name': name,
         'signer.email': email,
         'document.name': envelope.title,
