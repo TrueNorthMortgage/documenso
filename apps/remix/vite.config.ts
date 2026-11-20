@@ -15,6 +15,7 @@ const require = createRequire(import.meta.url);
 
 const pdfjsDistPath = path.dirname(require.resolve('pdfjs-dist/package.json'));
 const cMapsDir = normalizePath(path.join(pdfjsDistPath, 'cmaps'));
+const wasmDir = normalizePath(path.join(pdfjsDistPath, 'wasm'));
 const internalWebappHost = process.env.NEXT_PRIVATE_INTERNAL_WEBAPP_URL
   ? new URL(process.env.NEXT_PRIVATE_INTERNAL_WEBAPP_URL).hostname
   : undefined;
@@ -41,6 +42,10 @@ export default defineConfig({
       targets: [
         {
           src: cMapsDir,
+          dest: 'static',
+        },
+        {
+          src: wasmDir,
           dest: 'static',
         },
       ],

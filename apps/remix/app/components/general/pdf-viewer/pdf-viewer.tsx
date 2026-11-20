@@ -165,6 +165,8 @@ export default function PDFViewer({
         loadingTask = pdfJs.getDocument({
           data: result!,
           cMapUrl: '/static/cmaps/',
+          // JPEG 2000 images require the OpenJPEG decoder and its JavaScript fallback.
+          wasmUrl: '/static/wasm/',
           // Some valid PDFs embed Type 1 fonts that browser font engines fail to load,
           // displaying their glyphs as boxes. Rendering PDF.js glyph paths avoids that
           // limitation without changing the uploaded or signed PDF.
