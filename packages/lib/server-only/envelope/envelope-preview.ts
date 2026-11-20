@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mailer } from '@documenso/email/mailer';
 import { DocumentPreviewEmailTemplate } from '@documenso/email/templates/document-preview';
 import { prisma } from '@documenso/prisma';
+import { msg } from '@lingui/core/macro';
 import {
   DocumentStatus,
   type EmailDeliveryAttempt,
@@ -10,7 +11,6 @@ import {
   EnvelopeType,
   type Prisma,
 } from '@prisma/client';
-import { msg } from '@lingui/core/macro';
 import { createElement } from 'react';
 
 import { getI18nInstance } from '../../client-only/providers/i18n-server';
@@ -34,6 +34,8 @@ import { getEnvelopeWhereInput } from './get-envelope-by-id';
 export const MAX_PREVIEW_PAGES = 50;
 const MAX_PREVIEW_BYTES = 30 * 1024 * 1024;
 const MAX_PREVIEW_DIMENSION = 1800;
+// Bump when rendering changes so previously cached page images are refreshed.
+const PREVIEW_RENDER_VERSION = 1;
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 const getPreviewToken = (previewId: string) => {
@@ -74,7 +76,7 @@ type PreviewActor = { id: number; email: string; name: string | null };
 
 const isSamePhase = (left: Date | null, right: Date | null) => left?.getTime() === right?.getTime();
 const getRevisionHash = ({ title, envelopeItems }: PreviewSource) =>
-  hashToken(JSON.stringify({ title, envelopeItems }));
+  hashToken(JSON.stringify({ renderVersion: PREVIEW_RENDER_VERSION, title, envelopeItems }));
 
 const isAuthOptionsObjectOrNull = (value: unknown) =>
   value === null || (typeof value === 'object' && !Array.isArray(value));
