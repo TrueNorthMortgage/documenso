@@ -1,4 +1,4 @@
-FROM gotenberg/gotenberg:8.39.0-libreoffice AS common-fonts
+FROM gotenberg/gotenberg:9.9.1-libreoffice AS common-fonts
 
 # Install Microsoft Core Fonts (Arial, Times New Roman, Courier New, Verdana,
 # Georgia, Comic Sans MS, Trebuchet MS, Impact, Andale Mono, Webdings) so that
