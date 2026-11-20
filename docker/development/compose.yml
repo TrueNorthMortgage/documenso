@@ -81,7 +81,7 @@ services:
       - --libreoffice-auto-start
       - --libreoffice-start-timeout=300s
       # Disable surfaces we don't use to shrink the attack surface.
-      - --pdfengines-disable-routes
+      - --pdf-disable-routes
       - --webhook-disable
       # Verbose logs for the dev compose only.
       - --log-level=debug
