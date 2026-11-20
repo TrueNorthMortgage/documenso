@@ -26,9 +26,11 @@ tsRestHonoApp
   .all('/zapier/subscribe', async (c) => subscribeHandler(c.req.raw))
   .all('/zapier/unsubscribe', async (c) => unsubscribeHandler(c.req.raw));
 
-tsRestHonoApp.mount('/', async (request) => {
+// The contract includes /api/v1; forward the original URL without stripping it.
+tsRestHonoApp.all('*', (c) => {
   return fetchRequestHandler({
-    request,
+    // Materialize the Node adapter's lazy request before ts-rest subclasses it.
+    request: new Request(c.req.url, c.req.raw),
     contract: ApiContractV1,
     router: ApiContractV1Implementation,
     options: {
