@@ -1,11 +1,16 @@
+import { createRequire } from 'node:module';
+import path from 'node:path';
 import pMap from 'p-map';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { Canvas, Image, Path2D } from 'skia-canvas';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 
-// @ts-expect-error napi-rs/canvas satisfies the requirements
-globalThis.Path2D = Path2D;
+const require = createRequire(import.meta.url);
+const PDFJS_WASM_URL = path.join(path.dirname(require.resolve('pdfjs-dist/package.json')), 'wasm/');
+
+// PDF.js uses Skia's server-side constructor in place of the DOM constructor.
+globalThis.Path2D = Path2D as typeof globalThis.Path2D;
 // @ts-expect-error napi-rs/canvas satisfies the requirements
 globalThis.Image = Image;
 
@@ -54,6 +59,7 @@ export const pdfToImages = async (pdfBytes: Uint8Array, options: PdfToImagesOpti
   const task = pdfjsLib.getDocument({
     data: pdfBytes,
     CanvasFactory: SkiaCanvasFactory,
+    wasmUrl: PDFJS_WASM_URL,
   });
 
   try {
